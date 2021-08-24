@@ -126,8 +126,6 @@ nb-configuration.xml
 /.phpunit.*.cache
 
 /README.md
-/composer.json
-/env
 /LICENSE
 /phpunit.xml.dist
 /spark
