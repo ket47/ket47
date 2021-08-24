@@ -130,6 +130,4 @@ nb-configuration.xml
 /env
 /LICENSE
 /phpunit.xml.dist
-/writable/
 /spark
-/system/
