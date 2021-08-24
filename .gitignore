@@ -129,3 +129,5 @@ nb-configuration.xml
 /LICENSE
 /phpunit.xml.dist
 /spark
+/writable/
+/system/
