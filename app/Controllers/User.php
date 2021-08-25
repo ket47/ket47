@@ -4,7 +4,8 @@ namespace App\Controllers;
 
 class User extends BaseController {
 
-    public function __construct() {
+    public function index() {
+        return view('user/loginform');
     }
     
     public function signUp() {
@@ -39,19 +40,18 @@ class User extends BaseController {
         $UserConfirmationModel->insert($data);
         $UserModel->setUnconfirmed($user_id);
         
+        $data=[
+            'confirm_value'=>$confirm_value
+        ];
         $Sms=library('DevinoSms');
+        $Sms->send($user_phone,view('user/userPhoneConfirmSms.php',$data));
     }
     public function confirmPhoneCheck(){
         $confirm_value=$this->request->getVar('confirm_value');
-        $UserModel=model('UserModel');
-        
+        $user_id=$this->session->get('user_id');
+        $UserConfirmationModel=model('UserConfirmationModel');
+        return $UserConfirmationModel->confirmPhone($user_id,$confirm_value);
     }
-    
-    
-    
-    
-    
-    
     public function signIn(){
         $user_phone=$this->request->getVar('user_phone');
         $user_pass=$this->request->getVar('user_pass');
@@ -101,7 +101,7 @@ class User extends BaseController {
 
     public function get(){
         $user_id=$this->request->getVar('user_id');
-        $this->permit('userGet');
+        permit('userGet');
     }
     
     public function update(){
@@ -111,6 +111,6 @@ class User extends BaseController {
         $user_phone=$this->request->getVar('user_phone');
         $user_email=$this->request->getVar('user_email');
         
-        $this->permit('userUpdate');
+        permit('userUpdate');
     }
 }
