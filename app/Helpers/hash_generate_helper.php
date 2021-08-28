@@ -1,6 +1,6 @@
 <?php
 
-function generateHash( $length=4, $range='alphanum' ){
+function generate_hash( $length=4, $range='alphanum' ){
     if( $range=='alphanum' ){
         $alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890';//ABCDEFGHIJKLMNOPQRSTUVWXYZ
     } else {
@@ -10,7 +10,7 @@ function generateHash( $length=4, $range='alphanum' ){
     $alpha_length = strlen($alphabet) - 1; 
     for ($i = 0; $i < $length; $i++) 
     {
-        $n = rand(0, $alpha_length);
+        $n = random_int(0, $alpha_length);
         $password[] = $alphabet[$n];
     }
     return implode($password);

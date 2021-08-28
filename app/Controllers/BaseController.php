@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\API\ResponseTrait;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -22,7 +23,8 @@ use Psr\Log\LoggerInterface;
 
 class BaseController extends Controller
 {
-	/**
+        use ResponseTrait;
+ 	/**
 	 * Instance of the main Request object.
 	 *
 	 * @var IncomingRequest|CLIRequest
@@ -36,7 +38,7 @@ class BaseController extends Controller
 	 *
 	 * @var array
 	 */
-	protected $helpers = [];
+	protected $helpers = ['permit'];
 
 	/**
 	 * Constructor.
@@ -50,7 +52,6 @@ class BaseController extends Controller
 		// Do Not Edit This Line
 		parent::initController($request, $response, $logger);
                 $this->session = session();
-                helper('permit');
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------

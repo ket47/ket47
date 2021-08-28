@@ -3,5 +3,5 @@
     Phone <input name="user_phone" value="+79787288233"><br>
     Pass <input name="user_pass" value="123456"><br>
     Pass confirm <input name="user_pass_confirm" value="123456"><br>
-    <button>SignUp</button> | <a href="User">SignIn</a>
+    <button>SignUp</button>
 </form>

@@ -6,5 +6,5 @@ function permit( $permission ){
     if( $permissions && in_array("|$permission|", $permissions) ){
         return true;
     }
-    return false;
+    throw new Exception('Permission denied for '.$permission,401);
 }

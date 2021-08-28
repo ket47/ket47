@@ -6,9 +6,18 @@ use CodeIgniter\Model;
 
 class UserModel extends Model
 {
+    private $signed_user_id=0;
     protected $table      = 'user_list';
     protected $primaryKey = 'user_id';
-    protected $allowedFields = ['user_name', 'user_phone', 'user_pass', 'user_email'];
+    protected $allowedFields = [
+        'user_name',
+        'user_phone',
+        'user_pass',
+        'user_email',
+        'is_active',
+        'signed_in_at',
+        'signed_out_at'
+        ];
     protected $beforeInsert = ['hashPassword'];
     protected $beforeUpdate = ['hashPassword'];
     protected $returnType     = 'array';
@@ -40,29 +49,56 @@ class UserModel extends Model
             'user_phone'=>$user_phone_cleared,
             'user_name'=>$user_name,
             'user_pass'=>$user_pass,
-            'user_pass_confirm'=>$user_pass_confirm
+            'user_pass_confirm'=>$user_pass_confirm,
+            'is_active'=>true
             ];
         $ok=$this->insert($row,true);
         return $ok;
     }
     
     public function signOut($user_id){
-        $data=[
-            'user_id'=>$user_id,
-            'signed_out_at'=>'NOW()'
-        ];
-        $this->save($data);
+        $this->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()]);
     }
     
     public function signIn($user_phone,$user_pass){
-        $data=[
-            'user_phone'=>$user_phone,
-            'user_pass'=>$user_pass
-        ];
-        $data= $this->hashPassword($data);
-        $user=$this->select('user_id,')->where('user_phone',$user_phone)->get()->getResult();
+        $user=$this->select("user_id,user_pass,user_phone_verified")->where('user_phone',$user_phone)->get()->getRow();
+        if( !$user || !$user->user_id ){
+            return 'user_not_found';//user_phone not found
+        }
+        if( !password_verify($user_pass, $user->user_pass) ){
+            return 'user_pass_wrong';//password wrong
+        }
+        if( !$user->user_phone_verified ){
+            return 'user_phone_unverified';
+        }
+        if( !$user->is_active ){
+            return 'user_is_disabled';
+        }
         
-        
-        print_r($user);
+        $this->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
+        $this->signed_user_id=$user->user_id;
+        return 'ok' ;
+    }
+    
+    public function getSignedUser(){
+        if( !$this->signed_user_id ){
+            return null;
+        }
+        $user= $this->where('user_id',$this->signed_user_id)->get()->getRow();
+        return $user;
+    }
+    
+    
+    
+    public function getUnverifiedUserIdByPhone($user_phone_cleared){
+        $sql="SELECT 
+                `user_id` 
+            FROM 
+                `user_list` 
+            WHERE 
+                `user_phone` = '79787288233' 
+                AND COALESCE(`user_phone_verified`,0) = 0";
+        $user_id = $this->query($sql)->getRow('user_id');
+        return $user_id;
     }
 }

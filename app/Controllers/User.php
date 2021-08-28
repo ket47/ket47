@@ -11,62 +11,82 @@ class User extends BaseController {
     public function login_form(){
         $this->signIn();
         if( $this->isSignedIn() ){
-            $user_id=$this->session->get('user_id');
-            $UserModel=model('UserModel');
-            $user_data=$UserModel->get($user_id);
-            return view('user/signedin',$user_data);
+            $user_data=(array) $this->session->get('user_data');
+            return $this->respond(view('user/signedin',['user'=>$user_data]));
         }
-        return view('user/signin_form');
+        return $this->respond(view('user/signin_form'));
     }
     
     public function register_form(){
-        return view('user/register_form');
+        return $this->respond(view('user/register_form'));
+    }
+    
+    public function phone_verification(){
+        return $this->respond(view('user/phone_verification'));
     }
     
     private function isSignedIn(){
         return $this->session->get('user_id');
-    }    
+    }
     
+    
+    
+    
+    
+    /////////////////////////////////////////////
+    //LOGIN SECTION
+    /////////////////////////////////////////////
     public function signUp() {
         $user_phone=$this->request->getVar('user_phone');
         $user_name=$this->request->getVar('user_name');
         $user_pass=$this->request->getVar('user_pass');
         $user_pass_confirm=$this->request->getVar('user_pass_confirm');
         
-        $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
+        helper('phoneNumber');
+        $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
         $UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
         
         if( $UserModel->errors() ){
-            $this->error(422,json_encode($UserModel->errors()),implode($UserModel->errors()));
-            return false;
+            return $this->failValidationError(json_encode($UserModel->errors()));
         }
-        return true;
+        return $this->responseCreated();
     }
     
     public function signIn(){
         $user_phone=$this->request->getVar('user_phone');
         $user_pass=$this->request->getVar('user_pass');
         if( !$user_phone || !$user_pass ){
-            return false;
+            return $this->failValidationError();
         }
         $this->signOut();
         
         $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
         $UserModel=model('UserModel');
-        $user_id=$UserModel->signIn($user_phone,$user_phone_cleared);
-        if( $user_id ){
-            $this->session->set('user_id',$user_id);
-            return true;
+        $result=$UserModel->signIn($user_phone_cleared,$user_pass);
+        if( $result=='user_not_found' ){
+            return $this->failNotFound('There is no user with such phone number','user_not_found');
         }
-        return false;
+        if( $result=='user_pass_wrong' ){
+            return $this->failUnauthorized('User exists but password is wrong!','user_pass_wrong');
+        }
+        if( $result=='user_phone_unverified' ){
+            return $this->failForbidden('It is needed to send confirmation SMS to user.','user_phone_unverified');
+        }
+        if( $result=='ok' ){
+            $user=$UserModel->getSignedUser();
+            $this->session->set('user_id',$user->user_id);
+            $this->session->set('user_data',$user);
+            return $this->respond(1);
+        }
+        return $this->fail(0);
     }
     public function signOut(){
         $user_id=$this->session->get('user_id');
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
         $this->session->destroy();
-        return true;
+        return $this->respond(1);
     }
     
     public function resetPass(){
@@ -96,30 +116,39 @@ class User extends BaseController {
         return false;
     }
     
-    public function confirmPhoneSend(){
-        $user_id=$this->session->get('user_id');
+    public function phoneVerificationSend(){
+        $user_phone=$this->request->getVar('user_phone');
+        helper('phone_number');
+        $user_phone_cleared= clearPhone($user_phone);
+        
+        $UserVerificationModel=model('UserVerificationModel');
         $UserModel=model('UserModel');
-        $user_data=$UserModel->get($user_id);
-        if( !$user_data ){
-            $this->error(404,'User not found');
+        $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone_cleared);
+        if( !$unverified_user_id ){
+            $this->error(404,'unverified_phone_not_found','No such user phone or it is already verified');
         }
         
-        helper('generateHash');
-        $confirm_value=generateHash(4,'numeric');
-        $UserConfirmationModel=model('UserConfirmationModel');
+        helper('hash_generate');
+        $confirm_value=generate_hash(4,'numeric');
         $data=[
-            'user_id'=>$user_id,
+            'user_id'=>$unverified_user_id,
             'confirm_type'=>'phone',
             'confirm_value'=>$confirm_value
         ];
-        $UserConfirmationModel->insert($data);
-        $UserModel->setUnconfirmed($user_id);
+        $UserVerificationModel->insert($data);
         
-        $data=[
+        $msg_data=[
             'confirm_value'=>$confirm_value
         ];
-        $Sms=library('DevinoSms');
-        $Sms->send($user_phone,view('user/userPhoneConfirmSms.php',$data));
+        
+        
+        
+        
+        
+        
+        
+        $Sms=new \App\Libraries\DevinoSms();
+        $Sms->send($user_phone,view('user/userPhoneConfirmSms.php',$msg_data));
     }
     public function confirmPhoneCheck(){
         $confirm_value=$this->request->getVar('confirm_value');
