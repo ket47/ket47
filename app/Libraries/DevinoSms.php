@@ -1,9 +1,8 @@
 <?php
-
+namespace App\Libraries;
 class DevinoSms{
     
     private $gateway="https://integrationapi.net/rest";
-    private $smsSessionId=null;
     private $sender=null;
     private $user=null;
     private $pass=null;
@@ -30,14 +29,14 @@ class DevinoSms{
             $session->set('devinoSmsSessionId',$sid);
             $session->set('devinoSmsSessionTime',time());
         }
-        $this->smsSessionId=$session->set('devinoSmsSessionId');
+        return $session->get('devinoSmsSessionId');
     }
     
     public function send( $number, $message ){
         $post_vars = array(
-            'SessionID' => $this->smsSessionId,
+            'SessionID' => $this->login(),
             'SourceAddress' => $this->sender,
-            'DestinationAddresses' => $number,
+            'DestinationAddress' => $number,
             'Data' => $message
         );
         $opts = array(
@@ -47,7 +46,7 @@ class DevinoSms{
                 'content' => http_build_query($post_vars)
             ]
         );
-        $response = file_get_contents("$this->gateway/Sms/SendBulk/", false, stream_context_create($opts));
+        $response = file_get_contents("$this->gateway/Sms/Send/", false, stream_context_create($opts));
         $msg_ids = json_decode($response);
         if (!$msg_ids[0]) {
             $session=session();
@@ -56,5 +55,4 @@ class DevinoSms{
         }
         return true;
     }
-    
 }

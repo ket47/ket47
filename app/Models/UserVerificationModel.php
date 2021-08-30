@@ -6,14 +6,32 @@ use CodeIgniter\Model;
 
 class UserVerificationModel extends Model
 {
-    protected $table      = 'user_confirmation_list';
-    protected $primaryKey = 'user_confirmation_id';
+    protected $table      = 'user_verification_list';
+    protected $primaryKey = 'user_verification_id';
 
     
     protected $allowedFields = [
         'user_id',
-        'user_type',
-        'user_value'
+        'verification_type',
+        'verification_value'
         ];
     
+    private function clearVerifications(){
+        $last_week=new \CodeIgniter\I18n\Time('-1 week');
+        $this->where("created_at<",$last_week)->delete();
+    }
+    
+    
+    public function phoneVerify( $user_phone, $verification_code ){
+        $this->clearVerifications();
+        $UserModel=model('UserModel');
+        $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone);
+        $verification=$this->where('user_id',$unverified_user_id)->where('verification_value',$verification_code)->get()->getRow();
+        if( !$verification ){
+            return 'verification_not_found';
+        }
+        $UserModel->update($verification->user_id,['user_phone_verified'=>1]);
+        $this->delete($verification->user_verification_id);
+        return 'verification_completed';
+    }
 }

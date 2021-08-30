@@ -6,6 +6,7 @@
 </form>
 
 <form method="get" action="/User/phoneVerificationCheck/">
-    Confirmation code <input name="phone_verification" value=""><br>
+    Phone <input name="user_phone" value="+79787288233"><br>
+    Confirmation code <input name="verification_code" value=""><br>
     <button>Verify Phone</button>
 </form>

@@ -12,6 +12,7 @@ class UserModel extends Model
     protected $allowedFields = [
         'user_name',
         'user_phone',
+        'user_phone_verified',
         'user_pass',
         'user_email',
         'is_active',
@@ -61,7 +62,7 @@ class UserModel extends Model
     }
     
     public function signIn($user_phone,$user_pass){
-        $user=$this->select("user_id,user_pass,user_phone_verified")->where('user_phone',$user_phone)->get()->getRow();
+        $user=$this->where('user_phone',$user_phone)->get()->getRow();
         if( !$user || !$user->user_id ){
             return 'user_not_found';//user_phone not found
         }
@@ -71,7 +72,7 @@ class UserModel extends Model
         if( !$user->user_phone_verified ){
             return 'user_phone_unverified';
         }
-        if( !$user->is_active ){
+        if( $user->is_disabled ){
             return 'user_is_disabled';
         }
         
@@ -87,8 +88,6 @@ class UserModel extends Model
         $user= $this->where('user_id',$this->signed_user_id)->get()->getRow();
         return $user;
     }
-    
-    
     
     public function getUnverifiedUserIdByPhone($user_phone_cleared){
         $sql="SELECT 

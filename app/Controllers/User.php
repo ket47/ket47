@@ -29,10 +29,6 @@ class User extends BaseController {
         return $this->session->get('user_id');
     }
     
-    
-    
-    
-    
     /////////////////////////////////////////////
     //LOGIN SECTION
     /////////////////////////////////////////////
@@ -69,6 +65,9 @@ class User extends BaseController {
         }
         if( $result=='user_pass_wrong' ){
             return $this->failUnauthorized('User exists but password is wrong!','user_pass_wrong');
+        }
+        if( $result=='user_is_disabled' ){
+            return $this->failUnauthorized('User exists but blocked!','user_is_disabled');
         }
         if( $result=='user_phone_unverified' ){
             return $this->failForbidden('It is needed to send confirmation SMS to user.','user_phone_unverified');
@@ -121,7 +120,6 @@ class User extends BaseController {
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         
-        $UserVerificationModel=model('UserVerificationModel');
         $UserModel=model('UserModel');
         $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone_cleared);
         if( !$unverified_user_id ){
@@ -129,32 +127,41 @@ class User extends BaseController {
         }
         
         helper('hash_generate');
-        $confirm_value=generate_hash(4,'numeric');
+        $verification_code=generate_hash(4,'numeric');
         $data=[
             'user_id'=>$unverified_user_id,
-            'confirm_type'=>'phone',
-            'confirm_value'=>$confirm_value
+            'verification_type'=>'phone',
+            'verification_value'=>$verification_code
         ];
+
+        $UserVerificationModel=model('UserVerificationModel');
         $UserVerificationModel->insert($data);
-        
         $msg_data=[
-            'confirm_value'=>$confirm_value
+            'verification_code'=>$verification_code
         ];
         
-        
-        
-        
-        
-        
-        
-        $Sms=new \App\Libraries\DevinoSms();
-        $Sms->send($user_phone,view('user/userPhoneConfirmSms.php',$msg_data));
+        $devinoSenderName=getenv('devinoSenderName');
+        $devinoUserName=getenv('devinoUserName');
+        $devinoPassword=getenv('devinoPassword');
+        $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
+        $Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
     }
-    public function confirmPhoneCheck(){
-        $confirm_value=$this->request->getVar('confirm_value');
-        $user_id=$this->session->get('user_id');
-        $UserConfirmationModel=model('UserConfirmationModel');
-        return $UserConfirmationModel->confirmPhone($user_id,$confirm_value);
+    
+    public function phoneVerificationCheck(){
+        $verification_code=$this->request->getVar('verification_code');
+        $user_phone=$this->request->getVar('user_phone');
+        helper('phone_number');
+        $user_phone_cleared= clearPhone($user_phone);
+
+        $UserVerificationModel=model('UserVerificationModel');
+        $result=$UserVerificationModel->phoneVerify($user_phone_cleared,$verification_code);
+        if( $result=='verification_completed' ){
+            return $this->respond('verified');
+        }
+        if( $result=='verification_not_found' ){
+            return $this->failNotFound();
+        }
+        return $this->fail('unverified');
     }
     
     
