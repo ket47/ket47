@@ -3,7 +3,10 @@
 namespace App\Controllers;
 
 class User extends BaseController {
-
+    use ResponseTrait;
+    /////////////////////////////////////////////
+    //VIEWS SECTION
+    /////////////////////////////////////////////
     public function index() {
         return $this->login_form();
     }
@@ -13,6 +16,8 @@ class User extends BaseController {
         if( $this->isSignedIn() ){
             $user_data=(array) $this->session->get('user_data');
             return $this->respond(view('user/signedin',['user'=>$user_data]));
+        } else {
+            echo "NOT SIGNED IN";
         }
         return $this->respond(view('user/signin_form'));
     }
@@ -25,10 +30,13 @@ class User extends BaseController {
         return $this->respond(view('user/phone_verification'));
     }
     
+    public function password_reset(){
+        return view('user/password_reset');
+    }
+    
     private function isSignedIn(){
         return $this->session->get('user_id');
     }
-    
     /////////////////////////////////////////////
     //LOGIN SECTION
     /////////////////////////////////////////////
@@ -88,33 +96,67 @@ class User extends BaseController {
         return $this->respond(1);
     }
     
-    public function resetPass(){
+    public function passwordReset(){
         $user_phone=$this->request->getVar('user_phone');
         $user_email=$this->request->getVar('user_email');
+        $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
+        
         $UserModel=model('UserModel');
-        helper('generateHash');
-        $ok=$UserModel->passCheckRecoveryPhone($user_phone);
-        if( $ok ){
-            $data=[
-                'new_pass'=>generateHash()
+        helper('hash_generate');
+        $new_password=generate_hash(6);
+        
+        $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared);
+        if( $user_phone_cleared && $phone_user_id ){
+            $msg_data=[
+                'new_pass'=>$new_password
             ];
-            $Sms=library('DevinoSms');
-            $Sms->send($user_phone,view('user/passResetSms.php',$data));
-            return true;
+            $devinoSenderName=getenv('devinoSenderName');
+            $devinoUserName=getenv('devinoUserName');
+            $devinoPassword=getenv('devinoPassword');
+            $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
+            $sms_send_ok=$Sms->send($user_phone_cleared,view('messages/password_reset_sms.php',$msg_data));
         }
         
-        $ok=$UserModel->passCheckRecoveryEmail($user_phone);
-        if( $ok ){
-            $data=[
-                'new_pass'=>generateHash()
+        $email_user_id=$UserModel->passRecoveryCheckEmail($user_email);
+        if( $user_email && $email_user_id ){
+            $msg_data=[
+                'new_pass'=>$new_password
             ];
-            $Sms=library('Email');
-            $Sms->send($user_email,view('user/passResetEmail.php',$data));
-            return true;
+            
+            $email = \Config\Services::email();
+            $config=[
+                'SMTPHost'=>getenv('email_server'),
+                'SMTPUser'=>getenv('email_username'),
+                'SMTPPass'=>getenv('email_password')
+            ];
+            $email->initialize($config);
+            $email->setFrom(getenv('email_from'), getenv('email_sendername'));
+            $email->setTo($user_email);
+            $email->setSubject('Сброс пароля сервиса TEZ');
+            $email->setMessage(view('messages/password_reset_email.php',$msg_data));
+            $email_send_ok=$email->send();
+            if( !$email_send_ok ){
+                return $this->fail($email->printDebugger(['headers']));
+            }
         }
-        return false;
+        
+        if( $sms_send_ok || $email_send_ok ){
+            $update_ok=$UserModel->update($phone_user_id,['user_pass'=>$new_password,'user_pass_confirm'=>$new_password]);
+            if( $update_ok ){
+                return $this->respondUpdated('password_updated');
+            }
+            if( $UserModel->errors() ){
+                return $this->failValidationError(json_encode($UserModel->errors()));
+            }
+            return $this->fail('password_reset_not_updated');
+        } else {
+            return $this->fail('password_reset_was_not_sent');
+        }
+        return $this->failNotFound('password_reset_user_not_found');
     }
-    
+    ///////////////////////////////////////////////
+    //VERIFICATION SECTION
+    ///////////////////////////////////////////////
     public function phoneVerificationSend(){
         $user_phone=$this->request->getVar('user_phone');
         helper('phone_number');
@@ -144,7 +186,13 @@ class User extends BaseController {
         $devinoUserName=getenv('devinoUserName');
         $devinoPassword=getenv('devinoPassword');
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
-        $Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
+        $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
+        if( $ok ){
+            return $this->respond('sms_sent_ok');
+        }
+        else {
+            return $this->fail('sms_send_fail');
+        }
     }
     
     public function phoneVerificationCheck(){

@@ -23,7 +23,6 @@ use Psr\Log\LoggerInterface;
 
 class BaseController extends Controller
 {
-        use ResponseTrait;
  	/**
 	 * Instance of the main Request object.
 	 *

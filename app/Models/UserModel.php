@@ -85,7 +85,26 @@ class UserModel extends Model
         if( !$this->signed_user_id ){
             return null;
         }
-        $user= $this->where('user_id',$this->signed_user_id)->get()->getRow();
+        return $this->getUser( $user_id );
+    }
+    
+    private function getUser( $user_id ){
+        $sql="
+            SELECT
+                *
+            FROM
+                user_list
+                    JOIN
+                user_group_list USING(user_group_id)
+            WHERE
+                user_id='{$user_id}'
+            ";
+        $user= $this->query($sql)->getRow();
+        if( $user && $user->user_group_id ){
+            $user->permissions=$this->table('user_group_permission_list')
+                    ->where('user_group_id',$user->user_group_id)
+                    ->getResult();
+        }        
         return $user;
     }
     
@@ -99,5 +118,13 @@ class UserModel extends Model
                 AND COALESCE(`user_phone_verified`,0) = 0";
         $user_id = $this->query($sql)->getRow('user_id');
         return $user_id;
+    }
+    
+    public function passRecoveryCheckPhone($user_phone){//should we send pass to only verified phone or it could be mechanism to generate pass?
+        return $this->where('user_phone',$user_phone)->get()->getRow('user_id');
+    }
+    
+    public function passRecoveryCheckEmail($user_email){//should we send pass to only verified phone or it could be mechanism to generate pass?
+        return $this->where('user_email',$user_email)->get()->getRow('user_id');
     }
 }

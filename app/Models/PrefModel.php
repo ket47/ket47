@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class UserModel extends Model
+class PrefModel extends Model
 {
     protected $table      = 'pref_list';
     protected $primaryKey = 'pref_name';
