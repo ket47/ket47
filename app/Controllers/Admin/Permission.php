@@ -25,8 +25,11 @@ class Permission extends \App\Controllers\BaseController {
     
     private function getMethodList(){
         $method_list=[];
-        $model_files = glob(__DIR__ .'/../../Models/*.php');
+        $model_files = glob(__DIR__ .'/../../Controllers/Api/*.php');
         foreach($model_files as $filename){
+            if(str_contains($filename, 'BaseController')){
+                continue;
+            }
             $content= file_get_contents($filename);
             preg_match_all('/public\s+function\s+(\w+)/',$content,$methods);
             preg_match('/(\w+).php/', $filename, $classes);

@@ -1,42 +1,17 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\Api;
+use \CodeIgniter\API\ResponseTrait;
 
-class User extends BaseController {
+class User extends \App\Controllers\BaseController{
     use ResponseTrait;
     /////////////////////////////////////////////
     //VIEWS SECTION
     /////////////////////////////////////////////
     public function index() {
-        return $this->login_form();
+
     }
-    
-    public function login_form(){
-        $this->signIn();
-        if( $this->isSignedIn() ){
-            $user_data=(array) $this->session->get('user_data');
-            return $this->respond(view('user/signedin',['user'=>$user_data]));
-        } else {
-            echo "NOT SIGNED IN";
-        }
-        return $this->respond(view('user/signin_form'));
-    }
-    
-    public function register_form(){
-        return $this->respond(view('user/register_form'));
-    }
-    
-    public function phone_verification(){
-        return $this->respond(view('user/phone_verification'));
-    }
-    
-    public function password_reset(){
-        return view('user/password_reset');
-    }
-    
-    private function isSignedIn(){
-        return $this->session->get('user_id');
-    }
+
     /////////////////////////////////////////////
     //LOGIN SECTION
     /////////////////////////////////////////////
@@ -84,15 +59,17 @@ class User extends BaseController {
             $user=$UserModel->getSignedUser();
             $this->session->set('user_id',$user->user_id);
             $this->session->set('user_data',$user);
-            return $this->respond(1);
+            return $this->respond($user);
         }
         return $this->fail(0);
     }
+    
     public function signOut(){
         $user_id=$this->session->get('user_id');
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
         $this->session->destroy();
+        session();
         return $this->respond(1);
     }
     

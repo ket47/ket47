@@ -7,7 +7,7 @@ use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\API\ResponseTrait;
+
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,7 +37,7 @@ class BaseController extends Controller
 	 *
 	 * @var array
 	 */
-	protected $helpers = ['permit'];
+	protected $helpers = [];
 
 	/**
 	 * Constructor.
@@ -50,17 +50,33 @@ class BaseController extends Controller
 	{
 		// Do Not Edit This Line
 		parent::initController($request, $response, $logger);
-                $this->session = session();
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
-		// E.g.: $this->session = \Config\Services::session();
+		$this->session = \Config\Services::session();
+                $this->permit();
 	}
         
-        public function error( $http_code=500, $error_token='unknown_error', $error_description='' ){
-            $this->response->setStatusCode($http_code,$error_description);
+        protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
+            $this->response->setStatusCode($error_code,$error_description);
             $this->response->setBody($error_token);
             $this->response->send();
             die();
         }
+        
+        
+        public function permit(){
+            $router = \Config\Services::router(null, $this->request);
+            $controller_name=get_class($this);
+            $method_name=$router->methodName();
+            
+            $permission=$controller_name.'::'.$method_name;
+            $permissions=$this->session->get('user_permissions');
+            if( $permissions && in_array("|$permission|", $permissions) ){
+                return true;
+            }
+            //$this->error( 401, $error_token='permission_denied', 'Unsufficient rights for operation' );
+        } 
+        
+        
 }
