@@ -4,40 +4,31 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class PermissionModel extends Model{
-    protected $table      = 'user_group_permission_list';
+    protected $table      = 'user_role_permission_list';
     protected $primaryKey = 'permission_id';
     protected $allowedFields = [
-        'user_group_id',
         'permited_class',
-        'permited_method'
+        'permited_method',
+        'owner',
+        'ally',
+        'other'
         ];
     
-    public function getUserGroups(){
-        $sql="SELECT * FROM user_group_list";
-        $user_groups= $this->query($sql)->getResult();
-        foreach($user_groups as $group){
-            $group->permission_list=$this->table('user_group_permission_list')
-                    ->where('user_group_id',$group->user_group_id)
-                    ->get()
-                    ->getResult();
-        }
-        return $user_groups;
+    public function permissionListGet(){
+        return $this->get()->getResult();
     }
     
-    public function permissionSave($permited_group_id,$permited_class,$permited_method,$is_enabled){
-        $permission_id=$this->where('user_group_id',$permited_group_id)
+    public function permissionSave($permited_owner,$permited_class,$permited_method,$permited_rights){
+        $permission_id=$this
                 ->where('permited_class',$permited_class)
                 ->where('permited_method',$permited_method)->get()->getRow('permission_id');
-        if( !$permission_id && $is_enabled ){
+        if( !$permission_id ){
             $data=[
-                'user_group_id'=>$permited_group_id,
                 'permited_class'=>$permited_class,
                 'permited_method'=>$permited_method
             ];
-            return $this->insert($data);
+            $permission_id=$this->insert($data);
         }
-        if($permission_id && !$is_enabled ){
-            return $this->delete($permission_id);
-        }
+        return $this->update($permission_id,[$permited_owner=>$permited_rights]);
     }
 }

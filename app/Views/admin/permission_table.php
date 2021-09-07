@@ -1,10 +1,10 @@
 <?php
-
-$user_group_count=count($user_group_list);
-
-function has_permission( $class, $method, $haystack ){
-    foreach($haystack as $perm){
-        if($perm->permited_class==$class && $perm->permited_method==$method){
+function has_permission( $permission_list,$role,$class,$method,$right ){
+    if( !$permission_list ){
+        return false;
+    }
+    foreach($permission_list as $perm){
+        if($perm->permited_class==$class && $perm->permited_method==$method && str_contains($perm->$role,$right) ){
             return true;
         }
     }
@@ -19,16 +19,23 @@ function has_permission( $class, $method, $haystack ){
 $(function(){
     $("form").change(function(e){
         var $check=$(e.target);
-        var is_enabled=$check.prop('checked')?1:0;
-        var path=$check.attr('name').split('.');
-        var permited_group=path[0];
+        var path=$check.data('path').split('.');
+        var permited_owner=path[0];
         var permited_class=path[1];
         var permited_method=path[2];
+        var permissions=[];
+        $(`input[data-path='${permited_owner}.${permited_class}.${permited_method}']`).each(function(i,item){
+            var $check=$(item);
+            var is_enabled=$check.prop('checked')?1:0;
+            if( is_enabled ){
+                permissions.push($check.data('right'));
+            }
+        });
         var request={
-            permited_group:permited_group,
+            permited_owner:permited_owner,
             permited_class:permited_class,
             permited_method:permited_method,
-            is_enabled:is_enabled
+            permited_rights:permissions.sort().join()
         };
         $.post("/Admin/Permission/permissionSave",request,function(){
             
@@ -41,28 +48,39 @@ $(function(){
         <thead>
             <tr>
                 <th></th>
-                <?php foreach($user_group_list as $user_group): ?>
                 <th>
-                    <?=$user_group->user_group_name?>
+                    Owner
                 </th>
-                <?php endforeach;?>
+                <th>
+                    Ally
+                </th>
+                <th>
+                    Other
+                </th>
             </tr>
         </thead>
         <tbody>
-        <?php foreach($method_list as $model_name=>$model_methods): ?>
+        <?php foreach($method_list as $class=>$model_methods): ?>
             <tr>
-                <td colspan="<?=($user_group_count+2)?>"><h2><?=$model_name?></h2></td>
+                <td colspan="<?=(count($permission_role_list)+2)?>"><h2><?=$class?></h2></td>
             </tr>
             <?php foreach($model_methods as $method): ?>
             <tr>
-                <td>
+                <td style="width:100px;">
                     <?=$method?>
                 </td>
-                <?php foreach($user_group_list as $user_group): ?>
+                <?php foreach($permission_role_list as $role): ?>
                 <td style="text-align: center">
-                    <input type="checkbox" name="<?="{$user_group->user_group_id}.{$model_name}.{$method}"?>"
-                        <?=has_permission($model_name,$method,$user_group->permission_list)?"checked=checked":"0"?>
-                        >
+                    <?php foreach($permission_right_list as $right):?>
+                    <div class="right <?=$right?>">
+                        <?=$right?>
+                        <input type="checkbox" 
+                               data-path="<?="{$role}.{$class}.{$method}"?>"
+                               data-right="<?=$right?>"
+                               <?=has_permission($permission_list,$role,$class,$method,$right)?"checked=checked":""?>
+                            >
+                    </div>
+                    <?php endforeach;?>
                 </td>
                 <?php endforeach;?>
             </tr>
@@ -73,7 +91,23 @@ $(function(){
 </form>
 
 <style>
+    th{
+        width: 150px;
+    }
     td{
         padding: 5px;
+    }
+    .right{
+        display: inline-block;
+        width:15px;
+    }
+    .r{
+        color:green;
+    }
+    .w{
+        color:orange;
+    }
+    .x{
+        color:red;
     }
 </style>
