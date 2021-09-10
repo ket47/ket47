@@ -11,16 +11,19 @@ class UserGroupMemberModel extends PermissionLayer{
         ];
     
     
+    public function itemUpdate( $user_id, $user_group_id, $value ){
+        if( $value ){
+            return $this->userGroupJoin($user_id, $user_group_id);
+        }
+        return $this->userGroupLeave($user_id, $user_group_id);
+    }
+    
+    
     public function userMemberGroupsGet($user_id){
         return $this->select('GROUP_CONCAT(user_group_list.user_group_id) user_group_ids,GROUP_CONCAT(user_group_type) user_group_types')
                 ->where('user_id',$user_id)
                 ->join('user_group_list', 'user_group_list.user_group_id = user_group_member_list.user_group_id')
                 ->get()->getRow();
-    }
-    
-    
-    public function userGroupJoin($user_id,$user_group_id){
-        return $this->insert(['user_id'=>$user_id,'user_group_id'=>$user_group_id]);
     }
     
     public function userGroupJoinByType($user_id,$user_group_type){
@@ -30,7 +33,13 @@ class UserGroupMemberModel extends PermissionLayer{
         return $this->userGroupJoin($user_id,$user_group_id);
     }
     
+    public function userGroupJoin($user_id,$user_group_id){
+        $this->permit(null,'w');
+        return $this->insert(['user_id'=>$user_id,'user_group_id'=>$user_group_id]);
+    }
+    
     public function userGroupLeave($user_id,$user_group_id){
+        $this->permitWhere('w');
         return $this
                 ->where('user_id',$user_id)
                 ->where('user_group_id',$user_group_id)

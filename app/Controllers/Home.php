@@ -24,10 +24,23 @@ class Home extends BaseController {
         }        
     }
     
+    public function user_manager(){
+        return view('user/list_manager');
+    }
+    
     public function user_list(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'limit'=>$this->request->getVar('limit')
+        ];
         $UserModel=model('UserModel');
-        $user_list=$UserModel->listGet();
-        return view('user/list', ['user_list' => $user_list]); 
+        $UserGroupModel=model('UserGroupModel');
+        $user_list=$UserModel->listGet($filter);
+        $user_group_list=$UserGroupModel->listGet();
+        return view('user/list', [
+            'user_list' => $user_list,
+            'user_group_list'=>$user_group_list
+                ]); 
     }
 
     public function user_register_form() {

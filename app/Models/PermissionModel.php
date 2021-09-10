@@ -16,7 +16,7 @@ class PermissionModel extends PermissionLayer{
     
     public function listGet(){
         $this->listFillSession();
-        if( $this->sudo() ){
+        if( sudo() ){
             return $this->get()->getResult();
         }
         return [];
@@ -36,7 +36,7 @@ class PermissionModel extends PermissionLayer{
     }
     
     public function itemCreate($permited_owner,$permited_class,$permited_method,$permited_rights){
-        if( !$this->sudo() ){
+        if( !sudo() ){
             return false;
         }
         $permission_id=$this

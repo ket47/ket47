@@ -8,11 +8,16 @@ class UserModel extends PermissionLayer{
     protected $primaryKey = 'user_id';
     protected $allowedFields = [
         'user_name',
+        'user_surname',
+        'user_middlename',
         'user_phone',
         'user_phone_verified',
-        'user_pass',
         'user_email',
-        'is_active',
+        'user_email_verified',
+        'user_pass',
+        'user_comment',
+        'is_disabled',
+        'deleted_at',
         'owner_id',
         'ally_ids',
         'signed_in_at',
@@ -25,7 +30,7 @@ class UserModel extends PermissionLayer{
     protected $beforeUpdate = ['hashPassword'];
     
     protected $validationRules    = [
-        'user_name'     => 'required|alpha_numeric_space|min_length[3]',
+        'user_name'     => 'required|min_length[3]',
         'user_phone'    => 'required|numeric|exact_length[11]|is_unique[user_list.user_phone]',
         'user_email'    => 'if_exist|valid_email|is_unique[user_list.user_email]',
         'user_pass'     => 'required|min_length[6]',
@@ -71,23 +76,56 @@ class UserModel extends PermissionLayer{
     }
     
     public function itemUpdate( $user_id, $user_data ){
-         
+        $this->permitWhere('w');
+        return $this->update(['user_id'=>$user_id],$user_data);
     }
     
     public function itemDelete( $user_id ){
-        
+        $this->permitWhere('w');
+        return $this->delete(['user_id'=>$user_id]);
     }
     
     public function listGet( $filter=null ){
+        if( $filter && $filter['name_query'] ){
+            $clues=explode(' ',$filter['name_query']);
+            foreach($clues as $clue){
+                $this->orLike('user_name',$clue)
+                    ->orLike('user_surname',$clue)
+                    ->orLike('user_middlename',$clue)
+                    ->orLike('user_comment',$clue)
+                    ->orLike('user_phone',$clue)
+                    ->orLike('user_email',$clue);
+            }
+        }
+        if( $filter && $filter['limit'] ){
+            $this->limit($filter['limit']);
+        }
+        $this->orderBy('created_at','DESC');
         $this->permitWhere('r');
         $this->select("
+            user_id,
             user_name,
+            user_surname,
+            user_middlename,
             user_phone,
+            user_phone_verified,
             user_email,
+            user_email_verified,
+            user_comment,
             is_disabled,
             signed_in_at,
-            signed_out_at");
+            signed_out_at,
+            created_at,
+            modified_at,
+            deleted_at");
         $user_list= $this->get()->getResult();
+        
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        foreach($user_list as $user){
+            if($user){
+                $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user->user_id);
+            }
+        }
         return $user_list;        
     }
     
