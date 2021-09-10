@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Api;
+namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
 class User extends \App\Controllers\BaseController{
@@ -21,15 +21,15 @@ class User extends \App\Controllers\BaseController{
         $user_pass=$this->request->getVar('user_pass');
         $user_pass_confirm=$this->request->getVar('user_pass_confirm');
         
-        helper('phoneNumber');
+        helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
-        $UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
+        $user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
         
         if( $UserModel->errors() ){
             return $this->failValidationError(json_encode($UserModel->errors()));
         }
-        return $this->responseCreated();
+        return $this->respondCreated($user_id);
     }
     
     public function signIn(){
@@ -57,19 +57,21 @@ class User extends \App\Controllers\BaseController{
         }
         if( $result=='ok' ){
             $user=$UserModel->getSignedUser();
+            if( !$user ){
+                return $this->fail('user_data_fetch_error');
+            }
             $this->session->set('user_id',$user->user_id);
             $this->session->set('user_data',$user);
-            return $this->respond($user);
+            return $this->respond($user->user_id);
         }
-        return $this->fail(0);
+        return $this->fail($result);
     }
     
     public function signOut(){
         $user_id=$this->session->get('user_id');
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
-        $this->session->destroy();
-        session();
+        session_unset();//clear all session variables
         return $this->respond(1);
     }
     
@@ -193,23 +195,4 @@ class User extends \App\Controllers\BaseController{
     
     
     
-    
-    
-    
-    
-
-    public function get(){
-        $user_id=$this->request->getVar('user_id');
-        permit('userGet');
-    }
-    
-    public function update(){
-        $user_id=$this->request->getVar('user_id');
-        $user_name=$this->request->getVar('user_name');
-        $user_pass=$this->request->getVar('user_pass');
-        $user_phone=$this->request->getVar('user_phone');
-        $user_email=$this->request->getVar('user_email');
-        
-        permit('userUpdate');
-    }
 }

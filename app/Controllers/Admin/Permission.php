@@ -3,19 +3,18 @@
 namespace App\Controllers\Admin;
 
 class Permission extends \App\Controllers\BaseController {
-    
-    public function __construct() {
-        
-    }
-    
+   
     public function index(){
         $this->permission_table();
     }
     
     public function permission_table(){
+        if( !sudo() ){
+            die("Access denied");
+        }
         $method_list=$this->getMethodList();
         $PermissionModel=model('PermissionModel');
-        $permission_list= $PermissionModel->permissionListGet();
+        $permission_list= $PermissionModel->listGet();
         $data=[
             'permission_list'=>$permission_list,
             'method_list'=>$method_list,
@@ -34,7 +33,7 @@ class Permission extends \App\Controllers\BaseController {
     
     private function getMethodList(){
         $method_list=[];
-        $model_files = glob(__DIR__ .'/../../Models/*.php');
+        $model_files = glob(__DIR__ .'/../../Models/*Model.php');
         foreach($model_files as $filename){
             preg_match('/(\w+).php/', $filename, $classes);
             $modelName=$classes[1];
@@ -50,6 +49,6 @@ class Permission extends \App\Controllers\BaseController {
         $permited_method=$this->request->getVar('permited_method');
         $permited_rights=$this->request->getVar('permited_rights');
         $PermissionModel=model('PermissionModel');
-        return $PermissionModel->permissionSave($permited_owner,$permited_class,$permited_method,$permited_rights);
+        return $PermissionModel->itemCreate($permited_owner,$permited_class,$permited_method,$permited_rights);
     }
 }

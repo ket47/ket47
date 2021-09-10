@@ -3,7 +3,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class PermissionModel extends Model{
+class PermissionModel extends PermissionLayer{
     protected $table      = 'user_role_permission_list';
     protected $primaryKey = 'permission_id';
     protected $allowedFields = [
@@ -14,11 +14,31 @@ class PermissionModel extends Model{
         'other'
         ];
     
-    public function permissionListGet(){
-        return $this->get()->getResult();
+    public function listGet(){
+        $this->listFillSession();
+        if( $this->sudo() ){
+            return $this->get()->getResult();
+        }
+        return [];
     }
     
-    public function permissionSave($permited_owner,$permited_class,$permited_method,$permited_rights){
+    public function listFillSession(){
+        $permission_list=$this->get()->getResult();
+        $permissions=[];
+        foreach($permission_list as $perm){
+            $permissions[$perm->permited_class]=[
+                'owner'=>$perm->owner,
+                'ally'=>$perm->ally,
+                'other'=>$perm->other,
+            ];
+        }
+        session()->set('permissions',$permissions);
+    }
+    
+    public function itemCreate($permited_owner,$permited_class,$permited_method,$permited_rights){
+        if( !$this->sudo() ){
+            return false;
+        }
         $permission_id=$this
                 ->where('permited_class',$permited_class)
                 ->where('permited_method',$permited_method)->get()->getRow('permission_id');
@@ -31,4 +51,6 @@ class PermissionModel extends Model{
         }
         return $this->update($permission_id,[$permited_owner=>$permited_rights]);
     }
+    
+    
 }

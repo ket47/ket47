@@ -23,6 +23,12 @@ class Home extends BaseController {
             echo "NOT SIGNED IN";
         }        
     }
+    
+    public function user_list(){
+        $UserModel=model('UserModel');
+        $user_list=$UserModel->listGet();
+        return view('user/list', ['user_list' => $user_list]); 
+    }
 
     public function user_register_form() {
         return view('user/register_form');

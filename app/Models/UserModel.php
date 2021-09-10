@@ -2,10 +2,7 @@
 
 namespace App\Models;
 
-use CodeIgniter\Model;
-
-class UserModel extends Model
-{
+class UserModel extends PermissionLayer{
     private $signed_user_id=0;
     protected $table      = 'user_list';
     protected $primaryKey = 'user_id';
@@ -16,33 +13,16 @@ class UserModel extends Model
         'user_pass',
         'user_email',
         'is_active',
+        'owner_id',
+        'ally_ids',
         'signed_in_at',
         'signed_out_at'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     
-    
-    
-    
     protected $beforeInsert = ['hashPassword'];
     protected $beforeUpdate = ['hashPassword'];
-    protected $beforeDelete = ['hashPassword'];
-    protected $beforeFind = ['hashPassword'];
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
-        parent::__construct($db, $validation);
-        $this->beforeInsert[]='hashPassword';
-        $this->beforeUpdate[]='hashPassword';
-    }
     
     protected $validationRules    = [
         'user_name'     => 'required|alpha_numeric_space|min_length[3]',
@@ -65,7 +45,64 @@ class UserModel extends Model
         return $data;
     }
     
-
+    
+    
+    public function itemGet( $user_id ){
+        $this->permitWhere('r');
+        $user= $this->where('user_id',$user_id)->get()->getRow();
+        if($user){
+            $UserGroupMemberModel=model('UserGroupMemberModel');
+            $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user_id);
+        }
+        unset($user->user_pass);
+        return $user;
+    }
+    
+    public function itemCreate( $user_data ){
+        $this->transStart();
+        $user_id=$this->insert($user_data,true);
+        if( $user_id ){
+            $UserGroupMemberModel=model('UserGroupMemberModel');
+            $UserGroupMemberModel->userGroupJoinByType($user_id,'customer');
+            $this->update($user_id,['owner_id'=>$user_id]);
+        }
+        $this->transComplete();
+        return $user_id;        
+    }
+    
+    public function itemUpdate( $user_id, $user_data ){
+         
+    }
+    
+    public function itemDelete( $user_id ){
+        
+    }
+    
+    public function listGet( $filter=null ){
+        $this->permitWhere('r');
+        $this->select("
+            user_name,
+            user_phone,
+            user_email,
+            is_disabled,
+            signed_in_at,
+            signed_out_at");
+        $user_list= $this->get()->getResult();
+        return $user_list;        
+    }
+    
+    public function listCreate( $user_list_data ){
+        return false;
+    }
+    
+    public function listUpdate( $user_list_data ){
+        return false;
+    }
+    
+    public function listDelete( $user_ids ){
+        return false;
+    }
+    
     
     
     
@@ -89,15 +126,14 @@ class UserModel extends Model
     
     
     public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm){
-        $row=[
+        $user_data=[
             'user_phone'=>$user_phone_cleared,
             'user_name'=>$user_name,
             'user_pass'=>$user_pass,
             'user_pass_confirm'=>$user_pass_confirm,
-            'is_active'=>true
+            'is_disabled'=>0
             ];
-        $ok=$this->insert($row,true);
-        return $ok;
+        return $this->itemCreate($user_data);
     }
     
     public function signOut($user_id){
@@ -118,7 +154,8 @@ class UserModel extends Model
         if( $user->is_disabled ){
             return 'user_is_disabled';
         }
-        
+        $PermissionModel=model('PermissionModel');
+        $PermissionModel->listFillSession();
         $this->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
         $this->signed_user_id=$user->user_id;
         return 'ok' ;
@@ -128,37 +165,9 @@ class UserModel extends Model
         if( !$this->signed_user_id ){
             return null;
         }
-        return $this->getUser( $this->signed_user_id );
+        return $this->itemGet( $this->signed_user_id );
     }
-    
-    private function getUser( $user_id ){
-        
-        if($this->userRole( $user_id )){
-            print($this->userRole( $user_id ));
-        }
-        
-        
-        
-        $sql="
-            SELECT
-                *
-            FROM
-                user_list
-                    JOIN
-                user_group_list USING(user_group_id)
-            WHERE
-                user_id='{$user_id}'
-            ";
-        $user= $this->query($sql)->getRow();
-        if( $user && $user->user_group_id ){
-            $PermissionModel=model('PermissionModel');
-            $user->permissions=$PermissionModel
-                    ->where('user_group_id',$user->user_group_id)
-                    ->get()
-                    ->getResult();
-        }        
-        return $user;
-    }
+
     
     public function getUnverifiedUserIdByPhone($user_phone_cleared){
         $sql="SELECT 
@@ -166,7 +175,7 @@ class UserModel extends Model
             FROM 
                 `user_list` 
             WHERE 
-                `user_phone` = '79787288233' 
+                `user_phone` = '$user_phone_cleared' 
                 AND COALESCE(`user_phone_verified`,0) = 0";
         $user_id = $this->query($sql)->getRow('user_id');
         return $user_id;
