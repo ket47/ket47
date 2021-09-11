@@ -55,11 +55,12 @@ class UserModel extends PermissionLayer{
     public function itemGet( $user_id ){
         $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
+        die($this->getLastQuery());
         if($user){
             $UserGroupMemberModel=model('UserGroupMemberModel');
             $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user_id);
+            unset($user->user_pass);
         }
-        unset($user->user_pass);
         return $user;
     }
     
@@ -195,15 +196,12 @@ class UserModel extends PermissionLayer{
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
         $this->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
-        $this->signed_user_id=$user->user_id;
+        session()->set('user_id',$user->user_id);
         return 'ok' ;
     }
     
     public function getSignedUser(){
-        if( !$this->signed_user_id ){
-            return null;
-        }
-        return $this->itemGet( $this->signed_user_id );
+        return $this->itemGet( session()->get('user_id') );
     }
 
     

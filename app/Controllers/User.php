@@ -68,7 +68,7 @@ class User extends \App\Controllers\BaseController{
         return $this->respond(1);
     }
     /////////////////////////////////////////////
-    //USER OPERATINS SECTION
+    //USER OPERATIONS SECTION
     /////////////////////////////////////////////
     public function itemUpdate(){
         $user_id=$this->request->getVar('user_id');

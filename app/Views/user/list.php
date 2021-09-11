@@ -1,3 +1,4 @@
+    <?=($user_list?'':'No results found')?>
     <?php foreach($user_list as $user):?>
     <h2><?=$user->user_surname?> <?=$user->user_name?></h2>
     <div class="user_card <?=$user->deleted_at?'user_card_deleted':''?>" style="display: grid;grid-template-columns:1fr 1fr">

@@ -54,7 +54,7 @@ class PermissionLayer extends Model{
     public function permitWhere( $right ){
         $permission_filter=$this->permitWhereGet($right);
         if($permission_filter!=""){
-            echo $permission_filter;
+            //echo $permission_filter;
             
             $this->where($permission_filter);
         }
