@@ -1,8 +1,7 @@
 <?php
 namespace App\Models;
 
-use CodeIgniter\Model;
-class PermissionLayer extends Model{
+trait PermissionTrait{
     protected function userRole($item_id){
         $session=session();
         if( sudo() ){
@@ -55,7 +54,6 @@ class PermissionLayer extends Model{
         $permission_filter=$this->permitWhereGet($right);
         if($permission_filter!=""){
             //echo $permission_filter;
-            
             $this->where($permission_filter);
         }
     }
@@ -85,6 +83,7 @@ class PermissionLayer extends Model{
         $owner_has=str_contains($modelPerm['owner'],$right);
         $ally_has=str_contains($modelPerm['ally'],$right);
         $other_has=str_contains($modelPerm['owner'],$right);
+        //echo "owner_has $owner_has ally_has $ally_has other_has $other_has";
         if( $owner_has && $ally_has && $other_has ){
             $permission_filter="";//All granted
         } else
@@ -92,22 +91,22 @@ class PermissionLayer extends Model{
             $permission_filter="0";//All denied
         } else
         if( $owner_has && $ally_has ){//!$other_has
-            $permission_filter="(owner_id='$user_id' OR '$user_id' IN(owner_ally_ids))";
-        } else
-        if( $other_has ){
-            $permission_filter="owner_id<>'$user_id' AND '$user_id' NOT IN(owner_ally_ids)";
+            $permission_filter="(IFNULL(owner_id,0)='$user_id' OR '$user_id' IN(IFNULL(owner_ally_ids,0)))";
         } else
         if( $owner_has && $other_has ){//!$ally_has
-            $permission_filter="'$user_id' NOT IN(owner_ally_ids)";
+            $permission_filter="'$user_id' NOT IN(IFNULL(owner_ally_ids,0))";
         } else
         if( $ally_has ){
-            $permission_filter="'$user_id' IN(owner_ally_ids)";
+            $permission_filter="'$user_id' IN(IFNULL(owner_ally_ids,0))";
         } else
         if( $ally_has && $other_has ){//!$owner_has
-            $permission_filter="owner_id<>'$user_id'";
+            $permission_filter="IFNULL(owner_id,0)<>'$user_id'";
         } else
         if( $owner_has ){
-            $permission_filter="owner_id='$user_id'";
+            $permission_filter="IFNULL(owner_id,0)='$user_id'";
+        } else
+        if( $other_has ){
+            $permission_filter="IFNULL(owner_id,0)<>'$user_id' AND '$user_id' NOT IN(IFNULL(owner_ally_ids,0))";
         }
         return $permission_filter;
     }

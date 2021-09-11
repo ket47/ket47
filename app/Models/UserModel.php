@@ -1,9 +1,11 @@
 <?php
-
 namespace App\Models;
+use CodeIgniter\Model;
 
-class UserModel extends PermissionLayer{
-    private $signed_user_id=0;
+class UserModel extends Model{
+    
+    use PermissionTrait;
+    
     protected $table      = 'user_list';
     protected $primaryKey = 'user_id';
     protected $allowedFields = [
@@ -42,7 +44,7 @@ class UserModel extends PermissionLayer{
             'is_unique' => 'Sorry. That email has already been taken. Please choose another.'
         ]
     ];
-    
+        
     protected function hashPassword(array $data){
         if ( isset($data['data']['user_pass']) ){
             $data['data']['user_pass'] = password_hash($data['data']['user_pass'],PASSWORD_BCRYPT);
@@ -55,7 +57,7 @@ class UserModel extends PermissionLayer{
     public function itemGet( $user_id ){
         $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
-        die($this->getLastQuery());
+        //die($this->getLastQuery());
         if($user){
             $UserGroupMemberModel=model('UserGroupMemberModel');
             $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user_id);
@@ -120,7 +122,6 @@ class UserModel extends PermissionLayer{
             modified_at,
             deleted_at");
         $user_list= $this->get()->getResult();
-        
         $UserGroupMemberModel=model('UserGroupMemberModel');
         foreach($user_list as $user){
             if($user){
@@ -176,7 +177,10 @@ class UserModel extends PermissionLayer{
     }
     
     public function signOut($user_id){
-        $this->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()]);
+        if($user_id){
+            return $this->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()]);
+        }
+        return false;
     }
     
     public function signIn($user_phone,$user_pass){

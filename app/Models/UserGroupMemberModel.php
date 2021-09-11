@@ -1,8 +1,11 @@
 <?php
 namespace App\Models;
+use CodeIgniter\Model;
 
-class UserGroupMemberModel extends PermissionLayer{
-    
+class UserGroupMemberModel extends Model{
+        
+    use PermissionTrait;
+
     protected $table      = 'user_group_member_list';
     protected $primaryKey = 'user_id';
     protected $allowedFields = [

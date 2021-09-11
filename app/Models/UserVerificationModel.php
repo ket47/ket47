@@ -1,11 +1,8 @@
 <?php
-
 namespace App\Models;
-
 use CodeIgniter\Model;
 
-class UserVerificationModel extends Model
-{
+class UserVerificationModel extends Model{
     protected $table      = 'user_verification_list';
     protected $primaryKey = 'user_verification_id';
 

@@ -3,7 +3,10 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class PermissionModel extends PermissionLayer{
+class PermissionModel extends Model{
+    
+    use PermissionTrait;
+    
     protected $table      = 'user_role_permission_list';
     protected $primaryKey = 'permission_id';
     protected $allowedFields = [
