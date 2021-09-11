@@ -5,6 +5,7 @@ use CodeIgniter\Model;
 class UserModel extends Model{
     
     use PermissionTrait;
+    use FilterTrait;
     
     protected $table      = 'user_list';
     protected $primaryKey = 'user_id';
@@ -89,20 +90,7 @@ class UserModel extends Model{
     }
     
     public function listGet( $filter=null ){
-        if( $filter && $filter['name_query'] ){
-            $clues=explode(' ',$filter['name_query']);
-            foreach($clues as $clue){
-                $this->orLike('user_name',$clue)
-                    ->orLike('user_surname',$clue)
-                    ->orLike('user_middlename',$clue)
-                    ->orLike('user_comment',$clue)
-                    ->orLike('user_phone',$clue)
-                    ->orLike('user_email',$clue);
-            }
-        }
-        if( $filter && $filter['limit'] ){
-            $this->limit($filter['limit']);
-        }
+        $this->filterMake( $filter );
         $this->orderBy('created_at','DESC');
         $this->permitWhere('r');
         $this->select("

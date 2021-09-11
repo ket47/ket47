@@ -1,7 +1,7 @@
     <?=($user_list?'':'No results found')?>
     <?php foreach($user_list as $user):?>
     <h2><?=$user->user_surname?> <?=$user->user_name?></h2>
-    <div class="user_card <?=$user->deleted_at?'user_card_deleted':''?>" style="display: grid;grid-template-columns:1fr 1fr">
+    <div class="segment <?=$user->deleted_at?'user_card_deleted':''?>" style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 3fr">
             <div>Имя</div>
             <div>
@@ -98,10 +98,10 @@
     </div>
     <div class="user_card_actions" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
         <div>
-            <button type="button" onclick="UserList.deleteUser(<?=$user->user_id?>)">Удалить пользователя</button>
+            <button type="button" onclick="ItemList.deleteItem(<?=$user->user_id?>)">Удалить пользователя</button>
         </div>
         <div>
-            <button type="button" onclick="UserList.undeleteUser(<?=$user->user_id?>)">Восстановить пользователя</button>
+            <button type="button" onclick="ItemList.undeleteItem(<?=$user->user_id?>)">Восстановить пользователя</button>
         </div>
     </div>
     <hr>

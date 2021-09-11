@@ -5,9 +5,44 @@ namespace App\Controllers;
 class Home extends BaseController {
 
     public function index() {
-        return view('home/dashboard');
+        if( $this->session->get('user_id') ) {
+            return view('home/dashboard');
+        }
+        return view('user/signin_form');
     }
-
+    
+    public function store_manager(){
+        return view('store/store_manager');
+    }
+    public function store_list(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'limit'=>$this->request->getVar('limit')
+        ];
+        $StoreModel=model('StoreModel');
+        $StoreGroupModel=model('StoreGroupModel');
+        $store_list=$StoreModel->listGet($filter);
+        $store_group_list=$StoreGroupModel->listGet();
+        return view('store/store_list', [
+            'store_list' => $store_list,
+            'store_group_list'=>$store_group_list
+                ]);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     public function user_login_form() {
         if( $this->session->get('user_id') ) {
             return "SIGNED IN";
@@ -25,12 +60,13 @@ class Home extends BaseController {
     }
     
     public function user_manager(){
-        return view('user/list_manager');
+        return view('user/user_manager');
     }
     
     public function user_list(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
             'limit'=>$this->request->getVar('limit')
         ];
         $UserModel=model('UserModel');

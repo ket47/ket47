@@ -1,0 +1,1 @@
+<?=view('common/item_manager',['item_name'=>'store','ItemName'=>'Store'])?>

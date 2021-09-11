@@ -1,3 +1,4 @@
+<?=view('home/header')?>
 <div class="search_bar">
     <input type="search" placeholder="Filter">
 </div>
@@ -30,8 +31,6 @@
         background-color: #ffa;
     }
 </style>
-<script src="/js/jquery-3.5.1.min.js"></script>
-
 <script type="text/javascript">
     UserList={
         init:function (){
@@ -94,3 +93,4 @@
     };
     $(UserList.init);
 </script>
+<?=view('home/footer')?>

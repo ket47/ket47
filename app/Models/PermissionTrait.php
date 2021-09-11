@@ -2,7 +2,7 @@
 namespace App\Models;
 
 trait PermissionTrait{
-    protected function userRole($item_id){
+    public function userRole($item_id){
         $session=session();
         if( sudo() ){
             return 'admin';
@@ -24,7 +24,7 @@ trait PermissionTrait{
         return $this->query($sql)->getRow('user_role');
     }
     
-    protected function permit( $item_id, $right ){
+    public function permit( $item_id, $right ){
         $class_name=(new \ReflectionClass($this))->getShortName();
         $permission_name="permission.{$class_name}.{$item_id}.{$right}";
         $permission=session()->get($permission_name);

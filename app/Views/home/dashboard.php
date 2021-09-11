@@ -1,37 +1,22 @@
-<html>
-    <head>
-        <title></title>
-        <style>
-            html,body{
-                margin: 0px;
-                padding: 0px;
-            }
-            .dash_menu{
-                padding: 5px;
-            }
-        </style>
-    </head>
-    <body>
-        <div style="display: grid;grid-template-columns:1fr 7fr">
-            <div class="dash_menu">
-                <a href="javascript:scr.location.reload()">RELOAD</a><br><br>
-                <a href="Admin/Permission/" target="scr">PERMISSIONS</a><br>
-                <hr>
-                <h3>Users</h3>
-                <a href="Home/user_data" target="scr">user data</a><br>
-                <a href="Home/user_manager" target="scr">user manager</a><br>
-                <a href="Home/user_register_form" target="scr">register</a><br>
-                <a href="Home/user_login_form" target="scr">login</a><br>
-                <a href="User/signOut" target="scr">logout</a><br>
-                <a href="Home/user_password_reset" target="scr">pass reset</a><br>
-                <a href="Home/user_phone_verification" target="scr">phone verification</a><br>
+<?=view('home/header')?>
+    <div style="display: grid;grid-template-columns:1fr 6fr">
+        <div class="dash_menu">
+            <a href="javascript:scr.location.reload()">RELOAD</a><br><br>
 
+            <hr>
 
-
-
-            </div>
-            <iframe name="scr" style="width:100%;height: 100vh;border: none;"></iframe>
+            <h3>Stores</h3>
+            <a href="Home/store_manager" target="scr">Stores</a><br>
+            <h3>Permissions</h3>
+            <a href="Admin/Permission/" target="scr">Permissions</a><br>
+            <h3>Users</h3>
+            <a href="Home/user_manager" target="scr">Users</a><br>
+            <a href="Home/user_register_form" target="scr">Sign Up</a><br>
+            <a href="Home/user_login_form" target="scr">Sign In</a><br>
+            <a href="User/signOut" target="scr">Sign Out</a><br>
+            <a href="Home/user_password_reset" target="scr">Password Reset</a><br>
+            <a href="Home/user_phone_verification" target="scr">Password Verification</a><br>
         </div>
-    </body>
-</html>
-
+        <iframe name="scr" style="width:100%;height: 100vh;border: none;"></iframe>
+    </div>
+<?=view('home/footer')?>
