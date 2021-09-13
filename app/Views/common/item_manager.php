@@ -6,8 +6,11 @@
     <div class="item_list"></div>
 </div>
 <style>
-    .item_list{
-        
+    .item_deleted{
+        background-color: #fdd;
+    }
+    .item_disabled{
+        background-color: #ddd;
     }
 </style>
 <script type="text/javascript">
@@ -26,11 +29,11 @@
                 if( subtype==='time' ){
                     value=ItemList.val( $(`input[name='${name}.${item_id}.date']`) )+' '+value+':00';
                 }
-//                if( name==='item_group_id' ){
-//                    ItemList.saveItemMemberGroup(item_id,subtype,value);
-//                } else {
-//                    ItemList.saveItem(item_id,name,value);
-//                }
+                if( name==='<?=$item_name?>_group_id' ){
+                    ItemList.saveItemMemberGroup(item_id,subtype,value);
+                } else {
+                    ItemList.saveItem(item_id,name,value);
+                }
             });
             $('.search_bar').on('input',function(e){
                 ItemList.reload();
@@ -40,18 +43,22 @@
         val:function( $input ){
             return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
-        saveItem:function (item_id,name,value){
-            $.post('/<?=$ItemName?>/itemUpdate',{item_id,name,value});
+        saveItem:function (<?=$item_name?>_id,name,value){
+            $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name,value}).done(function(){
+                if( name==='is_disabled' ){
+                    ItemList.reload();
+                }
+            });
         },
-        saveItemMemberGroup:function (item_id,item_group_id,value){
-            $.post('/<?=$ItemName?>MemberGroup/itemUpdate',{item_id,item_group_id,value});
+        saveItemMemberGroup:function (<?=$item_name?>_id,<?=$item_name?>_group_id,value){
+            $.post('/<?=$ItemName?>MemberGroup/itemUpdate',{<?=$item_name?>_id,<?=$item_name?>_group_id,value});
         },
-        deleteItem:function( item_id ){
-            $.post('/<?=$ItemName?>/itemDelete',{item_id}).done(ItemList.reload);
+        deleteItem:function( <?=$item_name?>_id ){
+            $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
-        undeleteItem:function( item_id ){
+        undeleteItem:function( <?=$item_name?>_id ){
             var name='deleted_at';
-            $.post('/<?=$ItemName?>/itemUpdate',{item_id,name}).done(ItemList.reload);
+            $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name}).done(ItemList.reload);
         },
         reload_promise:null,
         reload:function(){

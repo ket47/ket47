@@ -6,6 +6,33 @@ use \CodeIgniter\API\ResponseTrait;
 class User extends \App\Controllers\BaseController{
     use ResponseTrait;
     /////////////////////////////////////////////
+    //USER OPERATIONS SECTION
+    /////////////////////////////////////////////
+    public function itemUpdate(){
+        $user_id=$this->request->getVar('user_id');
+        $field_name=$this->request->getVar('name');
+        $field_value=$this->request->getVar('value');
+        $UserModel=model('UserModel');
+        $ok=$UserModel->itemUpdate($user_id,[$field_name=>$field_value]);
+        if( $ok ){
+            return $this->respondUpdated(1);
+        }
+        if( $UserModel->errors() ){
+            return $this->failValidationError(json_encode($UserModel->errors()));
+        }
+        return $this->fail(0);
+    }
+    
+    public function itemDelete(){
+        $user_id=$this->request->getVar('user_id');
+        $UserModel=model('UserModel');
+        $ok=$UserModel->itemDelete($user_id);
+        if( $UserModel->errors() ){
+            return $this->failValidationError(json_encode($UserModel->errors()));
+        }
+        return $this->respondDeleted($ok);        
+    }
+    /////////////////////////////////////////////
     //LOGIN SECTION
     /////////////////////////////////////////////
     public function signUp() {
@@ -67,61 +94,6 @@ class User extends \App\Controllers\BaseController{
         session_unset();//clear all session variables
         return $this->respond(1);
     }
-    /////////////////////////////////////////////
-    //USER OPERATIONS SECTION
-    /////////////////////////////////////////////
-    public function itemUpdate(){
-        $user_id=$this->request->getVar('user_id');
-        $field_name=$this->request->getVar('name');
-        $field_value=$this->request->getVar('value');
-        $UserModel=model('UserModel');
-        $ok=$UserModel->itemUpdate($user_id,[$field_name=>$field_value]);
-        if( $ok ){
-            return $this->respondUpdated(1);
-        }
-        if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
-        }
-        return $this->fail(0);
-    }
-    
-    public function itemDelete(){
-        $user_id=$this->request->getVar('user_id');
-        $UserModel=model('UserModel');
-        $ok=$UserModel->itemDelete($user_id);
-        if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
-        }
-        return $this->respondDeleted($ok);        
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     public function passwordReset(){
         $user_phone=$this->request->getVar('user_phone');

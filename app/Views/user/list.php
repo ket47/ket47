@@ -1,8 +1,8 @@
     <?=($user_list?'':'No results found')?>
     <?php foreach($user_list as $user):?>
     <h2><?=$user->user_surname?> <?=$user->user_name?></h2>
-    <div class="segment <?=$user->deleted_at?'user_card_deleted':''?>" style="display: grid;grid-template-columns:1fr 1fr">
-        <div style="display:grid;grid-template-columns:1fr 3fr">
+    <div class="segment <?=$user->deleted_at?'item_deleted':''?> <?=$user->is_disabled?'item_disabled':''?>" style="display: grid;grid-template-columns:1fr 1fr">
+        <div style="display:grid;grid-template-columns:1fr 2fr">
             <div>Имя</div>
             <div>
                 <input type="text" name="user_name.<?=$user->user_id?>" value="<?=$user->user_name?>"/>
@@ -36,7 +36,7 @@
             </div>
 
         </div>
-        <div style="display:grid;grid-template-columns:1fr 3fr">
+        <div style="display:grid;grid-template-columns:1fr 2fr">
 
             <div>Телефон подтвержден</div>
             <div>
@@ -104,5 +104,5 @@
             <button type="button" onclick="ItemList.undeleteItem(<?=$user->user_id?>)">Восстановить пользователя</button>
         </div>
     </div>
-    <hr>
+    <hr style="border:1px inset #ccc">
     <?php endforeach;?>

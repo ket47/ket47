@@ -29,10 +29,11 @@
                 width:250px;
             }
             .segment{
-                box-shadow: 3px 5px 8px #ddd;
-                border:solid 1px #ddd;
+                box-shadow: 3px 5px 8px #ccc;
+                border:solid 1px #ccc;
                 border-radius: 5px;
                 padding: 10px;
+                margin-bottom: 8px;
             }
             .search_bar input{
                 width:100%;
