@@ -38,20 +38,18 @@ class UpdateInstaller {
     public function appUpdate($action = 'download') {
     	switch( $action ){
     	    case 'download':
-    		    return $this->updateDownload(BAY_UPDATE_URL, $this->zipPath);
-    		    break;
-    	    case 'unpack':
-    		    return $this->updateUnpack();
-    		    break;
+                return $this->updateDownload(BAY_UPDATE_URL, $this->zipPath);
+                return $this->updateUnpack();
+                break;
     	    case 'swap':
-    		    return $this->updateSwap();
-    		    break;
+                return $this->updateSwap();
+                break;
     	    case 'install':
-    		    return $this->freshDbInstall();
-    		    break;
-    		default:
-    		    $this->index();
-    		    break;
+                return $this->freshDbInstall();
+                break;
+            default:
+                $this->index();
+                break;
     	}
     }
 
