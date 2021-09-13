@@ -79,17 +79,20 @@ class UpdateInstaller {
     private function updateSwap() {
     	if (file_exists($this->dirBackup)) {
             exec("rm -r {$this->dirBackup}");
-    	} else {
-            mkdir($this->dirBackup, 0700, true);
-        }
+    	}
+        mkdir($this->dirBackup, 0700, true);
+
     	
-    	if (file_exists($this->dirApplication)) {
+    	if ( file_exists($this->dirApplication) && file_exists($this->dirUpdate) ) {
             exec("mv {$this->dirApplication}app {$this->dirBackup}app 2>&1",$output);
             exec("mv {$this->dirUpdate}app {$this->dirApplication}app 2>&1",$output);
+            
             exec("mv {$this->dirApplication}public {$this->dirBackup}public 2>&1",$output);
             exec("mv {$this->dirUpdate}public {$this->dirApplication}public 2>&1",$output);
             exec("cp {$this->dirApplication}../.env {$this->dirApplication}.env 2>&1",$output);
-    	}
+    	} else {
+            echo "{$this->dirApplication} or {$this->dirUpdate} not exists";
+        }
     	
         exec("rm -r {$this->dirUnpack}");
     	return false;
