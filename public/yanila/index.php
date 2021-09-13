@@ -5,18 +5,17 @@ define('BAY_UPDATE_URL','http://github.com/ket47/ket47/archive/master.zip');
 class UpdateInstaller {
     private $link;
     private $dirParent;
-    private $dirWork;
+    private $dirApplication;
     private $dirUnpack;
     private $dirBackup;
     private $zipPath;
-    private $zipSubFolder;
+    private $dirUpdate;
     private $dirDbBackup;
     
     public function index(){
         $url =  "//{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
         ?>
         <a href="<?=$url?>&step=download" target="action">Download</a><br>
-        <a href="<?=$url?>&step=unpack" target="action">Unpack</a><br>
         <a href="<?=$url?>&step=swap" target="action">Swap</a><br>
         <a href="<?=$url?>&step=install" target="action">Install</a><br>
         <?php
@@ -27,12 +26,12 @@ class UpdateInstaller {
     	$this->dirParent = realpath('../../../');
     	$this->dirDbBackup=$this->dirParent."/TEZKEL_STORAGE/";
     	
-    	$this->dirWork     = $this->dirParent . '/application/';
+    	$this->dirApplication     = $this->dirParent . '/application/';
     	$this->dirUnpack   = $this->dirParent . '/_update/';
     	$this->dirBackup   = $this->dirParent . '/_backup/';
+        
     	$this->zipPath     = $this->dirUnpack . '/update.zip';
-    	
-    	$this->zipSubFolder = $this->dirUnpack . "/ket47-master/";
+    	$this->dirUpdate = $this->dirUnpack . "/ket47-master/";
     }
     
     public function appUpdate($action = 'download') {
@@ -54,8 +53,7 @@ class UpdateInstaller {
     }
 
     private function updateDownload($updateUrl, $updateFile) {
-    	set_time_limit(240);
-    	echo mkdir(dirname($updateFile), 0700, true);
+    	mkdir(dirname($updateFile), 0700, true);
     	if(!copy($updateUrl,$updateFile))
         {
             $errors= error_get_last();
@@ -67,8 +65,7 @@ class UpdateInstaller {
     }
 
     private function updateUnpack() {
-        set_time_limit(60);
-    	$this->delTree($this->zipSubFolder);
+    	$this->delTree($this->dirUpdate);
     	$zip = new ZipArchive;
     	if ($zip->open($this->zipPath) === TRUE) {
     	    $zip->extractTo($this->dirUnpack);
@@ -81,40 +78,22 @@ class UpdateInstaller {
 
     private function updateSwap() {
     	if (file_exists($this->dirBackup)) {
-    	    $this->delTree($this->dirBackup);
+            exec("rm -r {$this->dirBackup}");
+    	} else {
+            mkdir($this->dirBackup, 0700, true);
+        }
+    	
+    	if (file_exists($this->dirApplication)) {
+            exec("mv {$this->dirApplication}app {$this->dirBackup}app 2>&1",$output);
+            exec("mv {$this->dirUpdate}app {$this->dirApplication}app 2>&1",$output);
+            exec("mv {$this->dirApplication}public {$this->dirBackup}public 2>&1",$output);
+            exec("mv {$this->dirUpdate}public {$this->dirApplication}public 2>&1",$output);
+            exec("cp {$this->dirApplication}../.env {$this->dirApplication}.env 2>&1",$output);
     	}
     	
-    	if (file_exists($this->dirWork)) {
-    	    
-    	    //print exec("mv $this->dirWork $this->dirBackup 2>&1",$output);
-    	    //print_r($output);
-    	    
-    	    
-    	    $this->loopRename($this->dirWork, $this->dirBackup);
-    	}
-    	//die($this->dirWork);
-    	
-    	if (!file_exists($this->dirWork) && file_exists($this->zipSubFolder)) {
-    	    return rename($this->zipSubFolder, $this->dirWork) &&
-    		   $this->delTree($this->dirUnpack) && $this->delTree($this->dirBackup);
-    	}
+        exec("rm -r {$this->dirUnpack}");
     	return false;
     }
-
-    private function loopRename($old, $new) {
-    	set_time_limit(5);
-    	while (true) {
-    	    if (rename($old, $new)) {
-    	    	return true;
-    	    }
-            $errors= error_get_last();
-            echo "<br />\nRENAME ERROR: ".$errors['type'];
-            echo "".$errors['message'];
-    	    usleep(rand(10, 100));
-    	}
-    	return false;
-    }
-
     
     
     
@@ -127,7 +106,7 @@ class UpdateInstaller {
     	if( $this->checkAdminExists() ){
     	    return true;//'admin_exists';
     	}
-    	$file = str_replace("\\", "/", $this->dirWork . '/install/fresh_db_dump.sql');
+    	$file = str_replace("\\", "/", $this->dirApplication . '/install/fresh_db_dump.sql');
     	$this->query("CREATE DATABASE IF NOT EXISTS " . BAY_DB_NAME." DEFAULT CHARACTER SET utf8");
     	return $this->backupImportExecute($file);
     }
@@ -162,7 +141,7 @@ class UpdateInstaller {
     
         private function checkInstalled(){
     	$status='';
-    	if( file_exists($this->dirWork) && file_exists($this->dirWork.'/index.php') ){
+    	if( file_exists($this->dirApplication) && file_exists($this->dirApplication.'/index.php') ){
     	    $status.=' files_ok';
     	}
     	if( $this->query("SHOW DATABASES LIKE '" . BAY_DB_NAME . "'") ){
@@ -175,7 +154,7 @@ class UpdateInstaller {
     }
     
     private function setupConf() {
-    	$conf_file = $this->dirWork . "/conf" . rand(1, 1000);
+    	$conf_file = $this->dirApplication . "/conf" . rand(1, 1000);
     	$conf = '[client]
     	    user="' . BAY_DB_USER . '"
     	    password="' . BAY_DB_PASS . '"';
@@ -241,14 +220,3 @@ if ( isset($_GET['subhanaka']) && $_GET['subhanaka']='tabarakasmuka' ) {
     </body></html>
     <?php
 }
-
-
-
-
-
-
-
-
-
-
-
