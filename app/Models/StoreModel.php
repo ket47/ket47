@@ -15,19 +15,25 @@ class StoreModel extends Model{
         'store_coordinates',
         'store_description',
         'is_disabled',
+        'deleted_at',
         'owner_id',
         'owner_ally_id'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     
-    
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
         $this->permitWhere('r');
-        return $this->get()->getResult();
+        $store_list = $this->get()->getResult();
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        foreach($store_list as $store){
+            if($store){
+                $store->member_of_groups=$StoreGroupMemberModel->storeMemberGroupsGet($store->store_id);
+            }
+        }
+        return $store_list;
     }
-    
     
     
     
@@ -37,12 +43,46 @@ class StoreModel extends Model{
     
     
     public function itemGet( $store_id ){
-        $store_list=$this->listGet( ['store_id'] );
+        $store_list=$this->listGet( ['store_id'=>$store_id] );
         if( !$store_list ){
             return [];
         }
         return $store_list[0];
     }
+    
+    public function itemCreate( $name ){
+        if( !$this->permit(null,'r') ){
+            return 'item_create_forbidden';
+        }
+        $user_id=session()->get('user_id');
+        $store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
+        if( $store_id ){
+            return 'item_create_dublicate';
+        }
+        $ok=$this->insert(['store_name'=>$name]);
+        if( $ok ){
+            return 'ok';
+        }
+        return 'item_create_error';
+    }
+    
+    public function itemUpdate( $store_id, $store_data ){
+        $this->permitWhere('w');
+        return $this->update(['store_id'=>$store_id],$store_data);
+    }
+    
+    public function itemDelete( $store_id ){
+        $this->permitWhere('w');
+        return $this->delete(['store_id'=>$store_id]);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
     
     
 }

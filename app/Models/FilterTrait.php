@@ -11,7 +11,7 @@ trait FilterTrait{
         if( $filter['show_disabled']??=0 ){
             $this->where('is_disabled',0);
         }
-        if( $filter['name_query']??=0 && $filter['name_query_fields']??=0 ){
+        if( isset($filter['name_query']) && isset($filter['name_query_fields']) ){
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){

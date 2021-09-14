@@ -17,6 +17,7 @@ class Home extends BaseController {
     public function store_list(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
             'limit'=>$this->request->getVar('limit')
         ];
         $StoreModel=model('StoreModel');

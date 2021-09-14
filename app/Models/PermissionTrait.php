@@ -26,24 +26,28 @@ trait PermissionTrait{
     
     public function permit( $item_id, $right ){
         $class_name=(new \ReflectionClass($this))->getShortName();
-        $permission_name="permission.{$class_name}.{$item_id}.{$right}";
-        $permission=session()->get($permission_name);
-        if( !isset($permission) ){
-            if( $item_id ){
-                $user_role=$this->userRole($item_id);
-            } else {
-                $user_role='owner';
-            }
-            $permission=0;
-            if($user_role=='admin'){
-                $permission=1;//grant all permissions to admin
-            } else
-            if( isset($this->permissions[$class_name][$user_role]) ){
-                $rights=$this->permissions[$class_name][$user_role];
-                $permission=str_contains($rights,$right)?1:0;
-            }
-            session()->set($permission_name,$permission);
+        $permission_name="permit.{$class_name}.{$item_id}.{$right}";
+        
+        $cached_permission=session()->get($permission_name);
+        if( isset($cached_permission) ){
+            return $cached_permission;
         }
+        $permissions=session()->get('permissions');
+        if( $item_id ){
+            $user_role=$this->userRole($item_id);
+        } else {
+            $user_role='owner';
+        }
+        $permission=0;
+
+        if($user_role=='admin'){
+            $permission=1;//grant all permissions to admin
+        } else
+        if( isset($permissions[$class_name][$user_role]) ){
+            $rights=$permissions[$class_name][$user_role];
+            $permission=str_contains($rights,$right)?1:0;
+        }
+        session()->set($permission_name,$permission);
         if(!$permission){
             header("X-permission-info: Access denied for {$class_name}.{$item_id}.{$right}");
         }

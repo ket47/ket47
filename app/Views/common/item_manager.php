@@ -3,6 +3,7 @@
     <div class="search_bar">
         <input type="search" placeholder="Filter">
     </div>
+    <button onclick="ItemList.addItem();">Add new Item</button>
     <div class="item_list"></div>
 </div>
 <style>
@@ -59,6 +60,16 @@
         undeleteItem:function( <?=$item_name?>_id ){
             var name='deleted_at';
             $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name}).done(ItemList.reload);
+        },
+        addItem:function(){
+            var name="NEW ITEM";
+            $.post('/<?=$ItemName?>/itemCreate',{name}).done(function(){
+                $('.search_bar input').val(name);
+                ItemList.reload();
+            }).fail(function(response){
+                var resp=JSON.parse(response.responseText);
+                console.log(resp.messages.error);
+            });
         },
         reload_promise:null,
         reload:function(){

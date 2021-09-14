@@ -8,6 +8,10 @@ class User extends \App\Controllers\BaseController{
     /////////////////////////////////////////////
     //USER OPERATIONS SECTION
     /////////////////////////////////////////////
+    public function itemCreate(){
+        return $this->signUp();
+    }
+    
     public function itemUpdate(){
         $user_id=$this->request->getVar('user_id');
         $field_name=$this->request->getVar('name');

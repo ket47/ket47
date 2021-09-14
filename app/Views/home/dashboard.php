@@ -2,13 +2,19 @@
     <div style="display: grid;grid-template-columns:1fr 6fr">
         <div class="dash_menu">
             <a href="javascript:scr.location.reload()">RELOAD</a><br><br>
-
             <hr>
-
-            <h3>Stores</h3>
-            <a href="Home/store_manager" target="scr">Stores</a><br>
             <h3>Permissions</h3>
             <a href="Admin/Permission/" target="scr">Permissions</a><br>
+
+            
+            
+            
+            
+            
+            <h3>Products</h3>
+            <a href="Home/product_manager" target="scr">Product</a><br>
+            <h3>Stores</h3>
+            <a href="Home/store_manager" target="scr">Stores</a><br>
             <h3>Users</h3>
             <a href="Home/user_manager" target="scr">Users</a><br>
             <a href="Home/user_register_form" target="scr">Sign Up</a><br>
