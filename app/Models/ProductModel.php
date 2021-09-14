@@ -52,11 +52,11 @@ class ProductModel extends Model{
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet(['store_id'=>$store_id]);
         if( !$store ){
-            return false;
+            return 'list_create_error_nostore';
         }
         $permission_granted=$StoreModel->permit($store_id,'w');
         if( !$permission_granted ){
-            return false;
+            return 'list_create_error_forbidden';
         }
         $this->current_store_id=$store->store_id;
         $this->current_store_owner=$store->owner_id;
@@ -75,5 +75,13 @@ class ProductModel extends Model{
     
     public function listDelete( $product_ids ){
         $this->delete($product_ids);
+    }
+    
+    
+    
+    
+    
+    public function itemCreate( $store_id, $product_name ){
+        return $this->listCreate($store_id, [ ['product_name'=>$product_name] ]);
     }
 }

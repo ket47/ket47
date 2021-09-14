@@ -6,6 +6,17 @@ use \CodeIgniter\API\ResponseTrait;
 class Store extends \App\Controllers\BaseController{
     use ResponseTrait;
     
+    public function listGet(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'limit'=>$this->request->getVar('limit')
+        ];
+        $StoreModel=model('StoreModel');
+        $store_list=$StoreModel->listGet($filter);
+        return $store_list;
+    }
+    
     public function itemCreate(){
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');

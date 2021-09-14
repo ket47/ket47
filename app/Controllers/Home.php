@@ -11,6 +11,31 @@ class Home extends BaseController {
         return view('user/signin_form');
     }
     
+    public function product_manager(){
+        return view('product/product_manager');
+    }
+    public function product_list(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'limit'=>$this->request->getVar('limit')
+        ];
+        $ProductModel=model('ProductModel');
+        $ProductGroupModel=model('ProductGroupModel');
+        $product_list=$ProductModel->listGet($filter);
+        $product_group_list=$ProductGroupModel->listGet();
+        return view('store/store_list', [
+            'product_list' => $product_list,
+            'product_group_list'=>$product_group_list
+            ]);
+    }
+    
+    
+    
+    
+    
+    
+    
     public function store_manager(){
         return view('store/store_manager');
     }

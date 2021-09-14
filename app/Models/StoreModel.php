@@ -51,13 +51,13 @@ class StoreModel extends Model{
     }
     
     public function itemCreate( $name ){
-        if( !$this->permit(null,'r') ){
-            return 'item_create_forbidden';
+        if( !$this->permit(null,'w') ){
+            return 'item_create_error_forbidden';
         }
         $user_id=session()->get('user_id');
         $store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
         if( $store_id ){
-            return 'item_create_dublicate';
+            return 'item_create_error_dublicate';
         }
         $ok=$this->insert(['store_name'=>$name]);
         if( $ok ){

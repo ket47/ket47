@@ -13,7 +13,14 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function listCreate(){
-        
+        $store_id=$this->request->getVar('store_id');
+        $product_list=$this->request->getVar('product_list');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->listCreate($store_id,$product_list);
+        if( $result=='ok' ){
+            return $this->respondCreated();
+        }
+        return $this->fail($result);        
     }
     
     public function listUpdate(){
@@ -32,6 +39,14 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
+        $store_id=$this->request->getVar('store_id');
+        $product_name=$this->request->getVar('product_name');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemCreate($store_id,$product_name);
+        if( $result=='ok' ){
+            return $this->respondCreated();
+        }
+        return $this->fail($result);        
         
     }
     
