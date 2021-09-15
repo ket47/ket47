@@ -65,20 +65,7 @@ class BaseController extends Controller
             $this->response->send();
             die();
         }
-        
-        
-        public function permit(){
-            $router = \Config\Services::router(null, $this->request);
-            $controller_name=get_class($this);
-            $method_name=$router->methodName();
-            
-            $permission=$controller_name.'::'.$method_name;
-            $permissions=$this->session->get('user_permissions');
-            if( $permissions && in_array("|$permission|", $permissions) ){
-                return true;
-            }
-            //$this->error( 401, $error_token='permission_denied', 'Unsufficient rights for operation' );
-        } 
+    
         
         
 }
