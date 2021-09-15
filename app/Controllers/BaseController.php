@@ -65,7 +65,4 @@ class BaseController extends Controller
             $this->response->send();
             die();
         }
-    
-        
-        
 }
