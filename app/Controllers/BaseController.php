@@ -48,21 +48,19 @@ class BaseController extends Controller
 	 * @param ResponseInterface $response
 	 * @param LoggerInterface   $logger
 	 */
-	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
-	{
+	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
 		// Do Not Edit This Line
 		parent::initController($request, $response, $logger);
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
 		$this->session = \Config\Services::session();
-                $this->permit();
 	}
         
-        protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
-            $this->response->setStatusCode($error_code,$error_description);
-            $this->response->setBody($error_token);
-            $this->response->send();
-            die();
-        }
+	protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
+		$this->response->setStatusCode($error_code,$error_description);
+		$this->response->setBody($error_token);
+		$this->response->send();
+		die();
+	}
 }

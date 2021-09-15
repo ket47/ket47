@@ -1,7 +1,16 @@
 <?=view('home/header')?>
+<?=$html_before??'' ?>
 <div style="padding: 20px;">
-    <div class="search_bar">
-        <input type="search" placeholder="Filter">
+    <div class="filter segment">
+        <input type="search" id="item_name_search" placeholder="Filter">
+        <div>
+            <label for="item_deleted">Active items</label>
+            <input type="checkbox" id="item_active" name="is_active" checked="checked">
+            <label for="item_deleted">Deleted items</label>
+            <input type="checkbox" id="item_deleted" name="is_deleted">
+            <label for="item_disabled">Disabled items</label>
+            <input type="checkbox" id="item_disabled" name="is_disabled">
+        </div>
     </div>
     <button onclick="ItemList.addItem();">Add new Item</button>
     <div class="item_list"></div>
@@ -36,7 +45,11 @@
                     ItemList.saveItem(item_id,name,value);
                 }
             });
-            $('.search_bar').on('input',function(e){
+            $('.filter').on('change',function(e){
+                var $input=$(e.target);
+                var value=ItemList.val($input);
+                var name=$input.attr('name');
+                ItemList.reloadFilter[name]=value;
                 ItemList.reload();
             });
             ItemList.reload();
@@ -61,29 +74,29 @@
             var name='deleted_at';
             $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name}).done(ItemList.reload);
         },
+        addItemRequest:{},
         addItem:function(){
-            var name="NEW ITEM";
-            $.post('/<?=$ItemName?>/itemCreate',{name}).done(function(){
-                $('.search_bar input').val(name);
+            ItemList.addItemRequest.name="NEW ITEM";
+            $.post('/<?=$ItemName?>/itemCreate',this.addItemRequest).done(function(){
+                $('.search_bar input').val(ItemList.addItemRequest.name);
                 ItemList.reload();
             }).fail(function(response){
-                var resp=JSON.parse(response.responseText);
-                console.log(resp.messages.error);
+                
             });
         },
         reload_promise:null,
+        reloadFilter:{},
         reload:function(){
             if(ItemList.reload_promise){
                 ItemList.reload_promise.abort();
             }
             var name_query=$('.search_bar input').val();
             var name_query_fields='<?=$name_query_fields?>';
-            var filter={
-                name_query,
-                name_query_fields,
-                limit:30
-            };
-            ItemList.reload_promise=$.post('/Home/<?=$item_name?>_list',filter).done(function(response){
+            var limit=30;
+            ItemList.reloadFilter.name_query=name_query;
+            ItemList.reloadFilter.name_query_fields=name_query_fields;
+            ItemList.reloadFilter.limit=limit;
+            ItemList.reload_promise=$.post('/Home/<?=$item_name?>_list',ItemList.reloadFilter).done(function(response){
                 $('.item_list').html(response);
             }).fail(function(error){
                 $('.item_list').html(error);
@@ -92,4 +105,5 @@
     };
     $(ItemList.init);
 </script>
+<?=$html_after??'' ?>
 <?=view('home/footer')?>

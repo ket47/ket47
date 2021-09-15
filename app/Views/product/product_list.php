@@ -11,7 +11,7 @@
 
             <div>Код</div>
             <div>
-                <input type="text" name="product_code.<?=$product->product_id?>" value="<?=$product->product_phone?>"/>
+                <input type="text" name="product_code.<?=$product->product_id?>" value="<?=$product->product_code?>"/>
             </div>
 
 

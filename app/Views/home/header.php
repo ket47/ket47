@@ -2,12 +2,22 @@
     <head>
         <title></title>
         <script src="/js/jquery-3.5.1.min.js"></script>
+        <script>
+            $(document).ajaxComplete(function (event, xhr, settings) {
+                if(xhr.status>299){
+                    alert('Server error: '+xhr.status+'\n'+xhr.responseText);
+                }
+            });
+
+        </script>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap');
+
             html,body{
                 margin: 0px;
                 padding: 0px;
-                font-family: 'Poppins', sans-serif;
+                font-family: 'Raleway', sans-serif;
+                background-color:#fcfcff;
             }
             .dash_menu{
                 padding: 10px;
@@ -32,11 +42,12 @@
                 box-shadow: 3px 5px 8px #ccc;
                 border:solid 1px #ccc;
                 border-radius: 5px;
+                background-color:#fff;
                 padding: 10px;
                 margin-bottom: 8px;
             }
-            .search_bar input{
-                width:100%;
+            .filter #item_name_search{
+                width:calc( 100% - 10px );
                 padding: 5px;
                 border: 1px solid #ddd;
                 background-color: #ffa;

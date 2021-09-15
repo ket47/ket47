@@ -16,9 +16,6 @@ class ProductModel extends Model{
         'product_description',
         'product_weight',
         'product_price',
-        'is_disabled',
-        'owner_id',
-        'owner_ally_id'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -27,6 +24,7 @@ class ProductModel extends Model{
         'product_name'     => 'required|min_length[3]',
         'product_price'    => 'required|numeric'
     ];
+    
     protected $beforeInsert = ['onBeforeInsert'];
     protected $beforeUpdate = ['onBeforeUpdate'];
     protected function onBeforeInsert(array $data){
@@ -35,10 +33,24 @@ class ProductModel extends Model{
         return $data;
     }
     protected function onBeforeUpdate(array $data){
-        $data['data']['store_id']=$this->current_store_id;
+        if( $this->current_store_id ){
+            $data['data']['store_id']=$this->current_store_id;
+        }
         return $data;
     }
     
+    public function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
+        parent::__construct($db, $validation);
+        if( sudo() ){
+            $adminAllowedFields=[
+                'is_disabled',
+                'deleted_at',
+                'owner_id',
+                'owner_ally_id'
+                ];
+            $this->allowedFields=array_merge($this->allowedFields,$adminAllowedFields);
+        }
+    }
     
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
@@ -48,7 +60,11 @@ class ProductModel extends Model{
     }
     
     
-    public function listCreate( $store_id, $list ){
+    public function listCreate( $list ){
+        if( !$list || !$list[0] ){
+            return 'list_create_error_empty';
+        }
+        $store_id=$list[0]['store_id'];
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet(['store_id'=>$store_id]);
         if( !$store ){
@@ -63,25 +79,46 @@ class ProductModel extends Model{
         return $this->insertBatch($list,true);
     }
     
-    public function listUpdate( $store_id, $list ){
-        $this->current_store_id=$store_id;
-        $StoreModel=model('StoreModel');
-        $permission_granted=$StoreModel->permit($store_id,'w');
-        if( !$permission_granted ){
-            return false;
+    public function listUpdate( $list ){
+        if( !$list || !$list[0] ){
+            return 'list_update_error_empty';
         }
-        return $this->updateBatch($list,true);
+        if( isset($list[0]->store_id) ){
+            /*
+             * If user tries to update store_id then check store permission and set same store_id for all records
+             */
+            $this->current_store_id=$list[0]->store_id;
+            $StoreModel=model('StoreModel');
+            $permission_granted=$StoreModel->permit($this->current_store_id,'w');
+            if( !$permission_granted ){
+                return 'list_update_error_forbidden';
+            }
+        }
+        $this->permitWhere('w');
+        return $this->updateBatch($list,'product_id');
     }
     
     public function listDelete( $product_ids ){
-        $this->delete($product_ids);
+        $this->permitWhere('w');
+        return $this->delete($product_ids);
     }
     
     
     
+    public function itemGet( $product_id ){
+        $this->permitWhere('r');
+        return $this->where('product_id',$product_id)->get()->getRow();
+    }
     
+    public function itemCreate( $product ){
+        return $this->listCreate( [ $product ] );
+    }
     
-    public function itemCreate( $store_id, $product_name ){
-        return $this->listCreate($store_id, [ ['product_name'=>$product_name] ]);
+    public function itemUpdate( $product ){
+        return $this->listUpdate([$product]);
+    }
+    
+    public function itemDelete( $product_id ){
+        return $this->listDelete([$product_id]);
     }
 }

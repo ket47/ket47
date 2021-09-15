@@ -14,7 +14,10 @@ class Store extends \App\Controllers\BaseController{
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
-        return $store_list;
+        if( $StoreModel->errors() ){
+            return $this->failValidationError(json_encode($StoreModel->errors()));
+        }
+        return $this->respond($store_list);
     }
     
     public function itemCreate(){
