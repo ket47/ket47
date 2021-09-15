@@ -14,6 +14,7 @@ class Home extends BaseController {
     public function product_manager(){
         return view('product/product_manager');
     }
+    
     public function product_list(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),

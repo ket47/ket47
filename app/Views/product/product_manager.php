@@ -1,5 +1,5 @@
 <?=view('common/item_manager',[
-    'item_name'=>'store',
-    'ItemName'=>'Store',
-    'name_query_fields'=>'store_name,store_address'
+    'item_name'=>'product',
+    'ItemName'=>'Product',
+    'name_query_fields'=>'product_name,product_code,product_description'
     ])?>
