@@ -57,7 +57,7 @@ class BaseController extends Controller
 		$this->session = \Config\Services::session();
                 header('Access-Control-Allow-Origin: *');
                 header("Access-Control-Allow-Headers: *");
-                header("Access-Control-Allow-Methods: GET, POST");
+                header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 	}
         
 	protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
