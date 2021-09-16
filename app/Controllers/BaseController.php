@@ -55,6 +55,8 @@ class BaseController extends Controller
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
 		$this->session = \Config\Services::session();
+                header('Access-Control-Allow-Origin: *');
+                header("Access-Control-Allow-Methods: GET, OPTIONS");
 	}
         
 	protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
