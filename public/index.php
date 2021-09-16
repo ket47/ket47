@@ -1,5 +1,7 @@
 <?php
 
+                header('Access-Control-Allow-Origin: *');
+                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 // Path to the front controller (this file)
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 
