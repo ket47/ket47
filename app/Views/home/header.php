@@ -44,6 +44,7 @@
                 border-radius: 5px;
                 background-color:#fff;
                 padding: 10px;
+                margin-top: 8px;
                 margin-bottom: 8px;
             }
             .filter #item_name_search{

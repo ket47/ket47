@@ -13,9 +13,11 @@ class ProductModel extends Model{
         'store_id',
         'product_code',
         'product_name',
+        'product_quantity',
         'product_description',
         'product_weight',
         'product_price',
+        'is_produced'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -56,7 +58,14 @@ class ProductModel extends Model{
         $this->filterMake( $filter );
         $this->orderBy('modified_at','DESC');
         $this->permitWhere('r');
-        return $this->get()->getResult();
+        $product_list= $this->get()->getResult();
+        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        foreach($product_list as $product){
+            if($product){
+                $product->member_of_groups=$ProductGroupMemberModel->productMemberGroupsGet($product->product_id);
+            }
+        }
+        return $product_list;
     }
     
     

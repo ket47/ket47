@@ -2,7 +2,7 @@
 namespace App\Models;
 use CodeIgniter\Model;
 
-class UserGroupMemberModel extends Model{
+class StoreGroupMemberModel extends Model{
         
     use PermissionTrait;
 

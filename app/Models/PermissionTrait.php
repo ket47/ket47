@@ -24,9 +24,9 @@ trait PermissionTrait{
         return $this->query($sql)->getRow('user_role');
     }
     
-    public function permit( $item_id, $right ){
+    public function permit( $item_id, $right, $method='item' ){
         $class_name=(new \ReflectionClass($this))->getShortName();
-        $permission_name="permit.{$class_name}.{$item_id}.{$right}";
+        $permission_name="permit.{$class_name}.{$method}.{$item_id}.{$right}";
         
         $cached_permission=session()->get($permission_name);
         if( isset($cached_permission) ){
@@ -43,8 +43,8 @@ trait PermissionTrait{
         if($user_role=='admin'){
             $permission=1;//grant all permissions to admin
         } else
-        if( isset($permissions[$class_name][$user_role]) ){
-            $rights=$permissions[$class_name][$user_role];
+        if( isset($permissions["$class_name.$method"][$user_role]) ){
+            $rights=$permissions["$class_name.$method"][$user_role];
             $permission=str_contains($rights,$right)?1:0;
         }
         session()->set($permission_name,$permission);
@@ -54,21 +54,21 @@ trait PermissionTrait{
         return $permission;
     }
     
-    public function permitWhere( $right ){
-        $permission_filter=$this->permitWhereGet($right);
+    public function permitWhere( $right, $method='item' ){
+        $permission_filter=$this->permitWhereGet($right,$method);
         if($permission_filter!=""){
             //echo $permission_filter;
             $this->where($permission_filter);
         }
     }
     
-    public function permitWhereGet( $right ){
+    public function permitWhereGet( $right, $method ){
         if( sudo() ){
             return "";//All granted
         }
         $user_id=session()->get('user_id');
         $permited_class_name=(new \ReflectionClass($this))->getShortName();
-        $permission_name="permitWhere.{$permited_class_name}.{$user_id}.{$right}";
+        $permission_name="permitWhere.{$permited_class_name}.{$method}.{$user_id}.{$right}";
         
         $cached_permission=session()->get($permission_name);
         if( isset($cached_permission) ){
@@ -76,8 +76,8 @@ trait PermissionTrait{
         }
         $permissions=session()->get('permissions');
         $permission_filter="1=2";//All denied
-        if( isset($permissions[$permited_class_name]) ){
-            $permission_filter=$this->permitWhereCompose($user_id,$permissions[$permited_class_name],$right);
+        if( isset($permissions["{$permited_class_name}.{$method}"]) ){
+            $permission_filter=$this->permitWhereCompose($user_id,$permissions["{$permited_class_name}.{$method}"],$right);
         }
         session()->set($permission_name,$permission_filter);
         return $permission_filter;

@@ -1,3 +1,4 @@
+<?=view('home/header')?>
 <?php
 function has_permission( $permission_list,$role,$class,$method,$right ){
     if( !$permission_list ){
@@ -99,7 +100,8 @@ $(function(){
     }
     .right{
         display: inline-block;
-        width:15px;
+        width:20px;
+        text-align: center;
     }
     .r{
         color:green;
@@ -107,7 +109,8 @@ $(function(){
     .w{
         color:orange;
     }
-    .x{
+    .d{
         color:red;
     }
 </style>
+<?=view('home/footer')?>

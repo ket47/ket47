@@ -1,6 +1,7 @@
 <?=view('home/header')?>
 <?=$html_before??'' ?>
 <div style="padding: 20px;">
+    <button onclick="ItemList.addItem();">Add new Item</button>
     <div class="filter segment">
         <input type="search" id="item_name_search" placeholder="Filter">
         <div>
@@ -12,15 +13,14 @@
             <input type="checkbox" id="item_disabled" name="is_disabled">
         </div>
     </div>
-    <button onclick="ItemList.addItem();">Add new Item</button>
     <div class="item_list"></div>
 </div>
 <style>
-    .item_deleted{
-        background-color: #fdd;
-    }
     .item_disabled{
         background-color: #ddd;
+    }
+    .item_deleted{
+        background-color: #fdd;
     }
 </style>
 <script type="text/javascript">
@@ -85,7 +85,11 @@
             });
         },
         reload_promise:null,
-        reloadFilter:{},
+        reloadFilter:{
+            is_active:1,
+            is_deleted:0,
+            is_disabled:0
+        },
         reload:function(){
             if(ItemList.reload_promise){
                 ItemList.reload_promise.abort();

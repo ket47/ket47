@@ -6,34 +6,18 @@ trait FilterTrait{
             return null;
         }
         $filter[$this->primaryKey]??=0;
-        $filter['is_active']??=1;
+        $filter['is_active']??=0;
         $filter['is_disabled']??=0;
         $filter['is_deleted']??=0;
         $filter['limit']??=30;
         $filter['order']??=0;
         
+        $this->filterStatus($filter);
+        
         if( $filter[$this->primaryKey] ){
             $this->whereIn($this->primaryKey,$filter[$this->primaryKey]);
         }
-        if( $filter['is_disabled'] ){//admin filters
-            $this->permitWhere('r','disabled');
-            
-        }
         
-        
-        
-        
-        
-        if( $filter['is_active'] ){
-            $this->where('is_disabled',0);
-            $this->where('deleted_at IS NULL');
-        }
-        if( sudo() && $filter['is_disabled'] ){
-            $this->where('is_disabled',1);
-        }
-        if( sudo() && $filter['is_deleted'] ){
-            $this->where('deleted_at IS NOT NULL');
-        }
         if( isset($filter['name_query']) && isset($filter['name_query_fields']) ){
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
@@ -48,6 +32,30 @@ trait FilterTrait{
         }
         if( $filter['order'] ){
             $this->orderBy($filter['order'],'ASC');
+        }
+    }
+    
+    
+    private function filterStatus($filter){
+        if( $filter['is_active'] && $filter['is_disabled'] && $filter['is_deleted'] ){
+            return true;//optimisation if all entries should be shown
+        }
+        $status_where=[];
+        if( $filter['is_disabled'] ){//admin filters
+            $this->permitWhere('r','disabled');
+            $status_where[]='is_disabled=1';
+        }
+        if( $filter['is_deleted'] ){//admin filters
+            $this->permitWhere('r','disabled');
+            $status_where[]='deleted_at IS NOT NULL';
+        }
+        if( $filter['is_active'] ){
+            $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
+        }
+        if( $status_where ){
+            $this->where( implode(' OR ',$status_where) );
+        } else {
+            $this->where( '1=2' );
         }
     }
 }

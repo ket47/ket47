@@ -21,11 +21,15 @@ class Home extends BaseController {
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit')
         ];
         $ProductModel=model('ProductModel');
         $ProductGroupModel=model('ProductGroupModel');
         $product_list=$ProductModel->listGet($filter);
+        
+        //die($ProductModel->getLastQuery());
+        
         $product_group_list=$ProductGroupModel->listGet();
         return view('product/product_list', [
             'product_list' => $product_list,

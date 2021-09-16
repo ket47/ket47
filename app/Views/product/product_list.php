@@ -1,7 +1,7 @@
     <?=($product_list?'':'No results found')?>
     <?php foreach($product_list as $product):?>
     <h2><?=$product->product_name?></h2>
-    <div class="segment <?=$product->deleted_at?'item_deleted':''?>  <?=$product->is_disabled?'item_disabled':''?>" style="display: grid;grid-template-columns:1fr 1fr">
+    <div class="segment <?=$product->is_disabled?'item_disabled':''?> <?=$product->deleted_at?'item_deleted':''?>" style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 3fr">
             <div>Название</div>
             <div>
@@ -65,6 +65,8 @@
             <div>
                 <input type="date" readonly="readonly" name="deleted_at.<?=$product->product_id?>.date" value="<?php $date_time=explode(' ',$product->deleted_at);echo $date_time[0]??''?>"/>
                 <input type="time" readonly="readonly" name="deleted_at.<?=$product->product_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <button type="button" onclick="ItemList.deleteItem(<?=$product->product_id?>)">Удалить</button>
+                <button type="button" onclick="ItemList.undeleteItem(<?=$product->product_id?>)">Восстановить</button>
             </div>
             
             <div>Группы</div>
@@ -78,14 +80,6 @@
             </div>
         </div>
         
-    </div>
-    <div class="product_card_actions" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
-        <div>
-            <button type="button" onclick="ItemList.deleteItem(<?=$product->product_id?>)">Удалить</button>
-        </div>
-        <div>
-            <button type="button" onclick="ItemList.undeleteItem(<?=$product->product_id?>)">Восстановить</button>
-        </div>
     </div>
     <hr>
     <?php endforeach;?>

@@ -29,7 +29,7 @@ class PermissionModel extends Model{
         $permission_list=$this->get()->getResult();
         $permissions=[];
         foreach($permission_list as $perm){
-            $permissions[$perm->permited_class]=[
+            $permissions["{$perm->permited_class}.{$perm->permited_method}"]=[
                 'owner'=>$perm->owner,
                 'ally'=>$perm->ally,
                 'other'=>$perm->other,
