@@ -8,6 +8,20 @@ class User extends \App\Controllers\BaseController{
     /////////////////////////////////////////////
     //USER OPERATIONS SECTION
     /////////////////////////////////////////////
+    public function itemGet(){
+        $user_id=$this->request->getVar('user_id');
+        if( !$user_id ){
+            $user_id=session()->get('user_id');
+        }
+        $UserModel=model('UserModel');
+        $user=$UserModel->itemGet($user_id);
+        if($user){
+            return $this->respond($user);
+        }
+        return $this->failForbidden();
+    }
+    
+    
     public function itemCreate(){
         return $this->signUp();
     }
@@ -102,13 +116,14 @@ class User extends \App\Controllers\BaseController{
     public function passwordReset(){
         $user_phone=$this->request->getVar('user_phone');
         $user_email=$this->request->getVar('user_email');
+        $user_name=$this->request->getVar('user_name');
         $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
         
         $UserModel=model('UserModel');
         helper('hash_generate');
         $new_password=generate_hash(6);
         
-        $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared);
+        $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared,$user_name);
         if( $user_phone_cleared && $phone_user_id ){
             $msg_data=[
                 'new_pass'=>$new_password
@@ -120,7 +135,7 @@ class User extends \App\Controllers\BaseController{
             $sms_send_ok=$Sms->send($user_phone_cleared,view('messages/password_reset_sms.php',$msg_data));
         }
         
-        $email_user_id=$UserModel->passRecoveryCheckEmail($user_email);
+        $email_user_id=$UserModel->passRecoveryCheckEmail($user_email,$user_name);
         if( $user_email && $email_user_id ){
             $msg_data=[
                 'new_pass'=>$new_password

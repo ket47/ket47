@@ -209,11 +209,15 @@ class UserModel extends Model{
         return $user_id;
     }
     
-    public function passRecoveryCheckPhone($user_phone){//should we send pass to only verified phone or it could be mechanism to generate pass?
-        return $this->where('user_phone',$user_phone)->get()->getRow('user_id');
+    public function passRecoveryCheckPhone($user_phone,$user_name){
+         //should we send pass to only verified phone or it could be mechanism to generate pass?
+        return $this->where('user_phone',$user_phone)
+                ->where('user_phone_verified',1)
+                ->where('user_name',$user_name)
+                ->get()->getRow('user_id');
     }
     
-    public function passRecoveryCheckEmail($user_email){//should we send pass to only verified phone or it could be mechanism to generate pass?
+    public function passRecoveryCheckEmail($user_email,$user_name){//should we send pass to only verified phone or it could be mechanism to generate pass?
         return $this->where('user_email',$user_email)->get()->getRow('user_id');
     }
 }

@@ -13,14 +13,12 @@ class ProductGroupMemberModel extends Model{
         'product_group_id'
         ];
     
-    
     public function itemUpdate( $product_id, $product_group_id, $value ){
         if( $value ){
             return $this->productGroupJoin($product_id, $product_group_id);
         }
         return $this->productGroupLeave($product_id, $product_group_id);
     }
-    
     
     public function productMemberGroupsGet($product_id){
         return $this->select('GROUP_CONCAT(product_group_list.product_group_id) product_group_ids,GROUP_CONCAT(product_group_type) product_group_types')
