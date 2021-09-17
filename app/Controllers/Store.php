@@ -31,11 +31,10 @@ class Store extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        $store_id=$this->request->getVar('store_id');
-        $field_name=$this->request->getVar('name');
-        $field_value=$this->request->getVar('value');
+        $data= json_decode($this->request->getVar('data'));
+        
         $StoreModel=model('StoreModel');
-        $ok=$StoreModel->itemUpdate($store_id,[$field_name=>$field_value]);
+        $ok=$StoreModel->itemUpdate($data);
         if( $ok ){
             return $this->respondUpdated(1);
         }

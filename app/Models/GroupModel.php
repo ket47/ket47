@@ -7,7 +7,7 @@ class GroupModel extends Model{
     use PermissionTrait;
     use FilterTrait;
 
-    protected $table      = 'product_group_list';
+    protected $table      = '';
     protected $primaryKey = 'group_id';
     protected $allowedFields = [
         'group_parent_id',
@@ -68,29 +68,28 @@ class GroupModel extends Model{
         return $group_id;
     }
     
-    public function itemUpdate( $group_id, $field, $value ){
+    public function itemUpdate( $data ){
         $this->permitWhere('w');
-        if( $field=='group_parent_id' ){
-            $parent_parent_id=$this->where('group_id',$value)->get()->getRow('parent_id');
+        if( isset($data['group_parent_id']) ){
+            $parent_parent_id=$this->where('group_id',$data['group_parent_id'])->get()->getRow('parent_id');
             if( $parent_parent_id!=0 ){
-                return 'only_two_levels_allowed';
+                return 'only_two_levels_are_allowed';
             }
         }
-        $ok=$this->update(['group_id'=>$group_id],[$field=>$value]);
-        if( $field=='group_parent_id' ){
-            $this->itemPathUpdate( $group_id );
+        $ok=$this->update($data);
+        if( isset($data['group_parent_id']) || isset($data['group_name']) ){
+            $this->itemPathUpdate();
         }
         return $ok;
     }
     
-    private function itemPathUpdate( $group_id ){
+    private function itemPathUpdate(){
         $sql="
             UPDATE
                 $this->table
             SET
-                group_path_id=CONCAT(group_parent_id,',',group_id)
-            WHERE
-                group_id='$group_id'
+                group_path_id=CONCAT(group_parent_id,',',group_id),
+                group_path=CONCAT( '/',(SELECT group_name FROM $this->table prnt WHERE prnt.group_id=group_parent_id),'/',group_name,'/' )
             ";
         $this->query($sql);
     }

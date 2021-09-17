@@ -60,11 +60,9 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        $product_id=$this->request->getVar('product_id');
-        $field_name=$this->request->getVar('name');
-        $field_value=$this->request->getVar('value');
+        $data= json_decode($this->request->getVar('data'));
         $ProductModel=model('ProductModel');
-        $ok=$ProductModel->itemUpdate(['product_id'=>$product_id,$field_name=>$field_value]);
+        $ok=$ProductModel->itemUpdate($data);
         if( $ok ){
             return $this->respondUpdated(1);
         }

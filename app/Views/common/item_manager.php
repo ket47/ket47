@@ -58,7 +58,11 @@
             return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
         saveItem:function (<?=$item_name?>_id,name,value){
-            $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name,value}).done(function(){
+            var data={
+                <?=$item_name?>_id
+            };
+            data[name]=value;
+            $.post('/<?=$ItemName?>/itemUpdate',data).done(function(){
                 if( name==='is_disabled' ){
                     ItemList.reload();
                 }

@@ -27,11 +27,10 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        $user_id=$this->request->getVar('user_id');
-        $field_name=$this->request->getVar('name');
-        $field_value=$this->request->getVar('value');
+        $data= json_decode($this->request->getVar('data'));
+        
         $UserModel=model('UserModel');
-        $ok=$UserModel->itemUpdate($user_id,[$field_name=>$field_value]);
+        $ok=$UserModel->itemUpdate($data);
         if( $ok ){
             return $this->respondUpdated(1);
         }

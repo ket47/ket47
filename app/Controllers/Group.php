@@ -23,6 +23,7 @@ class Group extends BaseController {
         $group_name=$this->request->getVar('group_name');
         $group_type=$this->request->getVar('group_type');
         $group_parent_id=$this->request->getVar('group_parent_id');
+        
         $GroupModel=$this->model('GroupModel');
         $GroupModel->tableSet($group_table);
         $result=$GroupModel->itemCreate( $group_parent_id, $group_name, $group_type);
@@ -33,14 +34,18 @@ class Group extends BaseController {
     }
     
     public function itemUpdate(){
+        return $this->failResourceExists();
+    }
+    
+    public function itemFieldUpdate(){
         $group_table=$this->request->getVar('group_table');
         $group_id=$this->request->getVar('group_id');
-        $field=$this->request->getVar('field');
-        $value=$this->request->getVar('value');
+        $data= json_decode($this->request->getVar('data'));
+
         
         $GroupModel=$this->model('GroupModel');
         $GroupModel->tableSet($group_table);
-        $result=$GroupModel->itemUpdate( $group_id, $field, $value);
+        $result=$GroupModel->itemUpdate( $group_id, $data );
         if( is_numeric($result) ){
             return $this->respondUpdated($result);
         }
@@ -70,7 +75,26 @@ class Group extends BaseController {
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit')
         ];
-        
+        $group_table=$this->request->getVar('group_table');
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet($group_table);
+        $group_list=$GroupModel->listGet($filter);
+        if( $GroupModel->errors() ){
+            return $this->failValidationError(json_encode($GroupModel->errors()));
+        }
+        return $this->respond($group_list);
+    }
+    
+    public function listCreate(){
+        return $this->failResourceExists();
+    }
+    
+    public function listUpdate(){
+        return $this->failResourceExists();
+    }
+    
+    public function listDelete(){
+        return $this->failResourceExists();
     }
     
 }

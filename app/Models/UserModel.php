@@ -71,8 +71,9 @@ class UserModel extends Model{
         $this->transStart();
         $user_id=$this->insert($user_data,true);
         if( $user_id ){
-            $UserGroupMemberModel=model('UserGroupMemberModel');
-            $UserGroupMemberModel->userGroupJoinByType($user_id,'customer');
+            $GroupMemberModel=model('GroupMemberModel');
+            $GroupMemberModel->tableSet('user_group_member_list');
+            $GroupMemberModel->joinByType($user_id,'customer');
             $this->update($user_id,['owner_id'=>$user_id]);
         }
         $this->transComplete();

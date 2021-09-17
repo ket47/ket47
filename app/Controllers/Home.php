@@ -25,12 +25,12 @@ class Home extends BaseController {
             'limit'=>$this->request->getVar('limit')
         ];
         $ProductModel=model('ProductModel');
-        $ProductGroupModel=model('ProductGroupModel');
+        $GroupModel=model('GroupModel');
         $product_list=$ProductModel->listGet($filter);
         
         //die($ProductModel->getLastQuery());
-        
-        $product_group_list=$ProductGroupModel->listGet();
+        $GroupModel->tableSet('product_group_list');
+        $product_group_list=$GroupModel->listGet();
         return view('product/product_list', [
             'product_list' => $product_list,
             'product_group_list'=>$product_group_list
@@ -103,9 +103,10 @@ class Home extends BaseController {
             'limit'=>$this->request->getVar('limit')
         ];
         $UserModel=model('UserModel');
-        $UserGroupModel=model('UserGroupModel');
+        $GroupModel=model('GroupModel');
         $user_list=$UserModel->listGet($filter);
-        $user_group_list=$UserGroupModel->listGet();
+        $GroupModel->tableSet('user_group_list');
+        $user_group_list=$GroupModel->listGet();
         return view('user/list', [
             'user_list' => $user_list,
             'user_group_list'=>$user_group_list

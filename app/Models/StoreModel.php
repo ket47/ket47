@@ -26,10 +26,10 @@ class StoreModel extends Model{
         $this->filterMake( $filter );
         $this->permitWhere('r');
         $store_list = $this->get()->getResult();
-        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $GroupMemberModel=model('GroupMemberModel');
         foreach($store_list as $store){
             if($store){
-                $store->member_of_groups=$StoreGroupMemberModel->storeMemberGroupsGet($store->store_id);
+                $store->member_of_groups=$GroupMemberModel->memberGroupsGet($store->store_id);
             }
         }
         return $store_list;
@@ -66,9 +66,9 @@ class StoreModel extends Model{
         return 'item_create_error';
     }
     
-    public function itemUpdate( $store_id, $store_data ){
+    public function itemUpdate( $data ){
         $this->permitWhere('w');
-        return $this->update(['store_id'=>$store_id],$store_data);
+        return $this->update($data);
     }
     
     public function itemDelete( $store_id ){
