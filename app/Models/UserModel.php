@@ -14,10 +14,11 @@ class UserModel extends Model{
         'user_surname',
         'user_middlename',
         'user_phone',
-        'user_phone_verified',
         'user_email',
-        'user_email_verified',
         'user_pass',
+        
+        'user_phone_verified',
+        'user_email_verified',
         'user_comment',
         'is_disabled',
         'deleted_at',
@@ -60,8 +61,9 @@ class UserModel extends Model{
         $user= $this->where('user_id',$user_id)->get()->getRow();
         //die($this->getLastQuery());
         if($user){
-            $UserGroupMemberModel=model('UserGroupMemberModel');
-            $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user_id);
+            $GroupMemberModel=model('GroupMemberModel');
+            $GroupMemberModel->tableSet('user_group_member_list');
+            $user->member_of_groups=$GroupMemberModel->memberGroupsGet($user_id);
             unset($user->user_pass);
         }
         return $user;
@@ -73,27 +75,49 @@ class UserModel extends Model{
         if( $user_id ){
             $GroupMemberModel=model('GroupMemberModel');
             $GroupMemberModel->tableSet('user_group_member_list');
-            $GroupMemberModel->joinByType($user_id,'customer');
+            $GroupMemberModel->joinGroupByType($user_id,'customer');
             $this->update($user_id,['owner_id'=>$user_id]);
         }
         $this->transComplete();
         return $user_id;        
     }
     
-    public function itemUpdate( $user_id, $user_data ){
+    public function itemUpdate( $data ){
+        $sudo_fields=[
+            'user_phone_verified',
+            'user_email_verified',
+            'user_comment',
+            'is_disabled',
+            'deleted_at',
+            'owner_id',
+            'ally_ids',
+            'signed_in_at',
+            'signed_out_at'
+        ];
+        foreach($data as $key=>$val){
+            if( in_array($key, $sudo_fields) && !sudo() ){
+                return 'item_update_forbidden';
+            }
+        }
+        if( isset($data->user_phone) ){
+            $data->user_phone_verified=0;
+        }
+        if( isset($data->user_email) ){
+            $data->user_email_verified=0;
+        }
         $this->permitWhere('w');
-        return $this->update(['user_id'=>$user_id],$user_data);
+        return $this->update(null,$data);
     }
     
-    public function itemDelete( $user_id ){
+    public function itemDelete( $id ){
         $this->permitWhere('w');
-        return $this->delete(['user_id'=>$user_id]);
+        return $this->delete([$this->primaryKey=>$id]);
     }
     
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
         $this->orderBy('created_at','DESC');
-        $this->permitWhere('r');
+        //$this->permitWhere('r');
         $this->select("
             user_id,
             user_name,
@@ -111,10 +135,16 @@ class UserModel extends Model{
             modified_at,
             deleted_at");
         $user_list= $this->get()->getResult();
-        $UserGroupMemberModel=model('UserGroupMemberModel');
+        
+        
+        //echo $this->getLastQuery();
+        
+        
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('user_group_member_list');
         foreach($user_list as $user){
             if($user){
-                $user->member_of_groups=$UserGroupMemberModel->userMemberGroupsGet($user->user_id);
+                $user->member_of_groups=$GroupMemberModel->memberGroupsGet($user->user_id);
             }
         }
         return $user_list;        

@@ -30,14 +30,14 @@ class User extends \App\Controllers\BaseController{
         $data= json_decode($this->request->getVar('data'));
         
         $UserModel=model('UserModel');
-        $ok=$UserModel->itemUpdate($data);
-        if( $ok ){
-            return $this->respondUpdated(1);
+        $result=$UserModel->itemUpdate($data);
+        if( $result==='item_update_forbidden' ){
+            return $this->failForbidden($result);
         }
         if( $UserModel->errors() ){
             return $this->failValidationError(json_encode($UserModel->errors()));
         }
-        return $this->fail(0);
+        return $this->respondUpdated($result);
     }
     
     public function itemDelete(){

@@ -10,6 +10,9 @@ class Store extends \App\Controllers\BaseController{
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit')
         ];
         $StoreModel=model('StoreModel');
@@ -23,8 +26,8 @@ class Store extends \App\Controllers\BaseController{
     public function itemCreate(){
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemCreate($name);
-        if( $result=='ok' ){
+        echo $result=$StoreModel->itemCreate($name);
+        if( $result==='ok' ){
             return $this->respondCreated();
         }
         return $this->fail($result);

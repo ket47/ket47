@@ -86,7 +86,7 @@ trait PermissionTrait{
     private function permitWhereCompose($user_id,$modelPerm,$right){
         $owner_has=str_contains($modelPerm['owner'],$right);
         $ally_has=str_contains($modelPerm['ally'],$right);
-        $other_has=str_contains($modelPerm['owner'],$right);
+        $other_has=str_contains($modelPerm['other'],$right);
         //echo "owner_has $owner_has ally_has $ally_has other_has $other_has";
         if( $owner_has && $ally_has && $other_has ){
             $permission_filter="";//All granted
@@ -95,22 +95,22 @@ trait PermissionTrait{
             $permission_filter="0";//All denied
         } else
         if( $owner_has && $ally_has ){//!$other_has
-            $permission_filter="(IFNULL(owner_id,0)='$user_id' OR '$user_id' IN(IFNULL(owner_ally_ids,0)))";
+            $permission_filter="(owner_id='$user_id' OR '$user_id' IN(owner_ally_ids))";
         } else
         if( $owner_has && $other_has ){//!$ally_has
-            $permission_filter="'$user_id' NOT IN(IFNULL(owner_ally_ids,0))";
+            $permission_filter="'$user_id' NOT IN(owner_ally_ids)";
         } else
         if( $ally_has ){
-            $permission_filter="'$user_id' IN(IFNULL(owner_ally_ids,0))";
+            $permission_filter="'$user_id' IN(owner_ally_ids)";
         } else
         if( $ally_has && $other_has ){//!$owner_has
-            $permission_filter="IFNULL(owner_id,0)<>'$user_id'";
+            $permission_filter="owner_id<>'$user_id'";
         } else
         if( $owner_has ){
-            $permission_filter="IFNULL(owner_id,0)='$user_id'";
+            $permission_filter="owner_id='$user_id'";
         } else
         if( $other_has ){
-            $permission_filter="IFNULL(owner_id,0)<>'$user_id' AND '$user_id' NOT IN(IFNULL(owner_ally_ids,0))";
+            $permission_filter="owner_id<>'$user_id' AND '$user_id' NOT IN(owner_ally_ids)";
         }
         return $permission_filter;
     }

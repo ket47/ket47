@@ -23,10 +23,17 @@ class StoreModel extends Model{
     protected $useSoftDeletes = true;
     
     public function listGet( $filter=null ){
-        $this->filterMake( $filter );
+        //$this->filterMake( $filter );
         $this->permitWhere('r');
         $store_list = $this->get()->getResult();
+        
+        
+        
+        echo $this->getLastQuery();
+        
+        
         $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('store_group_member_list');
         foreach($store_list as $store){
             if($store){
                 $store->member_of_groups=$GroupMemberModel->memberGroupsGet($store->store_id);

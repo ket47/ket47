@@ -88,8 +88,8 @@
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
                 <?php foreach($user_group_list as $user_group ):?>
                 <div>
-                    <input type="checkbox" name="user_group_id.<?=$user->user_id?>.<?=$user_group->user_group_id?>" <?=in_array($user_group->user_group_id,explode(',',$user->member_of_groups->user_group_ids))?'checked':''?>/>
-                    <?=$user_group->user_group_name?>
+                    <input type="checkbox" name="group_id.<?=$user->user_id?>.<?=$user_group->group_id?>" <?=in_array($user_group->group_id,explode(',',$user->member_of_groups->group_ids))?'checked':''?>/>
+                    <?=$user_group->group_name?>
                 </div>
                 <?php endforeach; ?>
             </div>

@@ -54,9 +54,9 @@
             
             <div>Группы</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
-                <?php foreach($store_group_list as $store_group ):?>
+                <?php foreach($group_list as $group ):?>
                 <div>
-                    <input type="checkbox" name="store_group_id.<?=$store->store_id?>.<?=$store_group->store_group_id?>" <?=in_array($store_group->store_group_id,explode(',',$store->member_of_groups->store_group_ids))?'checked':''?>/>
+                    <input type="checkbox" name="group_id.<?=$store->store_id?>.<?=$group->group_id?>" <?=in_array($group->group_id,explode(',',$store->member_of_groups->group_ids))?'checked':''?>/>
                     <?=$store_group->store_group_name?>
                 </div>
                 <?php endforeach; ?>

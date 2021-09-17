@@ -53,9 +53,10 @@ class Home extends BaseController {
             'limit'=>$this->request->getVar('limit')
         ];
         $StoreModel=model('StoreModel');
-        $StoreGroupModel=model('StoreGroupModel');
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet('store_group_list');
         $store_list=$StoreModel->listGet($filter);
-        $store_group_list=$StoreGroupModel->listGet();
+        $store_group_list=$GroupModel->listGet();
         return view('store/store_list', [
             'store_list' => $store_list,
             'store_group_list'=>$store_group_list
@@ -100,6 +101,9 @@ class Home extends BaseController {
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit')
         ];
         $UserModel=model('UserModel');

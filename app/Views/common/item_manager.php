@@ -39,7 +39,7 @@
                 if( subtype==='time' ){
                     value=ItemList.val( $(`input[name='${name}.${item_id}.date']`) )+' '+value+':00';
                 }
-                if( name==='<?=$item_name?>_group_id' ){
+                if( name==='group_id' ){
                     ItemList.saveItemMemberGroup(item_id,subtype,value);
                 } else {
                     ItemList.saveItem(item_id,name,value);
@@ -62,14 +62,18 @@
                 <?=$item_name?>_id
             };
             data[name]=value;
-            $.post('/<?=$ItemName?>/itemUpdate',data).done(function(){
+            var request={
+                data:JSON.stringify(data)
+            };
+            $.post('/<?=$ItemName?>/itemUpdate',request).done(function(){
                 if( name==='is_disabled' ){
                     ItemList.reload();
                 }
-            });
+            }).fail(ItemList.reload);
         },
-        saveItemMemberGroup:function (<?=$item_name?>_id,<?=$item_name?>_group_id,value){
-            $.post('/<?=$ItemName?>MemberGroup/itemUpdate',{<?=$item_name?>_id,<?=$item_name?>_group_id,value});
+        saveItemMemberGroup:function (member_id,group_id,value){
+            var table='<?=$item_name?>_group_member_list';
+            $.post('/GroupMember/itemUpdate',{table,member_id,group_id,value}).fail(ItemList.reload);
         },
         deleteItem:function( <?=$item_name?>_id ){
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);
