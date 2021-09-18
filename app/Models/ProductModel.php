@@ -62,7 +62,7 @@ class ProductModel extends Model{
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
         foreach($product_list as $product){
             if($product){
-                $product->member_of_groups=$ProductGroupMemberModel->productMemberGroupsGet($product->product_id);
+                $product->member_of_groups=$ProductGroupMemberModel->productmemberOfGroupsGet($product->product_id);
             }
         }
         return $product_list;

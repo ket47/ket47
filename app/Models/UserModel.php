@@ -63,7 +63,7 @@ class UserModel extends Model{
         if($user){
             $GroupMemberModel=model('GroupMemberModel');
             $GroupMemberModel->tableSet('user_group_member_list');
-            $user->member_of_groups=$GroupMemberModel->memberGroupsGet($user_id);
+            $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
             unset($user->user_pass);
         }
         return $user;
@@ -106,7 +106,7 @@ class UserModel extends Model{
             $data->user_email_verified=0;
         }
         $this->permitWhere('w');
-        return $this->update(null,$data);
+        return $this->updateBatch([$data],'user_id');
     }
     
     public function itemDelete( $id ){
@@ -117,7 +117,7 @@ class UserModel extends Model{
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
         $this->orderBy('created_at','DESC');
-        //$this->permitWhere('r');
+        $this->permitWhere('r');
         $this->select("
             user_id,
             user_name,
@@ -135,16 +135,11 @@ class UserModel extends Model{
             modified_at,
             deleted_at");
         $user_list= $this->get()->getResult();
-        
-        
-        //echo $this->getLastQuery();
-        
-        
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('user_group_member_list');
         foreach($user_list as $user){
             if($user){
-                $user->member_of_groups=$GroupMemberModel->memberGroupsGet($user->user_id);
+                $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user->user_id);
             }
         }
         return $user_list;        

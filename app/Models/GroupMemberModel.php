@@ -36,7 +36,7 @@ class GroupMemberModel extends Model{
         return $this->leaveGroup($member_id, $group_id);
     }
     
-    public function memberGroupsGet($member_id){
+    public function memberOfGroupsGet($member_id){
         return $this->select("GROUP_CONCAT({$this->groupTable}.group_id) group_ids,GROUP_CONCAT(group_type) group_types")
                 ->where('member_id',$member_id)
                 ->join("{$this->groupTable}", "{$this->groupTable}.group_id = {$this->table}.group_id")

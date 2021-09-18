@@ -31,7 +31,7 @@ class StoreModel extends Model{
         $GroupMemberModel->tableSet('store_group_member_list');
         foreach($store_list as $store){
             if($store){
-                $store->member_of_groups=$GroupMemberModel->memberGroupsGet($store->store_id);
+                $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
             }
         }
         return $store_list;
@@ -43,6 +43,10 @@ class StoreModel extends Model{
     
     public function listUpdate( $list ){
         $this->permitWhere('w');
+        
+        
+        
+        
         return $this->updateBatch($list,'store_id');
     }
     

@@ -71,9 +71,12 @@
                 }
             }).fail(ItemList.reload);
         },
-        saveItemMemberGroup:function (member_id,group_id,value){
-            var table='<?=$item_name?>_group_member_list';
-            $.post('/GroupMember/itemUpdate',{table,member_id,group_id,value}).fail(ItemList.reload);
+        saveItemMemberGroup:function (<?=$item_name?>_id,group_id,is_joined){
+            //ItemList.saveItem(<?=$item_name?>_id,'group_id',is_joined).done(ItemList.reload);
+            
+            
+            
+            $.post('/<?=$ItemName?>/itemGroupUpdate',{<?=$item_name?>_id,group_id,is_joined}).fail(ItemList.reload);
         },
         deleteItem:function( <?=$item_name?>_id ){
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);

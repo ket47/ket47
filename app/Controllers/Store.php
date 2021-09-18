@@ -17,12 +17,6 @@ class Store extends \App\Controllers\BaseController{
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
-        
-        
-        
-        q($StoreModel);
-        
-        
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
@@ -46,6 +40,22 @@ class Store extends \App\Controllers\BaseController{
         $ok=$StoreModel->itemUpdate($data);
         if( $ok ){
             return $this->respondUpdated('item_update_ok');
+        }
+        if( $StoreModel->errors() ){
+            return $this->failValidationError(json_encode($StoreModel->errors()));
+        }
+        return $this->fail('item_update_error');
+    }
+    
+    public function itemGroupUpdate(){
+        $store_id=$this->request->getVar('store_id');
+        $group_id=$this->request->getVar('group_id');
+        $is_joined=$this->request->getVar('is_joined');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemGroupUpdate($store_id,$group_id,$is_joined);
+        if( $result ){
+            return $this->respondUpdated('item_group_update_ok');
         }
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
