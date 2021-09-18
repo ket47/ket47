@@ -11,8 +11,8 @@ class StoreModel extends Model{
     protected $primaryKey = 'store_id';
     protected $allowedFields = [
         'store_name',
-        'store_address',
-        'store_coordinates',
+        'store_phone',
+        'store_email',
         'store_description',
         'is_disabled',
         'deleted_at',
@@ -23,15 +23,10 @@ class StoreModel extends Model{
     protected $useSoftDeletes = true;
     
     public function listGet( $filter=null ){
-        //$this->filterMake( $filter );
+        $this->filterMake( $filter );
         $this->permitWhere('r');
+        $this->orderBy('modified_at','DESC');
         $store_list = $this->get()->getResult();
-        
-        
-        
-        echo $this->getLastQuery();
-        
-        
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
         foreach($store_list as $store){
@@ -42,12 +37,18 @@ class StoreModel extends Model{
         return $store_list;
     }
     
+    public function listCreate(){
+        
+    }
     
+    public function listUpdate( $list ){
+        $this->permitWhere('w');
+        return $this->updateBatch($list,'store_id');
+    }
     
-    
-    
-    
-    
+    public function listDelete(){
+        
+    }
     
     public function itemGet( $store_id ){
         $store_list=$this->listGet( ['store_id'=>$store_id] );
@@ -62,34 +63,24 @@ class StoreModel extends Model{
             return 'item_create_error_forbidden';
         }
         $user_id=session()->get('user_id');
-        $store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
-        if( $store_id ){
+        $has_store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
+        if( $has_store_id ){
             return 'item_create_error_dublicate';
         }
-        $ok=$this->insert(['store_name'=>$name]);
-        if( $ok ){
-            return 'ok';
+        $store_id=$this->insert(['store_name'=>$name],true);
+        if( $store_id ){
+            $this->update($store_id,['owner_id'=>$user_id]);
+            return $store_id;
         }
         return 'item_create_error';
     }
     
     public function itemUpdate( $data ){
-        $this->permitWhere('w');
-        return $this->update($data);
+        return $this->listUpdate([$data]);
     }
     
     public function itemDelete( $store_id ){
         $this->permitWhere('w');
         return $this->delete(['store_id'=>$store_id]);
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 }

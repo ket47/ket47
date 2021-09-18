@@ -65,7 +65,7 @@
             var request={
                 data:JSON.stringify(data)
             };
-            $.post('/<?=$ItemName?>/itemUpdate',request).done(function(){
+            return $.post('/<?=$ItemName?>/itemUpdate',request).done(function(){
                 if( name==='is_disabled' ){
                     ItemList.reload();
                 }
@@ -79,8 +79,7 @@
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
         undeleteItem:function( <?=$item_name?>_id ){
-            var name='deleted_at';
-            $.post('/<?=$ItemName?>/itemUpdate',{<?=$item_name?>_id,name}).done(ItemList.reload);
+            ItemList.saveItem(<?=$item_name?>_id,'deleted_at',null).done(ItemList.reload);
         },
         addItemRequest:{},
         addItem:function(){

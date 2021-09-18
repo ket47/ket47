@@ -50,6 +50,9 @@ class Home extends BaseController {
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit')
         ];
         $StoreModel=model('StoreModel');

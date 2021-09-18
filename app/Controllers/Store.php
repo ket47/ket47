@@ -17,6 +17,12 @@ class Store extends \App\Controllers\BaseController{
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
+        
+        
+        
+        q($StoreModel);
+        
+        
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
@@ -26,9 +32,9 @@ class Store extends \App\Controllers\BaseController{
     public function itemCreate(){
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');
-        echo $result=$StoreModel->itemCreate($name);
-        if( $result==='ok' ){
-            return $this->respondCreated();
+        $result=$StoreModel->itemCreate($name);
+        if( $result ){
+            return $this->respondCreated($result);
         }
         return $this->fail($result);
     }
@@ -39,18 +45,18 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $ok=$StoreModel->itemUpdate($data);
         if( $ok ){
-            return $this->respondUpdated(1);
+            return $this->respondUpdated('item_update_ok');
         }
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
-        return $this->fail(0);
+        return $this->fail('item_update_error');
     }
     
     public function itemDelete(){
         $store_id=$this->request->getVar('store_id');
         $StoreModel=model('StoreModel');
-        $ok=$StoreModel->itemDelete($store_id);
+        $ok=$StoreModel->itemDelete($store_id);        
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
