@@ -71,7 +71,7 @@ class StoreModel extends Model{
         if( $has_store_id ){
             return 'item_create_error_dublicate';
         }
-        $store_id=$this->insert(['store_name'=>$name],true);
+        $store_id=$this->insert(['store_name'=>$name,'is_disabled'=>1],true);
         if( $store_id ){
             $this->update($store_id,['owner_id'=>$user_id]);
             return $store_id;

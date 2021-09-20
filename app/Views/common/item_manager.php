@@ -40,7 +40,10 @@
                     value=ItemList.val( $(`input[name='${name}.${item_id}.date']`) )+' '+value+':00';
                 }
                 if( name==='group_id' ){
-                    ItemList.saveItemMemberGroup(item_id,subtype,value);
+                    ItemList.saveItemGroup(item_id,subtype,value);
+                } else 
+                if( name==='is_disabled' ){
+                    ItemList.saveItemDisabled(item_id,value);
                 } else {
                     ItemList.saveItem(item_id,name,value);
                 }
@@ -71,12 +74,11 @@
                 }
             }).fail(ItemList.reload);
         },
-        saveItemMemberGroup:function (<?=$item_name?>_id,group_id,is_joined){
-            //ItemList.saveItem(<?=$item_name?>_id,'group_id',is_joined).done(ItemList.reload);
-            
-            
-            
-            $.post('/<?=$ItemName?>/itemGroupUpdate',{<?=$item_name?>_id,group_id,is_joined}).fail(ItemList.reload);
+        saveItemGroup:function (<?=$item_name?>_id,group_id,is_joined){
+            $.post('/<?=$ItemName?>/itemUpdateGroup',{<?=$item_name?>_id,group_id,is_joined}).fail(ItemList.reload);
+        },
+        saveItemDisabled:function(<?=$item_name?>_id,is_disabled){
+            $.post('/<?=$ItemName?>/itemDisable',{<?=$item_name?>_id,is_disabled}).then(ItemList.reload);
         },
         deleteItem:function( <?=$item_name?>_id ){
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);

@@ -38,6 +38,7 @@ class BaseController extends Controller
 	 * @var array
 	 */
 	protected $helpers = [
+            'dump',
             'sudo',
             'q'
         ];

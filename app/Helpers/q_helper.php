@@ -1,5 +1,5 @@
 <?php
 
 function q( $self ){
-    die($self->getLastQuery());
+    echo $self->getLastQuery();die();
 }

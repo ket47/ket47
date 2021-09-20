@@ -27,7 +27,7 @@ class Store extends \App\Controllers\BaseController{
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemCreate($name);
-        if( $result ){
+        if( is_numeric($result) ){
             return $this->respondCreated($result);
         }
         return $this->fail($result);

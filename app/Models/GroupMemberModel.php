@@ -29,8 +29,8 @@ class GroupMemberModel extends Model{
         $this->groupTable=$parts[0].'_group_list';
     }
     
-    public function itemUpdate( $member_id, $group_id, $value ){
-        if( $value ){
+    public function itemUpdate( $member_id, $group_id, $is_joined ){
+        if( $is_joined ){
             return $this->joinGroup($member_id, $group_id);
         }
         return $this->leaveGroup($member_id, $group_id);
@@ -51,14 +51,15 @@ class GroupMemberModel extends Model{
     }
     
     public function joinGroup($member_id,$group_id){
-        if( $this->permit(null,'w') ){
-            return $this->insert(['member_id'=>$member_id,'group_id'=>$group_id]);
-        }
-        return 'group_join_forbidden';
+        //if( $this->permit(null,'w') ){
+            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
+            return $this->affectedRows()?true:false;
+        //}
+        //return 'group_join_forbidden';
     }
     
     public function leaveGroup($member_id,$group_id){
-        $this->permitWhere('w');
+        //$this->permitWhere('w');
         return $this
                 ->where('member_id',$member_id)
                 ->where('group_id',$group_id)

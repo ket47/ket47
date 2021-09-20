@@ -40,6 +40,38 @@ class User extends \App\Controllers\BaseController{
         return $this->respondUpdated($result);
     }
     
+    public function itemUpdateGroup(){
+        $user_id=$this->request->getVar('user_id');
+        $group_id=$this->request->getVar('group_id');
+        $is_joined=$this->request->getVar('is_joined');
+        
+        $UserModel=model('UserModel');
+        $result=$UserModel->itemUpdateGroup($user_id,$group_id,$is_joined);
+        
+        if(is_bool($result) && $result ){
+            return $this->respondUpdated(1);
+        }
+        if( $UserModel->errors() ){
+            return $this->failValidationError(json_encode($UserModel->errors()));
+        }
+        return $this->fail($result);
+    }
+    
+    public function itemDisable(){
+        $user_id=$this->request->getVar('user_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $UserModel=model('UserModel');
+        $result=$UserModel->itemDisable($user_id,$is_disabled);
+        
+        if(is_bool($result) && $result ){
+            return $this->respondUpdated(1);
+        }
+        if( $UserModel->errors() ){
+            return $this->failValidationError(json_encode($UserModel->errors()));
+        }
+        return $this->fail($result);    }
+    
     public function itemDelete(){
         $user_id=$this->request->getVar('user_id');
         $UserModel=model('UserModel');
@@ -122,6 +154,7 @@ class User extends \App\Controllers\BaseController{
         helper('hash_generate');
         $new_password=generate_hash(6);
         
+        $sms_send_ok=false;
         $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared,$user_name);
         if( $user_phone_cleared && $phone_user_id ){
             $msg_data=[
@@ -134,6 +167,7 @@ class User extends \App\Controllers\BaseController{
             $sms_send_ok=$Sms->send($user_phone_cleared,view('messages/password_reset_sms.php',$msg_data));
         }
         
+        $email_send_ok=false;
         $email_user_id=$UserModel->passRecoveryCheckEmail($user_email,$user_name);
         if( $user_email && $email_user_id ){
             $msg_data=[

@@ -16,16 +16,6 @@ class UserModel extends Model{
         'user_phone',
         'user_email',
         'user_pass',
-        
-        'user_phone_verified',
-        'user_email_verified',
-        'user_comment',
-        'is_disabled',
-        'deleted_at',
-        'owner_id',
-        'ally_ids',
-        'signed_in_at',
-        'signed_out_at'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -83,30 +73,49 @@ class UserModel extends Model{
     }
     
     public function itemUpdate( $data ){
-        $sudo_fields=[
-            'user_phone_verified',
-            'user_email_verified',
-            'user_comment',
-            'is_disabled',
-            'deleted_at',
-            'owner_id',
-            'ally_ids',
-            'signed_in_at',
-            'signed_out_at'
-        ];
-        foreach($data as $key=>$val){
-            if( in_array($key, $sudo_fields) && !sudo() ){
-                return 'item_update_forbidden';
-            }
+        if( sudo() ){
+            $this->protect(false);//allow all fields to be updated
         }
         if( isset($data->user_phone) ){
+            $this->allowedFields[]='user_phone_verified';
             $data->user_phone_verified=0;
         }
         if( isset($data->user_email) ){
+            $this->allowedFields[]='user_email_verified';
             $data->user_email_verified=0;
         }
         $this->permitWhere('w');
-        return $this->updateBatch([$data],'user_id');
+        $result=$this->updateBatch([$data],'user_id');
+        $this->protect(true);
+        return $result;
+    }
+    
+    public function itemUpdateGroup($user_id,$group_id,$is_joined){
+        if( !$this->permit($user_id,'w') ){
+            return 'item_update_forbidden';
+        }
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet('user_group_list');
+        $target_group=$GroupModel->itemGet($group_id);
+        if( !$target_group ){
+            return 'item_update_group_not_found';
+        }
+        
+        $allowed_group_types=['supplier','courier'];
+        if( !in_array($target_group->group_type, $allowed_group_types) && !sudo() ){
+            return 'item_update_forbidden';
+        }
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('user_group_member_list');
+        return $GroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
+    }
+
+    public function itemDisable( $user_id, $is_disabled ){
+        if( !$this->permit($user_id,'w','disabled') ){
+            return 'item_update_forbidden';
+        }
+        $this->allowedFields[]='is_disabled';
+        return $this->update(['user_id'=>$user_id],['is_disabled'=>$is_disabled?1:0]);
     }
     
     public function itemDelete( $id ){
@@ -192,7 +201,9 @@ class UserModel extends Model{
     
     public function signOut($user_id){
         if($user_id){
-            return $this->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()]);
+            return $this->protect(false)
+                    ->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()])
+                    ->protect(true);
         }
         return false;
     }
@@ -213,7 +224,9 @@ class UserModel extends Model{
         }
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
-        $this->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
+        $this->protect(false)
+                ->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()])
+                ->protect(true);
         session()->set('user_id',$user->user_id);
         return 'ok' ;
     }

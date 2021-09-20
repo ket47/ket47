@@ -48,9 +48,6 @@ trait PermissionTrait{
             $permission=str_contains($rights,$right)?1:0;
         }
         session()->set($permission_name,$permission);
-        if(!$permission){
-            header("X-permission-info: Access denied for {$class_name}.{$item_id}.{$right}");
-        }
         return $permission;
     }
     
