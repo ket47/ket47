@@ -216,7 +216,7 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone_cleared);
         if( !$unverified_user_id ){
-            $this->error(404,'unverified_phone_not_found','No such user phone or it is already verified');
+            return $this->failNotFound('unverified_phone_not_found');
         }
         
         helper('hash_generate');
@@ -242,7 +242,7 @@ class User extends \App\Controllers\BaseController{
             return $this->respond('sms_sent_ok');
         }
         else {
-            return $this->fail('sms_send_fail');
+            return $this->fail('sms_send_failed');
         }
     }
     

@@ -46,14 +46,15 @@ class DevinoSms{
                 'content' => http_build_query($post_vars)
             ]
         );
+        
         try{
-            
-        } catch (Exception $ex) {
-
+            $response = file_get_contents("$this->gateway/Sms/Send/", false, stream_context_create($opts));
+            $msg_ids = json_decode($response);
+        } catch (\Exception $ex) {
+            return false;
         }
-        $response = file_get_contents("$this->gateway/Sms/Send/", false, stream_context_create($opts));
-        $msg_ids = json_decode($response);
-        if (!$msg_ids[0]) {
+        
+        if ( !isset($msg_ids[0]) ) {
             $session=session();
             $session->set('devinoSmsSessionId',null);
             return false;
