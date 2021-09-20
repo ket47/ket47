@@ -201,9 +201,10 @@ class UserModel extends Model{
     
     public function signOut($user_id){
         if($user_id){
-            return $this->protect(false)
-                    ->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()])
-                    ->protect(true);
+            $this->protect(false);
+            $ok=$this->update($user_id,['signed_out_at'=>\CodeIgniter\I18n\Time::now()]);
+            $this->protect(true);
+            return $ok;
         }
         return false;
     }
@@ -225,8 +226,8 @@ class UserModel extends Model{
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
         $this->protect(false)
-                ->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()])
-                ->protect(true);
+                ->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
+        $this->protect(true);
         session()->set('user_id',$user->user_id);
         return 'ok' ;
     }
