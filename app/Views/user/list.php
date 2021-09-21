@@ -30,13 +30,17 @@
                 <input type="email" name="user_email.<?=$user->user_id?>" value="<?=$user->user_email?>"/>
             </div>
 
-            <div>Изображение</div>
+            <div>Аватар</div>
             <div>
-                <?php if($user->user_image??0):?>
-                <img src="img/get.php/100_100_<?=$user->user_image?>.jpg">
-                <?php endif;?>
-                <button type="button">Upload</button>
-                <button type="button">Delete</button>
+                <label for="user_avatar_man">
+                    <img src="/img/avatar/man.png" style="width:48px;height: auto"/>
+                </label>
+                <input type="radio" id="user_avatar_man" value="man" name="user_avatar_name.<?=$user->user_id?>" <?=$user->user_avatar_name=='man'?'checked':''?>/>
+                &nbsp;&nbsp;&nbsp;
+                <label for="user_avatar_woman">
+                    <img src="/img/avatar/woman.png" style="width:48px;height: auto"/>
+                </label>
+                <input type="radio" id="user_avatar_woman"  value="woman" name="user_avatar_name.<?=$user->user_id?>" <?=$user->user_avatar_name=='woman'?'checked':''?>/>
             </div>
 
 

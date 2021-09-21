@@ -27,8 +27,11 @@ class UserVerificationModel extends Model{
         if( !$verification ){
             return 'verification_not_found';
         }
-        $UserModel->update($verification->user_id,['user_phone_verified'=>1]);
-        $this->delete($verification->user_verification_id);
-        return 'verification_completed';
+       
+        $result=$UserModel->verifyUser($verification->user_id);
+        if( $result==='verification_completed' ){
+            $this->delete($verification->user_verification_id);
+        }
+        return $result;
     }
 }

@@ -2,7 +2,7 @@
 namespace App\Models;
 use CodeIgniter\Model;
 
-class UserImageModel extends Model{
+class StoreImageModel extends Model{
     
     use PermissionTrait;
     use FilterTrait;
@@ -17,6 +17,7 @@ class UserImageModel extends Model{
         'user_email',
         'user_pass',
         ];
+    
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     

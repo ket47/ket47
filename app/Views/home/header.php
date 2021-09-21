@@ -10,6 +10,7 @@
             });
 
         </script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap');
 
@@ -28,12 +29,12 @@
             .dash_menu a{
                 color:#cef;
             }
-            input,textarea{
+            input,textarea,.form_value{
                 padding: 5px;
                 margin: 5px;
             }
             textarea{
-                width:calc( 100% - 10px );
+                width:calc( 100% - 20px );
             }
             input[type=text],input[type=email],input[type=tel]{
                 width:250px;
@@ -52,6 +53,10 @@
                 padding: 5px;
                 border: 1px solid #ddd;
                 background-color: #ffa;
+            }
+            .image_list{
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 1fr;
             }
         </style>
     </head>

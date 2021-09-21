@@ -86,6 +86,9 @@
         undeleteItem:function( <?=$item_name?>_id ){
             ItemList.saveItem(<?=$item_name?>_id,'deleted_at',null).done(ItemList.reload);
         },
+        approve:function( <?=$item_name?>_id,field_name ){
+            $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
+        },
         addItemRequest:{},
         addItem:function(){
             ItemList.addItemRequest.name="NEW ITEM";

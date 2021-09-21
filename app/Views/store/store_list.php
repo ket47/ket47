@@ -4,8 +4,18 @@
     <div class="segment <?=$store->deleted_at?'item_deleted':''?>  <?=$store->is_disabled?'item_disabled':''?>" style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 3fr">
             <div>Название</div>
+            <div class="form_value">
+                <?=$store->store_name?>
+            </div>
+            
             <div>
-                <input type="text" name="store_name.<?=$store->store_id?>" value="<?=$store->store_name?>"/>
+                <?php if(sudo()):?>
+                <a href="javascript:ItemList.approve(<?=$store->store_id?>,'store_name')"><div class="fa fa-check" style="color:green"></div></a>
+                <?php endif; ?>
+                Новое название 
+            </div>
+            <div>
+                <input type="text" name="store_name_new.<?=$store->store_id?>" value="<?=$store->store_name_new?>" minlength="3"/>
             </div>
 
 
@@ -21,9 +31,19 @@
             </div>
 
 
-            <div>Комментарий</div>
+            <div>Описание</div>
+            <div class="form_value">
+                <?=$store->store_description?>
+            </div>
+            
             <div>
-                <textarea name="store_description.<?=$store->store_id?>"><?=$store->store_description?></textarea>
+                <?php if(sudo()):?>
+                <a href="javascript:ItemList.approve(<?=$store->store_id?>,'store_description')"><div class="fa fa-check" style="color:green"></div></a>
+                <?php endif; ?>
+                Новое Описание
+            </div>
+            <div>
+                <textarea name="store_description_new.<?=$store->store_id?>" minlength="10"><?=$store->store_description_new?></textarea>
             </div>
 
         </div>
@@ -50,6 +70,8 @@
             <div>
                 <input type="date" readonly="readonly" name="deleted_at.<?=$store->store_id?>.date" value="<?php $date_time=explode(' ',$store->deleted_at);echo $date_time[0]??''?>"/>
                 <input type="time" readonly="readonly" name="deleted_at.<?=$store->store_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <button type="button" onclick="ItemList.deleteItem(<?=$store->store_id?>)">Удалить</button>
+                <button type="button" onclick="ItemList.undeleteItem(<?=$store->store_id?>)">Восстановить</button>
             </div>
             
             <div>Группы</div>
@@ -63,14 +85,18 @@
             </div>
         </div>
         
-    </div>
-    <div class="store_card_actions" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
-        <div>
-            <button type="button" onclick="ItemList.deleteItem(<?=$store->store_id?>)">Удалить</button>
+        
+        <hr>
+        
+        <div class="image_list">
+            <?php foreach($store->images as $image): ?>
+            <div>
+                <img src="/image/get.php/200-200-<?=$image->image_id?>.jpg"/>
+            </div>
+            <?php endforeach; ?>
         </div>
-        <div>
-            <button type="button" onclick="ItemList.undeleteItem(<?=$store->store_id?>)">Восстановить</button>
-        </div>
+        
+        
     </div>
     <hr>
     <?php endforeach;?>

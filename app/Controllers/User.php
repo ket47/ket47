@@ -67,8 +67,7 @@ class User extends \App\Controllers\BaseController{
         if(is_bool($result) && $result ){
             return $this->respondUpdated(1);
         }
-        return $this->fail($result);    
-    
+        return $this->fail($result);
     }
     
     public function itemDelete(){
@@ -253,13 +252,13 @@ class User extends \App\Controllers\BaseController{
 
         $UserVerificationModel=model('UserVerificationModel');
         $result=$UserVerificationModel->phoneVerify($user_phone_cleared,$verification_code);
-        if( $result=='verification_completed' ){
-            return $this->respond('verified');
+        if( $result==='verification_completed' ){
+            return $this->respond('verification_completed');
         }
-        if( $result=='verification_not_found' ){
-            return $this->failNotFound();
+        if( $result==='verification_not_found' ){
+            return $this->failNotFound('verification_not_found');
         }
-        return $this->fail('unverified');
+        return $this->fail('verification_error');
     }
     
     

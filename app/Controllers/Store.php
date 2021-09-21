@@ -72,4 +72,48 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->respondDeleted($ok);        
     }
+    
+    public function itemUpdateGroup(){
+        $store_id=$this->request->getVar('store_id');
+        $group_id=$this->request->getVar('group_id');
+        $is_joined=$this->request->getVar('is_joined');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemUpdateGroup($store_id,$group_id,$is_joined);
+        
+        if(is_bool($result) && $result ){
+            return $this->respondUpdated(1);
+        }
+        if( $StoreModel->errors() ){
+            return $this->failValidationError(json_encode($UserModel->errors()));
+        }
+        return $this->fail($result);
+    }
+    
+    public function itemDisable(){
+        $store_id=$this->request->getVar('store_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemDisable($store_id,$is_disabled);
+        
+        if( is_bool($result) && $result ){
+            return $this->respondUpdated(1);
+        }
+        return $this->fail($result);
+    }
+    
+    
+    public function fieldApprove(){
+        $store_id=$this->request->getVar('store_id');
+        $field_name=$this->request->getVar('field_name');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->fieldApprove( $store_id, $field_name );
+        if( is_bool($result) && $result ){
+            return $this->respondUpdated('field_approve_ok');
+        }
+        return $this->failForbidden('field_approve_error');
+    }
+
 }

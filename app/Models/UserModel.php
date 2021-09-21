@@ -256,6 +256,15 @@ class UserModel extends Model{
         return $user_id;
     }
     
+    public function verifyUser( $user_id ){
+        $this->allowedFields[]='user_phone_verified';
+        $ok=$this->update(['user_id'=>$user_id],['user_phone_verified'=>1]);
+        if( $ok ){
+            return 'verification_completed';
+        }
+        return 'verification_error';
+    }
+    
     public function passRecoveryCheckPhone($user_phone,$user_name){
          //should we send pass to only verified phone or it could be mechanism to generate pass?
         return $this->where('user_phone',$user_phone)
