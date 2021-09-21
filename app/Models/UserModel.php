@@ -16,6 +16,7 @@ class UserModel extends Model{
         'user_phone',
         'user_email',
         'user_pass',
+        'user_avatar_name',
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -142,6 +143,7 @@ class UserModel extends Model{
             user_phone_verified,
             user_email,
             user_email_verified,
+            user_avatar_name,
             is_disabled,
             signed_in_at,
             signed_out_at,
@@ -257,7 +259,6 @@ class UserModel extends Model{
     public function passRecoveryCheckPhone($user_phone,$user_name){
          //should we send pass to only verified phone or it could be mechanism to generate pass?
         return $this->where('user_phone',$user_phone)
-                ->where('user_phone_verified',1)
                 ->where('user_name',$user_name)
                 ->get()->getRow('user_id');
     }
