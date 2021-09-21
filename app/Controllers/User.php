@@ -67,10 +67,9 @@ class User extends \App\Controllers\BaseController{
         if(is_bool($result) && $result ){
             return $this->respondUpdated(1);
         }
-        if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
-        }
-        return $this->fail($result);    }
+        return $this->fail($result);    
+    
+    }
     
     public function itemDelete(){
         $user_id=$this->request->getVar('user_id');

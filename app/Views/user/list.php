@@ -3,6 +3,7 @@
     <h2><?=$user->user_surname?> <?=$user->user_name?></h2>
     <div class="segment <?=$user->deleted_at?'item_deleted':''?> <?=$user->is_disabled?'item_disabled':''?>" style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 2fr">
+            
             <div>Имя</div>
             <div>
                 <input type="text" name="user_name.<?=$user->user_id?>" value="<?=$user->user_name?>"/>
@@ -29,11 +30,15 @@
                 <input type="email" name="user_email.<?=$user->user_id?>" value="<?=$user->user_email?>"/>
             </div>
 
-
-            <div>Комментарий</div>
+            <div>Изображение</div>
             <div>
-                <textarea name="user_comment.<?=$user->user_id?>"><?=$user->user_comment?></textarea>
+                <?php if($user->user_image??0):?>
+                <img src="img/get.php/100_100_<?=$user->user_image?>.jpg">
+                <?php endif;?>
+                <button type="button">Upload</button>
+                <button type="button">Delete</button>
             </div>
+
 
         </div>
         <div style="display:grid;grid-template-columns:1fr 2fr">

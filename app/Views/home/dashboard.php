@@ -21,7 +21,7 @@
             <a href="Home/user_login_form" target="scr">Sign In</a><br>
             <a href="User/signOut" target="scr">Sign Out</a><br>
             <a href="Home/user_password_reset" target="scr">Password Reset</a><br>
-            <a href="Home/user_phone_verification" target="scr">Password Verification</a><br>
+            <a href="Home/user_phone_verification" target="scr">Phone Verification</a><br>
         </div>
         <iframe name="scr" style="width:100%;height: 100vh;border: none;"></iframe>
     </div>

@@ -78,7 +78,7 @@
             $.post('/<?=$ItemName?>/itemUpdateGroup',{<?=$item_name?>_id,group_id,is_joined}).fail(ItemList.reload);
         },
         saveItemDisabled:function(<?=$item_name?>_id,is_disabled){
-            $.post('/<?=$ItemName?>/itemDisable',{<?=$item_name?>_id,is_disabled}).then(ItemList.reload);
+            $.post('/<?=$ItemName?>/itemDisable',{<?=$item_name?>_id,is_disabled}).always(ItemList.reload);
         },
         deleteItem:function( <?=$item_name?>_id ){
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);

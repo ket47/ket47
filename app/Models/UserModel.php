@@ -56,6 +56,12 @@ class UserModel extends Model{
             $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
             unset($user->user_pass);
         }
+        if($user){
+            $GroupMemberModel=model('GroupMemberModel');
+            $GroupMemberModel->tableSet('user_group_member_list');
+            $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
+            unset($user->user_pass);
+        }
         return $user;
     }
     
@@ -85,7 +91,7 @@ class UserModel extends Model{
             $data->user_email_verified=0;
         }
         $this->permitWhere('w');
-        $result=$this->updateBatch([$data],'user_id');
+        $result=$this->update(['user_id'=>$data->user_id],$data);
         $this->protect(true);
         return $result;
     }
@@ -136,7 +142,6 @@ class UserModel extends Model{
             user_phone_verified,
             user_email,
             user_email_verified,
-            user_comment,
             is_disabled,
             signed_in_at,
             signed_out_at,
