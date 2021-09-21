@@ -154,6 +154,9 @@ class User extends \App\Controllers\BaseController{
         
         $sms_send_ok=false;
         $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared,$user_name);
+        if( !$phone_user_id ){
+            return $this->failNotFound('password_reset_user_not_found');
+        }
         if( $user_phone_cleared && $phone_user_id ){
             $msg_data=[
                 'new_pass'=>$new_password
@@ -201,7 +204,6 @@ class User extends \App\Controllers\BaseController{
         } else {
             return $this->fail('password_reset_was_not_sent');
         }
-        return $this->failNotFound('password_reset_user_not_found');
     }
     ///////////////////////////////////////////////
     //VERIFICATION SECTION
