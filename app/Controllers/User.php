@@ -111,16 +111,16 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $result=$UserModel->signIn($user_phone_cleared,$user_pass);
         if( $result=='user_not_found' ){
-            return $this->failNotFound('There is no user with such phone number','user_not_found');
+            return $this->failNotFound('user_not_found');
         }
         if( $result=='user_pass_wrong' ){
-            return $this->failUnauthorized('User exists but password is wrong!','user_pass_wrong');
+            return $this->failUnauthorized('user_pass_wrong');
         }
         if( $result=='user_is_disabled' ){
-            return $this->failUnauthorized('User exists but blocked!','user_is_disabled');
+            return $this->failUnauthorized('user_is_disabled');
         }
         if( $result=='user_phone_unverified' ){
-            return $this->failForbidden('It is needed to send confirmation SMS to user.','user_phone_unverified');
+            return $this->failForbidden('user_phone_unverified');
         }
         if( $result=='ok' ){
             $user=$UserModel->getSignedUser();
