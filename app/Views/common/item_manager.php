@@ -89,6 +89,38 @@
         approve:function( <?=$item_name?>_id,field_name ){
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
         },
+        fileUpload:function(filelist){
+            if( filelist.length ){
+                let attached_count=0;
+                let total_size_limit=10000000;
+                for(let fl of filelist){
+                    total_size_limit-=fl.size;
+                    if(total_size_limit<0){
+                        alert("Разовый объем файлов должен быть не больше 10МБ.\nПрикреплено только: "+attached_count+"файлов");
+                        break;
+                    }
+                    ItemList.fileUploadFormData.append("files[]", fl);
+                    attached_count++;
+                }
+                ItemList.fileUploadXhr.send(ItemList.fileUploadFormData);
+            }
+        },
+        fileUploadFormData:null,
+        fileUploadXhr:null,
+        fileUploadInit:function( image_holder_id ){
+            var url = '/<?=$ItemName?>/fileUpload';
+            ItemList.fileUploadXhr = new XMLHttpRequest();
+            ItemList.fileUploadFormData = new FormData();
+            ItemList.fileUploadFormData.set('image_holder_id',image_holder_id);
+            
+            ItemList.fileUploadXhr.open("POST", url, true);
+            ItemList.fileUploadXhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    ItemList.reload();
+                }
+            };
+            $('#itemlist_uploader').click();
+        },
         addItemRequest:{},
         addItem:function(){
             ItemList.addItemRequest.name="NEW ITEM";
@@ -124,5 +156,6 @@
     };
     $(ItemList.init);
 </script>
+<input type="file" id="itemlist_uploader" name="items[]" multiple style="display:none" onchange="ItemList.fileUpload(this.files)">
 <?=$html_after??'' ?>
 <?=view('home/footer')?>

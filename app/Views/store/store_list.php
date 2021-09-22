@@ -85,17 +85,19 @@
             </div>
         </div>
         
-        
-        <hr>
-        
-        <div class="image_list">
-            <?php foreach($store->images as $image): ?>
-            <div>
-                <img src="/image/get.php/200-200-<?=$image->image_id?>.jpg"/>
-            </div>
-            <?php endforeach; ?>
+        <div style="grid-column: 1 / span 2">
+            <h3>Изображения</h3>
         </div>
-        
+        <div class="segment secondary" style="grid-column: 1 / span 2">
+            <a href="#" onclick="ItemList.fileUploadInit(<?=$store->store_id?>)"><span class="fa fa-upload"></span> upload</a>
+            <div class="image_list">
+                <?php foreach($store->images as $image): ?>
+                <div>
+                    <img src="/image/get.php/200-200-<?=$image->image_id?>.jpg"/>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
         
     </div>
     <hr>

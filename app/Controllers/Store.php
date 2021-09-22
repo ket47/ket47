@@ -116,4 +116,34 @@ class Store extends \App\Controllers\BaseController{
         return $this->failForbidden('field_approve_error');
     }
 
+    public function fileUpload(){
+        $image_holder_id=$this->request->getVar('image_holder_id');
+        $items = $this->request->getFiles();
+        if(!$items){
+            return $this->failResourceGone('no_files_uploaded');
+        }
+        foreach($items['files'] as $file){
+            $type = $file->getClientMimeType();
+            if(!str_contains($type, 'image')){
+                continue;
+            }
+            if ($file->isValid() && ! $file->hasMoved()) {
+                $newName = $file->getRandomName();
+                $file->move(WRITEPATH.'uploads', $newName);
+                $this->fileStoreImage($newName);
+            }
+        }
+    }
+    
+    private function fileStoreImage( $file_name ){
+        \Config\Services::image('imagick')
+        ->withFile(WRITEPATH.'uploads/'.$file_name)
+        ->resize(1024, 1024, true, 'height')
+        ->save('/path/to/new/image.jpg');
+        
+        
+        
+        
+        echo $file_name;
+    }
 }

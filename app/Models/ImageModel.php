@@ -2,12 +2,12 @@
 namespace App\Models;
 use CodeIgniter\Model;
 
-class StoreImageModel extends Model{
+class ImageModel extends Model{
     
     use PermissionTrait;
     use FilterTrait;
     
-    protected $table      = 'user_image_list';
+    protected $table      = 'image_list';
     protected $primaryKey = 'image_id';
     protected $allowedFields = [
         'user_name',
@@ -18,20 +18,38 @@ class StoreImageModel extends Model{
         'user_pass',
         ];
     
-    protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     
     
     public function itemGet(){
         return false;
     }
+    
     public function itemCreate(){
         return false;
     }
+    
     public function itemUpdate(){
         return false;
     }
+    
     public function itemDelete(){
+        return false;
+    }
+    
+    public function listGet(){
+        return [];
+    }
+    
+    public function listCreate(){
+        return false;
+    }
+    
+    public function listUpdate(){
+        return false;
+    }
+    
+    public function listDelete(){
         return false;
     }
 }
