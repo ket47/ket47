@@ -48,6 +48,10 @@
                 margin-top: 8px;
                 margin-bottom: 8px;
             }
+            .secondary{
+                background-color: #eee;
+                border-radius: 5px;
+            }
             .filter #item_name_search{
                 width:calc( 100% - 10px );
                 padding: 5px;
