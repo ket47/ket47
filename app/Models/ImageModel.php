@@ -12,34 +12,42 @@ class ImageModel extends Model{
     protected $allowedFields = [
         'image_holder',
         'image_holder_id',
-        'image_extension',
-        'image_description'
+        'image_hash'
         ];
 
     protected $useSoftDeletes = true;
-    
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';    
     
     public function itemGet(){
         return false;
     }
     
-    public function itemCreate(){
-        
-        return false;
+    public function itemCreate( $data ){
+        $this->allowedFields[]='is_disabled';
+        $this->allowedFields[]='owner_id';
+        $data['is_disabled']=1;
+        $data['owner_id']=session()->get('user_id');
+        $data['image_hash']=md5(microtime().rand(1,1000));
+        if( $this->insert($data) ){
+            return $data['image_hash'];
+        }
+        return null;
     }
     
-    public function itemUpdate(){
-        return false;
+    public function itemUpdate( $data ){
+        return $this->update($data['image_id'],$data);
     }
     
     public function itemDelete(){
         return false;
     }
     
-    public function listGet(){
-        return [
-            
-        ];
+    public function listGet( $filter ){
+        $this->filterMake($filter);
+        return $this->get()->getResult();
     }
     
     public function listCreate(){

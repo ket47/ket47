@@ -60,8 +60,23 @@
             }
             .image_list{
                 display: grid;
-                grid-template-columns: 1fr 1fr 1fr 1fr;
+                grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
                 grid-gap:5px;
+            }
+            .image_list div{
+                border-radius: 8px;
+                overflow: hidden;
+                height:90px;
+                width:160px;
+                background: no-repeat center white;
+            }
+            .image_list div.disabled{
+                filter:grayscale(90%);
+            }
+            .vcenter{
+                display: flex;
+                justify-content: center;
+                align-items: center;
             }
         </style>
     </head>

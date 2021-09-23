@@ -39,7 +39,11 @@ class StoreModel extends Model{
                 $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
                 $filter=[
                     'image_holder'=>'store',
-                    'image_holder_id'=>$store->store_id
+                    'image_holder_id'=>$store->store_id,
+                    'is_disabled'=>1,
+                    'is_deleted'=>1,
+                    'is_active'=>1,
+                    'limit'=>5
                 ];
                 $store->images=$ImageModel->listGet($filter);
             }
@@ -85,6 +89,16 @@ class StoreModel extends Model{
         return 'item_create_error';
     }
     
+    public function itemCreateImage( $data ){
+        $data['is_disabled']=1;
+        $data['owner_id']=session()->get('user_id');
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemCreate($data);
+        }
+        return 0;
+    }
+    
     public function itemUpdate( $data ){
         return $this->listUpdate([$data]);
     }
@@ -99,14 +113,17 @@ class StoreModel extends Model{
         if( !$target_group ){
             return 'item_update_group_not_found';
         }
-        
-//        $allowed_group_types=['supplier','courier'];
-//        if( !in_array($target_group->group_type, $allowed_group_types) && !sudo() ){
-//            return 'item_update_forbidden';
-//        }
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
         return $GroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
+    }
+
+    public function itemUpdateImage( $data ){
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemUpdate($data);
+        }
+        return 0;
     }
     
     public function itemDelete( $store_id ){

@@ -89,15 +89,20 @@
             </div>
         </div>
 
-        <div style="background-color: #eee;border-radius: 5px;padding: 5px">
+        <div class="segment secondary">
             <h3>Изображения </h3>
-            <a href="#">Upload new <span class="fa fa-upload"></span></a>
+            
             <div class="image_list">
-                <?php foreach ($store->images as $image): ?>
-                    <div>
-                        <img src="/image/get.php/200-200-<?= $image->image_id ?>.jpg"/>
-                    </div>
+                <?php foreach ($store->images as $image):?>
+                <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
+                     class="vcenter <?= $image->is_disabled ? 'disabled' : '' ?>">
+                    <?= $image->is_disabled ? 'Ждет одобрения' : '' ?>
+                    
+                </div>
                 <?php endforeach; ?>
+                <div class="vcenter">
+                    <a href="javascript:ItemList.fileUploadInit(<?= $store->store_id ?>)">Загрузить <span class="fa fa-plus"></span></a>
+                </div>
             </div>
         </div>
         

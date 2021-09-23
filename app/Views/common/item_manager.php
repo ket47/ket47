@@ -115,7 +115,7 @@
             
             ItemList.fileUploadXhr.open("POST", url, true);
             ItemList.fileUploadXhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
+                if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 200) {
                     ItemList.reload();
                 }
             };

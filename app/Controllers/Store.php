@@ -128,22 +128,28 @@ class Store extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $newName = $file->getRandomName();
-                $file->move(WRITEPATH.'uploads', $newName);
-                $this->fileStoreImage($newName);
+                $this->fileStoreImage($image_holder_id,$file);
             }
         }
+        return $this->respondCreated('file_upload_register_ok');
     }
     
-    private function fileStoreImage( $file_name ){
-        \Config\Services::image('imagick')
-        ->withFile(WRITEPATH.'uploads/'.$file_name)
+    private function fileStoreImage( $image_holder_id, $file ){
+        $image_data=[
+            'image_holder'=>'store',
+            'image_holder_id'=>$image_holder_id
+        ];
+        $StoreModel=model('StoreModel');
+        $image_hash=$StoreModel->itemCreateImage($image_data);
+        if( !$image_hash ){
+            return $this->failForbidden('file_upload_register_forbidden');
+        }
+        $file->move(WRITEPATH.'images/', $image_hash.'.webp');
+        
+        \Config\Services::image()
+        ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
         ->resize(1024, 1024, true, 'height')
-        ->save('/path/to/new/image.jpg');
-        
-        
-        
-        
-        echo $file_name;
+        ->convert(IMAGETYPE_WEBP)
+        ->save();
     }
 }
