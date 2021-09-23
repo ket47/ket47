@@ -83,8 +83,8 @@
 
             <div>Изменен</div>
             <div>
-                <input type="date" readonly="readonly" name="modified_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->modified_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="modified_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <input type="date" readonly="readonly" name="updated_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->modified_at);echo $date_time[0]??''?>"/>
+                <input type="time" readonly="readonly" name="updated_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
             </div>
 
             <div>Удален</div>

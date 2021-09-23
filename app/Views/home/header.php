@@ -57,6 +57,7 @@
             .image_list{
                 display: grid;
                 grid-template-columns: 1fr 1fr 1fr 1fr;
+                grid-gap:5px;
             }
         </style>
     </head>

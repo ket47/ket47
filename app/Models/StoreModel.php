@@ -32,12 +32,16 @@ class StoreModel extends Model{
         $store_list = $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
+        
+        $ImageModel=model('ImageModel');
         foreach($store_list as $store){
             if($store){
                 $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
-                
-                $filter=[];
-                $store->images=$ImageModel->itemListGet($store->store_id);
+                $filter=[
+                    'image_holder'=>'store',
+                    'image_holder_id'=>$store->store_id
+                ];
+                $store->images=$ImageModel->listGet($filter);
             }
         }
         return $store_list;

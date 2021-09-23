@@ -148,7 +148,7 @@ class UserModel extends Model{
             signed_in_at,
             signed_out_at,
             created_at,
-            modified_at,
+            updated_at,
             deleted_at");
         $user_list= $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
