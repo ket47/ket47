@@ -73,6 +73,7 @@ class UserModel extends Model{
             $GroupMemberModel=model('GroupMemberModel');
             $GroupMemberModel->tableSet('user_group_member_list');
             $GroupMemberModel->joinGroupByType($user_id,'customer');
+            $this->allowedFields[]='owner_id';
             $this->update($user_id,['owner_id'=>$user_id]);
         }
         $this->transComplete();
