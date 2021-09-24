@@ -113,7 +113,7 @@ class Store extends \App\Controllers\BaseController{
         if( is_bool($result) && $result ){
             return $this->respondUpdated('field_approve_ok');
         }
-        return $this->failForbidden('field_approve_error');
+        return $this->fail('field_approve_error');
     }
 
     public function fileUpload(){
