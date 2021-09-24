@@ -89,6 +89,12 @@
         approve:function( <?=$item_name?>_id,field_name ){
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
         },
+        imageApprove:function( image_id ){
+            $.post('/<?=$ItemName?>/imageApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
+        },
+        imageDelete:function( image_id ){
+            $.post('/<?=$ItemName?>/imageDelete',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);            
+        },
         fileUpload:function(filelist){
             if( filelist.length ){
                 let attached_count=0;

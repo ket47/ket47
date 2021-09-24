@@ -95,14 +95,14 @@
             <div class="image_list">
                 <?php foreach ($store->images as $image):?>
                 <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
-                     class="vcenter <?= $image->is_disabled ? 'disabled' : '' ?>">
+                     class=" <?= $image->is_disabled ? 'disabled' : '' ?>">
                     
                     <?php if (sudo()): ?>
                     <a href="javascript:ItemList.imageApprove(<?= $image->image_id ?>)"><div class="fa fa-check" style="color:green"></div></a>
                     <?php endif; ?>
-                    <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-delete" style="color:red"></div></a>
+                    <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-trash" style="color:red"></div></a>
 
-                    <br>
+                    <br><br>
                     <?= $image->is_disabled ? 'Ждет одобрения' : '' ?>
                     
                 </div>

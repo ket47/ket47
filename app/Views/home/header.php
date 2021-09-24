@@ -69,9 +69,10 @@
                 height:90px;
                 width:160px;
                 background: no-repeat center white;
+                text-align: center;
             }
             .image_list>div.disabled{
-                filter:grayscale(90%);
+                border:5px #999 solid;
             }
             .vcenter{
                 display: flex;
