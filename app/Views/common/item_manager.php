@@ -60,6 +60,22 @@
         val:function( $input ){
             return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
+        dnd:{
+            init:function(){
+                
+            },
+            allowDrop:function(){
+                e.preventDefault();
+            },
+            drag:function(){
+                e.dataTransfer.setData("text", e.target.id);
+            },
+            drop:function(){
+                e.preventDefault();
+                var data = e.dataTransfer.getData("text");
+                e.target.appendChild(document.getElementById(data));
+            }
+        },
         saveItem:function (<?=$item_name?>_id,name,value){
             var data={
                 <?=$item_name?>_id
@@ -90,10 +106,13 @@
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
         },
         imageApprove:function( image_id ){
-            $.post('/<?=$ItemName?>/imageApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
+            $.post('/<?=$ItemName?>/imageApprove',{image_id}).always(ItemList.reload);
         },
         imageDelete:function( image_id ){
-            $.post('/<?=$ItemName?>/imageDelete',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);            
+            if( !confirm("Удалить?") ){
+                return false;
+            }
+            $.post('/<?=$ItemName?>/imageDelete',{image_id}).always(ItemList.reload);            
         },
         fileUpload:function(filelist){
             if( filelist.length ){
@@ -121,7 +140,7 @@
             
             ItemList.fileUploadXhr.open("POST", url, true);
             ItemList.fileUploadXhr.onreadystatechange = function() {
-                if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 200) {
+                if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 201) {
                     ItemList.reload();
                 }
             };

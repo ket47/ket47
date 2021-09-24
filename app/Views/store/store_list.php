@@ -97,10 +97,12 @@
                 <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
                      class=" <?= $image->is_disabled ? 'disabled' : '' ?>">
                     
-                    <?php if (sudo()): ?>
+                    <a href="javascript:ItemList.imageOrder(<?= $image->image_id ?>)"><div class="fa fa-arrow-left" style="color:black"></div></a>
+                    <?php if ( sudo() && $image->is_disabled ): ?>
                     <a href="javascript:ItemList.imageApprove(<?= $image->image_id ?>)"><div class="fa fa-check" style="color:green"></div></a>
                     <?php endif; ?>
                     <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-trash" style="color:red"></div></a>
+                    <a href="/image/get.php/<?= $image->image_hash ?>.1024.1024.webp" target="imagepreview"><div class="fa fa-eye" style="color:blue"></div></a>
 
                     <br><br>
                     <?= $image->is_disabled ? 'Ждет одобрения' : '' ?>

@@ -43,7 +43,7 @@ class StoreModel extends Model{
                     'is_disabled'=>1,
                     'is_deleted'=>1,
                     'is_active'=>1,
-                    'limit'=>5
+                    'limit'=>30
                 ];
                 $store->images=$ImageModel->listGet($filter);
             }
@@ -151,5 +151,35 @@ class StoreModel extends Model{
             "{$field_name}_new"=>""
         ];
         return $this->update(['store_id'=>$store_id],$data);
+    }
+    
+    public function imageApprove( $image_id ){
+        if( !sudo() ){
+            return 'image_approve_forbidden';
+        }
+        
+        $is_disabled=0;
+        $ImageModel=model('ImageModel');
+        $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
+        if( $ok ){
+            return 'image_approve_ok';
+        }
+        return 'image_approve_error';
+    }
+    
+    
+    public function imageDelete( $image_id ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $store_id=$image->image_holder_id;
+        if( !$this->permit($store_id,'w') ){
+            return 'image_delete_forbidden';
+        }
+        $ok=$ImageModel->itemDelete( $image_id );
+        if( $ok ){
+            return 'image_delete_ok';
+        }
+        return 'image_delete_error';
     }
 }

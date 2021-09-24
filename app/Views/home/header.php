@@ -64,10 +64,10 @@
                 grid-gap:5px;
             }
             .image_list>div{
+                border:5px #fff solid;
                 border-radius: 8px;
                 overflow: hidden;
                 height:90px;
-                width:160px;
                 background: no-repeat center white;
                 text-align: center;
             }

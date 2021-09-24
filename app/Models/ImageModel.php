@@ -21,8 +21,8 @@ class ImageModel extends Model{
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';    
     
-    public function itemGet(){
-        return false;
+    public function itemGet( $image_id ){
+        return $this->where('image_id',$image_id)->get()->getRow();
     }
     
     public function itemCreate( $data ){
@@ -41,9 +41,28 @@ class ImageModel extends Model{
         return $this->update($data['image_id'],$data);
     }
     
-    public function itemDelete(){
-        return false;
+    public function itemDelete( $image_id ){
+        $image=$this->itemGet($image_id);
+        
+        $found_sources=glob(WRITEPATH.'images/'.$image->image_hash.'*');
+        $found_optimised=glob(WRITEPATH.'images/optimised/'.$image->image_hash.'*');
+        $found=array_merge($found_optimised,$found_sources);
+        foreach($found as $filename){
+            unlink($filename);
+        }
+        return $this->delete([$image_id],true);
     }
+    
+    public function itemDisable( $image_id, $is_disabled ){
+        $this->allowedFields[]='is_disabled';
+        return $this->update(['image_id'=>$image_id],['is_disabled'=>$is_disabled]);
+    }
+    
+    
+    
+    
+    
+    
     
     public function listGet( $filter ){
         $this->filterMake($filter);

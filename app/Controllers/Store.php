@@ -152,4 +152,26 @@ class Store extends \App\Controllers\BaseController{
         ->convert(IMAGETYPE_WEBP)
         ->save();
     }
+    
+    public function imageApprove(){
+        $image_id=$this->request->getVar('image_id');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->imageApprove( $image_id );
+        if( $result==='image_approve_ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+    
+    public function imageDelete(){
+        $image_id=$this->request->getVar('image_id');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->imageDelete( $image_id );
+        if( $result==='image_delete_ok' ){
+            return $this->respondDeleted($result);
+        }
+        return $this->fail($result);
+    }
 }
