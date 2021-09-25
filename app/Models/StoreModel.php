@@ -14,6 +14,8 @@ class StoreModel extends Model{
         'store_phone',
         'store_email',
         'store_description_new',
+        'store_tax_num',
+        'store_company_name',
         'deleted_at',
         'owner_id',
         'owner_ally_id'

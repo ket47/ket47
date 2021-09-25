@@ -57,12 +57,6 @@ class UserModel extends Model{
             $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
             unset($user->user_pass);
         }
-        if($user){
-            $GroupMemberModel=model('GroupMemberModel');
-            $GroupMemberModel->tableSet('user_group_member_list');
-            $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
-            unset($user->user_pass);
-        }
         return $user;
     }
     

@@ -31,7 +31,6 @@
                     <input type="email" name="store_email.<?= $store->store_id ?>" value="<?= $store->store_email ?>"/>
                 </div>
 
-
                 <div>Описание</div>
                 <div class="form_value">
                     <?= $store->store_description ?>
@@ -48,6 +47,17 @@
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 3fr">
+                
+                <div>ИНН</div>
+                <div>
+                    <input type="number" name="store_tax_num.<?= $store->store_id ?>" value="<?= $store->store_tax_num ?>"/>
+                </div>
+                
+                <div>Предпирятие</div>
+                <div>
+                    <input type="email" name="store_company_name.<?= $store->store_id ?>" value="<?= $store->store_company_name ?>"/>
+                </div>
+
 
                 <div>Отключен</div>
                 <div>

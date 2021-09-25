@@ -56,6 +56,11 @@ class BaseController extends Controller
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
+                if( session()->get('user_id')==null ){
+                    $PermissionModel=model('PermissionModel');
+                    $PermissionModel->listFillSession();
+                    session()->set('user_id',0);
+                }
 		$this->session = \Config\Services::session();
 //                header('Access-Control-Allow-Origin: *');
 //                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");

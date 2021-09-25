@@ -6,7 +6,7 @@ trait FilterTrait{
             return null;
         }
         $filter[$this->primaryKey]??=0;
-        $filter['is_active']??=0;
+        $filter['is_active']??=1;
         $filter['is_disabled']??=0;
         $filter['is_deleted']??=0;
         $filter['limit']??=30;
