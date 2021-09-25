@@ -83,7 +83,7 @@
 
             <div>Изменен</div>
             <div>
-                <input type="date" readonly="readonly" name="updated_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->modified_at);echo $date_time[0]??''?>"/>
+                <input type="date" readonly="readonly" name="updated_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->updated_at);echo $date_time[0]??''?>"/>
                 <input type="time" readonly="readonly" name="updated_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
             </div>
 
@@ -91,6 +91,8 @@
             <div>
                 <input type="date" readonly="readonly" name="deleted_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->deleted_at);echo $date_time[0]??''?>"/>
                 <input type="time" readonly="readonly" name="deleted_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <button type="button" onclick="ItemList.deleteItem(<?=$user->user_id?>)">Удалить</button>
+                <button type="button" onclick="ItemList.undeleteItem(<?=$user->user_id?>)">Восстановить</button>
             </div>
             
             <div>Группы</div>
@@ -104,14 +106,6 @@
             </div>
         </div>
         
-    </div>
-    <div class="user_card_actions" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
-        <div>
-            <button type="button" onclick="ItemList.deleteItem(<?=$user->user_id?>)">Удалить пользователя</button>
-        </div>
-        <div>
-            <button type="button" onclick="ItemList.undeleteItem(<?=$user->user_id?>)">Восстановить пользователя</button>
-        </div>
     </div>
     <hr style="border:1px inset #ccc">
     <?php endforeach;?>

@@ -20,17 +20,6 @@
                 </div>
 
 
-                <div>Телефон</div>
-                <div>
-                    <input type="tel" name="store_phone.<?= $store->store_id ?>" value="<?= $store->store_phone ?>"/>
-                </div>
-
-
-                <div>Емаил</div>
-                <div>
-                    <input type="email" name="store_email.<?= $store->store_id ?>" value="<?= $store->store_email ?>"/>
-                </div>
-
                 <div>Описание</div>
                 <div class="form_value">
                     <?= $store->store_description ?>
@@ -44,6 +33,17 @@
                 </div>
                 <div>
                     <textarea name="store_description_new.<?= $store->store_id ?>" minlength="10"><?= $store->store_description_new ?></textarea>
+                </div>
+
+                <div>Телефон</div>
+                <div>
+                    <input type="tel" name="store_phone.<?= $store->store_id ?>" value="<?= $store->store_phone ?>"/>
+                </div>
+
+
+                <div>Емаил</div>
+                <div>
+                    <input type="email" name="store_email.<?= $store->store_id ?>" value="<?= $store->store_email ?>"/>
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 3fr">

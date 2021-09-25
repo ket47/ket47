@@ -95,7 +95,10 @@ class ImageModel extends Model{
     
     public function listGet( $filter ){
         $filter['order']='image_order';
+        $filter['limit']=5;
         $this->filterMake($filter);
+        $this->where('image_holder',$filter['image_holder']);
+        $this->where('image_holder_id',$filter['image_holder_id']);
         return $this->get()->getResult();
     }
     

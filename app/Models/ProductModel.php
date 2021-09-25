@@ -41,33 +41,44 @@ class ProductModel extends Model{
         return $data;
     }
     
-    public function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
-        parent::__construct($db, $validation);
-        if( sudo() ){
-            $adminAllowedFields=[
-                'is_disabled',
-                'deleted_at',
-                'owner_id',
-                'owner_ally_id'
-                ];
-            $this->allowedFields=array_merge($this->allowedFields,$adminAllowedFields);
-        }
-    }
+//    public function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
+//        parent::__construct($db, $validation);
+//        if( sudo() ){
+//            $adminAllowedFields=[
+//                'is_disabled',
+//                'deleted_at',
+//                'owner_id',
+//                'owner_ally_id'
+//                ];
+//            $this->allowedFields=array_merge($this->allowedFields,$adminAllowedFields);
+//        }
+//    }
     
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
-        $this->orderBy('modified_at','DESC');
+        $this->orderBy('updated_at','DESC');
         $this->permitWhere('r');
         $product_list= $this->get()->getResult();
-        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('product_group_member_list');
+        $ImageModel=model('ImageModel');
+        
         foreach($product_list as $product){
             if($product){
-                $product->member_of_groups=$ProductGroupMemberModel->productmemberOfGroupsGet($product->product_id);
+                $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
+                $filter=[
+                    'image_holder'=>'product',
+                    'image_holder_id'=>$product->product_id,
+                    'is_disabled'=>1,
+                    'is_deleted'=>1,
+                    'is_active'=>1,
+                    'limit'=>30
+                ];
+                $product->images=$ImageModel->listGet($filter);
             }
         }
         return $product_list;
     }
-    
     
     public function listCreate( $list ){
         if( !$list || !$list[0] ){
@@ -85,6 +96,8 @@ class ProductModel extends Model{
         }
         $this->current_store_id=$store->store_id;
         $this->current_store_owner=$store->owner_id;
+        
+        $this->allowedFields[]='owner_id';
         return $this->insertBatch($list,true);
     }
     
@@ -127,7 +140,89 @@ class ProductModel extends Model{
         return $this->listUpdate([$product]);
     }
     
+    public function itemUpdateGroup($product_id,$group_id,$is_joined){
+        if( !$this->permit($product_id,'w') ){
+            return 'item_update_forbidden';
+        }
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet('product_group_list');
+        $target_group=$GroupModel->itemGet($group_id);
+        if( !$target_group ){
+            return 'item_update_group_not_found';
+        }
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('product_group_member_list');
+        return $GroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined );
+    }
+    
     public function itemDelete( $product_id ){
         return $this->listDelete([$product_id]);
+    }
+    
+    
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function itemCreateImage( $data ){
+        $data['is_disabled']=1;
+        $data['owner_id']=session()->get('user_id');
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemCreate($data);
+        }
+        return 0;
+    }
+
+    public function itemUpdateImage( $data ){
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemUpdate($data);
+        }
+        return 0;
+    }
+    
+    public function imageApprove( $image_id ){
+        if( !sudo() ){
+            return 'image_approve_forbidden';
+        }
+        
+        $is_disabled=0;
+        $ImageModel=model('ImageModel');
+        $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
+        if( $ok ){
+            return 'image_approve_ok';
+        }
+        return 'image_approve_error';
+    }
+    
+    
+    public function imageDelete( $image_id ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $product_id=$image->image_holder_id;
+        if( !$this->permit($product_id,'w') ){
+            return 'image_delete_forbidden';
+        }
+        $ok=$ImageModel->itemDelete( $image_id );
+        if( $ok ){
+            return 'image_delete_ok';
+        }
+        return 'image_delete_error';
+    }
+    
+    public function imageOrder( $image_id, $dir ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $product_id=$image->image_holder_id;
+        if( !$this->permit($product_id,'w') ){
+            return 'image_order_forbidden';
+        }
+        $ok=$ImageModel->itemUpdateOrder( $image_id, $dir );
+        if( $ok ){
+            return 'image_order_ok';
+        }
+        return 'image_order_error';
     }
 }

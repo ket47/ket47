@@ -84,9 +84,6 @@ class Store extends \App\Controllers\BaseController{
         if(is_bool($result) && $result ){
             return $this->respondUpdated(1);
         }
-        if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
-        }
         return $this->fail($result);
     }
     
@@ -116,6 +113,9 @@ class Store extends \App\Controllers\BaseController{
         return $this->fail('field_approve_error');
     }
 
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function fileUpload(){
         $image_holder_id=$this->request->getVar('image_holder_id');
         $items = $this->request->getFiles();
@@ -128,7 +128,7 @@ class Store extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileStoreImage($image_holder_id,$file);
+                $result=$this->fileSaveImage($image_holder_id,$file);
                 if( $result!==true ){
                     return $result;
                 }
@@ -137,7 +137,7 @@ class Store extends \App\Controllers\BaseController{
         return $this->respondCreated('file_upload_register_ok');
     }
     
-    private function fileStoreImage( $image_holder_id, $file ){
+    private function fileSaveImage( $image_holder_id, $file ){
         $image_data=[
             'image_holder'=>'store',
             'image_holder_id'=>$image_holder_id

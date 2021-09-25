@@ -16,7 +16,7 @@ class GroupMemberModel extends Model{
     
     public function tableSet( $table_name ){
         $allowed_tables=[
-            'member_group_member_list',
+            'product_group_member_list',
             'store_group_member_list',
             'user_group_member_list'
         ];

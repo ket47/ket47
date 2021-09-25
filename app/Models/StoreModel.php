@@ -91,15 +91,6 @@ class StoreModel extends Model{
         return 'item_create_error';
     }
     
-    public function itemCreateImage( $data ){
-        $data['is_disabled']=1;
-        $data['owner_id']=session()->get('user_id');
-        if( $this->permit($data['image_holder_id'], 'w') ){
-            $ImageModel=model('ImageModel');
-            return $ImageModel->itemCreate($data);
-        }
-        return 0;
-    }
     
     public function itemUpdate( $data ){
         return $this->listUpdate([$data]);
@@ -120,13 +111,6 @@ class StoreModel extends Model{
         return $GroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
     }
 
-    public function itemUpdateImage( $data ){
-        if( $this->permit($data['image_holder_id'], 'w') ){
-            $ImageModel=model('ImageModel');
-            return $ImageModel->itemUpdate($data);
-        }
-        return 0;
-    }
     
     public function itemDelete( $store_id ){
         $this->permitWhere('w');
@@ -153,6 +137,27 @@ class StoreModel extends Model{
             "{$field_name}_new"=>""
         ];
         return $this->update(['store_id'=>$store_id],$data);
+    }
+    
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function itemCreateImage( $data ){
+        $data['is_disabled']=1;
+        $data['owner_id']=session()->get('user_id');
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemCreate($data);
+        }
+        return 0;
+    }
+
+    public function itemUpdateImage( $data ){
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemUpdate($data);
+        }
+        return 0;
     }
     
     public function imageApprove( $image_id ){

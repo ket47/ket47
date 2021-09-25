@@ -22,7 +22,7 @@ class DevinoSms{
         }
         $session=session();
         if (time() - $session->get('devinoSmsSessionTime') * 1 > 24 * 60) {
-            $sid = json_decode(file_get_contents("$this->gateway/user/sessionId?login=" . $this->user . "&password=" . $this->pass));
+            $sid = json_decode(file_get_contents("{$this->gateway}/user/sessionId?login=" . $this->user . "&password=" . $this->pass));
             if (!$sid) {
                 throw new Exception("Authorization to SMS service failed!");
             }
