@@ -1,6 +1,6 @@
 <?php
 
-function dump( $object ){
+function p( $object ){
     header("Content-Type:text/plain");
     print_r($object);die;
 }

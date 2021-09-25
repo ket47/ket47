@@ -12,7 +12,8 @@ class ImageModel extends Model{
     protected $allowedFields = [
         'image_holder',
         'image_holder_id',
-        'image_hash'
+        'image_hash',
+        'image_order'
         ];
 
     protected $useSoftDeletes = true;
@@ -25,9 +26,19 @@ class ImageModel extends Model{
         return $this->where('image_id',$image_id)->get()->getRow();
     }
     
-    public function itemCreate( $data ){
+    public function itemCreate( $data, $limit=5 ){
+        $inserted_count=$this
+                ->select("COUNT(*) inserted_count")
+                ->where('image_holder_id',$data['image_holder_id'])
+                ->where('image_holder',$data['image_holder'])
+                ->get()
+                ->getRow('inserted_count');
+        if( $inserted_count>=$limit ){
+            return 'image_create_limit_exeeded';
+        }
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
+        $data['image_order']=$inserted_count+1;
         $data['is_disabled']=1;
         $data['owner_id']=session()->get('user_id');
         $data['image_hash']=md5(microtime().rand(1,1000));
@@ -39,6 +50,24 @@ class ImageModel extends Model{
     
     public function itemUpdate( $data ){
         return $this->update($data['image_id'],$data);
+    }
+    
+    public function itemUpdateOrder( $image_id, $dir ){
+        $sql="
+            SELECT 
+                il.image_id, 
+                IF(il.image_id=$image_id,IF('$dir'='up',il.image_order-1.5,il.image_order+1.5),il.image_order) calculated_order,
+                @order:=@order+1 image_order
+            FROM
+                image_list il
+                JOIN (SELECT @order:=0) i
+                JOIN image_list i2 USING(image_holder_id,image_holder)
+            WHERE
+                    i2.image_id=$image_id
+            ORDER BY calculated_order;
+            ";
+        $image_list=$this->query($sql)->getResult();
+        return $this->updateBatch($image_list,'image_id');
     }
     
     public function itemDelete( $image_id ){
@@ -65,6 +94,7 @@ class ImageModel extends Model{
     
     
     public function listGet( $filter ){
+        $filter['order']='image_order';
         $this->filterMake($filter);
         return $this->get()->getResult();
     }

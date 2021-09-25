@@ -60,22 +60,6 @@
         val:function( $input ){
             return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
-        dnd:{
-            init:function(){
-                
-            },
-            allowDrop:function(){
-                e.preventDefault();
-            },
-            drag:function(){
-                e.dataTransfer.setData("text", e.target.id);
-            },
-            drop:function(){
-                e.preventDefault();
-                var data = e.dataTransfer.getData("text");
-                e.target.appendChild(document.getElementById(data));
-            }
-        },
         saveItem:function (<?=$item_name?>_id,name,value){
             var data={
                 <?=$item_name?>_id
@@ -110,9 +94,12 @@
         },
         imageDelete:function( image_id ){
             if( !confirm("Удалить?") ){
-                return false;
+                return;
             }
             $.post('/<?=$ItemName?>/imageDelete',{image_id}).always(ItemList.reload);            
+        },
+        imageOrder:function( image_id, dir ){
+            $.post('/<?=$ItemName?>/imageOrder',{image_id,dir}).always(ItemList.reload);   
         },
         fileUpload:function(filelist){
             if( filelist.length ){

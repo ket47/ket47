@@ -128,7 +128,10 @@ class Store extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $this->fileStoreImage($image_holder_id,$file);
+                $result=$this->fileStoreImage($image_holder_id,$file);
+                if( $result!==true ){
+                    return $result;
+                }
             }
         }
         return $this->respondCreated('file_upload_register_ok');
@@ -144,9 +147,12 @@ class Store extends \App\Controllers\BaseController{
         if( !$image_hash ){
             return $this->failForbidden('file_upload_register_forbidden');
         }
+        if( $image_hash === 'image_create_limit_exeeded' ){
+            return $this->fail('image_create_limit_exeeded');
+        }
         $file->move(WRITEPATH.'images/', $image_hash.'.webp');
         
-        \Config\Services::image()
+        return \Config\Services::image()
         ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
         ->resize(1024, 1024, true, 'height')
         ->convert(IMAGETYPE_WEBP)
@@ -171,6 +177,18 @@ class Store extends \App\Controllers\BaseController{
         $result=$StoreModel->imageDelete( $image_id );
         if( $result==='image_delete_ok' ){
             return $this->respondDeleted($result);
+        }
+        return $this->fail($result);
+    }
+    
+    public function imageOrder(){
+        $image_id=$this->request->getVar('image_id');
+        $dir=$this->request->getVar('dir');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->imageOrder( $image_id, $dir );
+        if( $result==='image_order_ok' ){
+            return $this->respondUpdated($result);
         }
         return $this->fail($result);
     }

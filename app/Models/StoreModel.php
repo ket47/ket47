@@ -182,4 +182,19 @@ class StoreModel extends Model{
         }
         return 'image_delete_error';
     }
+    
+    public function imageOrder( $image_id, $dir ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $store_id=$image->image_holder_id;
+        if( !$this->permit($store_id,'w') ){
+            return 'image_order_forbidden';
+        }
+        $ok=$ImageModel->itemUpdateOrder( $image_id, $dir );
+        if( $ok ){
+            return 'image_order_ok';
+        }
+        return 'image_order_error';
+    }
 }
