@@ -57,11 +57,21 @@ class BaseController extends Controller
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
                 
+                $this->handleSession($request,$response);
+                $this->handleCors();
                 if( session()->get('user_id')==null ){
                     $this->guestUserInit();
                 }
-                $this->handleCors();
 	}
+        
+        private function handleSession($request,$response){
+            $session_id=$request->header('X-Auth');
+            if( $session_id ){
+                session_id($session_id);
+            }
+            session();
+            $response->setHeader('X-Auth',session_id());
+        }
         
         private function handleCors(){
             foreach (getallheaders() as $name => $value) {
