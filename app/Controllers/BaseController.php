@@ -56,14 +56,15 @@ class BaseController extends Controller
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
+                
                 if( session()->get('user_id')==null ){
                     $this->guestUserInit();
                 }
-//                header('Access-Control-Allow-Origin: *');
-//                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+                header('Access-Control-Allow-Origin: *');
+                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+                header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
                 //header("Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,Access-Control-Request-Method,Authorization,Cache-Control,access-controll-allow-credentials,access-controll-allow-headers,access-controll-allow-methods,access-controll-allow-origin,cross-origin-resource-policy");
                 //header("Cross-Origin-Resource-Policy: cross-origin");
-                //header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 	}
         
         private function guestUserInit(){
