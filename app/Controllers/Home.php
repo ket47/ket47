@@ -5,7 +5,7 @@ namespace App\Controllers;
 class Home extends BaseController {
 
     public function index() {
-        if( $this->session->get('user_id') ) {
+        if( session()->get('user_id') ) {
             return view('home/dashboard');
         }
         return view('user/signin_form');
@@ -81,15 +81,15 @@ class Home extends BaseController {
     
     
     public function user_login_form() {
-        if( $this->session->get('user_id') ) {
+        if( session()->get('user_id')>0 ) {
             return "SIGNED IN";
         }
         return view('user/signin_form');
     }
     
     public function user_data(){
-        if( $this->session->get('user_id') ) {
-            $user_data = (array) $this->session->get('user_data');
+        if( session()->get('user_id') ) {
+            $user_data = (array) session()->get('user_data');
             return view('user/signed_userdata', ['user' => $user_data]);
         } else {
             echo "NOT SIGNED IN";

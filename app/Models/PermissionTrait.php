@@ -54,7 +54,7 @@ trait PermissionTrait{
     public function permitWhere( $right, $method='item' ){
         $permission_filter=$this->permitWhereGet($right,$method);
         if($permission_filter!=""){
-            $permission_filter;
+            //echo $permission_filter;
             $this->where($permission_filter);
         }
     }

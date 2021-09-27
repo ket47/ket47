@@ -113,8 +113,10 @@ class StoreModel extends Model{
 
     
     public function itemDelete( $store_id ){
-        $this->permitWhere('w');
-        return $this->delete(['store_id'=>$store_id]);
+        if( !$this->permit($store_id,'w') ){
+            return 'item_delete_forbidden';
+        }
+        return $this->delete($store_id);
     }
     
     public function itemDisable( $store_id, $is_disabled ){

@@ -13,17 +13,17 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function listCreate(){
-        $store_id=$this->request->getVar('store_id');
-        $product_list=$this->request->getVar('product_list');
-        $ProductModel=model('ProductModel');
-        $result=$ProductModel->listCreate($store_id,$product_list);
-        if( $ProductModel->errors() ){
-            return $this->failValidationError(json_encode($ProductModel->errors()));
-        }
-        if( $result=='ok' ){
-            return $this->respondCreated();
-        }
-        return $this->fail($result);        
+//        $store_id=$this->request->getVar('store_id');
+//        $product_list=$this->request->getVar('product_list');
+//        $ProductModel=model('ProductModel');
+//        $result=$ProductModel->listCreate($store_id,$product_list);
+//        if( $ProductModel->errors() ){
+//            return $this->failValidationError(json_encode($ProductModel->errors()));
+//        }
+//        if( $result=='ok' ){
+//            return $this->respondCreated();
+//        }
+//        return $this->fail($result);        
     }
     
     public function listUpdate(){
@@ -50,17 +50,11 @@ class Product extends \App\Controllers\BaseController{
         ];
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemCreate($product);
-        
-        
-        q($ProductModel);
-        
-        
-        
         if( $ProductModel->errors() ){
             return $this->failValidationError(json_encode($ProductModel->errors()));
         }
-        if( $result==1 ){
-            return $this->respondCreated();
+        if( is_numeric($result) ){
+            return $this->respondCreated($result);
         }
         return $this->fail($result);
     }
@@ -68,18 +62,14 @@ class Product extends \App\Controllers\BaseController{
     public function itemUpdate(){
         $data= json_decode($this->request->getVar('data'));
         $ProductModel=model('ProductModel');
-        $ok=$ProductModel->itemUpdate($data);
-        
-        
-        q($ProductModel);
-        
-        if( $ok ){
-            return $this->respondUpdated(1);
+        $result=$ProductModel->itemUpdate($data);
+        if( $result==='item_update_ok' ){
+            return $this->respondUpdated('item_update_ok');
         }
         if( $ProductModel->errors() ){
             return $this->failValidationError(json_encode($ProductModel->errors()));
         }
-        return $this->fail(0);
+        return $this->fail($result);
     }
     
     public function itemUpdateGroup(){
@@ -91,7 +81,7 @@ class Product extends \App\Controllers\BaseController{
         $result=$ProductModel->itemUpdateGroup($store_id,$group_id,$is_joined);
         
         if( is_bool($result) && $result ){
-            return $this->respondUpdated(1);
+            return $this->respondUpdated('item_update_ok');
         }
         return $this->fail($result);
     }
@@ -100,11 +90,8 @@ class Product extends \App\Controllers\BaseController{
         $product_id=$this->request->getVar('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemDelete($product_id);
-        if( $ProductModel->errors() ){
-            return $this->failValidationError(json_encode($ProductModel->errors()));
-        }
-        if( $result==1 ){
-            return $this->respondDeleted();
+        if( $result==='item_delete_ok' ){
+            return $this->respondUpdated('item_update_ok');
         }
         return $this->fail($result);
     }

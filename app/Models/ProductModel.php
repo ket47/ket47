@@ -27,31 +27,18 @@ class ProductModel extends Model{
         'product_price'    => 'required|numeric'
     ];
     
-    protected $beforeInsert = ['onBeforeInsert'];
-    protected $beforeUpdate = ['onBeforeUpdate'];
-    protected function onBeforeInsert(array $data){
-        $data['data']['store_id']=$this->current_store_id;
-        $data['data']['owner_id']=$this->current_store_owner;
-        return $data;
-    }
-    protected function onBeforeUpdate(array $data){
-        if( $this->current_store_id ){
-            $data['data']['store_id']=$this->current_store_id;
-        }
-        return $data;
-    }
-    
-//    public function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
-//        parent::__construct($db, $validation);
-//        if( sudo() ){
-//            $adminAllowedFields=[
-//                'is_disabled',
-//                'deleted_at',
-//                'owner_id',
-//                'owner_ally_id'
-//                ];
-//            $this->allowedFields=array_merge($this->allowedFields,$adminAllowedFields);
+//    protected $beforeInsert = ['onBeforeInsert'];
+//    protected $beforeUpdate = ['onBeforeUpdate'];
+//    protected function onBeforeInsert(array $data){
+//        $data['data']['store_id']=$this->current_store_id;
+//        $data['data']['owner_id']=$this->current_store_owner;
+//        return $data;
+//    }
+//    protected function onBeforeUpdate(array $data){
+//        if( $this->current_store_id ){
+//            $data['data']['store_id']=$this->current_store_id;
 //        }
+//        return $data;
 //    }
     
     public function listGet( $filter=null ){
@@ -81,48 +68,39 @@ class ProductModel extends Model{
     }
     
     public function listCreate( $list ){
-        if( !$list || !$list[0] ){
-            return 'list_create_error_empty';
-        }
-        $store_id=$list[0]['store_id'];
-        $StoreModel=model('StoreModel');
-        $store=$StoreModel->itemGet(['store_id'=>$store_id]);
-        if( !$store ){
-            return 'list_create_error_nostore';
-        }
-        $permission_granted=$StoreModel->permit($store_id,'w');
-        if( !$permission_granted ){
-            return 'list_create_error_forbidden';
-        }
-        $this->current_store_id=$store->store_id;
-        $this->current_store_owner=$store->owner_id;
-        
-        $this->allowedFields[]='owner_id';
-        return $this->insertBatch($list,true);
+        /*
+         * Should create importer based performant product importer
+         */
+//        
+//        
+//        
+//        
+//        if( !$list || !$list[0] ){
+//            return 'list_create_error_empty';
+//        }
+//        $store_id=$list[0]['store_id'];
+//        $StoreModel=model('StoreModel');
+//        $store=$StoreModel->itemGet(['store_id'=>$store_id]);
+//        if( !$store ){
+//            return 'list_create_error_nostore';
+//        }
+//        $permission_granted=$StoreModel->permit($store_id,'w');
+//        if( !$permission_granted ){
+//            return 'list_create_error_forbidden';
+//        }
+//        $this->current_store_id=$store->store_id;
+//        $this->current_store_owner=$store->owner_id;
+//        
+//        $this->allowedFields[]='owner_id';
+//        return $this->insertBatch($list,true);
     }
     
     public function listUpdate( $list ){
-        if( !$list || !$list[0] ){
-            return 'list_update_error_empty';
-        }
-        if( isset($list[0]->store_id) ){
-            /*
-             * If user tries to update store_id then check store permission and set same store_id for all records
-             */
-            $this->current_store_id=$list[0]->store_id;
-            $StoreModel=model('StoreModel');
-            $permission_granted=$StoreModel->permit($this->current_store_id,'w');
-            if( !$permission_granted ){
-                return 'list_update_error_forbidden';
-            }
-        }
-        $this->permitWhere('w');
-        return $this->updateBatch($list,'product_id');
+        return false;
     }
     
     public function listDelete( $product_ids ){
-        $this->permitWhere('w');
-        return $this->delete($product_ids);
+        return false;
     }
     
     
@@ -133,11 +111,37 @@ class ProductModel extends Model{
     }
     
     public function itemCreate( $product ){
-        return $this->listCreate( [ $product ] );
+        if( !$product ){
+            return 'item_create_error_empty';
+        }
+        $store_id=$product['store_id'];
+        $StoreModel=model('StoreModel');
+        $store=$StoreModel->itemGet(['store_id'=>$store_id]);
+        if( !$store ){
+            return 'item_create_error_nostore';
+        }
+        $permission_granted=$StoreModel->permit($store_id,'w');
+        if( !$permission_granted ){
+            return 'item_create_error_forbidden';
+        }
+        $this->allowedFields[]='owner_id';
+        return $this->insert($product);
     }
     
     public function itemUpdate( $product ){
-        return $this->listUpdate([$product]);
+        if( !$product || !isset($product->product_id) ){
+            return 'item_update_error_empty';
+        }
+        $target_store_id=$product->store_id??$this->itemGet($product->product_id)->store_id;
+        $StoreModel=model('StoreModel');
+        $permission_granted=$StoreModel->permit($target_store_id,'w');
+        if( !$permission_granted ){
+            return 'item_update_forbidden';
+        }
+        
+        $this->permitWhere('w');
+        $this->update($product->product_id,$product);
+        return $this->db->affectedRows()?'item_update_ok':'item_update_forbidden';
     }
     
     public function itemUpdateGroup($product_id,$group_id,$is_joined){
@@ -156,7 +160,17 @@ class ProductModel extends Model{
     }
     
     public function itemDelete( $product_id ){
-        return $this->listDelete([$product_id]);
+        $target_store_id=$this->itemGet($product_id)->store_id;
+        $StoreModel=model('StoreModel');
+        if( !$StoreModel->permit($target_store_id,'w') || 
+            !$this->permit($product_id, 'w') ){
+            return 'item_delete_forbidden';
+        }
+        $this->delete($product_id);
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDelete('product',$product_id);
+        return $this->db->affectedRows()?'item_delete_ok':'item_delete_error';
     }
     
     

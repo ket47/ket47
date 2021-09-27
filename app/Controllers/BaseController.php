@@ -57,17 +57,20 @@ class BaseController extends Controller
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
                 if( session()->get('user_id')==null ){
-                    $PermissionModel=model('PermissionModel');
-                    $PermissionModel->listFillSession();
-                    session()->set('user_id',0);
+                    $this->guestUserInit();
                 }
-		$this->session = \Config\Services::session();
 //                header('Access-Control-Allow-Origin: *');
 //                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
                 //header("Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,Access-Control-Request-Method,Authorization,Cache-Control,access-controll-allow-credentials,access-controll-allow-headers,access-controll-allow-methods,access-controll-allow-origin,cross-origin-resource-policy");
                 //header("Cross-Origin-Resource-Policy: cross-origin");
                 //header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 	}
+        
+        private function guestUserInit(){
+            $PermissionModel=model('PermissionModel');
+            $PermissionModel->listFillSession();
+            session()->set('user_id',-1);            
+        }
         
 	protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
 		$this->response->setStatusCode($error_code,$error_description);

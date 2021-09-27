@@ -127,15 +127,15 @@ class User extends \App\Controllers\BaseController{
             if( !$user ){
                 return $this->fail('user_data_fetch_error');
             }
-            $this->session->set('user_id',$user->user_id);
-            $this->session->set('user_data',$user);
+            session()->set('user_id',$user->user_id);
+            session()->set('user_data',$user);
             return $this->respond($user->user_id);
         }
         return $this->fail($result);
     }
     
     public function signOut(){
-        $user_id=$this->session->get('user_id');
+        $user_id=session()->get('user_id');
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
         session_unset();//clear all session variables

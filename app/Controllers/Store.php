@@ -81,8 +81,8 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemUpdateGroup($store_id,$group_id,$is_joined);
         
-        if(is_bool($result) && $result ){
-            return $this->respondUpdated(1);
+        if( is_bool($result) && $result ){
+            return $this->respondUpdated('item_update_group_ok');
         }
         return $this->fail($result);
     }
