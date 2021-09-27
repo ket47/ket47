@@ -60,12 +60,22 @@ class BaseController extends Controller
                 if( session()->get('user_id')==null ){
                     $this->guestUserInit();
                 }
-                header('Access-Control-Allow-Origin: *');
-                header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
-                header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-                //header("Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,Access-Control-Request-Method,Authorization,Cache-Control,access-controll-allow-credentials,access-controll-allow-headers,access-controll-allow-methods,access-controll-allow-origin,cross-origin-resource-policy");
-                //header("Cross-Origin-Resource-Policy: cross-origin");
+                $this->handleCors();
 	}
+        
+        private function handleCors(){
+            foreach (getallheaders() as $name => $value) {
+                if( $name==='Origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
+                    header("Access-Control-Allow-Origin: $value");
+                }
+            }
+            header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+            header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+            header("Access-Control-Allow-Credentials: true");
+            //header("Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,Access-Control-Request-Method,Authorization,Cache-Control,access-controll-allow-credentials,access-controll-allow-headers,access-controll-allow-methods,access-controll-allow-origin,cross-origin-resource-policy");
+            //header("Cross-Origin-Resource-Policy: cross-origin");
+        }
+        
         
         private function guestUserInit(){
             $PermissionModel=model('PermissionModel');
