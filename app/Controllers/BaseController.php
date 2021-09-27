@@ -51,21 +51,21 @@ class BaseController extends Controller
 	 * @param LoggerInterface   $logger
 	 */
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
+                $this->handleCors();
+                $this->handleSession($request,$response);
 		// Do Not Edit This Line
 		parent::initController($request, $response, $logger);
 		//--------------------------------------------------------------------
 		// Preload any models, libraries, etc, here.
 		//--------------------------------------------------------------------
                 
-                $this->handleSession($request,$response);
-                $this->handleCors();
                 if( session()->get('user_id')==null ){
                     $this->guestUserInit();
                 }
 	}
         
         private function handleSession($request,$response){
-            $session_id=$request->header('x-sid');
+            $session_id=$request->getHeaderLine('x-sid');
             if( $session_id ){
                 session_id($session_id);
             }
