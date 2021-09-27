@@ -65,12 +65,12 @@ class BaseController extends Controller
 	}
         
         private function handleSession($request,$response){
-            $session_id=$request->header('X-Auth');
+            $session_id=$request->header('x-sid');
             if( $session_id ){
                 session_id($session_id);
             }
             session();
-            $response->setHeader('X-Auth',session_id());
+            $response->setHeader('x-sid',session_id());
         }
         
         private function handleCors(){
@@ -83,6 +83,7 @@ class BaseController extends Controller
             header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
             header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
             header("Access-Control-Allow-Credentials: true");
+            header("Access-Control-Expose-Headers: x-sid");
             $method = $_SERVER['REQUEST_METHOD'];
             if( $method == "OPTIONS" ) {
                 die();
