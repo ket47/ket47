@@ -65,15 +65,18 @@ class BaseController extends Controller
         
         private function handleCors(){
             foreach (getallheaders() as $name => $value) {
-                if( $name==='Origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
+                if( strtolower($name)=='origin' && str_contains($value, 'tezkel') || str_contains($value, 'localhost') ){
                     header("Access-Control-Allow-Origin: $value");
+                    break;
                 }
             }
-            header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+            header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
             header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
             header("Access-Control-Allow-Credentials: true");
-            //header("Access-Control-Allow-Headers: Origin,X-Requested-With,Content-Type,Accept,Access-Control-Request-Method,Authorization,Cache-Control,access-controll-allow-credentials,access-controll-allow-headers,access-controll-allow-methods,access-controll-allow-origin,cross-origin-resource-policy");
-            //header("Cross-Origin-Resource-Policy: cross-origin");
+            $method = $_SERVER['REQUEST_METHOD'];
+            if( $method == "OPTIONS" ) {
+                die();
+            }
         }
         
         
