@@ -154,7 +154,7 @@ class Product extends \App\Controllers\BaseController{
             'image_holder_id'=>$image_holder_id
         ];
         $ProductModel=model('ProductModel');
-        $image_hash=$ProductModel->itemCreateImage($image_data);
+        $image_hash=$ProductModel->imageCreate($image_data);
         if( !$image_hash ){
             return $this->failForbidden('file_upload_register_forbidden');
         }

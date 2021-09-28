@@ -153,7 +153,7 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemCreateImage( $data ){
+    public function imageCreate( $data ){
         $data['is_disabled']=1;
         $data['owner_id']=session()->get('user_id');
         if( $this->permit($data['image_holder_id'], 'w') ){
@@ -163,7 +163,7 @@ class ProductModel extends Model{
         return 0;
     }
 
-    public function itemUpdateImage( $data ){
+    public function imageUpdate( $data ){
         if( $this->permit($data['image_holder_id'], 'w') ){
             $ImageModel=model('ImageModel');
             return $ImageModel->itemUpdate($data);
@@ -182,7 +182,6 @@ class ProductModel extends Model{
         }
         return 'image_update_disable_error';
     }
-    
     
     public function imageDelete( $image_id ){
         $ImageModel=model('ImageModel');

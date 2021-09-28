@@ -22,7 +22,7 @@
     }
     .selected_store{
         font-weight:bold;
-        background-color:#999 !important;
+        background-color:#6cf !important;
     }
 </style>
 <script type="text/javascript">
@@ -58,11 +58,13 @@
                 limit
             };
             FoundList.reload_promise=$.post('/Store/listGet',filter).done(function(store_list){
+                store_list.push({store_id:0,store_name:'Все'});
                 let html='';
-                for(store of store_list){
+                for(let store of store_list){
                     html+=`<div data-store_id="${store.store_id}">${store.store_name}</div>`;
                 }
                 $('.found_store_list').html(html);
+                $('.found_store_list div[data-store_id=0]').addClass('selected_store');
             }).fail(function(error){
                 $('.found_store_list').html(error);
             });

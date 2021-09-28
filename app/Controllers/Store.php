@@ -143,7 +143,7 @@ class Store extends \App\Controllers\BaseController{
             'image_holder_id'=>$image_holder_id
         ];
         $StoreModel=model('StoreModel');
-        $image_hash=$StoreModel->itemCreateImage($image_data);
+        $image_hash=$StoreModel->imageCreate($image_data);
         if( !$image_hash ){
             return $this->failForbidden('file_upload_register_forbidden');
         }
