@@ -17,7 +17,8 @@ class ProductModel extends Model{
         'product_description',
         'product_weight',
         'product_price',
-        'is_produced'
+        'is_produced',
+        'deleted_at'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -27,29 +28,18 @@ class ProductModel extends Model{
         'product_price'    => 'required|numeric'
     ];
     
-//    protected $beforeInsert = ['onBeforeInsert'];
-//    protected $beforeUpdate = ['onBeforeUpdate'];
-//    protected function onBeforeInsert(array $data){
-//        $data['data']['store_id']=$this->current_store_id;
-//        $data['data']['owner_id']=$this->current_store_owner;
-//        return $data;
-//    }
-//    protected function onBeforeUpdate(array $data){
-//        if( $this->current_store_id ){
-//            $data['data']['store_id']=$this->current_store_id;
-//        }
-//        return $data;
-//    }
-    
     public function listGet( $filter=null ){
+        $user_id=session()->get('user_id');
+        
         $this->filterMake( $filter );
         $this->orderBy('updated_at','DESC');
         $this->permitWhere('r');
+        $this->select("*,IF($user_id=owner_id,1,0) is_owner");
         $product_list= $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
-        
+
         foreach($product_list as $product){
             if($product){
                 $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
@@ -57,7 +47,7 @@ class ProductModel extends Model{
                     'image_holder'=>'product',
                     'image_holder_id'=>$product->product_id,
                     'is_disabled'=>1,
-                    'is_deleted'=>1,
+                    'is_deleted'=>0,
                     'is_active'=>1,
                     'limit'=>30
                 ];
@@ -71,28 +61,6 @@ class ProductModel extends Model{
         /*
          * Should create importer based performant product importer
          */
-//        
-//        
-//        
-//        
-//        if( !$list || !$list[0] ){
-//            return 'list_create_error_empty';
-//        }
-//        $store_id=$list[0]['store_id'];
-//        $StoreModel=model('StoreModel');
-//        $store=$StoreModel->itemGet(['store_id'=>$store_id]);
-//        if( !$store ){
-//            return 'list_create_error_nostore';
-//        }
-//        $permission_granted=$StoreModel->permit($store_id,'w');
-//        if( !$permission_granted ){
-//            return 'list_create_error_forbidden';
-//        }
-//        $this->current_store_id=$store->store_id;
-//        $this->current_store_owner=$store->owner_id;
-//        
-//        $this->allowedFields[]='owner_id';
-//        return $this->insertBatch($list,true);
     }
     
     public function listUpdate( $list ){
@@ -166,13 +134,21 @@ class ProductModel extends Model{
             !$this->permit($product_id, 'w') ){
             return 'item_delete_forbidden';
         }
-        $this->delete($product_id);
         
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('product',$product_id);
+        $this->delete($product_id);
         return $this->db->affectedRows()?'item_delete_ok':'item_delete_error';
     }
     
+    public function itemDisable( $product_id, $is_disabled ){
+        if( !$this->permit($product_id,'w','disabled') ){
+            return 'item_update_forbidden';
+        }
+        $this->allowedFields[]='is_disabled';
+        $this->update(['product_id'=>$product_id],['is_disabled'=>$is_disabled?1:0]);
+        return $this->db->affectedRows()?'item_update_disabled_ok':'item_update_disabled_error';
+    }
     
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
@@ -195,18 +171,16 @@ class ProductModel extends Model{
         return 0;
     }
     
-    public function imageApprove( $image_id ){
+    public function imageDisable( $image_id, $is_disabled ){
         if( !sudo() ){
-            return 'image_approve_forbidden';
+            return 'image_update_disable_forbidden';
         }
-        
-        $is_disabled=0;
         $ImageModel=model('ImageModel');
         $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
         if( $ok ){
-            return 'image_approve_ok';
+            return 'image_update_disable_ok';
         }
-        return 'image_approve_error';
+        return 'image_update_disable_error';
     }
     
     
@@ -218,7 +192,7 @@ class ProductModel extends Model{
         if( !$this->permit($product_id,'w') ){
             return 'image_delete_forbidden';
         }
-        $ok=$ImageModel->itemDelete( $image_id );
+        $ok=$ImageModel->itemPurge( $image_id );
         if( $ok ){
             return 'image_delete_ok';
         }

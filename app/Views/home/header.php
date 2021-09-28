@@ -74,6 +74,9 @@
             .image_list>div.disabled{
                 border:5px #999 solid;
             }
+            .image_list>div.deleted{
+                border:5px #f99 solid;
+            }
             .vcenter{
                 display: flex;
                 justify-content: center;

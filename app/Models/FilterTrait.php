@@ -53,7 +53,7 @@ trait FilterTrait{
             $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
         }
         if( $status_where ){
-            $this->where( implode(' OR ',$status_where) );
+            $this->where( '('.implode(' OR ',$status_where).')' );
         } else {
             $this->where( '1=2' );
         }

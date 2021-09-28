@@ -27,14 +27,14 @@ class Home extends BaseController {
         $ProductModel=model('ProductModel');
         $GroupModel=model('GroupModel');
         $product_list=$ProductModel->listGet($filter);
-        
         //die($ProductModel->getLastQuery());
         $GroupModel->tableSet('product_group_list');
         $product_group_list=$GroupModel->listGet();
-        return view('product/product_list', [
+        $data=[
             'product_list' => $product_list,
             'product_group_list'=>$product_group_list
-            ]);
+            ];
+        return view('product/product_list', $data);
     }
     
     

@@ -116,7 +116,8 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'w') ){
             return 'item_delete_forbidden';
         }
-        return $this->delete($store_id);
+        $this->delete($store_id);
+        return $this->db->affectedRows()?'item_delete_ok':'item_delete_error';
     }
     
     public function itemDisable( $store_id, $is_disabled ){
@@ -124,7 +125,8 @@ class StoreModel extends Model{
             return 'item_update_forbidden';
         }
         $this->allowedFields[]='is_disabled';
-        return $this->update(['store_id'=>$store_id],['is_disabled'=>$is_disabled?1:0]);
+        $this->update(['store_id'=>$store_id],['is_disabled'=>$is_disabled?1:0]);
+        return $this->db->affectedRows()?'item_update_disabled_ok':'item_update_disabled_error';
     }
     
     
@@ -162,20 +164,17 @@ class StoreModel extends Model{
         return 0;
     }
     
-    public function imageApprove( $image_id ){
+    public function imageDisable( $image_id, $is_disabled ){
         if( !sudo() ){
-            return 'image_approve_forbidden';
+            return 'image_update_disable_forbidden';
         }
-        
-        $is_disabled=0;
         $ImageModel=model('ImageModel');
         $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
         if( $ok ){
-            return 'image_approve_ok';
+            return 'image_update_disable_ok';
         }
-        return 'image_approve_error';
-    }
-    
+        return 'image_update_disable_error';
+    }    
     
     public function imageDelete( $image_id ){
         $ImageModel=model('ImageModel');

@@ -71,7 +71,7 @@ class ImageModel extends Model{
     }
     
     public function itemDelete( $image_id ){
-        return $this->delete([$image_id]);
+        return $this->delete($image_id);
     }
     
     public function itemDisable( $image_id, $is_disabled ){

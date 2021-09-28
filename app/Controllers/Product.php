@@ -6,10 +6,27 @@ use \CodeIgniter\API\ResponseTrait;
 class Product extends \App\Controllers\BaseController{
     use ResponseTrait;
     
-    
-    
     public function listGet(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit')
+        ];
+        $ProductModel=model('ProductModel');
+        $GroupModel=model('GroupModel');
+        $product_list=$ProductModel->listGet($filter);
         
+        //die($ProductModel->getLastQuery());
+        $GroupModel->tableSet('product_group_list');
+        $product_group_list=$GroupModel->listGet();
+        $data=[
+            'product_list' => $product_list,
+            'product_group_list'=>$product_group_list
+            ];
+        return $this->respond($data);
     }
     
     public function listCreate(){
@@ -95,6 +112,18 @@ class Product extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+    
+    public function itemDisable(){
+        $product_id=$this->request->getVar('product_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemDisable($product_id,$is_disabled);
+        if( $result==='item_update_disabled_ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -141,12 +170,13 @@ class Product extends \App\Controllers\BaseController{
         ->save();
     }
     
-    public function imageApprove(){
+    public function imageDisable(){
         $image_id=$this->request->getVar('image_id');
+        $is_disabled=$this->request->getVar('is_disabled');
         
         $ProductModel=model('ProductModel');
-        $result=$ProductModel->imageApprove( $image_id );
-        if( $result==='image_approve_ok' ){
+        $result=$ProductModel->imageDisable( $image_id, $is_disabled );
+        if( $result==='image_update_disable_ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);

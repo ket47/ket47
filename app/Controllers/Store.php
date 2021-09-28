@@ -94,8 +94,8 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemDisable($store_id,$is_disabled);
         
-        if( is_bool($result) && $result ){
-            return $this->respondUpdated(1);
+        if( $result==='item_update_disabled_ok' ){
+            return $this->respondUpdated($result);
         }
         return $this->fail($result);
     }
@@ -159,12 +159,13 @@ class Store extends \App\Controllers\BaseController{
         ->save();
     }
     
-    public function imageApprove(){
+    public function imageDisable(){
         $image_id=$this->request->getVar('image_id');
+        $is_disabled=$this->request->getVar('is_disabled');
         
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->imageApprove( $image_id );
-        if( $result==='image_approve_ok' ){
+        $result=$StoreModel->imageDisable( $image_id, $is_disabled );
+        if( $result==='image_update_disable_ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
