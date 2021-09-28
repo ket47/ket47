@@ -147,7 +147,7 @@
             <div class="image_list">
                 <?php foreach ($store->images as $image):?>
                 <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
-                     class=" <?= $image->is_disabled ? 'disabled' : '' ?>">
+                     class=" <?= $image->is_disabled ? 'disabled' : '' ?> <?= $image->deleted_at ? 'deleted' : '' ?>">
                     
                     <a href="javascript:ItemList.imageOrder(<?= $image->image_id ?>,'up')"><div class="fa fa-arrow-left" style="color:black"></div></a>
                     <?php if ( sudo() && $image->is_disabled ): ?>

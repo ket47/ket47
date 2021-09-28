@@ -204,7 +204,7 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'w') ){
             return 'image_delete_forbidden';
         }
-        $ok=$ImageModel->itemDelete( $image_id );
+        $ok=$ImageModel->itemPurge( $image_id );
         if( $ok ){
             return 'image_delete_ok';
         }
