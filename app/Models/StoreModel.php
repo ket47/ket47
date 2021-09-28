@@ -16,6 +16,20 @@ class StoreModel extends Model{
         'store_description_new',
         'store_tax_num',
         'store_company_name',
+        'store_time_opens_0',
+        'store_time_opens_1',
+        'store_time_opens_2',
+        'store_time_opens_3',
+        'store_time_opens_4',
+        'store_time_opens_5',
+        'store_time_opens_6',
+        'store_time_closes_0',
+        'store_time_closes_1',
+        'store_time_closes_2',
+        'store_time_closes_3',
+        'store_time_closes_4',
+        'store_time_closes_5',
+        'store_time_closes_6',
         'deleted_at',
         'owner_id',
         'owner_ally_id'
@@ -94,8 +108,10 @@ class StoreModel extends Model{
     }
     
     
-    public function itemUpdate( $data ){
-        return $this->listUpdate([$data]);
+    public function itemUpdate( $store ){
+        $this->permitWhere('w');
+        $this->update($store->store_id,$store);
+        return $this->db->affectedRows()?'item_update_ok':'item_update_forbidden';
     }
     
     public function itemUpdateGroup($store_id,$group_id,$is_joined){

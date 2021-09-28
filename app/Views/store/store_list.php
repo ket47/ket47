@@ -45,6 +45,38 @@
                 <div>
                     <input type="email" name="store_email.<?= $store->store_id ?>" value="<?= $store->store_email ?>"/>
                 </div>
+                
+                <div>Время работы</div>
+                <div>
+                    <br>ПН 
+                    <input type="number" name="store_time_opens_0.<?= $store->store_id ?>" value="<?= $store->store_time_opens_0 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_0.<?= $store->store_id ?>" value="<?= $store->store_time_closes_0 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>ВТ
+                    <input type="number" name="store_time_opens_1.<?= $store->store_id ?>" value="<?= $store->store_time_opens_1 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_1.<?= $store->store_id ?>" value="<?= $store->store_time_closes_1 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>СР
+                    <input type="number" name="store_time_opens_2.<?= $store->store_id ?>" value="<?= $store->store_time_opens_2 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_2.<?= $store->store_id ?>" value="<?= $store->store_time_closes_2 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>ЧТ 
+                    <input type="number" name="store_time_opens_3.<?= $store->store_id ?>" value="<?= $store->store_time_opens_3 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_3.<?= $store->store_id ?>" value="<?= $store->store_time_closes_3 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>ПТ 
+                    <input type="number" name="store_time_opens_4.<?= $store->store_id ?>" value="<?= $store->store_time_opens_4 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_4.<?= $store->store_id ?>" value="<?= $store->store_time_closes_4 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>СБ 
+                    <input type="number" name="store_time_opens_5.<?= $store->store_id ?>" value="<?= $store->store_time_opens_5 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_5.<?= $store->store_id ?>" value="<?= $store->store_time_closes_5 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    <br>ВС
+                    <input type="number" name="store_time_opens_6.<?= $store->store_id ?>" value="<?= $store->store_time_opens_6 ?>" style="width:80px" step="1" min="00" max="24"/>
+                    -
+                    <input type="number" name="store_time_closes_6.<?= $store->store_id ?>" value="<?= $store->store_time_closes_6 ?>" style="width:80px" step="1" min="00" max="24"/>
+                </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 3fr">
                 
@@ -56,6 +88,16 @@
                 <div>Предпирятие</div>
                 <div>
                     <input type="email" name="store_company_name.<?= $store->store_id ?>" value="<?= $store->store_company_name ?>"/>
+                </div>
+                
+                <div>Мин заказ</div>
+                <div>
+                    <input type="number" name="store_minimal_order.<?= $store->store_id ?>" value="<?= $store->store_minimal_order ?>"/>
+                </div>
+                
+                <div>Подготовка заказа</div>
+                <div>
+                    <input type="number" name="store_time_preparation.<?= $store->store_id ?>" value="<?= $store->store_time_preparation ?>"/>
                 </div>
 
 
