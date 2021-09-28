@@ -16,6 +16,8 @@ class StoreModel extends Model{
         'store_description_new',
         'store_tax_num',
         'store_company_name',
+        'store_minimal_order',
+        'store_time_preparation',
         'store_time_opens_0',
         'store_time_opens_1',
         'store_time_opens_2',
