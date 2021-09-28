@@ -23,8 +23,8 @@ class StoreModel extends Model{
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
-        'store_name'     => 'required|min_length[3]',
-        'store_description'     => 'min_length[10]',
+        'store_name_new'     => 'required|min_length[3]',
+        'store_description_new'     => 'min_length[10]',
     ];
     
     public function listGet( $filter=null ){
@@ -83,9 +83,11 @@ class StoreModel extends Model{
         if( $has_store_id ){
             return 'item_create_error_dublicate';
         }
-        $store_id=$this->insert(['store_name'=>$name,'is_disabled'=>1],true);
+        $store_id=$this->insert(['store_name_new'=>$name,'store_description_new'=>'----------'],true);
         if( $store_id ){
-            $this->update($store_id,['owner_id'=>$user_id]);
+            $this->allowedFields[]='owner_id';
+            $this->allowedFields[]='is_disabled';
+            $this->update($store_id,['owner_id'=>$user_id,'is_disabled'=>1]);
             return $store_id;
         }
         return 'item_create_error';
