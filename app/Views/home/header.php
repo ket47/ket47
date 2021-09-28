@@ -33,11 +33,8 @@
                 padding: 5px;
                 margin: 5px;
             }
-            textarea{
-                width:calc( 100% - 20px );
-            }
-            input[type=text],input[type=email],input[type=tel]{
-                width:250px;
+            input[type=text],input[type=email],input[type=tel],input[type=number],textarea{
+                width:calc( 100% - 100px );;
             }
             .segment{
                 box-shadow: 3px 5px 8px #ccc;

@@ -34,8 +34,27 @@
                 <div>
                     <textarea name="store_description_new.<?= $store->store_id ?>" minlength="10"><?= $store->store_description_new ?></textarea>
                 </div>
+                <div>Предпирятие</div>
+                <div class="form_value">
+                    <?= $store->store_company_name ?>
+                </div>
 
-                <div>Телефон</div>
+                <div>
+                    <?php if (sudo()): ?>
+                        <a href="javascript:ItemList.approve(<?= $store->store_id ?>,'store_company_name')"><div class="fa fa-check" style="color:green"></div></a>
+                    <?php endif; ?>
+                    Новое Предпр.
+                </div>
+                <div>
+                    <input type="text" name="store_company_name_new.<?= $store->store_id ?>" value="<?= $store->store_company_name_new ?>" minlength="3"/>
+                </div>
+                
+                <div>ИНН</div>
+                <div>
+                    <input type="number" name="store_tax_num.<?= $store->store_id ?>" value="<?= $store->store_tax_num ?>"/>
+                </div>
+                
+                 <div>Телефон</div>
                 <div>
                     <input type="tel" name="store_phone.<?= $store->store_id ?>" value="<?= $store->store_phone ?>"/>
                 </div>
@@ -45,6 +64,19 @@
                 <div>
                     <input type="email" name="store_email.<?= $store->store_id ?>" value="<?= $store->store_email ?>"/>
                 </div>
+               
+                <div>Мин заказ</div>
+                <div>
+                    <input type="number" name="store_minimal_order.<?= $store->store_id ?>" value="<?= $store->store_minimal_order ?>"/>
+                </div>
+                
+                <div>Подготовка заказа</div>
+                <div>
+                    <input type="number" name="store_time_preparation.<?= $store->store_id ?>" value="<?= $store->store_time_preparation ?>"/>
+                </div>
+
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 3fr">
                 
                 <div>Время работы</div>
                 <div>
@@ -77,29 +109,6 @@
                     -
                     <input type="number" name="store_time_closes_6.<?= $store->store_id ?>" value="<?= $store->store_time_closes_6 ?>" style="width:80px" step="1" min="00" max="24"/>
                 </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 3fr">
-                
-                <div>ИНН</div>
-                <div>
-                    <input type="number" name="store_tax_num.<?= $store->store_id ?>" value="<?= $store->store_tax_num ?>"/>
-                </div>
-                
-                <div>Предпирятие</div>
-                <div>
-                    <input type="email" name="store_company_name.<?= $store->store_id ?>" value="<?= $store->store_company_name ?>"/>
-                </div>
-                
-                <div>Мин заказ</div>
-                <div>
-                    <input type="number" name="store_minimal_order.<?= $store->store_id ?>" value="<?= $store->store_minimal_order ?>"/>
-                </div>
-                
-                <div>Подготовка заказа</div>
-                <div>
-                    <input type="number" name="store_time_preparation.<?= $store->store_id ?>" value="<?= $store->store_time_preparation ?>"/>
-                </div>
-
 
                 <div>Отключен</div>
                 <div>

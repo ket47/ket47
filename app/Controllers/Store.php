@@ -37,8 +37,8 @@ class Store extends \App\Controllers\BaseController{
         $data= json_decode($this->request->getVar('data'));
         
         $StoreModel=model('StoreModel');
-        $ok=$StoreModel->itemUpdate($data);
-        if( $ok ){
+        $result=$StoreModel->itemUpdate($data);
+        if( $result==='item_update_ok' ){
             return $this->respondUpdated('item_update_ok');
         }
         if( $StoreModel->errors() ){

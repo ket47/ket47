@@ -15,7 +15,7 @@ class StoreModel extends Model{
         'store_email',
         'store_description_new',
         'store_tax_num',
-        'store_company_name',
+        'store_company_name_new',
         'store_minimal_order',
         'store_time_preparation',
         'store_time_opens_0',
@@ -39,8 +39,10 @@ class StoreModel extends Model{
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
-        'store_name_new'     => 'required|min_length[3]',
-        'store_description_new'     => 'min_length[10]',
+        'store_name_new'        => 'required|min_length[3]',
+        'store_description_new' => 'min_length[10]',
+        'store_company_name_new' => 'min_length[3]',
+        'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
     
     public function listGet( $filter=null ){
@@ -99,7 +101,7 @@ class StoreModel extends Model{
         if( $has_store_id ){
             return 'item_create_error_dublicate';
         }
-        $store_id=$this->insert(['store_name_new'=>$name,'store_description_new'=>'----------'],true);
+        $store_id=$this->insert(['store_name_new'=>$name],true);
         if( $store_id ){
             $this->allowedFields[]='owner_id';
             $this->allowedFields[]='is_disabled';
