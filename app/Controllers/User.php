@@ -26,7 +26,7 @@ class User extends \App\Controllers\BaseController{
                 'group_types'=>'guest'
             ]
         ];
-        $this->respond($guest);
+        return $this->respond($guest);
     }
     
     
