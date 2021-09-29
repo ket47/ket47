@@ -18,7 +18,15 @@ class User extends \App\Controllers\BaseController{
         if($user){
             return $this->respond($user);
         }
-        return $this->failForbidden();
+        $guest=[
+            'user_id'=>-1,
+            'user_name'=>'Guest',
+            'member_of_groups'=>[
+                'group_ids'=>'1',
+                'group_types'=>'guest'
+            ]
+        ];
+        $this->respond($guest);
     }
     
     
