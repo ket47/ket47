@@ -87,9 +87,9 @@ class UserModel extends Model{
             $data->user_email_verified=0;
         }
         $this->permitWhere('w');
-        $result=$this->update(['user_id'=>$data->user_id],$data);
+        $this->update(['user_id'=>$data->user_id],$data);
         $this->protect(true);
-        return $result;
+        return $this->db->affectedRows()?'item_update_ok':'item_update_forbidden';
     }
     
     public function itemUpdateGroup($user_id,$group_id,$is_joined){

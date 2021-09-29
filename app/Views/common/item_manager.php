@@ -81,6 +81,9 @@
             $.post('/<?=$ItemName?>/itemDisable',{<?=$item_name?>_id,is_disabled}).always(ItemList.reload);
         },
         deleteItem:function( <?=$item_name?>_id ){
+            if( !confirm("Переместить в корзину? \nБудет удалено через 7 дней") ){
+                return;
+            }
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
         undeleteItem:function( <?=$item_name?>_id ){

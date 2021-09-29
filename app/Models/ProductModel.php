@@ -34,7 +34,7 @@ class ProductModel extends Model{
         $this->filterMake( $filter );
         $this->orderBy('updated_at','DESC');
         $this->permitWhere('r');
-        $this->select("*,IF($user_id=owner_id,1,0) is_owner");
+        //$this->select("*,IF($user_id=owner_id,1,0) is_owner");
         $product_list= $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('product_group_member_list');
@@ -139,6 +139,25 @@ class ProductModel extends Model{
         $ImageModel->listDelete('product',$product_id);
         $this->delete($product_id);
         return $this->db->affectedRows()?'item_delete_ok':'item_delete_error';
+    }
+    
+    public function itemDeleteChildProducts( $store_id ){
+        $StoreModel=model('StoreModel');
+        if( !$StoreModel->permit($store_id,'w') ){
+            return 'item_delete_forbidden';
+        }
+        $this->where('deleted_at IS NOT NULL OR is_disabled=1');
+        $this->where('store_id',$store_id);
+        $trashed_products=$this->get()->getResult();
+        foreach($trashed_products as $product){
+            $this->itemPurge($product->product_id);
+        }
+        $this->where('store_id',$store_id);
+        $this->delete();
+    }
+
+    public function itemPurge( $product_id ){
+        
     }
     
     public function itemDisable( $product_id, $is_disabled ){

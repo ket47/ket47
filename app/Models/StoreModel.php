@@ -132,14 +132,26 @@ class StoreModel extends Model{
         $GroupMemberModel->tableSet('store_group_member_list');
         return $GroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
     }
-
     
     public function itemDelete( $store_id ){
         if( !$this->permit($store_id,'w') ){
             return 'item_delete_forbidden';
         }
+        $this->itemDeleteChildProducts( $store_id );
         $this->delete($store_id);
         return $this->db->affectedRows()?'item_delete_ok':'item_delete_error';
+    }
+    
+    private function itemDeleteChildProducts( $store_id ){
+        $ProductModel=model('ProductModel');
+        $ProductModel->where('deleted_at IS NOT NULL OR is_disabled=1');
+        $ProductModel->where('store_id',$store_id);
+        $trashed_products=$ProductModel->get()->getResult();
+        foreach($trashed_products as $product){
+            $ProductModel->itemPurge($product->product_id);
+        }
+        $ProductModel->where('store_id',$store_id);
+        $ProductModel->delete();
     }
     
     public function itemDisable( $store_id, $is_disabled ){
@@ -226,5 +238,22 @@ class StoreModel extends Model{
             return 'image_order_ok';
         }
         return 'image_order_error';
+    }
+    
+    
+    public function listPurge( $olderThan=7, $image_holder=null, $image_holder_id=null ){
+//        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+//        $this->where('deleted_at<',$olderStamp);
+//        if( $image_holder ){
+//            $this->where('image_holder',$image_holder);
+//        }
+//        if( $image_holder_id ){
+//            $this->where('image_holder_id',$image_holder_id);
+//        }
+//        $list_to_purge=$this->select('image_id')->get()->getResult();
+//        foreach( $list_to_purge as $item_to_purge ){
+//            $this->itemPurge($item_to_purge->image_id);
+//        }
+//        return 'list_purge_ok';
     }
 }
