@@ -170,7 +170,7 @@ class StoreModel extends Model{
     
     public function fieldApprove( $store_id, $field_name ){
         if( !sudo() ){
-            return 'field_approve_forbidden';
+            return 'forbidden';
         }
         $new_value=$this->where('store_id',$store_id)->select("{$field_name}_new")->get()->getRow("{$field_name}_new");
         $this->allowedFields[]=$field_name;
@@ -179,7 +179,7 @@ class StoreModel extends Model{
             "{$field_name}_new"=>""
         ];
         $this->update(['store_id'=>$store_id],$data);
-        return $this->db->affectedRows()?'field_approve_ok':'field_approve_error';
+        return $this->db->affectedRows()?'ok':'error';
     }
     
     /////////////////////////////////////////////////////

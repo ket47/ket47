@@ -101,10 +101,10 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->fieldApprove( $store_id, $field_name );
-        if( $result==='field_approve_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
-        if( $result==='field_approve_forbidden' ){
+        if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
         return $this->fail($result);
@@ -131,7 +131,7 @@ class Store extends \App\Controllers\BaseController{
                 }
             }
         }
-        return $this->respondCreated('file_upload_register_ok');
+        return $this->respondCreated('ok');
     }
     
     private function fileSaveImage( $image_holder_id, $file ){
@@ -142,10 +142,10 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $image_hash=$StoreModel->imageCreate($image_data);
         if( !$image_hash ){
-            return $this->failForbidden('file_save_image_forbidden');
+            return $this->failForbidden('forbidden');
         }
-        if( $image_hash === 'image_create_limit_exeeded' ){
-            return $this->fail('image_create_limit_exeeded');
+        if( $image_hash === 'limit_exeeded' ){
+            return $this->fail('limit_exeeded');
         }
         $file->move(WRITEPATH.'images/', $image_hash.'.webp');
         

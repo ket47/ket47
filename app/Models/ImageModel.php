@@ -34,7 +34,7 @@ class ImageModel extends Model{
                 ->get()
                 ->getRow('inserted_count');
         if( $inserted_count>=$limit ){
-            return 'image_create_limit_exeeded';
+            return 'limit_exeeded';
         }
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
