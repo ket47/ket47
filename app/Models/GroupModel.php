@@ -50,7 +50,7 @@ class GroupModel extends Model{
     
     public function itemCreate( int $parent_id, string $group_name, string $group_type=null ){
         if( !sudo() ){
-            return 'item_create_forbidden';
+            return 'forbidden';
         }
         $parent_parent_id=$this->where('group_id',$parent_id)->get()->getRow('parent_id');
         if( $parent_parent_id!=0 ){

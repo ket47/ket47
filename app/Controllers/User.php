@@ -39,7 +39,7 @@ class User extends \App\Controllers\BaseController{
         
         $UserModel=model('UserModel');
         $result=$UserModel->itemUpdate($data);
-        if( $result==='item_update_forbidden' ){
+        if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
         if( $UserModel->errors() ){

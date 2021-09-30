@@ -80,11 +80,14 @@ class Product extends \App\Controllers\BaseController{
         $data= json_decode($this->request->getVar('data'));
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdate($data);
-        if( $result==='item_update_ok' ){
-            return $this->respondUpdated('item_update_ok');
+        if( $result==='ok' ){
+            return $this->respondUpdated('ok');
         }
         if( $ProductModel->errors() ){
             return $this->failValidationError(json_encode($ProductModel->errors()));
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         return $this->fail($result);
     }
@@ -96,9 +99,11 @@ class Product extends \App\Controllers\BaseController{
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdateGroup($store_id,$group_id,$is_joined);
-        
-        if( is_bool($result) && $result ){
-            return $this->respondUpdated('item_update_ok');
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         return $this->fail($result);
     }
@@ -107,8 +112,11 @@ class Product extends \App\Controllers\BaseController{
         $product_id=$this->request->getVar('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemDelete($product_id);
-        if( $result==='item_delete_ok' ){
-            return $this->respondUpdated('item_update_ok');
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         return $this->fail($result);
     }
@@ -119,7 +127,7 @@ class Product extends \App\Controllers\BaseController{
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemDisable($product_id,$is_disabled);
-        if( $result==='item_update_disabled_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
@@ -176,7 +184,7 @@ class Product extends \App\Controllers\BaseController{
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageDisable( $image_id, $is_disabled );
-        if( $result==='image_update_disable_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
@@ -187,7 +195,7 @@ class Product extends \App\Controllers\BaseController{
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageDelete( $image_id );
-        if( $result==='image_delete_ok' ){
+        if( $result==='ok' ){
             return $this->respondDeleted($result);
         }
         return $this->fail($result);
@@ -199,7 +207,7 @@ class Product extends \App\Controllers\BaseController{
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageOrder( $image_id, $dir );
-        if( $result==='image_order_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);

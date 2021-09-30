@@ -38,39 +38,16 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemUpdate($data);
-        if( $result==='item_update_ok' ){
-            return $this->respondUpdated('item_update_ok');
+        if( $result==='ok' ){
+            return $this->respondUpdated('ok');
         }
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
-        return $this->fail('item_update_error');
-    }
-    
-    public function itemGroupUpdate(){
-        $store_id=$this->request->getVar('store_id');
-        $group_id=$this->request->getVar('group_id');
-        $is_joined=$this->request->getVar('is_joined');
-        
-        $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemGroupUpdate($store_id,$group_id,$is_joined);
-        if( $result ){
-            return $this->respondUpdated('item_group_update_ok');
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
-        if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
-        }
-        return $this->fail('item_update_error');
-    }
-    
-    public function itemDelete(){
-        $store_id=$this->request->getVar('store_id');
-        $StoreModel=model('StoreModel');
-        $ok=$StoreModel->itemDelete($store_id);        
-        if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
-        }
-        return $this->respondDeleted($ok);        
+        return $this->fail($result);
     }
     
     public function itemUpdateGroup(){
@@ -80,11 +57,26 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemUpdateGroup($store_id,$group_id,$is_joined);
-        
-        if( is_bool($result) && $result ){
-            return $this->respondUpdated('item_update_group_ok');
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         return $this->fail($result);
+    }
+    
+    public function itemDelete(){
+        $store_id=$this->request->getVar('store_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemDelete($store_id);        
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
     }
     
     public function itemDisable(){
@@ -93,9 +85,11 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemDisable($store_id,$is_disabled);
-        
-        if( $result==='item_update_disabled_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         return $this->fail($result);
     }
@@ -107,10 +101,13 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->fieldApprove( $store_id, $field_name );
-        if( is_bool($result) && $result ){
-            return $this->respondUpdated('field_approve_ok');
+        if( $result==='field_approve_ok' ){
+            return $this->respondUpdated($result);
         }
-        return $this->fail('field_approve_error');
+        if( $result==='field_approve_forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
     }
 
     /////////////////////////////////////////////////////
@@ -145,7 +142,7 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $image_hash=$StoreModel->imageCreate($image_data);
         if( !$image_hash ){
-            return $this->failForbidden('file_upload_register_forbidden');
+            return $this->failForbidden('file_save_image_forbidden');
         }
         if( $image_hash === 'image_create_limit_exeeded' ){
             return $this->fail('image_create_limit_exeeded');
@@ -165,7 +162,7 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->imageDisable( $image_id, $is_disabled );
-        if( $result==='image_update_disable_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
@@ -176,7 +173,7 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->imageDelete( $image_id );
-        if( $result==='image_delete_ok' ){
+        if( $result==='ok' ){
             return $this->respondDeleted($result);
         }
         return $this->fail($result);
@@ -188,7 +185,7 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->imageOrder( $image_id, $dir );
-        if( $result==='image_order_ok' ){
+        if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
