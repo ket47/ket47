@@ -44,9 +44,9 @@ class UserModel extends Model{
         }
         return $data;
     }
-    
-    
-    
+    /////////////////////////////////////////////////////
+    //ITEM HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function itemGet( $user_id ){
         $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
@@ -124,7 +124,9 @@ class UserModel extends Model{
         $this->permitWhere('w');
         return $this->delete([$this->primaryKey=>$id]);
     }
-    
+    /////////////////////////////////////////////////////
+    //LIST HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
         $this->orderBy('created_at','DESC');
@@ -168,28 +170,14 @@ class UserModel extends Model{
         return false;
     }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    public function listPurge( $olderThan=7 ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
+    }    
+    /////////////////////////////////////////////////////
+    //USER HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm){
         $user_data=[
             'user_phone'=>$user_phone_cleared,

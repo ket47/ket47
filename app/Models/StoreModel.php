@@ -44,46 +44,9 @@ class StoreModel extends Model{
         'store_company_name_new' => 'min_length[3]',
         'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
-    
-    public function listGet( $filter=null ){
-        $this->filterMake( $filter );
-        $this->permitWhere('r');
-        $this->orderBy('modified_at','DESC');
-        $store_list = $this->get()->getResult();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('store_group_member_list');
-        
-        $ImageModel=model('ImageModel');
-        foreach($store_list as $store){
-            if($store){
-                $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
-                $filter=[
-                    'image_holder'=>'store',
-                    'image_holder_id'=>$store->store_id,
-                    'is_disabled'=>1,
-                    'is_deleted'=>1,
-                    'is_active'=>1,
-                    'limit'=>30
-                ];
-                $store->images=$ImageModel->listGet($filter);
-            }
-        }
-        return $store_list;
-    }
-    
-    public function listCreate(){
-        
-    }
-    
-    public function listUpdate( $list ){
-        $this->permitWhere('w');
-        return $this->updateBatch($list,'store_id');
-    }
-    
-    public function listDelete(){
-        
-    }
-    
+    /////////////////////////////////////////////////////
+    //ITEM HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function itemGet( $store_id ){
         $store_list=$this->listGet( ['store_id'=>$store_id] );
         if( !$store_list ){
@@ -141,21 +104,10 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'w') ){
             return 'forbidden';
         }
-        $this->itemDeleteChildProducts( $store_id );
+        $ProductModel=model('ProductModel');
+        $ProductModel->listDeleteChildren( $store_id );
         $this->delete($store_id);
         return $this->db->affectedRows()?'ok':'error';
-    }
-    
-    private function itemDeleteChildProducts( $store_id ){
-        $ProductModel=model('ProductModel');
-        $ProductModel->where('deleted_at IS NOT NULL OR is_disabled=1');
-        $ProductModel->where('store_id',$store_id);
-        $trashed_products=$ProductModel->get()->getResult();
-        foreach($trashed_products as $product){
-            $ProductModel->itemPurge($product->product_id);
-        }
-        $ProductModel->where('store_id',$store_id);
-        $ProductModel->delete();
     }
     
     public function itemDisable( $store_id, $is_disabled ){
@@ -166,7 +118,6 @@ class StoreModel extends Model{
         $this->update(['store_id'=>$store_id],['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'error';
     }
-    
     
     public function fieldApprove( $store_id, $field_name ){
         if( !sudo() ){
@@ -181,7 +132,52 @@ class StoreModel extends Model{
         $this->update(['store_id'=>$store_id],$data);
         return $this->db->affectedRows()?'ok':'error';
     }
+    /////////////////////////////////////////////////////
+    //LIST HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function listGet( $filter=null ){
+        $this->filterMake( $filter );
+        $this->permitWhere('r');
+        $this->orderBy('modified_at','DESC');
+        $store_list = $this->get()->getResult();
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('store_group_member_list');
+        
+        $ImageModel=model('ImageModel');
+        foreach($store_list as $store){
+            if($store){
+                $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
+                $filter=[
+                    'image_holder'=>'store',
+                    'image_holder_id'=>$store->store_id,
+                    'is_disabled'=>1,
+                    'is_deleted'=>1,
+                    'is_active'=>1,
+                    'limit'=>30
+                ];
+                $store->images=$ImageModel->listGet($filter);
+            }
+        }
+        return $store_list;
+    }
     
+    public function listCreate(){
+        return false;
+    }
+    
+    public function listUpdate( $list ){
+        return false;
+    }
+    
+    public function listDelete(){
+        return false;
+    }
+    
+    public function listPurge( $olderThan=7 ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
+    }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -243,22 +239,5 @@ class StoreModel extends Model{
             return 'ok';
         }
         return 'error';
-    }
-    
-    
-    public function listPurge( $olderThan=7, $image_holder=null, $image_holder_id=null ){
-//        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
-//        $this->where('deleted_at<',$olderStamp);
-//        if( $image_holder ){
-//            $this->where('image_holder',$image_holder);
-//        }
-//        if( $image_holder_id ){
-//            $this->where('image_holder_id',$image_holder_id);
-//        }
-//        $list_to_purge=$this->select('image_id')->get()->getResult();
-//        foreach( $list_to_purge as $item_to_purge ){
-//            $this->itemPurge($item_to_purge->image_id);
-//        }
-//        return 'list_purge_ok';
     }
 }

@@ -27,52 +27,9 @@ class ProductModel extends Model{
         'product_name'     => 'required|min_length[3]',
         'product_price'    => 'required|numeric'
     ];
-    
-    public function listGet( $filter=null ){
-        $user_id=session()->get('user_id');
-        
-        $this->filterMake( $filter );
-        $this->orderBy('updated_at','DESC');
-        $this->permitWhere('r');
-        //$this->select("*,IF($user_id=owner_id,1,0) is_owner");
-        $product_list= $this->get()->getResult();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('product_group_member_list');
-        $ImageModel=model('ImageModel');
-
-        foreach($product_list as $product){
-            if($product){
-                $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
-                $filter=[
-                    'image_holder'=>'product',
-                    'image_holder_id'=>$product->product_id,
-                    'is_disabled'=>1,
-                    'is_deleted'=>0,
-                    'is_active'=>1,
-                    'limit'=>30
-                ];
-                $product->images=$ImageModel->listGet($filter);
-            }
-        }
-        return $product_list;
-    }
-    
-    public function listCreate( $list ){
-        /*
-         * Should create importer based performant product importer
-         */
-    }
-    
-    public function listUpdate( $list ){
-        return false;
-    }
-    
-    public function listDelete( $product_ids ){
-        return false;
-    }
-    
-    
-    
+    /////////////////////////////////////////////////////
+    //ITEM HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function itemGet( $product_id ){
         $this->permitWhere('r');
         return $this->where('product_id',$product_id)->get()->getRow();
@@ -145,25 +102,6 @@ class ProductModel extends Model{
         return $this->db->affectedRows()?'ok':'error';
     }
     
-    public function itemDeleteChildProducts( $store_id ){
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($store_id,'w') ){
-            return 'forbidden';
-        }
-        $this->where('deleted_at IS NOT NULL OR is_disabled=1');
-        $this->where('store_id',$store_id);
-        $trashed_products=$this->get()->getResult();
-        foreach($trashed_products as $product){
-            $this->itemPurge($product->product_id);
-        }
-        $this->where('store_id',$store_id);
-        $this->delete();
-    }
-
-    public function itemPurge( $product_id ){
-        
-    }
-    
     public function itemDisable( $product_id, $is_disabled ){
         if( !$this->permit($product_id,'w','disabled') ){
             return 'forbidden';
@@ -172,7 +110,72 @@ class ProductModel extends Model{
         $this->update(['product_id'=>$product_id],['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'error';
     }
+    /////////////////////////////////////////////////////
+    //LIST HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function listGet( $filter=null ){
+        $user_id=session()->get('user_id');
+        
+        $this->filterMake( $filter );
+        $this->orderBy('updated_at','DESC');
+        $this->permitWhere('r');
+        //$this->select("*,IF($user_id=owner_id,1,0) is_owner");
+        $product_list= $this->get()->getResult();
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('product_group_member_list');
+        $ImageModel=model('ImageModel');
+
+        foreach($product_list as $product){
+            if($product){
+                $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
+                $filter=[
+                    'image_holder'=>'product',
+                    'image_holder_id'=>$product->product_id,
+                    'is_disabled'=>1,
+                    'is_deleted'=>0,
+                    'is_active'=>1,
+                    'limit'=>30
+                ];
+                $product->images=$ImageModel->listGet($filter);
+            }
+        }
+        return $product_list;
+    }
     
+    public function listCreate( $list ){
+        /*
+         * Should create importer based performant product importer
+         */
+    }
+    
+    public function listUpdate( $list ){
+        return false;
+    }
+    
+    public function listDelete( $product_ids ){
+        return false;
+    }
+    
+    public function listDeleteChildren( $store_id ){
+        $StoreModel=model('StoreModel');
+        if( !$StoreModel->permit($store_id,'w') ){
+            return 'forbidden';
+        }
+        $this->where('deleted_at IS NOT NULL OR is_disabled=1');
+        $this->where('store_id',$store_id);
+        $this->select('GROUP_CONCAT(product_id) product_ids');
+        $trashed_product_ids=$this->get()->getRow('product_ids');
+        
+        $this->update($trashed_product_ids,['deleted_at','2000-01-01 00:00:00']);
+        $this->where('store_id',$store_id);
+        $this->delete();
+    }
+    
+    public function listPurge( $olderThan=7 ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
+    }    
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////

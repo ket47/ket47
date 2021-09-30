@@ -21,7 +21,9 @@ class ImageModel extends Model{
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';    
-    
+    /////////////////////////////////////////////////////
+    //ITEM HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function itemGet( $image_id ){
         return $this->where('image_id',$image_id)->get()->getRow();
     }
@@ -81,7 +83,9 @@ class ImageModel extends Model{
     
     public function itemPurge( $image_id ){
         $image=$this->itemGet($image_id);
-        
+        if( !$image->deleted_at ){
+            return false;
+        }
         $found_sources=glob(WRITEPATH.'images/'.$image->image_hash.'*');
         $found_optimised=glob(WRITEPATH.'images/optimised/'.$image->image_hash.'*');
         $found=array_merge($found_optimised,$found_sources);
@@ -90,12 +94,9 @@ class ImageModel extends Model{
         }
         return $this->delete([$image_id],true);
     }
-    
-    
-    
-    
-    
-    
+    /////////////////////////////////////////////////////
+    //LIST HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function listGet( $filter ){
         $filter['order']='image_order';
         $filter['limit']=5;
@@ -114,26 +115,26 @@ class ImageModel extends Model{
     }
     
     public function listDelete( $image_holder, $image_holder_id ){
-        $this->where('image_holder',$image_holder)
-                ->where('image_holder_id',$image_holder_id)
-                ->delete();
-        return false;
+        $this->where('image_holder',$image_holder);
+        $this->where('image_holder_id',$image_holder_id);
+        $this->delete();
+        return $this->db->affectedRows()?'ok':'error';
     }
     
-    public function listPurge( $olderThan=7, $image_holder=null, $image_holder_id=null ){
+    public function listDeleteChildren( $image_holder, $image_holder_id ){
+        $this->where('image_holder',$image_holder);
+        $this->where('image_holder_id',$image_holder_id);
+        $this->update(['deleted_at'=>'2000-01-01 00:00:00']);
+        return $this->db->affectedRows()?'ok':'error';
+    }
+    
+    public function listPurge( $olderThan=7, $limit=100 ){
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
         $this->where('deleted_at<',$olderStamp);
-        if( $image_holder ){
-            $this->where('image_holder',$image_holder);
-        }
-        if( $image_holder_id ){
-            $this->where('image_holder_id',$image_holder_id);
-        }
-        $list_to_purge=$this->select('image_id')->get()->getResult();
+        $list_to_purge=$this->select('image_id')->get()->limit($limit)->getResult();
         foreach( $list_to_purge as $item_to_purge ){
             $this->itemPurge($item_to_purge->image_id);
         }
-        return 'list_purge_ok';
+        return 'ok';
     }
-    
 }
