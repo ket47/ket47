@@ -3,11 +3,17 @@ namespace App\Models;
 
 trait PermissionTrait{
     public function userRole($item_id){
-        $session=session();
         if( sudo() ){
             return 'admin';
         }
-        $user_id=$session->get('user_id')??0;
+        $session=session();
+        $user_id=$session->get('user_id')??-1;
+        if( $user_id<1 ){
+            return 'other';//unsigned user (guest)
+        }
+        if( $user_id>0 && !$item_id ){
+            return 'owner';//new item
+        }
         $sql="
             SELECT
                 IF(owner_id=$user_id
@@ -27,17 +33,12 @@ trait PermissionTrait{
     public function permit( $item_id, $right, $method='item' ){
         $class_name=(new \ReflectionClass($this))->getShortName();
         $permission_name="permit.{$class_name}.{$method}.{$item_id}.{$right}";
-        
         $cached_permission=session()->get($permission_name);
         if( isset($cached_permission) ){
             return $cached_permission;
         }
+        $user_role=$this->userRole($item_id);
         $permissions=session()->get('permissions');
-        if( $item_id ){
-            $user_role=$this->userRole($item_id);
-        } else {
-            $user_role='owner';
-        }
         $permission=0;
 
         if($user_role=='admin'){

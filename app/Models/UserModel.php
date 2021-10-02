@@ -86,10 +86,12 @@ class UserModel extends Model{
             $this->allowedFields[]='user_email_verified';
             $data->user_email_verified=0;
         }
-        $this->permitWhere('w');
+        if( !$this->permit($data->user_id,'w') ){
+            return 'forbidden';
+        }
         $this->update(['user_id'=>$data->user_id],$data);
         $this->protect(true);
-        return $this->db->affectedRows()?'ok':'forbidden';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUpdateGroup($user_id,$group_id,$is_joined){
@@ -100,7 +102,7 @@ class UserModel extends Model{
         $GroupModel->tableSet('user_group_list');
         $target_group=$GroupModel->itemGet($group_id);
         if( !$target_group ){
-            return 'not_found';
+            return 'notfound';
         }
         
         $allowed_group_types=['supplier','courier'];
@@ -109,7 +111,8 @@ class UserModel extends Model{
         }
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('user_group_member_list');
-        return $GroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
+        $GroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
+        return $this->db->affectedRows()?'ok':'idle';
     }
 
     public function itemDisable( $user_id, $is_disabled ){
@@ -117,7 +120,8 @@ class UserModel extends Model{
             return 'forbidden';
         }
         $this->allowedFields[]='is_disabled';
-        return $this->update(['user_id'=>$user_id],['is_disabled'=>$is_disabled?1:0]);
+        $this->update(['user_id'=>$user_id],['is_disabled'=>$is_disabled?1:0]);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete( $id ){

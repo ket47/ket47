@@ -18,7 +18,7 @@ trait FilterTrait{
             $this->whereIn($this->primaryKey,$filter[$this->primaryKey]);
         }
         
-        if( isset($filter['name_query']) && isset($filter['name_query_fields']) ){
+        if( !empty($filter['name_query']) && !empty($filter['name_query_fields']) ){
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){

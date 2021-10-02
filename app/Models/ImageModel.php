@@ -118,17 +118,26 @@ class ImageModel extends Model{
         $this->where('image_holder',$image_holder);
         $this->where('image_holder_id',$image_holder_id);
         $this->delete();
-        return $this->db->affectedRows()?'ok':'error';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function listDeleteChildren( $image_holder, $image_holder_id ){
+    public function listUnDelete( $image_holder, $image_holder_id ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $this->where('image_holder',$image_holder);
+        $this->where('image_holder_id',$image_holder_id);
+        $this->where('deleted_at>',$olderStamp);
+        $this->update(null,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function listDeleteDirectly( $image_holder, $image_holder_id ){
         $this->where('image_holder',$image_holder);
         $this->where('image_holder_id',$image_holder_id);
         $this->update(['deleted_at'=>'2000-01-01 00:00:00']);
         return $this->db->affectedRows()?'ok':'error';
     }
     
-    public function listPurge( $olderThan=7, $limit=100 ){
+    public function listPurge( $olderThan=APP_TRASHED_DAYS, $limit=100 ){
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
         $this->where('deleted_at<',$olderStamp);
         $list_to_purge=$this->select('image_id')->get()->limit($limit)->getResult();

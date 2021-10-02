@@ -1,5 +1,7 @@
 <?php
 
+defined('APP_TRASHED_DAYS') || define('APP_TRASHED_DAYS', 7);
+
 /*
  | --------------------------------------------------------------------
  | App Namespace

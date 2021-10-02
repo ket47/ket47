@@ -64,7 +64,13 @@ class StoreModel extends Model{
         if( $has_store_id ){
             return 'dublicate';
         }
-        $store_id=$this->insert(['store_name_new'=>$name],true);
+        $newstore=[
+            'store_name_new'=>$name,
+            'store_description_new'=>'__________',
+            'store_company_name_new'=>'___',
+            'store_tax_num'=>'0000000000'
+        ];
+        $store_id=$this->insert($newstore,true);
         if( $store_id ){
             $this->allowedFields[]='owner_id';
             $this->allowedFields[]='is_disabled';
@@ -74,11 +80,15 @@ class StoreModel extends Model{
         return 'error';
     }
     
-    
     public function itemUpdate( $store ){
-        $this->permitWhere('w');
+        if( empty($store->store_id) ){
+            return 'noid';
+        }
+        if( !$this->permit($store->store_id,'w') ){
+            return 'forbidden';
+        }
         $this->update($store->store_id,$store);
-        return $this->db->affectedRows()?'ok':'forbidden';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUpdateGroup($store_id,$group_id,$is_joined){
@@ -106,8 +116,26 @@ class StoreModel extends Model{
         }
         $ProductModel=model('ProductModel');
         $ProductModel->listDeleteChildren( $store_id );
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDelete('store', $store_id);
+        
         $this->delete($store_id);
-        return $this->db->affectedRows()?'ok':'error';
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function itemUnDelete( $store_id ){
+        if( !$this->permit($store_id,'w') ){
+            return 'forbidden';
+        }
+        $ProductModel=model('ProductModel');
+        $ProductModel->listUnDeleteChildren( $store_id );
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listUnDelete('store', $store_id);
+        
+        $this->update($store_id,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDisable( $store_id, $is_disabled ){
@@ -116,7 +144,7 @@ class StoreModel extends Model{
         }
         $this->allowedFields[]='is_disabled';
         $this->update(['store_id'=>$store_id],['is_disabled'=>$is_disabled?1:0]);
-        return $this->db->affectedRows()?'ok':'error';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function fieldApprove( $store_id, $field_name ){
@@ -139,6 +167,9 @@ class StoreModel extends Model{
         $this->filterMake( $filter );
         $this->permitWhere('r');
         $this->orderBy('modified_at','DESC');
+        if( !empty($filter['owner_id']) ){
+            $this->where('owner_id',$filter['owner_id']);
+        }
         $store_list = $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');

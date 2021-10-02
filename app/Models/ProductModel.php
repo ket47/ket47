@@ -161,17 +161,50 @@ class ProductModel extends Model{
         if( !$StoreModel->permit($store_id,'w') ){
             return 'forbidden';
         }
+        $this->listDeleteChildrenDirectly($store_id);
+        
+        $this->where('deleted_at IS NULL AND is_disabled=0');
+        $this->where('store_id',$store_id);
+        $this->select('GROUP_CONCAT(product_id) product_ids');
+        $product_ids=$this->get()->getRow('product_ids');
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDelete('product', $product_ids);
+        $this->delete($product_ids);
+    }
+    
+    public function listUnDeleteChildren( $store_id ){
+        $StoreModel=model('StoreModel');
+        if( !$StoreModel->permit($store_id,'w') ){
+            return 'forbidden';
+        }
+        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $this->where('deleted_at>',$olderStamp);
+        $this->where('store_id',$store_id);
+        $this->select('GROUP_CONCAT(product_id) product_ids');
+        $product_ids=$this->get()->getRow('product_ids');
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listUnDelete('product', $product_ids);
+        
+        $this->update($product_ids,['deleted_at'=>NULL]);
+    }
+    
+    private function listDeleteChildrenDirectly($store_id){
+        /*
+         * marking to purge directly items that are already deleted or disabled
+         */
         $this->where('deleted_at IS NOT NULL OR is_disabled=1');
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
         $trashed_product_ids=$this->get()->getRow('product_ids');
+        $this->update($trashed_product_ids,['deleted_at'=>'2000-01-01 00:00:00']);
         
-        $this->update($trashed_product_ids,['deleted_at','2000-01-01 00:00:00']);
-        $this->where('store_id',$store_id);
-        $this->delete();
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDeleteDirectly('product', $trashed_product_ids);
     }
     
-    public function listPurge( $olderThan=7 ){
+    public function listPurge( $olderThan=APP_TRASHED_DAYS ){
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);

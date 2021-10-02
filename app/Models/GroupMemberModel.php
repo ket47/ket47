@@ -51,11 +51,13 @@ class GroupMemberModel extends Model{
     }
     
     public function joinGroup($member_id,$group_id){
-        //if( $this->permit(null,'w') ){
+        try{
             $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
             return $this->affectedRows()?true:false;
-        //}
-        //return 'group_join_forbidden';
+        }
+        catch (\Exception $e){
+            return true;//duplicate key
+        }
     }
     
     public function leaveGroup($member_id,$group_id){

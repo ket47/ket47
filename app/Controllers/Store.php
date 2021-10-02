@@ -13,7 +13,8 @@ class Store extends \App\Controllers\BaseController{
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
-            'limit'=>$this->request->getVar('limit')
+            'limit'=>$this->request->getVar('limit'),
+            'owner_id'=>$this->request->getVar('owner_id'),
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
@@ -27,27 +28,26 @@ class Store extends \App\Controllers\BaseController{
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemCreate($name);
-        if( is_numeric($result) ){
-            return $this->respondCreated($result);
-        }
-        return $this->fail($result);
-    }
-    
-    public function itemUpdate(){
-        $data= json_decode($this->request->getVar('data'));
-        
-        $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemUpdate($data);
-        if( $result==='ok' ){
-            return $this->respondUpdated('ok');
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
+        return $this->respondUpdated($result);
+    }
+    
+    public function itemUpdate(){
+        $data= $this->request->getJSON();
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemUpdate($data);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
-        return $this->fail($result);
+        if( $StoreModel->errors() ){
+            return $this->failValidationError(json_encode($StoreModel->errors()));
+        }
+        return $this->respondUpdated($result);
     }
     
     public function itemUpdateGroup(){
@@ -68,8 +68,10 @@ class Store extends \App\Controllers\BaseController{
     
     public function itemDelete(){
         $store_id=$this->request->getVar('store_id');
+        $is_deleted=$this->request->getVar('is_deleted');
+        
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemDelete($store_id);        
+        $result=$StoreModel->itemDelete($store_id,$is_deleted);        
         if( $result==='ok' ){
             return $this->respondDeleted($result);
         }
@@ -109,7 +111,7 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
-
+    
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////

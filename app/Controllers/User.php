@@ -35,7 +35,7 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        $data= json_decode($this->request->getVar('data'));
+        $data= $this->request->getJSON();
         
         $UserModel=model('UserModel');
         $result=$UserModel->itemUpdate($data);
@@ -56,13 +56,16 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $result=$UserModel->itemUpdateGroup($user_id,$group_id,$is_joined);
         
-        if(is_bool($result) && $result ){
-            return $this->respondUpdated(1);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
         }
         if( $UserModel->errors() ){
             return $this->failValidationError(json_encode($UserModel->errors()));
         }
-        return $this->fail($result);
+        return $this->respondUpdated($result);
     }
     
     public function itemDisable(){
@@ -72,10 +75,10 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $result=$UserModel->itemDisable($user_id,$is_disabled);
         
-        if(is_bool($result) && $result ){
-            return $this->respondUpdated(1);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
         }
-        return $this->fail($result);
+        return $this->respondUpdated($result);
     }
     
     public function itemDelete(){
