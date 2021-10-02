@@ -13,7 +13,8 @@ class ImageModel extends Model{
         'image_holder',
         'image_holder_id',
         'image_hash',
-        'image_order'
+        'image_order',
+        'deleted_at'
         ];
 
     protected $useSoftDeletes = true;

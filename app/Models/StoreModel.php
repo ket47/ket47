@@ -39,9 +39,9 @@ class StoreModel extends Model{
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
-        'store_name_new'        => 'required|min_length[3]',
-        'store_description_new' => 'min_length[10]',
-        'store_company_name_new' => 'min_length[3]',
+//        'store_name_new'        => 'required|min_length[3]',
+//        'store_description_new' => 'min_length[10]',
+//        'store_company_name_new' => 'min_length[3]',
         'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
     /////////////////////////////////////////////////////
@@ -157,7 +157,11 @@ class StoreModel extends Model{
             $field_name=>$new_value,
             "{$field_name}_new"=>""
         ];
-        $this->update(['store_id'=>$store_id],$data);
+        $this->where('store_id',$store_id);
+        $this->update($data);
+        q($this);
+        
+        
         return $this->db->affectedRows()?'ok':'error';
     }
     /////////////////////////////////////////////////////
