@@ -172,8 +172,6 @@ class StoreModel extends Model{
         }
         $store_list = $this->get()->getResult();
         
-        q($this);
-        
         
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
