@@ -116,13 +116,13 @@ class Store extends \App\Controllers\BaseController{
         
         $StoreModel=model('StoreModel');
         $result=$StoreModel->fieldApprove( $store_id, $field_name );
-        if( $result==='ok' ){
-            return $this->respondUpdated($result);
-        }
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
-        return $this->fail($result);
+        if( $StoreModel->errors() ){
+            return $this->failValidationError(json_encode($StoreModel->errors()));
+        }
+        return $this->respondUpdated($result);
     }
     
     /////////////////////////////////////////////////////

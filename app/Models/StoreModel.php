@@ -39,9 +39,9 @@ class StoreModel extends Model{
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
-//        'store_name_new'        => 'required|min_length[3]',
-//        'store_description_new' => 'min_length[10]',
-//        'store_company_name_new' => 'min_length[3]',
+        'store_name'        => 'min_length[3]',
+        'store_description' => 'min_length[10]',
+        'store_company_name' => 'min_length[3]',
         'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
     /////////////////////////////////////////////////////
@@ -66,8 +66,9 @@ class StoreModel extends Model{
         }
         $newstore=[
             'store_name_new'=>$name,
-            'store_description_new'=>'__________',
-            'store_company_name_new'=>'___',
+            'store_name'=>'    ',
+            'store_description'=>'          ',
+            'store_company_name'=>'   ',
             'store_tax_num'=>'0000000000'
         ];
         $store_id=$this->insert($newstore,true);
@@ -157,12 +158,8 @@ class StoreModel extends Model{
             $field_name=>$new_value,
             "{$field_name}_new"=>""
         ];
-        $this->where('store_id',$store_id);
-        $this->update($data);
-        q($this);
-        
-        
-        return $this->db->affectedRows()?'ok':'error';
+        $this->update($store_id,$data);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
