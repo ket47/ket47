@@ -5,10 +5,10 @@
     <div class="filter segment">
         <input type="search" id="item_name_search" placeholder="Filter">
         <div>
-            <label for="item_deleted">Active items</label>
-            <input type="checkbox" id="item_active" name="is_active" checked="checked">
+            <label for="item_active">Active items</label>
+            <input type="checkbox" id="item_active" name="is_active" checked="checked"> |
             <label for="item_deleted">Deleted items</label>
-            <input type="checkbox" id="item_deleted" name="is_deleted">
+            <input type="checkbox" id="item_deleted" name="is_deleted"> |
             <label for="item_disabled">Disabled items</label>
             <input type="checkbox" id="item_disabled" name="is_disabled">
         </div>
@@ -84,7 +84,7 @@
             $.post('/<?=$ItemName?>/itemDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
         undeleteItem:function( <?=$item_name?>_id ){
-            ItemList.saveItem(<?=$item_name?>_id,'deleted_at',null).done(ItemList.reload);
+            $.post('/<?=$ItemName?>/itemUnDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
         approve:function( <?=$item_name?>_id,field_name ){
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);

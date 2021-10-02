@@ -121,6 +121,19 @@ class Product extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
     
+    public function itemUnDelete(){
+        $product_id=$this->request->getVar('product_id');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemUnDelete($product_id);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
+    }
+    
     public function itemDisable(){
         $product_id=$this->request->getVar('product_id');
         $is_disabled=$this->request->getVar('is_disabled');

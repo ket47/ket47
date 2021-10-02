@@ -68,12 +68,25 @@ class Store extends \App\Controllers\BaseController{
     
     public function itemDelete(){
         $store_id=$this->request->getVar('store_id');
-        $is_deleted=$this->request->getVar('is_deleted');
         
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemDelete($store_id,$is_deleted);        
+        $result=$StoreModel->itemDelete($store_id);        
         if( $result==='ok' ){
             return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
+    
+    public function itemUnDelete(){
+        $store_id=$this->request->getVar('store_id');
+        
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemUnDelete($store_id);        
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
         }
         if( $result==='forbidden' ){
             return $this->failForbidden($result);

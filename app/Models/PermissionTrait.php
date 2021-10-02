@@ -82,15 +82,20 @@ trait PermissionTrait{
     }
     
     private function permitWhereCompose($user_id,$modelPerm,$right){
-        $owner_has=str_contains($modelPerm['owner'],$right);
-        $ally_has=str_contains($modelPerm['ally'],$right);
+//        if( $user_id>0 ){
+            $owner_has=str_contains($modelPerm['owner'],$right);
+            $ally_has=str_contains($modelPerm['ally'],$right);
+//        } else {
+//            $owner_has=false;
+//            $ally_has=false;
+//        }
         $other_has=str_contains($modelPerm['other'],$right);
         //echo "owner_has $owner_has ally_has $ally_has other_has $other_has";
         if( $owner_has && $ally_has && $other_has ){
             $permission_filter="";//All granted
         } else
         if( !$owner_has && !$ally_has && !$other_has ){
-            $permission_filter="0";//All denied
+            $permission_filter="1=2";//All denied
         } else
         if( $owner_has && $ally_has ){//!$other_has
             $permission_filter="(owner_id='$user_id' OR '$user_id' IN(owner_ally_ids))";

@@ -37,7 +37,10 @@ trait FilterTrait{
     
     
     private function filterStatus($filter){
+        $user_id=session()->get('user_id');
         if( $filter['is_active'] && $filter['is_disabled'] && $filter['is_deleted'] ){
+            $this->permitWhere('r','disabled');
+            $this->where('owner_id',$user_id);
             return true;//optimisation if all entries should be shown
         }
         $status_where=[];
@@ -46,8 +49,8 @@ trait FilterTrait{
             $status_where[]='is_disabled=1';
         }
         if( $filter['is_deleted'] ){//admin filters
-            $this->permitWhere('r','disabled');
-            $status_where[]='deleted_at IS NOT NULL';
+            $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+            $status_where[]="deleted_at>'$olderStamp' AND owner_id='$user_id'";
         }
         if( $filter['is_active'] ){
             $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
