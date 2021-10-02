@@ -40,7 +40,6 @@ trait FilterTrait{
         $user_id=session()->get('user_id');
         if( $filter['is_active'] && $filter['is_disabled'] && $filter['is_deleted'] ){
             $this->permitWhere('r','disabled');
-            $this->where('owner_id',$user_id);
             return true;//optimisation if all entries should be shown
         }
         $status_where=[];
