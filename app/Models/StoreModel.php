@@ -171,6 +171,10 @@ class StoreModel extends Model{
             $this->where('owner_id',$filter['owner_id']);
         }
         $store_list = $this->get()->getResult();
+        
+        q($this);
+        
+        
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
         

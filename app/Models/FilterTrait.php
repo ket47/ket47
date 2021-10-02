@@ -48,8 +48,9 @@ trait FilterTrait{
             $status_where[]='is_disabled=1';
         }
         if( $filter['is_deleted'] ){//admin filters
+            $this->permitWhere('r','disabled');
             $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
-            $status_where[]="deleted_at>'$olderStamp' AND owner_id='$user_id'";
+            $status_where[]="deleted_at>'$olderStamp'";
         }
         if( $filter['is_active'] ){
             $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
