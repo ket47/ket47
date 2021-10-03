@@ -172,8 +172,6 @@ class StoreModel extends Model{
             $this->where('owner_id',$filter['owner_id']);
         }
         $store_list = $this->get()->getResult();
-        
-        
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
         
@@ -253,6 +251,7 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'w') ){
             return 'forbidden';
         }
+        $ImageModel->itemDelete( $image_id );
         $ok=$ImageModel->itemPurge( $image_id );
         if( $ok ){
             return 'ok';

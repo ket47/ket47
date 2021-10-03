@@ -44,13 +44,13 @@ trait FilterTrait{
         }
         $status_where=[];
         if( $filter['is_disabled'] ){//admin filters
-            $this->permitWhere('r','disabled');
-            $status_where[]='is_disabled=1';
+            $permitWhere=$this->permitWhereGet('r','disabled');
+            $status_where[]="is_disabled=1 AND $permitWhere";
         }
         if( $filter['is_deleted'] ){//admin filters
-            $this->permitWhere('r','disabled');
+            $permitWhere=$this->permitWhereGet('r','disabled');
             $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
-            $status_where[]="deleted_at>'$olderStamp'";
+            $status_where[]="deleted_at>'$olderStamp' AND $permitWhere";
         }
         if( $filter['is_active'] ){
             $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
