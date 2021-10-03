@@ -13,7 +13,8 @@ class Product extends \App\Controllers\BaseController{
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
-            'limit'=>$this->request->getVar('limit')
+            'limit'=>$this->request->getVar('limit'),
+            'store_id'=>$this->request->getVar('store_id'),
         ];
         $ProductModel=model('ProductModel');
         $GroupModel=model('GroupModel');
@@ -77,7 +78,7 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        $data= json_decode($this->request->getVar('data'));
+        $data= $this->request->getJSON();
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdate($data);
         if( $result==='ok' ){

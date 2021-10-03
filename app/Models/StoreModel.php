@@ -256,7 +256,7 @@ class StoreModel extends Model{
         if( $ok ){
             return 'ok';
         }
-        return 'error';
+        return 'idle';
     }
     
     public function imageOrder( $image_id, $dir ){

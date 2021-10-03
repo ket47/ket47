@@ -128,8 +128,9 @@
             ItemList.fileUploadXhr.open("POST", url, true);
             ItemList.fileUploadXhr.onreadystatechange = function() {
                 if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 201) {
-                    ItemList.reload();
+                    
                 }
+                ItemList.reload();
             };
             $('#itemlist_uploader').click();
         },
