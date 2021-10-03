@@ -15,6 +15,14 @@ class Home extends BaseController {
         return view('product/product_manager');
     }
     
+    public function product_importer(){
+        return view('product/product_importer');
+    }
+    
+    public function product_importer_rows(){
+        
+    }
+    
     public function product_list(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
