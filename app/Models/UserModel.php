@@ -48,6 +48,16 @@ class UserModel extends Model{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $user_id ){
+        if( $user_id<1 ){
+            return (object)[
+                'user_id'=>-1,
+                'user_name'=>'Guest',
+                'member_of_groups'=>(object)[
+                    'group_ids'=>'1',
+                    'group_types'=>'guest'
+                ]
+            ];
+        }
         $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
         //die($this->getLastQuery());

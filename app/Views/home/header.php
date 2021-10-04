@@ -42,12 +42,18 @@
                 border-radius: 5px;
                 background-color:#fff;
                 padding: 10px;
-                margin-top: 8px;
-                margin-bottom: 8px;
+                margin-top: 4px;
+                margin-bottom: 4px;
+            }
+            .primary{
+                background-color: #6cf;
             }
             .secondary{
                 background-color: #eee;
-                border-radius: 5px;
+            }
+            button{
+                padding: 5px;
+                border: #09f 1px solid;
             }
             .filter #item_name_search{
                 width:calc( 100% - 10px );

@@ -66,7 +66,7 @@ class ProductModel extends Model{
         
         $this->permitWhere('w');
         $this->update($product->product_id,$product);
-        return $this->db->affectedRows()?'ok':'forbidden';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUpdateGroup($product_id,$group_id,$is_joined){

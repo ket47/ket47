@@ -104,7 +104,7 @@
         fileUpload:function(filelist){
             if( filelist.length ){
                 let attached_count=0;
-                let total_size_limit=10000000;
+                let total_size_limit=10*1024*1024;
                 for(let fl of filelist){
                     total_size_limit-=fl.size;
                     if(total_size_limit<0){

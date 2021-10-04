@@ -18,14 +18,6 @@ class User extends \App\Controllers\BaseController{
         if($user){
             return $this->respond($user);
         }
-        $guest=[
-            'user_id'=>-1,
-            'user_name'=>'Guest',
-            'member_of_groups'=>[
-                'group_ids'=>'1',
-                'group_types'=>'guest'
-            ]
-        ];
         return $this->respond($guest);
     }
     
