@@ -99,7 +99,21 @@ class ProductModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('product',$product_id);
         $this->delete($product_id);
-        return $this->db->affectedRows()?'ok':'error';
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function itemUnDelete( $product_id ){
+        $target_store_id=$this->itemGet($product_id)->store_id;
+        $StoreModel=model('StoreModel');
+        if( !$StoreModel->permit($target_store_id,'w') || 
+            !$this->permit($product_id, 'w') ){
+            return 'forbidden';
+        }
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listUnDelete('product',$product_id);
+        $this->update($product_id,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDisable( $product_id, $is_disabled ){
@@ -108,18 +122,18 @@ class ProductModel extends Model{
         }
         $this->allowedFields[]='is_disabled';
         $this->update(['product_id'=>$product_id],['is_disabled'=>$is_disabled?1:0]);
-        return $this->db->affectedRows()?'ok':'error';
+        return $this->db->affectedRows()?'ok':'idle';
     }
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
-        $user_id=session()->get('user_id');
-        
         $this->filterMake( $filter );
         $this->orderBy('updated_at','DESC');
+        if( $filter['store_id'] ){
+            $this->where('store_id',$filter['store_id']);
+        }
         $this->permitWhere('r');
-        //$this->select("*,IF($user_id=owner_id,1,0) is_owner");
         $product_list= $this->get()->getResult();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('product_group_member_list');
@@ -250,11 +264,12 @@ class ProductModel extends Model{
         if( !$this->permit($product_id,'w') ){
             return 'forbidden';
         }
+        $ImageModel->itemDelete( $image_id );
         $ok=$ImageModel->itemPurge( $image_id );
         if( $ok ){
             return 'ok';
         }
-        return 'error';
+        return 'idle';
     }
     
     public function imageOrder( $image_id, $dir ){

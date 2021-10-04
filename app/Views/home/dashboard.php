@@ -13,6 +13,7 @@
             
             <h3>Products</h3>
             <a href="Home/product_manager" target="scr">Product</a><br>
+            <a href="Home/product_importer" target="scr">Product Importer</a><br>
             <h3>Stores</h3>
             <a href="Home/store_manager" target="scr">Stores</a><br>
             <h3>Users</h3>

@@ -62,7 +62,7 @@ trait PermissionTrait{
     
     public function permitWhereGet( $right, $method ){
         if( sudo() ){
-            return "";//All granted
+            return "1=1";//All granted
         }
         $user_id=session()->get('user_id');
         $permited_class_name=(new \ReflectionClass($this))->getShortName();

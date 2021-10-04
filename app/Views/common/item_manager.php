@@ -90,7 +90,7 @@
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reload);
         },
         imageApprove:function( image_id ){
-            $.post('/<?=$ItemName?>/imageApprove',{image_id}).always(ItemList.reload);
+            $.post('/<?=$ItemName?>/imageDisable',{image_id,is_disabled:0}).always(ItemList.reload);
         },
         imageDelete:function( image_id ){
             if( !confirm("Удалить?") ){
@@ -128,8 +128,9 @@
             ItemList.fileUploadXhr.open("POST", url, true);
             ItemList.fileUploadXhr.onreadystatechange = function() {
                 if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 201) {
-                    ItemList.reload();
+                    
                 }
+                ItemList.reload();
             };
             $('#itemlist_uploader').click();
         },

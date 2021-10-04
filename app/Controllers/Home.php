@@ -15,6 +15,14 @@ class Home extends BaseController {
         return view('product/product_manager');
     }
     
+    public function product_importer(){
+        return view('product/product_importer');
+    }
+    
+    public function product_importer_rows(){
+        
+    }
+    
     public function product_list(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
@@ -22,7 +30,8 @@ class Home extends BaseController {
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
-            'limit'=>$this->request->getVar('limit')
+            'limit'=>$this->request->getVar('limit'),
+            'store_id'=>$this->request->getVar('store_id'),
         ];
         $ProductModel=model('ProductModel');
         $GroupModel=model('GroupModel');
