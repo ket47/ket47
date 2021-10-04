@@ -62,7 +62,7 @@ class StoreModel extends Model{
         $user_id=session()->get('user_id');
         $has_store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
         if( $has_store_id ){
-            return 'dublicate';
+            return 'limit_exeeded';
         }
         $newstore=[
             'store_name_new'=>$name,
