@@ -24,6 +24,20 @@ class Store extends \App\Controllers\BaseController{
         return $this->respond($store_list);
     }
     
+    public function itemGet(){
+        $store_id=$this->request->getVar('store_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemGet($store_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
+    }
+    
+    
     public function itemCreate(){
         $name=$this->request->getVar('name');
         $StoreModel=model('StoreModel');

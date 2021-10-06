@@ -48,11 +48,29 @@ class StoreModel extends Model{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $store_id ){
-        $store_list=$this->listGet( ['store_id'=>$store_id] );
-        if( !$store_list ){
-            return [];
+        if( !$this->permit($store_id,'r') ){
+            return 'forbidden';
         }
-        return $store_list[0];
+        $this->where('store_id',$store_id);
+        $store = $this->get()->getRow();
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('store_group_member_list');
+        
+        $ImageModel=model('ImageModel');
+        if($store){
+            $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
+            $filter=[
+                'image_holder'=>'store',
+                'image_holder_id'=>$store->store_id,
+                'is_disabled'=>1,
+                'is_deleted'=>1,
+                'is_active'=>1,
+                'limit'=>30
+            ];
+            $store->images=$ImageModel->listGet($filter);
+            return $store;
+        }
+        return 'notfound';
     }
     
     public function itemCreate( $name ){
