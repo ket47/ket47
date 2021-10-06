@@ -10,7 +10,7 @@
     #import_table{
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(11, 1fr);
+        grid-template-columns: repeat(16, min-content);
     }
     #import_table>div:nth-child(even)>div{
         background-color: #eee;
@@ -25,17 +25,20 @@
         display: contents;
     }
     .import_table_row div{
-        text-align: center;
+        text-align: left;
         padding: 3px;
     }
-    .import_table_row input{
+    .import_table_row input,.import_table_row textarea{
         width:100%;
         margin: 0px;
         margin-top: 2px;
         padding: 0px;
         border:none;
-        text-align: center;
-        background: none;
+        text-align: left;
+        font-family: 'Raleway', sans-serif;
+    }
+    .import_table_row textarea{
+        height: 100px;
     }
     #import_table>div.selected div{
         background-color: #ffa;
@@ -72,10 +75,9 @@
         init:function (){
             ImportList.table.init();
         },
-        
         table:{
             cols:[
-                {field:"",name:"-"},
+                {field:"",name:"-пропустить-"},
                 {field:"product_code",name:"Код товара"},
                 {field:"product_name",name:"Название"},
                 {field:"product_description",name:"Описание"},
@@ -94,8 +96,9 @@
                     ImportList.table.loadmorecheck();
                 });
                 ImportList.table.loadmorecheck();
+                
                 $("#import_table").click(function(e){
-                    $node=$(e.target);
+                    let $node=$(e.target);
                     if( $node.data('editable') ){
                         ImportList.table.celledit($node);
                         let parent=$node.parent();
@@ -125,12 +128,19 @@
             celledit:function( $node ){
                 if( $node.data('editable') ){
                     let val=$node.html();
-                    $node.html(`<input value="${val}"/>`);
-                    $node.find('input').select();
-                    $node.find('input').on('change',function(){
+                    let $editor=null;
+                    if( val.length>20 ){
+                        $node.html(`<textarea>${val}</textarea>`);
+                        $editor=$node.find('textarea');
+                    } else {
+                        $node.html(`<input value="${val}"/>`);
+                        $editor=$node.find('input');
+                    }
+                    $editor.focus();
+                    $editor.on('change blur',function(){
                         let id=$node.parent().data('id');
                         let field=$node.data('field');
-                        let value=$node.find('input').val();
+                        let value=$editor.val();
                         $node.html(value);
                         ImportList.table.itemUpdate(id,field,value);
                     });
@@ -168,12 +178,15 @@
                     ImportList.table.loadmorecheck();
                 });
             },
+            columnCount:0,
             appendRows:function( list ){
                 for( let row of list ){
                     let rowhtml='';
-                    for(let i=1;i<=11;i++){
+                    for(let i=1;i<=16;i++){
                         let col=`C${i}`;
-                        rowhtml+=`<div data-editable="1" data-field="${col}">${row[col]||' '}</div>`;// style="grid-area:C${i}"
+                        let val=row[col];
+                        let minwidth=val?(val.length>40?'200px':'100px'):'0px';
+                        rowhtml+=`<div data-editable="1" data-field="${col}" style="min-width:${minwidth}">${row[col]||''}</div>`;// style="grid-area:C${i}"
                     }
                     $("#import_table").append(`<div class="import_table_row" data-id="${row['id']}">${rowhtml}</div>`);
                 }
@@ -181,7 +194,7 @@
             theadInit:function(){
                 let html='';
                 let selector=ImportList.table.theadSelectorGet();
-                for(let i=1;i<=11;i++){
+                for(let i=1;i<=16;i++){
                     html+=`<div id="import_table_h${i}">${selector}</div>`;// style="grid-area:C${i}"
                 }
                 $("#import_table_head").html(html);
@@ -195,8 +208,6 @@
                 return html;
             }
         },
-            
-            
         fileUpload:function(filelist){
             if( filelist.length ){
                 ImportList.fileUploadInit();
@@ -232,34 +243,11 @@
         },
     };
     $(ImportList.init);
-    
-    
-    
-    $.fn.isInViewport = function() {
-        var elementTop = Math.floor($(this).offset().top);
-        var elementBottom = Math.floor(elementTop + $(this).outerHeight());
-        var viewportTop = Math.floor( $(window).scrollTop() );
-        var viewportBottom = Math.floor(viewportTop + $(window).height());
-        
-        
-        let intViewportHeight = window.innerHeight;
-
-        
-        
-        console.log([elementTop , intViewportHeight, $(window).scrollTop()]);
-        
-        
-        return (elementBottom > viewportTop) && (elementTop < viewportBottom);
-    };
-    
-    
     function isElementInViewport (el) {
         if (typeof jQuery === "function" && el instanceof jQuery) {
             el = el[0];
         }
-
         var rect = el.getBoundingClientRect();
-
         return (
             rect.top >= 0 &&
             rect.left >= 0 &&
