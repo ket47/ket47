@@ -27,6 +27,9 @@ trait FilterTrait{
                 }
             }
         }
+        if( $filter['offset'] ){
+            $this->offset($filter['offset']);
+        }
         if( $filter['limit'] ){
             $this->limit($filter['limit']);
         }

@@ -1,7 +1,47 @@
 <?=view('home/header')?>
 <?=$html_before??'' ?>
+<style>
+    .item_disabled{
+        background-color: #ddd;
+    }
+    .item_deleted{
+        background-color: #fdd;
+    }
+    #import_table{
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(11, 1fr);
+    }
+    #import_table>div:nth-child(even)>div{
+        background-color: #eee;
+    }
+    #import_table_head select{
+        width: 100%;
+    }
+    #import_table_head{
+        display: contents;
+    }
+    .import_table_row{
+        display: contents;
+    }
+    .import_table_row div{
+        text-align: center;
+        padding: 3px;
+    }
+    .import_table_row input{
+        width:100%;
+        margin: 0px;
+        margin-top: 2px;
+        padding: 0px;
+        border:none;
+        text-align: center;
+        background: none;
+    }
+    #import_table>div.selected div{
+        background-color: #ffa;
+    }
+</style>
 <div style="padding: 20px;">
-    <button onclick='$("#importlist_uploader").click()' class="primary">Загрузить таблицу XLSX</button>
     <div class="filter segment">
         <input type="search" id="item_name_search" placeholder="Filter">
         <div>
@@ -13,45 +53,23 @@
             <input type="checkbox" id="item_disabled" name="is_disabled">
         </div>
     </div>
-    <div class="item_list"></div>
 </div>
-<style>
-    .item_disabled{
-        background-color: #ddd;
-    }
-    .item_deleted{
-        background-color: #fdd;
-    }
-    #import_table{
-        width: 100%;
-        display: grid;
-        grid-template-areas: "C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13 C14 C15 C16";
-    }
-    #import_table_head select{
-        width: 100%;
-    }
-    #import_table_head{
-        display: contents;
-    }
-    #import_table_body{
-        display: contents;
-    }
-</style>
-<script type="text/javascript">
+<div style="padding: 20px;">
+    <button onclick='ImportList.table.reload()'><i class="fas fa-redo"></i> Обновить</button>
+    <button onclick='ImportList.table.listDelete()'><span class="fa fa-trash"></span> Удалить строки</button>
+    <button onclick='ImportList.table.listTruncate()'><span class="fa fa-table"></span> Очистить таблицу</button>
+    |
+    <button onclick='$("#importlist_uploader").click()' class="primary"><span class="fa fa-upload"></span> Загрузить таблицу XLSX</button>
+    <div class="segment">
+        <div title="Main Import table" id="import_table">
+            <div id="import_table_head"></div>
+        </div>
+        
+    </div>
+    <div id="import_table_loader"></div>
+</div><script type="text/javascript">
     ImportList={
         init:function (){
-//            $('.import_list').on('change',function(e){
-//
-//            });
-//            $('.filter').on('change',function(e){
-//                var $input=$(e.target);
-//                var value=ImportList.val($input);
-//                var name=$input.attr('name');
-//                ImportList.reloadFilter[name]=value;
-//                ImportList.reload();
-//            });
-//            ImportList.reload();
-            
             ImportList.table.init();
         },
         
@@ -72,15 +90,99 @@
             ],
             init:function(){
                 this.theadInit();
+                $(window).scroll(function(){
+                    ImportList.table.loadmorecheck();
+                });
+                ImportList.table.loadmorecheck();
+                $("#import_table").click(function(e){
+                    $node=$(e.target);
+                    if( $node.data('editable') ){
+                        ImportList.table.celledit($node);
+                        let parent=$node.parent();
+                        parent.toggleClass('selected');
+                    }
+                });
             },
+            itemUpdate:function(id,field,value){
+                let request={id};
+                request[field]=value;
+                $.post('/Importer/itemUpdate',JSON.stringify(request));
+            },
+            listDelete:function(){
+                let ids=[];
+                $("#import_table .selected").each(function(){
+                    ids.push($(this).data('id'));
+                });
+                if( ids.length>0 && confirm(`Удалить ${ids.length} строк?`) ){
+                    $.post('/Importer/listDelete',{ids:ids.join(',')}).done(function(){ImportList.table.reload()});
+                }
+            },
+            listTruncate:function(){
+                if( confirm(`Очистить таблицу?`) ){
+                    $.post('/Importer/listDelete',{ids:''}).done(function(){ImportList.table.reload()});
+                }
+            },
+            celledit:function( $node ){
+                if( $node.data('editable') ){
+                    let val=$node.html();
+                    $node.html(`<input value="${val}"/>`);
+                    $node.find('input').select();
+                    $node.find('input').on('change',function(){
+                        let id=$node.parent().data('id');
+                        let field=$node.data('field');
+                        let value=$node.find('input').val();
+                        $node.html(value);
+                        ImportList.table.itemUpdate(id,field,value);
+                    });
+                }
+            },
+            loadoffset:0,
+            loadingcompleted:false,
+            loadrequest:{},
             reload:function(){
-                
+                this.loadoffset=0;
+                this.loadingcompleted=false;
+                $(".import_table_row").remove();
+                this.loadmore();
+            },
+            loadmorecheck:function(){
+                if(  isElementInViewport( $("#import_table_loader") ) ) {
+                    ImportList.table.loadmore();
+                }
+            },
+            loadmore:function(){
+                if(this.inprogress===true || this.loadingcompleted===true){
+                    return false;
+                }
+                this.inprogress=true;
+                this.loadrequest.limit=30;
+                this.loadrequest.offset=this.loadoffset;
+                $.post('/Importer/listGet',this.loadrequest,'json').done(function(list){
+                    ImportList.table.inprogress=false;
+                    ImportList.table.loadoffset+=list.length+1;
+                    ImportList.table.loadingcompleted=false;
+                    if( list.length<ImportList.table.loadrequest.limit ){
+                        ImportList.table.loadingcompleted=true;
+                    }
+                    ImportList.table.appendRows(list);
+                    ImportList.table.loadmorecheck();
+                });
+            },
+            appendRows:function( list ){
+                for( let row of list ){
+                    let rowhtml='';
+                    for(let i=1;i<=11;i++){
+                        let col=`C${i}`;
+                        rowhtml+=`<div data-editable="1" data-field="${col}">${row[col]||' '}</div>`;// style="grid-area:C${i}"
+                    }
+                    $("#import_table").append(`<div class="import_table_row" data-id="${row['id']}">${rowhtml}</div>`);
+                }
             },
             theadInit:function(){
                 let html='';
                 let selector=ImportList.table.theadSelectorGet();
-                for(let i=1;i<=16;i++){
-                    html+=`<div style="grid-area:C${i}" id="import_table_h${i}">${selector}</div>`;
+                for(let i=1;i<=11;i++){
+                    html+=`<div id="import_table_h${i}">${selector}</div>`;// style="grid-area:C${i}"
                 }
                 $("#import_table_head").html(html);
             },
@@ -130,17 +232,42 @@
         },
     };
     $(ImportList.init);
+    
+    
+    
+    $.fn.isInViewport = function() {
+        var elementTop = Math.floor($(this).offset().top);
+        var elementBottom = Math.floor(elementTop + $(this).outerHeight());
+        var viewportTop = Math.floor( $(window).scrollTop() );
+        var viewportBottom = Math.floor(viewportTop + $(window).height());
+        
+        
+        let intViewportHeight = window.innerHeight;
+
+        
+        
+        console.log([elementTop , intViewportHeight, $(window).scrollTop()]);
+        
+        
+        return (elementBottom > viewportTop) && (elementTop < viewportBottom);
+    };
+    
+    
+    function isElementInViewport (el) {
+        if (typeof jQuery === "function" && el instanceof jQuery) {
+            el = el[0];
+        }
+
+        var rect = el.getBoundingClientRect();
+
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+        );
+    }
 </script>
 <input type="file" id="importlist_uploader" name="items[]" style="display:none" onchange="ImportList.fileUpload(this.files)">
-<div style="padding: 20px;">
-    <div class="segment">
-        <div title="Main Import table" id="import_table">
-            <div id="import_table_head"></div>
-            <div id="import_table_body"></div>
-        </div>
-    </div>
-</div>
-
-
 <?=$html_after??'' ?>
 <?=view('home/footer')?>

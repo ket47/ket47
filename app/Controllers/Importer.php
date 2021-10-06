@@ -17,7 +17,16 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        return false;
+        $data=$this->request->getJSON();
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->itemUpdate($data);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $ImporterModel->errors() ){
+            return $this->failValidationError(json_encode($ImporterModel->errors()));
+        }
+        return $this->respondUpdated($result);
     }
     
     public function itemDelete(){
@@ -45,7 +54,10 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function listDelete(){
-        return false;
+        $ids=$this->request->getVar('ids');
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->listDelete($ids);
+        return $this->respondDeleted($result);
     }
     
     public function fileUpload(){

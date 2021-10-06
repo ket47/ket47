@@ -46,8 +46,15 @@ class ImporterModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function itemUpdate(){
-        return false;
+    public function itemUpdate( $data ){
+        if( empty($data->id) ){
+            return 'noid';
+        }
+        if( !$this->permit($data->id,'w') ){
+            return 'forbidden';
+        }
+        $this->update($data->id,$data);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete(){
@@ -70,8 +77,10 @@ class ImporterModel extends Model{
         return false;
     }
     
-    public function listDelete(){
-        return false;
+    public function listDelete( $ids ){
+        $this->permitWhere('w');
+        $this->delete($ids,true);
+        return $this->db->affectedRows()>0?'ok':'idle';
     }
     
 }
