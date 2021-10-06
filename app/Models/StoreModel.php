@@ -62,8 +62,6 @@ class StoreModel extends Model{
             $filter=[
                 'image_holder'=>'store',
                 'image_holder_id'=>$store->store_id,
-                'is_disabled'=>1,
-                'is_deleted'=>1,
                 'is_active'=>1,
                 'limit'=>30
             ];

@@ -31,8 +31,27 @@ class ProductModel extends Model{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $product_id ){
-        $this->permitWhere('r');
-        return $this->where('product_id',$product_id)->get()->getRow();
+        if( !$this->permit($product_id,'r') ){
+            return 'forbidden';
+        }
+        $this->where('product_id',$product_id);
+        $product = $this->get()->getRow();
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('product_group_member_list');
+        
+        $ImageModel=model('ImageModel');
+        if($product){
+            $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
+            $filter=[
+                'image_holder'=>'product',
+                'image_holder_id'=>$product->product_id,
+                'is_active'=>1,
+                'limit'=>30
+            ];
+            $product->images=$ImageModel->listGet($filter);
+            return $product;
+        }
+        return 'notfound';
     }
     
     public function itemCreate( $product ){

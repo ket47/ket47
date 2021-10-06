@@ -56,7 +56,16 @@ class Product extends \App\Controllers\BaseController{
 
     
     public function itemGet(){
-        
+        $product_id=$this->request->getVar('product_id');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemGet($product_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
     }
     
     public function itemCreate(){
