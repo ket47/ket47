@@ -17,6 +17,7 @@ class UserModel extends Model{
         'user_email',
         'user_pass',
         'user_avatar_name',
+        'deleted_at'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
