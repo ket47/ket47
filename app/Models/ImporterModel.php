@@ -87,6 +87,9 @@ class ImporterModel extends Model{
     
     
     public function listAnalyse( $holder, $columns ){
-        p($columns);
+        if( $holder==='product' ){
+            $ProductModel=model('ProductModel');
+            $ProductModel->listCreateAnalyse($columns);
+        }
     }
 }

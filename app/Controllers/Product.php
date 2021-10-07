@@ -103,12 +103,12 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemUpdateGroup(){
-        $store_id=$this->request->getVar('store_id');
+        $product_id=$this->request->getVar('product_id');
         $group_id=$this->request->getVar('group_id');
         $is_joined=$this->request->getVar('is_joined');
         
         $ProductModel=model('ProductModel');
-        $result=$ProductModel->itemUpdateGroup($store_id,$group_id,$is_joined);
+        $result=$ProductModel->itemUpdateGroup($product_id,$group_id,$is_joined);
         if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
