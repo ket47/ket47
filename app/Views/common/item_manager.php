@@ -3,7 +3,7 @@
 <div style="padding: 20px;">
     <button onclick="ItemList.addItem();">Add new Item</button>
     <div class="filter segment">
-        <input type="search" id="item_name_search" placeholder="Filter">
+        <input type="search" id="item_name_search" name="name_query" placeholder="Filter">
         <div>
             <label for="item_active">Active items</label>
             <input type="checkbox" id="item_active" name="is_active" checked="checked"> |
@@ -157,7 +157,7 @@
             var name_query=$('.search_bar input').val();
             var name_query_fields='<?=$name_query_fields?>';
             var limit=30;
-            ItemList.reloadFilter.name_query=name_query;
+            //ItemList.reloadFilter.name_query=name_query;
             ItemList.reloadFilter.name_query_fields=name_query_fields;
             ItemList.reloadFilter.limit=limit;
             ItemList.reload_promise=$.post('/Home/<?=$item_name?>_list',ItemList.reloadFilter).done(function(response){

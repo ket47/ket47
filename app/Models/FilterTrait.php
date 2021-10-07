@@ -24,6 +24,9 @@ trait FilterTrait{
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){
                 foreach($clues as $clue){
+                    if( !$clue || $clue==' ' ){
+                        continue;
+                    }
                     $this->orLike($field,$clue);
                 }
             }
