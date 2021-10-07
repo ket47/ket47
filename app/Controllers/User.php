@@ -82,6 +82,19 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->respondDeleted($ok);        
     }
+    
+    public function itemUnDelete(){
+        $user_id=$this->request->getVar('user_id');
+        $UserModel=model('UserModel');
+        $result=$UserModel->itemUnDelete($user_id);        
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
     /////////////////////////////////////////////
     //LOGIN SECTION
     /////////////////////////////////////////////

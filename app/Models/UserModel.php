@@ -138,6 +138,14 @@ class UserModel extends Model{
         $this->permitWhere('w');
         return $this->delete([$this->primaryKey=>$id]);
     }
+    
+    public function itemUnDelete( $user_id ){
+        if( !$this->permit($user_id, 'w') ){
+            return 'forbidden';
+        }
+        $this->update($user_id,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
