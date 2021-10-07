@@ -62,7 +62,9 @@
     <button onclick='ImportList.table.listDelete()'><span class="fa fa-trash"></span> Удалить строки</button>
     <button onclick='ImportList.table.listTruncate()'><span class="fa fa-table"></span> Очистить таблицу</button>
     |
-    <button onclick='$("#importlist_uploader").click()' class="primary"><span class="fa fa-upload"></span> Загрузить таблицу XLSX</button>
+    <button onclick='$("#importlist_uploader").click()' class="secondary"><span class="fa fa-upload"></span> Загрузить таблицу XLSX</button>
+    |
+    <button onclick='ImportList.import()' class="primary"><i class="fas fa-file-import"></i> Импортировать</button>
     <div class="segment">
         <div title="Main Import table" id="import_table">
             <div id="import_table_head"></div>
@@ -249,6 +251,18 @@
                 ImportList.table.reload();
             };
         },
+        import:function(){
+            let colconfig={};
+            $("#import_table_head select").each(function(){
+                let $select=$(this);
+                let col=$select.data('col');
+                let val=$select.val();
+                if( val ){
+                    colconfig[col]=val;
+                }
+            });
+            $.post('/Importer/listImport')
+        }
     };
     $(ImportList.init);
     function isElementInViewport (el) {
