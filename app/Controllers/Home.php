@@ -91,7 +91,8 @@ class Home extends BaseController {
     
     public function user_login_form() {
         if( session()->get('user_id')>0 ) {
-            return "SIGNED IN";
+            $user_data = (array) session()->get('user_data');
+            return view('user/signed_userdata', ['user' => $user_data]);
         }
         return view('user/signin_form');
     }
