@@ -86,7 +86,7 @@ class ImporterModel extends Model{
     }
     
     
-    public function listImport( $holder, $columns ){
+    public function listAnalyse( $holder, $columns ){
         p($columns);
     }
 }

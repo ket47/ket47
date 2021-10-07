@@ -227,6 +227,9 @@ class UserModel extends Model{
         if( $user->is_disabled ){
             return 'user_is_disabled';
         }
+        if( $user->deleted_at ){
+            return 'user_is_deleted';
+        }
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
         $this->protect(false)

@@ -185,7 +185,6 @@
                     ImportList.table.loadmorecheck();
                 });
             },
-            columnCount:0,
             appendRows:function( list ){
                 for( let row of list ){
                     let rowhtml='';
@@ -202,7 +201,7 @@
                 let html='';
                 for(let i=1;i<=16;i++){
                     let selector=ImportList.table.theadSelectorGet(i);
-                    html+=`<div>${selector}</div>`;// style="grid-area:C${i}"
+                    html+=`<div>${selector}</div>`;
                 }
                 $("#import_table_head").html(html);
             },
@@ -251,6 +250,9 @@
             };
         },
         import:function(){
+
+        },
+        actionCalculate:function(){
             let colconfig={};
             $("#import_table_head select").each(function(){
                 let $select=$(this);
@@ -264,7 +266,7 @@
                 holder:'product',
                 columns:colconfig
             };
-            $.post('/Importer/listImport',JSON.stringify(request),()=>{ImportList.table.reload();});
+            $.post('/Importer/listAnalyse',JSON.stringify(request),()=>{ImportList.table.reload();});
         }
     };
     $(ImportList.init);

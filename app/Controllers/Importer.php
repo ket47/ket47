@@ -60,11 +60,11 @@ class Importer extends \App\Controllers\BaseController{
         return $this->respondDeleted($result);
     }
     
-    public function listImport(){
+    public function listAnalyse(){
         $holder=$this->request->getVar('holder');
         $colconfig=$this->request->getJsonVar('columns');
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->listImport($holder,$colconfig);
+        $result=$ImporterModel->listAnalyse($holder,$colconfig);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
