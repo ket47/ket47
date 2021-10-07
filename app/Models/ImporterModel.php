@@ -9,7 +9,8 @@ class ImporterModel extends Model{
     
     protected $table      = 'imported_list';
     protected $primaryKey = 'id';
-    protected $allowedFields = ["C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","C15","C16",
+    protected $allowedFields = [
+        "C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","C15","C16",
         'owner_id',
         'holder'];
 
@@ -22,7 +23,8 @@ class ImporterModel extends Model{
         $this->user_id=session()->get('user_id');
         $user=$UserModel->itemGet($this->user_id);
         if( !isset($user->member_of_groups->group_types) || !str_contains($user->member_of_groups->group_types, 'supplier') ){
-            throw new \Exception('User must be member of Supplier group');
+            http_response_code(403);
+            die('User must be member of Supplier group');
         }
     }
     

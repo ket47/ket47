@@ -105,6 +105,12 @@
                         parent.toggleClass('selected');
                     }
                 });
+                $("#import_table_head").change(function(e){
+                    let $select=$(e.target);
+                    let col=$select.data('col');
+                    let val=$select.val();
+                    localStorage.setItem(`importer${col}`,val);
+                });
             },
             itemUpdate:function(id,field,value){
                 let request={id};
@@ -193,18 +199,20 @@
             },
             theadInit:function(){
                 let html='';
-                let selector=ImportList.table.theadSelectorGet();
                 for(let i=1;i<=16;i++){
-                    html+=`<div id="import_table_h${i}">${selector}</div>`;// style="grid-area:C${i}"
+                    let selector=ImportList.table.theadSelectorGet(i);
+                    html+=`<div>${selector}</div>`;// style="grid-area:C${i}"
                 }
                 $("#import_table_head").html(html);
             },
-            theadSelectorGet:function(){
-                let html='<select>';
+            theadSelectorGet:function(i){
+                let val=localStorage.getItem(`importerC${i}`)||0;
+                let html=`<select data-col="C${i}">`;
                 for(let item of ImportList.table.cols){
-                    html+=`<option value="${item.field}">${item.name}</option>`;
+                    let is_selected=(val==item.field)?'selected':'';
+                    html+=`<option value="${item.field}" ${is_selected}>${item.name}</option>`;
                 }
-                html+='</select>';
+                html+=`</select>`;
                 return html;
             }
         },
@@ -231,7 +239,7 @@
             var url = '/Importer/fileUpload';
             ImportList.fileUploadXhr = new XMLHttpRequest();
             ImportList.fileUploadFormData = new FormData();
-            //ImportList.fileUploadFormData.set('holder','product');
+            ImportList.fileUploadFormData.set('holder','product');
             
             ImportList.fileUploadXhr.open("POST", url, true);
             ImportList.fileUploadXhr.onreadystatechange = function() {

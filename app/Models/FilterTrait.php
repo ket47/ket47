@@ -9,6 +9,7 @@ trait FilterTrait{
         $filter['is_active']??=1;
         $filter['is_disabled']??=0;
         $filter['is_deleted']??=0;
+        $filter['offset']??=0;
         $filter['limit']??=30;
         $filter['order']??=0;
         
@@ -40,7 +41,6 @@ trait FilterTrait{
     
     
     private function filterStatus($filter){
-        $user_id=session()->get('user_id');
         if( $filter['is_active'] && $filter['is_disabled'] && $filter['is_deleted'] ){
             $this->permitWhere('r','disabled');
             return true;//optimisation if all entries should be shown

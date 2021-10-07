@@ -61,7 +61,7 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function fileUpload(){
-        $holder=666;//$this->request->getVar('holder');
+        $holder=$this->request->getVar('holder');
         $items =$this->request->getFiles();
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
@@ -70,11 +70,11 @@ class Importer extends \App\Controllers\BaseController{
             if ($file->isValid() && ! $file->hasMoved()) {
                 $result=$this->fileParse( $holder, $file );
                 if( $result!==true ){
-                    //return $result;
+                    return $result;
                 }
             }
         }
-        //return $this->respondCreated('ok');
+        return $this->respondCreated('ok');
     }
     
     private function fileParse( $holder, $file ){
@@ -92,6 +92,6 @@ class Importer extends \App\Controllers\BaseController{
         foreach ($rows as $item){
             $result=$ImporterModel->itemCreate( $item, $holder );
         }
-        //return $this->respondCreated();
+        return true;
     }
 }
