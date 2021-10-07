@@ -65,11 +65,10 @@
     <button onclick='$("#importlist_uploader").click()' class="secondary"><span class="fa fa-upload"></span> Загрузить таблицу XLSX</button>
     |
     <button onclick='ImportList.import()' class="primary"><i class="fas fa-file-import"></i> Импортировать</button>
-    <div class="segment">
+    <div class="segment" style="min-width: calc(100% - 20px);width: min-content">
         <div title="Main Import table" id="import_table">
             <div id="import_table_head"></div>
         </div>
-        
     </div>
     <div id="import_table_loader"></div>
 </div><script type="text/javascript">
@@ -261,7 +260,11 @@
                     colconfig[col]=val;
                 }
             });
-            $.post('/Importer/listImport')
+            let request={
+                holder:'product',
+                columns:colconfig
+            };
+            $.post('/Importer/listImport',JSON.stringify(request),()=>{ImportList.table.reload();});
         }
     };
     $(ImportList.init);

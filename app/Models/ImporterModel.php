@@ -85,4 +85,8 @@ class ImporterModel extends Model{
         return $this->db->affectedRows()>0?'ok':'idle';
     }
     
+    
+    public function listImport( $holder, $columns ){
+        p($columns);
+    }
 }

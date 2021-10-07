@@ -60,6 +60,24 @@ class Importer extends \App\Controllers\BaseController{
         return $this->respondDeleted($result);
     }
     
+    public function listImport(){
+        $holder=$this->request->getVar('holder');
+        $colconfig=$this->request->getJsonVar('columns');
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->listImport($holder,$colconfig);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $ImporterModel->errors() ){
+            return $this->failValidationError(json_encode($ImporterModel->errors()));
+        }
+        return $this->respond($result);
+    }
+    
+    
+    
+    
+    
     public function fileUpload(){
         $holder=$this->request->getVar('holder');
         $items =$this->request->getFiles();

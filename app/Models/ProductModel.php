@@ -60,7 +60,7 @@ class ProductModel extends Model{
         }
         $store_id=$product['store_id'];
         $StoreModel=model('StoreModel');
-        $store=$StoreModel->itemGet(['store_id'=>$store_id]);
+        $store=$StoreModel->itemGet($store_id);
         if( !$store ){
             return 'nostore';
         }
@@ -68,6 +68,7 @@ class ProductModel extends Model{
         if( !$permission_granted ){
             return 'forbidden';
         }
+        $product['owner_id']=session()->get('user_id');
         $this->allowedFields[]='owner_id';
         return $this->insert($product);
     }
