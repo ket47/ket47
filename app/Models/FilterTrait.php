@@ -41,16 +41,13 @@ trait FilterTrait{
     
     
     private function filterStatus($filter){
-        if( $filter['is_active'] && $filter['is_disabled'] && $filter['is_deleted'] ){
-            $this->permitWhere('r','disabled');
-            return true;//optimisation if all entries should be shown
-        }
+        $user_id=session()->get('user_id');
         $status_where=[];
-        if( $filter['is_disabled'] ){//admin filters
+        if( $filter['is_disabled'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
             $status_where[]="is_disabled=1 AND $permitWhere";
         }
-        if( $filter['is_deleted'] ){//admin filters
+        if( $filter['is_deleted'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
             $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
             $status_where[]="deleted_at>'$olderStamp' AND $permitWhere";
