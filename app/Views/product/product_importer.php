@@ -111,6 +111,7 @@
                     let col=$select.data('col');
                     let val=$select.val();
                     localStorage.setItem(`importer${col}`,val);
+                    ImportList.listAnalyse();
                 });
             },
             itemUpdate:function(id,field,value){
@@ -252,7 +253,7 @@
         import:function(){
 
         },
-        actionCalculate:function(){
+        listAnalyse:function(){
             let colconfig={};
             $("#import_table_head select").each(function(){
                 let $select=$(this);

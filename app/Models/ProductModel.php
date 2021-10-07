@@ -184,6 +184,10 @@ class ProductModel extends Model{
          */
     }
     
+    public function listCreateAnalyse( $columnConfig ){
+        p($columnConfig);
+    }
+    
     public function listUpdate( $list ){
         return false;
     }

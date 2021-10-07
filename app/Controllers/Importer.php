@@ -74,10 +74,6 @@ class Importer extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
     
-    
-    
-    
-    
     public function fileUpload(){
         $holder=$this->request->getVar('holder');
         $items =$this->request->getFiles();
