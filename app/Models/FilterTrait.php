@@ -20,6 +20,7 @@ trait FilterTrait{
         }
         
         if( !empty($filter['name_query']) && !empty($filter['name_query_fields']) ){
+            $cases=[];
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){
@@ -27,8 +28,11 @@ trait FilterTrait{
                     if( !$clue || $clue==' ' ){
                         continue;
                     }
-                    $this->orLike($field,$clue);
+                    $cases[]="$field LIKE '%".$this->escapeLikeString($clue)."%' ESCAPE '!'";
                 }
+            }
+            if( $cases ){
+                $this->where('('.implode(' OR ', $cases).')');
             }
         }
         if( $filter['offset'] ){
