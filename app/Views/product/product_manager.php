@@ -2,6 +2,10 @@
     'item_name'=>'product',
     'ItemName'=>'Product',
     'name_query_fields'=>'product_name,product_code,product_description',
-    'html_before'=>view('product/store_selector'),
+    'html_before'=>view('product/store_selector',['use_all_stores'=>1,'store_click_handler'=>'
+        ItemList.addItemRequest.store_id=store_id;
+        ItemList.reloadFilter.store_id=store_id;
+        ItemList.reload();
+        ']),
     'html_after'=>view('product/script_modifier')
     ])?>

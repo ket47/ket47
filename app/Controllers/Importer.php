@@ -61,10 +61,14 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function listAnalyse(){
-        $holder=$this->request->getVar('holder');
+        $target=$this->request->getJsonVar('target');
+        $holder_id=$this->request->getJsonVar('holder_id');
         $colconfig=$this->request->getJsonVar('columns');
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->listAnalyse($holder,$colconfig);
+        $result=$ImporterModel->listAnalyse($colconfig,$target,$holder_id);
+        if( $result==='no_required_fields' ){
+            return $this->respond(null,204,'Not all required fields are defined');
+        }
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -75,14 +79,16 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function fileUpload(){
+        $target=$this->request->getVar('target');
         $holder=$this->request->getVar('holder');
+        $holder_id=$this->request->getVar('holder_id');
         $items =$this->request->getFiles();
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
         }
         foreach($items['files'] as $file){
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileParse( $holder, $file );
+                $result=$this->fileParse( $holder,$holder_id,$target,$file );
                 if( $result!==true ){
                     return $result;
                 }
@@ -91,7 +97,7 @@ class Importer extends \App\Controllers\BaseController{
         return $this->respondCreated('ok');
     }
     
-    private function fileParse( $holder, $file ){
+    private function fileParse( $holder,$holder_id,$target,$file ){
         helper('text');
         $tmp_dir=sys_get_temp_dir();
         $tmp_name=random_string('alnum').'.xlsx';
@@ -104,7 +110,7 @@ class Importer extends \App\Controllers\BaseController{
         $ImporterModel=model('ImporterModel');
         
         foreach ($rows as $item){
-            $result=$ImporterModel->itemCreate( $item, $holder );
+            $ImporterModel->itemCreate( $item, $holder, $holder_id, $target );
         }
         return true;
     }

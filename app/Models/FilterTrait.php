@@ -28,7 +28,7 @@ trait FilterTrait{
                     if( !$clue || $clue==' ' ){
                         continue;
                     }
-                    $cases[]="$field LIKE '%".$this->escapeLikeString($clue)."%' ESCAPE '!'";
+                    $cases[]="$field LIKE '".$this->escapeLikeString($clue)."%' ESCAPE '!'";
                 }
             }
             if( $cases ){

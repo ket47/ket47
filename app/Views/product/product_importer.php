@@ -1,4 +1,8 @@
 <?=view('home/header')?>
+<?=view('product/store_selector',['use_all_stores'=>0,'store_click_handler'=>'
+        ImportList.table.loadrequest.store_id=store_id;
+        ImportList.table.reload();
+        '])?>
 <?=$html_before??'' ?>
 <style>
     .item_disabled{
@@ -79,14 +83,14 @@
         table:{
             cols:[
                 {field:"",name:"-пропустить-"},
+                {field:"product_name",name:"Название",required:1},
+                {field:"product_price",name:"Цена",required:1},
+                {field:"product_quantity",name:"Остаток",required:1},
+                {field:"is_produced",name:"Товар производится",required:1},
                 {field:"product_code",name:"Код товара"},
-                {field:"product_name",name:"Название"},
                 {field:"product_description",name:"Описание"},
                 {field:"product_weight",name:"Вес кг"},
-                {field:"product_quantity",name:"Остаток"},
-                {field:"is_produced",name:"Производится"},
                 {field:"product_categories",name:"Категории"},
-                {field:"product_price",name:"Цена"},
                 {field:"product_action_price",name:"Акция Цена"},
                 {field:"product_action_start",name:"Акция Начало"},
                 {field:"product_action_finish",name:"Акция Конец"},
@@ -107,10 +111,6 @@
                     }
                 });
                 $("#import_table_head").change(function(e){
-                    let $select=$(e.target);
-                    let col=$select.data('col');
-                    let val=$select.val();
-                    localStorage.setItem(`importer${col}`,val);
                     ImportList.listAnalyse();
                 });
             },
@@ -210,8 +210,9 @@
                 let val=localStorage.getItem(`importerC${i}`)||0;
                 let html=`<select data-col="C${i}">`;
                 for(let item of ImportList.table.cols){
+                    let is_required=(item.required)?' style="font-weight:bold"':'';
                     let is_selected=(val==item.field)?'selected':'';
-                    html+=`<option value="${item.field}" ${is_selected}>${item.name}</option>`;
+                    html+=`<option ${is_required} value="${item.field}" ${is_selected}>${item.name}</option>`;
                 }
                 html+=`</select>`;
                 return html;
@@ -240,7 +241,9 @@
             var url = '/Importer/fileUpload';
             ImportList.fileUploadXhr = new XMLHttpRequest();
             ImportList.fileUploadFormData = new FormData();
-            ImportList.fileUploadFormData.set('holder','product');
+            ImportList.fileUploadFormData.set('target','product');
+            ImportList.fileUploadFormData.set('holder','store');
+            ImportList.fileUploadFormData.set('holder_id',ImportList.table.loadrequest.store_id);
             
             ImportList.fileUploadXhr.open("POST", url, true);
             ImportList.fileUploadXhr.onreadystatechange = function() {
@@ -254,20 +257,46 @@
 
         },
         listAnalyse:function(){
+            function is_distinct( val, list ){
+                for(let i in list){
+                    if(list[i]===val){
+                        return false;
+                    }
+                }
+                return true;
+            }
+            let cancel_request=false;
             let colconfig={};
             $("#import_table_head select").each(function(){
                 let $select=$(this);
                 let col=$select.data('col');
                 let val=$select.val();
+                localStorage.setItem(`importer${col}`,val);
                 if( val ){
-                    colconfig[col]=val;
+                    if( is_distinct( val, colconfig ) ){
+                        colconfig[val]=col;
+                    } else {
+                        $select.val("");
+                        cancel_request=true;
+                    }
                 }
             });
+            if( cancel_request ){
+                return false;
+            }
             let request={
-                holder:'product',
+                target:'product',
+                holder_id:ImportList.table.loadrequest.store_id,
                 columns:colconfig
             };
-            $.post('/Importer/listAnalyse',JSON.stringify(request),()=>{ImportList.table.reload();});
+            $.post('/Importer/listAnalyse',JSON.stringify(request)).done((response,status,a2)=>{
+                if( status==='success' ){
+                    console.log(response);
+                    ImportList.table.reload();
+                } else {
+                    console.log(status);
+                }
+            });
         }
     };
     $(ImportList.init);

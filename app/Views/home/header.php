@@ -10,8 +10,10 @@
             });
 
         </script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-        <script src="https://kit.fontawesome.com/1825be3012.js" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://ka-f.fontawesome.com/releases/v5.15.4/css/free.min.css?token=1825be3012">
+        <link rel="stylesheet" href="https://ka-f.fontawesome.com/releases/v5.15.4/css/free-v4-shims.min.css?token=1825be3012">
+        <link rel="stylesheet" href="https://ka-f.fontawesome.com/releases/v5.15.4/css/free-v4-font-face.min.css?token=1825be3012">
+        <!--<script src="https://kit.fontawesome.com/1825be3012.js" crossorigin="anonymous"></script>-->
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap');
 

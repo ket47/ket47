@@ -33,7 +33,7 @@ class ImporterModel extends Model{
         return false;
     }
     
-    public function itemCreate( $item, $holder ){
+    public function itemCreate( $item, $holder, $holder_id, $target ){
         $set=[];
         foreach($item as $i=>$value){
             $num=$i+1;
@@ -43,6 +43,8 @@ class ImporterModel extends Model{
             $set['C'.$num]=$value;
         }
         $set['holder']=$holder;
+        $set['holder_id']=$holder_id;
+        $set['target']=$target;
         $set['owner_id']=$this->user_id;
         $this->insert($set);
         return $this->db->affectedRows()?'ok':'idle';
@@ -86,10 +88,77 @@ class ImporterModel extends Model{
     }
     
     
-    public function listAnalyse( $holder, $columnConfig ){
-        if( $holder==='product' ){
-            $ProductModel=model('ProductModel');
-            $ProductModel->listCreateAnalyse( $columnConfig );
+    public function listAnalyse( $columnConfig,$target,$holder_id ){
+        if( $target==='product' ){
+            return $this->productListAnalyse( $columnConfig, $holder_id );
         }
+    }
+    
+    
+    private function productListAnalyseRequiredIsAbsent($columnConfig){
+        $has_pname=false;
+        $has_pquantity=false;
+        $has_pprice=false;
+        foreach( $columnConfig as $field=>$col ){
+            $has_pname= $field=='product_name' ?true:$has_pname;
+            $has_pquantity= $field=='product_quantity' || $field=='is_produced' ?true:$has_pquantity;
+            $has_pprice= $field=='product_price' ?true:$has_pprice;
+        }
+        if( !$has_pname || !$has_pprice || !$has_pquantity ){
+            return true;
+        }
+        return false;
+    }
+    
+    private function productListAnalyse( $columnConfig, $store_id ){
+        $StoreModel=model('StoreModel');
+        $permission_granted=$StoreModel->permit($store_id,'w');
+        if( !$permission_granted ){
+            return 'forbidden';
+        }
+        if( $this->productListAnalyseRequiredIsAbsent($columnConfig) ){
+            return 'no_required_fields';
+        }
+        if( isset($columnConfig->product_code) ){
+            $join_on_src=$columnConfig->product_code;
+            $join_on_dst='product_code';
+        } else {
+            $join_on_src=$columnConfig->product_name;
+            $join_on_dst='product_name';            
+        }
+        
+        $owner_id=$this->user_id;
+        $sql="
+            UPDATE
+                imported_list il
+                    LEFT JOIN
+                product_list pl ON pl.$join_on_dst=il.$join_on_src AND pl.store_id='$store_id'
+            SET
+                il.target_id=product_id,
+                il.action=IF(product_id,'update',IF(LENGTH(`$columnConfig->product_name`)>10 AND (`$columnConfig->product_quantity`>0 OR '".($columnConfig->is_produced??0)."') AND `$columnConfig->product_price`>0,'add','skip'))
+            WHERE
+                il.owner_id='{$owner_id}'
+            ";
+        $this->query($sql);
+
+        
+        
+        TODO
+        
+        
+        
+        $sql="
+            SELECT
+                *,
+                'delete' AS action 
+            FROM
+                product_list pl
+                    LEFT JOIN
+                imported_list il ON pl.$join_on_dst=il.$join_on_src AND holder='product'
+            WHERE
+                pl.owner_id='$this->user_id'
+                AND il.id IS NULL
+            ";
+        die($sql);
     }
 }

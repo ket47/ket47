@@ -26,28 +26,30 @@
     }
 </style>
 <script type="text/javascript">
-    FoundList={
+    FoundStoreList={
         store_id:null,
         init:function (){
             $('.store_search_bar').on('input',function(e){
-                FoundList.reload();
+                FoundStoreList.reload();
             });
-            FoundList.reload();
+            FoundStoreList.reload();
             $('.found_store_list').on('click',function(e){
                 var $store=$(e.target);
                 var store_id=$store.data('store_id');
-                FoundList.store_id=$store.data('store_id');
                 $('.selected_store').removeClass('selected_store');
                 $store.addClass('selected_store');
-                ItemList.addItemRequest.store_id=store_id;
-                ItemList.reloadFilter.store_id=store_id;
-                ItemList.reload();
+                FoundStoreList.selectStore(store_id);
             });
+        },
+        selectStore:function(store_id){
+            FoundStoreList.store_id=store_id;
+            $(`.found_store_list div[data-store_id=${store_id}]`).addClass('selected_store');
+            <?= $store_click_handler??'' ?>
         },
         reload_promise:null,
         reload:function(){
-            if(FoundList.reload_promise){
-                FoundList.reload_promise.abort();
+            if(FoundStoreList.reload_promise){
+                FoundStoreList.reload_promise.abort();
             }
             var name_query=$('.store_search_bar input').val();
             var name_query_fields='store_name';
@@ -57,18 +59,20 @@
                 name_query_fields,
                 limit
             };
-            FoundList.reload_promise=$.post('/Store/listGet',filter).done(function(store_list){
-                store_list.push({store_id:0,store_name:'Все'});
+            FoundStoreList.reload_promise=$.post('/Store/listGet',filter).done(function(store_list){
+                if( <?= $use_all_stores??0 ?> ){
+                    store_list.push({store_id:0,store_name:'Все'});
+                }
                 let html='';
                 for(let store of store_list){
                     html+=`<div data-store_id="${store.store_id}">${store.store_name}</div>`;
                 }
                 $('.found_store_list').html(html);
-                $('.found_store_list div[data-store_id=0]').addClass('selected_store');
+                FoundStoreList.selectStore(store_list[0].store_id);
             }).fail(function(error){
                 $('.found_store_list').html(error);
             });
         }
     };
-    $(FoundList.init);
+    $(FoundStoreList.init);
 </script>
