@@ -12,7 +12,9 @@ class ImporterModel extends Model{
     protected $allowedFields = [
         "C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","C15","C16",
         'owner_id',
-        'holder'];
+        'holder',
+        'holder_id',
+        'target'];
 
     protected $useSoftDeletes = false;
     protected $user_id=-1;
@@ -128,6 +130,7 @@ class ImporterModel extends Model{
         }
         
         $owner_id=$this->user_id;
+        //ANALYSE FOR SKIP UPDATE ADD
         $sql="
             UPDATE
                 imported_list il
@@ -138,27 +141,65 @@ class ImporterModel extends Model{
                 il.action=IF(product_id,'update',IF(LENGTH(`$columnConfig->product_name`)>10 AND (`$columnConfig->product_quantity`>0 OR '".($columnConfig->is_produced??0)."') AND `$columnConfig->product_price`>0,'add','skip'))
             WHERE
                 il.owner_id='{$owner_id}'
+                AND il.holder_id='$store_id'
             ";
         $this->query($sql);
-
         
+        $this->select("COUNT(*) row_count,`action`")
+                ->where('owner_id',$owner_id)
+                ->where('holder','store')
+                ->where('holder_id',$store_id)
+                ->groupBy('`action`');
         
-        TODO
-        
-        
-        
-        $sql="
-            SELECT
-                *,
-                'delete' AS action 
-            FROM
-                product_list pl
-                    LEFT JOIN
-                imported_list il ON pl.$join_on_dst=il.$join_on_src AND holder='product'
-            WHERE
-                pl.owner_id='$this->user_id'
-                AND il.id IS NULL
-            ";
-        die($sql);
+        $analysed=$this->get()->getResult();
+        //ANALYSE FOR DELETE
+        $analysed[]=['row_count'=>$this->productListAnalyseAbsent($join_on_src,$join_on_dst,$store_id,'count',$columnConfig),'action'=>'delete'];
+        return $analysed;
+    }
+    
+    private function productListAnalyseAbsent($join_on_src,$join_on_dst,$store_id,$action='count',$columnConfig=null){
+        if( $action=='count' ){
+            $sql="
+                SELECT
+                    COUNT(*) row_count
+                FROM
+                    product_list pl
+                        LEFT JOIN
+                    imported_list il ON pl.$join_on_dst=il.$join_on_src AND il.holder='store' AND il.holder_id='$store_id'
+                WHERE
+                    pl.owner_id='$this->user_id'
+                    AND il.id IS NULL
+                ";
+            return $this->query($sql)->getRow('row_count');
+        }
+        if( $action=='fill' && $columnConfig ){
+            $src_col_list="'update','store',$store_id,'product'";
+            $target_col_list="`action`,`holder`,`holder_id`,`target`";
+            $delimeter=',';
+            
+            $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];
+            foreach($columnConfig as $src=>$target){
+                if(in_array($src, $skip_cols)){
+                    continue;
+                }
+                $src_col_list.=$delimeter.$src;
+                $target_col_list.=$delimeter.$target;
+            }
+            $sql="
+                INSERT INTO imported_list ($target_col_list) SELECT
+                    $src_col_list
+                FROM
+                    product_list pl
+                        LEFT JOIN
+                    imported_list il ON pl.$join_on_dst=il.$join_on_src AND il.holder='store' AND il.holder_id='$store_id'
+                WHERE
+                    pl.owner_id='$this->user_id'
+                    AND il.id IS NULL
+                ";
+            die($sql);
+            $this->query($sql);
+            return $this->affectedRows();
+        }
+        return false;
     }
 }

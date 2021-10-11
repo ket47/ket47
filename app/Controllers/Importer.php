@@ -88,7 +88,7 @@ class Importer extends \App\Controllers\BaseController{
         }
         foreach($items['files'] as $file){
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileParse( $holder,$holder_id,$target,$file );
+                $result=$this->fileParse( $file,$holder,$holder_id,$target );
                 if( $result!==true ){
                     return $result;
                 }
@@ -97,7 +97,7 @@ class Importer extends \App\Controllers\BaseController{
         return $this->respondCreated('ok');
     }
     
-    private function fileParse( $holder,$holder_id,$target,$file ){
+    private function fileParse( $file,$holder,$holder_id,$target ){
         helper('text');
         $tmp_dir=sys_get_temp_dir();
         $tmp_name=random_string('alnum').'.xlsx';
