@@ -70,6 +70,8 @@ class ImporterModel extends Model{
     public function listGet( $filter ){
         $this->filterMake($filter);
         $this->permitWhere('r');
+        $this->orderBy("action='add'","DESC");
+        $this->orderBy("action='update'","DESC");
         return $this->get()->getResult();
     }
     

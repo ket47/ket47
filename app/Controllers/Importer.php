@@ -114,4 +114,64 @@ class Importer extends \App\Controllers\BaseController{
         }
         return true;
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    public function importCreate(){
+        $holder=$this->request->getVar('holder');
+        $holder_id=$this->request->getVar('holder_id');
+        
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->importCreate($holder,$holder_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $ImporterModel->errors() ){
+            return $this->failValidationError(json_encode($ImporterModel->errors()));
+        }
+        return $this->respondCreated($result);
+    }
+    
+    public function importUpdate(){
+        $holder=$this->request->getVar('holder');
+        $holder_id=$this->request->getVar('holder_id');
+        
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->importUpdate($holder,$holder_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $ImporterModel->errors() ){
+            return $this->failValidationError(json_encode($ImporterModel->errors()));
+        }
+        return $this->respondUpdated($result);
+    }
+    
+    public function importDelete(){
+        $holder=$this->request->getVar('holder');
+        $holder_id=$this->request->getVar('holder_id');
+        
+        $ImporterModel=model('ImporterModel');
+        $result=$ImporterModel->importDelete($holder,$holder_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $ImporterModel->errors() ){
+            return $this->failValidationError(json_encode($ImporterModel->errors()));
+        }
+        return $this->respondUpdated($result);
+
+    }
+    
+    public function importAll(){
+        $this->importCreate();
+        $this->importUpdate();
+        $this->importDelete();
+        return $this->respond();
+    }
 }

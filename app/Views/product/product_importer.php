@@ -1,7 +1,9 @@
 <?=view('home/header')?>
-<?=view('product/store_selector',['use_all_stores'=>0,'store_click_handler'=>'
-        ImportList.table.loadrequest.store_id=store_id;
-        ImportList.table.reload();
+<?=view('product/store_selector',['use_all_stores'=>0,'owned_stores_only'=>1, 'store_click_handler'=>'
+        ImportList.table.loadrequest.holder="store";
+        ImportList.table.loadrequest.holder_id=store_id;
+        ImportList.listAnalyse();
+        //ImportList.table.reload();
         '])?>
 <?=$html_before??'' ?>
 <style>
@@ -14,7 +16,7 @@
     #import_table{
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(16, min-content);
+        grid-template-columns: repeat(17, min-content);
     }
     #import_table>div:nth-child(even)>div{
         background-color: #eee;
@@ -47,38 +49,146 @@
     #import_table>div.selected div{
         background-color: #ffa;
     }
+    
+    
+    #import_table_actions div{
+        display:inline-block;
+        border-radius:5px;
+        background-color:#eee;
+        padding:5px;
+        margin:5px;
+        cursor:pointer;
+    }
+    import_table_actions .selected{
+        font-weight:bold;
+        background-color:#6cf !important;
+    }
+    
+    
 </style>
-<div style="padding: 20px;">
-    <div class="filter segment">
-        <input type="search" id="item_name_search" placeholder="Filter">
-        <div>
-            <label for="item_active">Active items</label>
-            <input type="checkbox" id="item_active" name="is_active" checked="checked"> |
-            <label for="item_deleted">Deleted items</label>
-            <input type="checkbox" id="item_deleted" name="is_deleted"> |
-            <label for="item_disabled">Disabled items</label>
-            <input type="checkbox" id="item_disabled" name="is_disabled">
-        </div>
-    </div>
-</div>
-<div style="padding: 20px;">
-    <button onclick='ImportList.table.reload()'><i class="fas fa-redo"></i> Обновить</button>
-    <button onclick='ImportList.table.listDelete()'><span class="fa fa-trash"></span> Удалить строки</button>
-    <button onclick='ImportList.table.listTruncate()'><span class="fa fa-table"></span> Очистить таблицу</button>
-    |
-    <button onclick='$("#importlist_uploader").click()' class="secondary"><span class="fa fa-upload"></span> Загрузить таблицу XLSX</button>
-    |
-    <button onclick='ImportList.import()' class="primary"><i class="fas fa-file-import"></i> Импортировать</button>
-    <div class="segment" style="min-width: calc(100% - 20px);width: min-content">
-        <div title="Main Import table" id="import_table">
-            <div id="import_table_head"></div>
-        </div>
-    </div>
-    <div id="import_table_loader"></div>
-</div><script type="text/javascript">
+<script type="text/javascript">
     ImportList={
         init:function (){
             ImportList.table.init();
+            $("#import_table_actions").click(function(e){
+                let $button=$(e.target);
+                let action=$button.data('action');
+                console.log(action);
+                let url=(action==='add')?'importCreate':
+                        (action==='update')?'importUpdate':
+                        (action==='delete')?'importDelete':
+                        (action==='all')?'importAll':'';
+                if( url ){
+                    let request={
+                        //target:'product',
+                        holder:ImportList.table.loadrequest.holder,
+                        holder_id:ImportList.table.loadrequest.holder_id
+                    };
+                    $.post(`Importer/${url}`,request).done(()=>{
+                        ImportList.table.reload();
+                    });
+                }
+            });
+        },
+        listAnalyse:function(){
+            function is_distinct( val, list ){
+                for(let i in list){
+                    if(list[i]===val){
+                        return false;
+                    }
+                }
+                return true;
+            }
+            let cancel_request=false;
+            let colconfig={};
+            $("#import_table_head select").each(function(){
+                let $select=$(this);
+                let col=$select.data('col');
+                let val=$select.val();
+                localStorage.setItem(`importer${col}`,val);
+                if( val ){
+                    if( is_distinct( val, colconfig ) ){
+                        colconfig[val]=col;
+                    } else {
+                        $select.val("");
+                        cancel_request=true;
+                    }
+                }
+            });
+            if( cancel_request ){
+                return false;
+            }
+            let request={
+                target:'product',
+                holder:ImportList.table.loadrequest.holder,
+                holder_id:ImportList.table.loadrequest.holder_id,
+                columns:colconfig
+            };
+            return $.post('/Importer/listAnalyse',JSON.stringify(request)).done((response,status)=>{
+                if( status==='success' ){
+                    ImportList.listAnalyseRenderButtons(response);
+                }
+            });
+        },
+        listAnalyseRenderButtons:function( actions ){
+            let upload=`<div style="background-color:#ddd" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> | `;
+            let all=`<div data-action="all" style="background-color:#ddd"><i class="fas fa-file-import"></i> Импортировать всё</div>`;
+            let add='';
+            let update='';
+            let del='';
+            let skip='';
+            for(let i in actions){
+                let action=actions[i];
+                if( action.action==='add' ){
+                    add=`<div data-action="${action.action}" style="background-color:#cfc">Добавить товары (${action.row_count})</div>`;
+                }
+                if( action.action==='update' ){
+                    update=`<div data-action="${action.action}" style="background-color:#def">Обновить товары (${action.row_count})</div>`;
+                }
+                if( action.action==='delete' ){
+                    del=`<div data-action="${action.action}" style="background-color:#fdd"><i class="fa fa-fast-trash"></i> Удалить товары (${action.row_count})</div>`;
+                }
+                if( action.action==='skip' ){
+                    skip=`<div data-action="${action.action}">Пропустить ${action.row_count}</div>`;
+                }
+            }
+            $("#import_table_actions").html(upload+add+update+del+skip+all);
+        },
+        fileUpload:function(filelist){
+            if( filelist.length ){
+                ImportList.fileUploadInit();
+                let attached_count=0;
+                let total_size_limit=10*1024*1024;
+                for(let fl of filelist){
+                    total_size_limit-=fl.size;
+                    if(total_size_limit<0){
+                        alert("Разовый объем файлов должен быть не больше 10МБ.");
+                        break;
+                    }
+                    ImportList.fileUploadFormData.append("files[]", fl);
+                    attached_count++;
+                }
+                ImportList.fileUploadXhr.send(ImportList.fileUploadFormData);
+            }
+        },
+        fileUploadFormData:null,
+        fileUploadXhr:null,
+        fileUploadInit:function(){
+            var url = '/Importer/fileUpload';
+            ImportList.fileUploadXhr = new XMLHttpRequest();
+            ImportList.fileUploadFormData = new FormData();
+            ImportList.fileUploadFormData.set('target','product');
+            ImportList.fileUploadFormData.set('holder','store');
+            ImportList.fileUploadFormData.set('holder_id',ImportList.table.loadrequest.store_id);
+            
+            ImportList.fileUploadXhr.open("POST", url, true);
+            ImportList.fileUploadXhr.onreadystatechange = function() {
+                if (ImportList.fileUploadXhr.readyState === 4 && ImportList.fileUploadXhr.status === 201) {
+                    ImportList.listAnalyse().done(function(){
+                        ImportList.table.reload();
+                    });
+                }
+            };
         },
         table:{
             cols:[
@@ -96,7 +206,13 @@
                 {field:"product_action_finish",name:"Акция Конец"},
             ],
             init:function(){
-                this.theadInit();
+                ImportList.table.theadInit();
+                $("#import_table_head").change(function(e){
+                    ImportList.listAnalyse().done(function(){
+                        ImportList.table.reload();
+                    });
+                });
+                
                 $(window).scroll(function(){
                     ImportList.table.loadmorecheck();
                 });
@@ -110,9 +226,6 @@
                         parent.toggleClass('selected');
                     }
                 });
-                $("#import_table_head").change(function(e){
-                    ImportList.listAnalyse();
-                });
             },
             itemUpdate:function(id,field,value){
                 let request={id};
@@ -125,12 +238,20 @@
                     ids.push($(this).data('id'));
                 });
                 if( ids.length>0 && confirm(`Удалить ${ids.length} строк?`) ){
-                    $.post('/Importer/listDelete',{ids:ids.join(',')}).done(function(){ImportList.table.reload()});
+                    $.post('/Importer/listDelete',{ids:ids.join(',')}).done(function(){
+                        ImportList.listAnalyse().done(function(){
+                            ImportList.table.reload();
+                        });
+                    });
                 }
             },
             listTruncate:function(){
                 if( confirm(`Очистить таблицу?`) ){
-                    $.post('/Importer/listDelete',{ids:''}).done(function(){ImportList.table.reload()});
+                    $.post('/Importer/listDelete',{ids:''}).done(function(){
+                        ImportList.listAnalyse().done(function(){
+                            ImportList.table.reload();
+                        });
+                    });
                 }
             },
             celledit:function( $node ){
@@ -184,25 +305,45 @@
                     }
                     ImportList.table.appendRows(list);
                     ImportList.table.loadmorecheck();
+                    
                 });
             },
             appendRows:function( list ){
                 for( let row of list ){
                     let rowhtml='';
-                    for(let i=1;i<=16;i++){
-                        let col=`C${i}`;
-                        let val=row[col];
-                        let minwidth=val?(val.length>40?'200px':'100px'):'0px';
-                        rowhtml+=`<div data-editable="1" data-field="${col}" style="min-width:${minwidth}">${row[col]||''}</div>`;// style="grid-area:C${i}"
+                    for(let i=0;i<=16;i++){
+                        if( i>0 ){
+                            let col=`C${i}`;
+                            let val=row[col];
+                            let minwidth=val?(val.length>40?'200px':'100px'):'0px';
+                            rowhtml+=`<div data-editable="1" data-field="${col}" style="min-width:${minwidth}">${row[col]||''}</div>`;// style="grid-area:C${i}"
+                        } else {
+                            let icon='<i class="fa fa-fast-forward" aria-hidden="true" title="пропустить" style="color:gray"></i>';
+                            if( row.action==='delete' ){
+                                icon='<i class="fa fa-trash" aria-hidden="true" title="удалить" style="color:red"></i>';
+                            }
+                            if( row.action==='update' ){
+                                icon='<i class="fa fa-refresh" aria-hidden="true" title="обновить" style="color:blue"></i>';
+                            }
+                            if( row.action==='add' ){
+                                icon='<i class="fa fa-plus" aria-hidden="true" title="добавить" style="color:green"></i>';
+                            }
+                            rowhtml+=`<div style="min-width:0px">${icon}</div>`;
+                        }
                     }
                     $("#import_table").append(`<div class="import_table_row" data-id="${row['id']}">${rowhtml}</div>`);
                 }
             },
             theadInit:function(){
                 let html='';
-                for(let i=1;i<=16;i++){
-                    let selector=ImportList.table.theadSelectorGet(i);
-                    html+=`<div>${selector}</div>`;
+                for(let i=0;i<=16;i++){
+                    if( i>0 ){
+                        let selector=ImportList.table.theadSelectorGet(i);
+                        html+=`<div>${selector}</div>`;
+                    } else {
+                        html+=`<div>-</div>`;
+                    }
+                    
                 }
                 $("#import_table_head").html(html);
             },
@@ -218,86 +359,6 @@
                 return html;
             }
         },
-        fileUpload:function(filelist){
-            if( filelist.length ){
-                ImportList.fileUploadInit();
-                let attached_count=0;
-                let total_size_limit=10*1024*1024;
-                for(let fl of filelist){
-                    total_size_limit-=fl.size;
-                    if(total_size_limit<0){
-                        alert("Разовый объем файлов должен быть не больше 10МБ.");
-                        break;
-                    }
-                    ImportList.fileUploadFormData.append("files[]", fl);
-                    attached_count++;
-                }
-                ImportList.fileUploadXhr.send(ImportList.fileUploadFormData);
-            }
-        },
-        fileUploadFormData:null,
-        fileUploadXhr:null,
-        fileUploadInit:function(){
-            var url = '/Importer/fileUpload';
-            ImportList.fileUploadXhr = new XMLHttpRequest();
-            ImportList.fileUploadFormData = new FormData();
-            ImportList.fileUploadFormData.set('target','product');
-            ImportList.fileUploadFormData.set('holder','store');
-            ImportList.fileUploadFormData.set('holder_id',ImportList.table.loadrequest.store_id);
-            
-            ImportList.fileUploadXhr.open("POST", url, true);
-            ImportList.fileUploadXhr.onreadystatechange = function() {
-                if (ImportList.fileUploadXhr.readyState === 4 && ImportList.fileUploadXhr.status === 201) {
-                    
-                }
-                ImportList.table.reload();
-            };
-        },
-        import:function(){
-
-        },
-        listAnalyse:function(){
-            function is_distinct( val, list ){
-                for(let i in list){
-                    if(list[i]===val){
-                        return false;
-                    }
-                }
-                return true;
-            }
-            let cancel_request=false;
-            let colconfig={};
-            $("#import_table_head select").each(function(){
-                let $select=$(this);
-                let col=$select.data('col');
-                let val=$select.val();
-                localStorage.setItem(`importer${col}`,val);
-                if( val ){
-                    if( is_distinct( val, colconfig ) ){
-                        colconfig[val]=col;
-                    } else {
-                        $select.val("");
-                        cancel_request=true;
-                    }
-                }
-            });
-            if( cancel_request ){
-                return false;
-            }
-            let request={
-                target:'product',
-                holder_id:ImportList.table.loadrequest.store_id,
-                columns:colconfig
-            };
-            $.post('/Importer/listAnalyse',JSON.stringify(request)).done((response,status,a2)=>{
-                if( status==='success' ){
-                    console.log(response);
-                    ImportList.table.reload();
-                } else {
-                    console.log(status);
-                }
-            });
-        }
     };
     $(ImportList.init);
     function isElementInViewport (el) {
@@ -313,6 +374,19 @@
         );
     }
 </script>
+<div style="padding: 20px;">
+    <div id="import_table_actions"></div>
+    
+    <div class="segment" style="min-width: calc(100% - 20px);width: min-content">
+        <a href='javascript:ImportList.table.reload()'>Обновить</a> | 
+        <a href='javascript:ImportList.table.listDelete()'>Удалить строки</a> | 
+        <a href='javascript:ImportList.table.listTruncate()'>Очистить таблицу</a>
+        <div title="Main Import table" id="import_table" style="margin-top: 10px;">
+            <div id="import_table_head"></div>
+        </div>
+    </div>
+    <div id="import_table_loader"></div>
+</div>
 <input type="file" id="importlist_uploader" name="items[]" style="display:none" onchange="ImportList.fileUpload(this.files)">
 <?=$html_after??'' ?>
 <?=view('home/footer')?>

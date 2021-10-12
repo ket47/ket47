@@ -23,6 +23,13 @@
                 font-family: 'Raleway', sans-serif;
                 background-color:#fcfcff;
             }
+            a{
+                text-decoration: none;
+                color:#39f;
+            }
+            a:hover{
+                text-decoration: underline;
+            }
             .dash_menu{
                 padding: 10px;
                 height: calc(100vh-20px);

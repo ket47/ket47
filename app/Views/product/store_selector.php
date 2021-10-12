@@ -1,7 +1,7 @@
 <div style="padding: 20px;margin: 20px;" class="segment">
     <h3>Доступные магазины</h3>
     <div class="store_search_bar">
-        <input type="search" placeholder="Filter stores">
+        <input type="search" placeholder="Filter stores" style="width: 100%">
     </div>
     <div class="found_store_list"></div>
 </div>
@@ -36,6 +36,9 @@
             $('.found_store_list').on('click',function(e){
                 var $store=$(e.target);
                 var store_id=$store.data('store_id');
+                if(!store_id){
+                    return;
+                }
                 $('.selected_store').removeClass('selected_store');
                 $store.addClass('selected_store');
                 FoundStoreList.selectStore(store_id);
@@ -48,24 +51,32 @@
         },
         reload_promise:null,
         reload:function(){
-            if(FoundStoreList.reload_promise){
+            if( FoundStoreList.reload_promise ){
                 FoundStoreList.reload_promise.abort();
             }
             var name_query=$('.store_search_bar input').val();
             var name_query_fields='store_name';
-            var limit=30;
+            var limit=5;
             var filter={
                 name_query,
                 name_query_fields,
                 limit
             };
+            
+            
+            if(<?=$owned_stores_only??0?>){
+                filter.owner_id='<?=session()->get('user_id') ?>';
+            }
             FoundStoreList.reload_promise=$.post('/Store/listGet',filter).done(function(store_list){
                 if( <?= $use_all_stores??0 ?> ){
                     store_list.push({store_id:0,store_name:'Все'});
                 }
                 let html='';
                 for(let store of store_list){
-                    html+=`<div data-store_id="${store.store_id}">${store.store_name}</div>`;
+                    html+=`<div data-store_id="${store.store_id}">
+                                <img src="/image/get.php/${store.images[0].image_hash}.100.100.webp"><br>
+                                ${store.store_name}
+                            </div>`;
                 }
                 $('.found_store_list').html(html);
                 FoundStoreList.selectStore(store_list[0].store_id);
