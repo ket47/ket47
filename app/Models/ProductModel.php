@@ -178,14 +178,10 @@ class ProductModel extends Model{
         return $product_list;
     }
     
-    public function listCreate( $list ){
+    public function listCreate( $store_id, $colconfig ){
         /*
          * Should create importer based performant product importer
          */
-    }
-    
-    public function listCreateAnalyse( $columnConfig ){
-        p($columnConfig);
     }
     
     public function listUpdate( $list ){

@@ -79,50 +79,28 @@
                         (action==='delete')?'importDelete':
                         (action==='all')?'importAll':'';
                 if( url ){
+                    let selectors=ImportList.table.colconfigGet();
                     let request={
-                        //target:'product',
                         holder:ImportList.table.loadrequest.holder,
-                        holder_id:ImportList.table.loadrequest.holder_id
+                        holder_id:ImportList.table.loadrequest.holder_id,
+                        colconfig:selectors.colconfig
                     };
-                    $.post(`Importer/${url}`,request).done(()=>{
+                    $.post(`Importer/${url}`,JSON.stringify(request)).done(()=>{
                         ImportList.table.reload();
                     });
                 }
             });
         },
         listAnalyse:function(){
-            function is_distinct( val, list ){
-                for(let i in list){
-                    if(list[i]===val){
-                        return false;
-                    }
-                }
-                return true;
-            }
-            let cancel_request=false;
-            let colconfig={};
-            $("#import_table_head select").each(function(){
-                let $select=$(this);
-                let col=$select.data('col');
-                let val=$select.val();
-                localStorage.setItem(`importer${col}`,val);
-                if( val ){
-                    if( is_distinct( val, colconfig ) ){
-                        colconfig[val]=col;
-                    } else {
-                        $select.val("");
-                        cancel_request=true;
-                    }
-                }
-            });
-            if( cancel_request ){
+            let selectors=ImportList.table.colconfigGet();
+            if( selectors.dublicate_reseted ){
                 return false;
             }
             let request={
                 target:'product',
                 holder:ImportList.table.loadrequest.holder,
                 holder_id:ImportList.table.loadrequest.holder_id,
-                columns:colconfig
+                columns:selectors.colconfig
             };
             return $.post('/Importer/listAnalyse',JSON.stringify(request)).done((response,status)=>{
                 if( status==='success' ){
@@ -328,7 +306,7 @@
                             if( row.action==='add' ){
                                 icon='<i class="fa fa-plus" aria-hidden="true" title="добавить" style="color:green"></i>';
                             }
-                            rowhtml+=`<div style="min-width:0px">${icon}</div>`;
+                            rowhtml+=`<div style="min-width:0px;background-color:white;">${icon}</div>`;
                         }
                     }
                     $("#import_table").append(`<div class="import_table_row" data-id="${row['id']}">${rowhtml}</div>`);
@@ -341,7 +319,7 @@
                         let selector=ImportList.table.theadSelectorGet(i);
                         html+=`<div>${selector}</div>`;
                     } else {
-                        html+=`<div>-</div>`;
+                        html+=`<div> </div>`;
                     }
                     
                 }
@@ -357,7 +335,34 @@
                 }
                 html+=`</select>`;
                 return html;
-            }
+            },
+            colconfigGet:function(){
+                let dublicate_reseted=false;
+                function is_distinct( val, list ){
+                    for(let i in list){
+                        if(list[i]===val){
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                let colconfig={};
+                $("#import_table_head select").each(function(){
+                    let $select=$(this);
+                    let col=$select.data('col');
+                    let val=$select.val();
+                    localStorage.setItem(`importer${col}`,val);
+                    if( val ){
+                        if( is_distinct( val, colconfig ) ){
+                            colconfig[val]=col;
+                        } else {
+                            $select.val("");
+                            dublicate_reseted=true;
+                        }
+                    }
+                });
+                return {colconfig,dublicate_reseted};
+            },
         },
     };
     $(ImportList.init);
@@ -381,7 +386,7 @@
         <a href='javascript:ImportList.table.reload()'>Обновить</a> | 
         <a href='javascript:ImportList.table.listDelete()'>Удалить строки</a> | 
         <a href='javascript:ImportList.table.listTruncate()'>Очистить таблицу</a>
-        <div title="Main Import table" id="import_table" style="margin-top: 10px;">
+        <div id="import_table" style="margin-top: 10px;">
             <div id="import_table_head"></div>
         </div>
     </div>

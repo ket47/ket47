@@ -75,9 +75,7 @@ class ImporterModel extends Model{
         return $this->get()->getResult();
     }
     
-    public function listCreate( $list ){
-        
-        
+    public function listCreate(){
         return false;
     }
     
@@ -97,8 +95,30 @@ class ImporterModel extends Model{
             return $this->productListAnalyse( $columnConfig, $holder_id );
         }
     }
-    
-    
+    ///////////////////////////////////////////
+    //IMPORT SECTION
+    ///////////////////////////////////////////
+    public function importCreate($holder,$holder_id,$target,$colconfig){
+        if($target=='product'){
+            $ProductModel=model('ProductModel');
+            return $ProductModel->listCreate($holder_id,$colconfig);
+        }
+    }
+    public function importUpdate($holder,$holder_id,$target,$colconfig){
+        if($target=='product'){
+            $ProductModel=model('ProductModel');
+            return $ProductModel->listUpdate($holder,$holder_id,$colconfig);
+        }
+    }
+    public function importDelete($holder,$holder_id,$target){
+        if($target=='product'){
+            $ProductModel=model('ProductModel');
+            return $ProductModel->listDelete($holder_id);
+        }
+    }
+    ///////////////////////////////////////////
+    //PRODUCT SECTION
+    ///////////////////////////////////////////
     private function productListAnalyseRequiredIsAbsent($columnConfig){
         $has_pname=false;
         $has_pquantity=false;

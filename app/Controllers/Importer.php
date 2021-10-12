@@ -123,11 +123,13 @@ class Importer extends \App\Controllers\BaseController{
     
     
     public function importCreate(){
-        $holder=$this->request->getVar('holder');
-        $holder_id=$this->request->getVar('holder_id');
+        $holder=$this->request->getJsonVar('holder');
+        $holder_id=$this->request->getJsonVar('holder_id');
+        $target=$this->request->getJsonVar('target');
+        $colconfig=$this->request->getJsonVar('columns');
         
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->importCreate($holder,$holder_id);
+        $result=$ImporterModel->importCreate($holder,$holder_id,$target,$colconfig);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -140,9 +142,10 @@ class Importer extends \App\Controllers\BaseController{
     public function importUpdate(){
         $holder=$this->request->getVar('holder');
         $holder_id=$this->request->getVar('holder_id');
+        $target=$this->request->getVar('target');
         
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->importUpdate($holder,$holder_id);
+        $result=$ImporterModel->importUpdate($holder,$holder_id,$target);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -155,17 +158,14 @@ class Importer extends \App\Controllers\BaseController{
     public function importDelete(){
         $holder=$this->request->getVar('holder');
         $holder_id=$this->request->getVar('holder_id');
+        $target=$this->request->getVar('target');
         
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->importDelete($holder,$holder_id);
+        $result=$ImporterModel->importDelete($holder,$holder_id,$target);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
-        if( $ImporterModel->errors() ){
-            return $this->failValidationError(json_encode($ImporterModel->errors()));
-        }
-        return $this->respondUpdated($result);
-
+        return $this->respondDeleted($result);
     }
     
     public function importAll(){
