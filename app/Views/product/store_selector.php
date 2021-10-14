@@ -73,6 +73,9 @@
                 }
                 let html='';
                 for(let store of store_list){
+                    if( !store.images || !store.images[0] ){
+                        continue;
+                    }
                     html+=`<div data-store_id="${store.store_id}">
                                 <img src="/image/get.php/${store.images[0].image_hash}.100.100.webp"><br>
                                 ${store.store_name}
