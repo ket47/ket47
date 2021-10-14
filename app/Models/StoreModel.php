@@ -55,7 +55,7 @@ class StoreModel extends Model{
         $store = $this->get()->getRow();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
-        $store->is_writable=$this->permit($product_id,'w');
+        $store->is_writable=$this->permit($store_id,'w');
         
         $ImageModel=model('ImageModel');
         if($store){
