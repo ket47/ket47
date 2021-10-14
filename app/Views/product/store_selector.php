@@ -19,6 +19,7 @@
         padding:5px;
         margin:5px;
         cursor:pointer;
+        width: 100px;
     }
     .selected_store{
         font-weight:bold;
