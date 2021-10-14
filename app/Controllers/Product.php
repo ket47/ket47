@@ -6,6 +6,17 @@ use \CodeIgniter\API\ResponseTrait;
 class Product extends \App\Controllers\BaseController{
     use ResponseTrait;
     
+    public function groupListGet(){
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet('product_group_list');
+        $group_list=$GroupModel->listGet();
+        return $this->respond($group_list);
+    }
+    
+    
+    
+    
+    
     public function listGet(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
@@ -18,9 +29,14 @@ class Product extends \App\Controllers\BaseController{
             'group_id'=>$this->request->getVar('group_id'),
         ];
         $ProductModel=model('ProductModel');
-        $GroupModel=model('GroupModel');
         $product_list=$ProductModel->listGet($filter);
+        $data=[
+            'product_list' => $product_list
+            ];
+        return $this->respond($data);
+
         
+        $GroupModel=model('GroupModel');
         $GroupModel->tableSet('product_group_list');
         $product_group_list=$GroupModel->listGet();
         $data=[
