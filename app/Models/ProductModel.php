@@ -38,6 +38,7 @@ class ProductModel extends Model{
         $product = $this->get()->getRow();
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('product_group_member_list');
+        $product->is_writable=$this->permit($product_id,'w');
         
         $ImageModel=model('ImageModel');
         if($product){
