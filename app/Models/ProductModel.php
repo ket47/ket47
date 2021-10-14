@@ -151,14 +151,19 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
-        $this->orderBy('updated_at','DESC');
-        if( $filter['store_id'] ){
+        $GroupMemberModel=model('GroupMemberModel');
+        $GroupMemberModel->tableSet('product_group_member_list');
+        if( $filter['group_id']??0 ){
+            $this->join('product_group_member_list','member_id=product_id');
+            $this->where('group_id',$filter['group_id']);
+        }
+        if( $filter['store_id']??0 ){
             $this->where('store_id',$filter['store_id']);
         }
         $this->permitWhere('r');
+        $this->orderBy('updated_at','DESC');
         $product_list= $this->get()->getResult();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('product_group_member_list');
+
         $ImageModel=model('ImageModel');
 
         foreach($product_list as $product){

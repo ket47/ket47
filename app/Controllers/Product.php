@@ -15,12 +15,12 @@ class Product extends \App\Controllers\BaseController{
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
+            'group_id'=>$this->request->getVar('group_id'),
         ];
         $ProductModel=model('ProductModel');
         $GroupModel=model('GroupModel');
         $product_list=$ProductModel->listGet($filter);
         
-        //die($ProductModel->getLastQuery());
         $GroupModel->tableSet('product_group_list');
         $product_group_list=$GroupModel->listGet();
         $data=[
@@ -31,25 +31,15 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function listCreate(){
-//        $store_id=$this->request->getVar('store_id');
-//        $product_list=$this->request->getVar('product_list');
-//        $ProductModel=model('ProductModel');
-//        $result=$ProductModel->listCreate($store_id,$product_list);
-//        if( $ProductModel->errors() ){
-//            return $this->failValidationError(json_encode($ProductModel->errors()));
-//        }
-//        if( $result=='ok' ){
-//            return $this->respondCreated();
-//        }
-//        return $this->fail($result);        
+        return false;
     }
     
     public function listUpdate(){
-        
+        return false;
     }
     
     public function listDelete(){
-        
+        return false;
     }
 
 

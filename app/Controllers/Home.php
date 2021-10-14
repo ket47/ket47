@@ -31,7 +31,9 @@ class Home extends BaseController {
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
+            'offset'=>$this->request->getVar('offset'),
             'store_id'=>$this->request->getVar('store_id'),
+            'group_id'=>$this->request->getVar('group_id'),
         ];
         $ProductModel=model('ProductModel');
         $GroupModel=model('GroupModel');
