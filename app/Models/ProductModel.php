@@ -179,17 +179,115 @@ class ProductModel extends Model{
     }
     
     public function listCreate( $store_id, $colconfig ){
-        /*
-         * Should create importer based performant product importer
-         */
+        //ANALYSE MADE PREVIOUS SO NO NEED TO DOUBLE CHECK
+        $StoreModel=model('StoreModel');
+        $permission_granted=$StoreModel->permit($store_id,'w');
+        if( !$permission_granted ){
+            return 'forbidden';
+        }
+        $ownerFilter=$this->permitWhereGet('w','item');
+        $target_col_list="store_id,owner_id,owner_ally_ids,is_disabled";
+        $src_col_list="$store_id,owner_id,owner_ally_ids,1";
+        $delimeter=',';
+
+        $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];
+        foreach($colconfig as $target=>$src){
+            if(in_array($target, $skip_cols)){
+                continue;
+            }
+            $src_col_list.=$delimeter.$src;
+            $target_col_list.=$delimeter.$target;
+        }
+        $sql="
+            INSERT INTO product_list ($target_col_list) SELECT
+                $src_col_list
+            FROM
+                imported_list il
+            WHERE
+                il.holder='store' 
+                AND il.holder_id='$store_id'
+                AND il.action='add'
+                AND $ownerFilter
+            ";
+        $this->query($sql);
+        if( $this->db->affectedRows()>0 ){
+            $clear_imported_sql="
+                UPDATE
+                    imported_list il
+                SET
+                    `action`='done'
+                WHERE
+                    il.holder='store' 
+                    AND il.holder_id='$store_id'
+                    AND il.action='add'
+                    AND $ownerFilter
+                ";
+            $this->query($clear_imported_sql);
+            return 'ok';
+        }
+        return 'idle';
     }
     
-    public function listUpdate( $list ){
-        return false;
+    public function listUpdate( $holder,$store_id,$colconfig ){
+        //ANALYSE MADE PREVIOUS SO NO NEED TO DOUBLE CHECK
+        $StoreModel=model('StoreModel');
+        $permission_granted=$StoreModel->permit($store_id,'w');
+        if( !$permission_granted ){
+            return 'forbidden';
+        }
+        $ownerFilter=$this->permitWhereGet('w','item');
+        $set="pl.store_id=$store_id,pl.deleted_at=NULL";
+        $delimeter=',';
+
+        $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];
+        foreach($colconfig as $target=>$src){
+            if(in_array($target, $skip_cols)){
+                continue;
+            }
+            $set.="$delimeter pl.$target=il.$src";
+        }
+        $sql="
+            UPDATE
+                product_list pl
+                    JOIN 
+                (SELECT * FROM
+                    imported_list il 
+                WHERE
+                    il.holder='store' 
+                    AND il.holder_id='$store_id'
+                    AND il.action='update'
+                    AND $ownerFilter) il ON pl.product_id=il.target_id
+            SET
+                $set
+            ";
+        $this->query($sql);
+        $clear_imported_sql="
+            UPDATE
+                imported_list il
+            SET
+                `action`='done'
+            WHERE
+                il.holder='store' 
+                AND il.holder_id='$store_id'
+                AND il.action='update'
+                AND $ownerFilter
+            ";
+        $this->query($clear_imported_sql);
+        if( $this->db->affectedRows()>0 ){
+            return 'ok';
+        }
+        return 'idle';
     }
     
-    public function listDelete( $product_ids ){
-        return false;
+    public function listDelete( array $product_ids ){
+        $this->permitWhere('w');
+        $this->delete($product_ids);
+        if( $this->db->affectedRows()>0 ){
+            $ImageModel=model('ImageModel');
+            $ImageModel->listDelete('product', $product_ids);
+            return 'ok';
+        }
+        return 'idle'; 
     }
     
     public function listDeleteChildren( $store_id ){

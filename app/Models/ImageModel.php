@@ -117,7 +117,7 @@ class ImageModel extends Model{
     
     public function listDelete( $image_holder, $image_holder_id ){
         $this->where('image_holder',$image_holder);
-        $this->where('image_holder_id',$image_holder_id);
+        $this->whereIn('image_holder_id',$image_holder_id);
         $this->delete();
         return $this->db->affectedRows()?'ok':'idle';
     }

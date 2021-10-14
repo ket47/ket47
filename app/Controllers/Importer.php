@@ -65,7 +65,7 @@ class Importer extends \App\Controllers\BaseController{
         $holder_id=$this->request->getJsonVar('holder_id');
         $colconfig=$this->request->getJsonVar('columns');
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->listAnalyse($colconfig,$target,$holder_id);
+        $result=$ImporterModel->listAnalyse($holder_id,$target,$colconfig);
         if( $result==='no_required_fields' ){
             return $this->respond(null,204,'Not all required fields are defined');
         }
@@ -81,7 +81,10 @@ class Importer extends \App\Controllers\BaseController{
     public function fileUpload(){
         $target=$this->request->getVar('target');
         $holder=$this->request->getVar('holder');
-        $holder_id=$this->request->getVar('holder_id');
+        $holder_id=(int) $this->request->getVar('holder_id');
+        if( !$target || !$holder || !$holder_id ){
+            return $this->fail('missing_required_fields');
+        }
         $items =$this->request->getFiles();
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
@@ -114,19 +117,14 @@ class Importer extends \App\Controllers\BaseController{
         }
         return true;
     }
-    
-    
-    
-    
-    
-    
-    
-    
+    ///////////////////////////////////////////
+    //IMPORT SECTION
+    ///////////////////////////////////////////
     public function importCreate(){
         $holder=$this->request->getJsonVar('holder');
         $holder_id=$this->request->getJsonVar('holder_id');
         $target=$this->request->getJsonVar('target');
-        $colconfig=$this->request->getJsonVar('columns');
+        $colconfig=$this->request->getJsonVar('colconfig');
         
         $ImporterModel=model('ImporterModel');
         $result=$ImporterModel->importCreate($holder,$holder_id,$target,$colconfig);
@@ -140,12 +138,13 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function importUpdate(){
-        $holder=$this->request->getVar('holder');
-        $holder_id=$this->request->getVar('holder_id');
-        $target=$this->request->getVar('target');
+        $holder=$this->request->getJsonVar('holder');
+        $holder_id=$this->request->getJsonVar('holder_id');
+        $target=$this->request->getJsonVar('target');
+        $colconfig=$this->request->getJsonVar('colconfig');
         
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->importUpdate($holder,$holder_id,$target);
+        $result=$ImporterModel->importUpdate($holder,$holder_id,$target,$colconfig);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -156,12 +155,13 @@ class Importer extends \App\Controllers\BaseController{
     }
     
     public function importDelete(){
-        $holder=$this->request->getVar('holder');
-        $holder_id=$this->request->getVar('holder_id');
-        $target=$this->request->getVar('target');
+        $holder=$this->request->getJsonVar('holder');
+        $holder_id=$this->request->getJsonVar('holder_id');
+        $target=$this->request->getJsonVar('target');
+        $colconfig=$this->request->getJsonVar('colconfig');
         
         $ImporterModel=model('ImporterModel');
-        $result=$ImporterModel->importDelete($holder,$holder_id,$target);
+        $result=$ImporterModel->importDelete($holder,$holder_id,$target,$colconfig);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -172,6 +172,6 @@ class Importer extends \App\Controllers\BaseController{
         $this->importCreate();
         $this->importUpdate();
         $this->importDelete();
-        return $this->respond();
+        return $this->respond('ok');
     }
 }

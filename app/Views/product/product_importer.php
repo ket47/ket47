@@ -72,21 +72,45 @@
             ImportList.table.init();
             $("#import_table_actions").click(function(e){
                 let $button=$(e.target);
-                let action=$button.data('action');
-                console.log(action);
-                let url=(action==='add')?'importCreate':
-                        (action==='update')?'importUpdate':
-                        (action==='delete')?'importDelete':
-                        (action==='all')?'importAll':'';
-                if( url ){
+                let cmds=$button.data('cmd');
+                if( !cmds ){
+                    return;
+                }
+                let commands=cmds.split(',');
+                let message='';
+                let url='';
+                for( let cmd of commands ){
+                    if( !cmd ){
+                        continue;
+                    }
+                    let action=cmd.split(':')[0];
+                    let count=cmd.split(':')[1];
+                    
+                    if( action==='add' && count>0 ){
+                        url=url?'importAll':'importCreate';
+                        message+=`\nДобавить ${count} товаров?`;
+                    }
+                    if( action==='update' && count>0 ){
+                        url=url?'importAll':'importUpdate';
+                        message+=`\nОбновить ${count} товаров?`;
+                    }
+                    if( action==='delete' && count>0 ){
+                        url=url?'importAll':'importDelete';
+                        message+=`\nУдалить ${count} товаров?`;
+                    }
+                }
+                if( url && confirm(message) ){
                     let selectors=ImportList.table.colconfigGet();
                     let request={
                         holder:ImportList.table.loadrequest.holder,
                         holder_id:ImportList.table.loadrequest.holder_id,
+                        target:'product',
                         colconfig:selectors.colconfig
                     };
-                    $.post(`Importer/${url}`,JSON.stringify(request)).done(()=>{
-                        ImportList.table.reload();
+                    $.post(`/Importer/${url}`,JSON.stringify(request)).done(()=>{
+                        ImportList.listAnalyse().done(function(){
+                            ImportList.table.reload();
+                        });
                     });
                 }
             });
@@ -110,25 +134,36 @@
         },
         listAnalyseRenderButtons:function( actions ){
             let upload=`<div style="background-color:#ddd" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> | `;
-            let all=`<div data-action="all" style="background-color:#ddd"><i class="fas fa-file-import"></i> Импортировать всё</div>`;
+            let all='';
+            let all_cmds='';
             let add='';
             let update='';
             let del='';
             let skip='';
             for(let i in actions){
                 let action=actions[i];
-                if( action.action==='add' ){
-                    add=`<div data-action="${action.action}" style="background-color:#cfc">Добавить товары (${action.row_count})</div>`;
+                if( action.action==='add' && action.row_count>0 ){
+                    let cmd=`${action.action}:${action.row_count}`;
+                    all_cmds+=','+cmd;
+                    add=`<div data-cmd="${cmd}" style="background-color:#cfc">Добавить товары (${action.row_count})</div>`;
                 }
-                if( action.action==='update' ){
-                    update=`<div data-action="${action.action}" style="background-color:#def">Обновить товары (${action.row_count})</div>`;
+                if( action.action==='update' && action.row_count>0 ){
+                    let cmd=`${action.action}:${action.row_count}`;
+                    all_cmds+=','+cmd;
+                    update=`<div data-cmd="${cmd}" style="background-color:#def">Обновить товары (${action.row_count})</div>`;
                 }
-                if( action.action==='delete' ){
-                    del=`<div data-action="${action.action}" style="background-color:#fdd"><i class="fa fa-fast-trash"></i> Удалить товары (${action.row_count})</div>`;
+                if( action.action==='delete' && action.row_count>0 ){
+                    let cmd=`${action.action}:${action.row_count}`;
+                    all_cmds+=','+cmd;
+                    del=`<div data-cmd="${cmd}" style="background-color:#fdd"><i class="fa fa-fast-trash"></i> Удалить товары (${action.row_count})</div>`;
                 }
-                if( action.action==='skip' ){
-                    skip=`<div data-action="${action.action}">Пропустить ${action.row_count}</div>`;
+                if( action.action==='skip' && action.row_count>0 ){
+                    let cmd=`${action.action}:${action.row_count}`;
+                    skip=`<div data-cmd="${cmd}">Пропустить ${action.row_count}</div>`;
                 }
+            }
+            if(all_cmds){
+                all=`<div data-cmd="${all_cmds}" style="background-color:#ddd"><i class="fas fa-file-import"></i> Импортировать всё</div>`;
             }
             $("#import_table_actions").html(upload+add+update+del+skip+all);
         },
@@ -157,7 +192,7 @@
             ImportList.fileUploadFormData = new FormData();
             ImportList.fileUploadFormData.set('target','product');
             ImportList.fileUploadFormData.set('holder','store');
-            ImportList.fileUploadFormData.set('holder_id',ImportList.table.loadrequest.store_id);
+            ImportList.fileUploadFormData.set('holder_id',ImportList.table.loadrequest.holder_id);
             
             ImportList.fileUploadXhr.open("POST", url, true);
             ImportList.fileUploadXhr.onreadystatechange = function() {
@@ -305,6 +340,9 @@
                             }
                             if( row.action==='add' ){
                                 icon='<i class="fa fa-plus" aria-hidden="true" title="добавить" style="color:green"></i>';
+                            }
+                            if( row.action==='done' ){
+                                icon='<i class="fa fa-check" aria-hidden="true" title="выполнено" style="color:gray"></i>';
                             }
                             rowhtml+=`<div style="min-width:0px;background-color:white;">${icon}</div>`;
                         }
