@@ -51,7 +51,7 @@
     }
     
     
-    #import_table_actions div{
+    .action_button{
         display:inline-block;
         border-radius:5px;
         background-color:#eee;
@@ -59,12 +59,6 @@
         margin:5px;
         cursor:pointer;
     }
-    import_table_actions .selected{
-        font-weight:bold;
-        background-color:#6cf !important;
-    }
-    
-    
 </style>
 <script type="text/javascript">
     ImportList={
@@ -133,7 +127,7 @@
             });
         },
         listAnalyseRenderButtons:function( actions ){
-            let upload=`<div style="background-color:#ddd" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> | `;
+            let upload=``;
             let all='';
             let all_cmds='';
             let add='';
@@ -145,25 +139,25 @@
                 if( action.action==='add' && action.row_count>0 ){
                     let cmd=`${action.action}:${action.row_count}`;
                     all_cmds+=','+cmd;
-                    add=`<div data-cmd="${cmd}" style="background-color:#cfc">Добавить товары (${action.row_count})</div>`;
+                    add=`<div data-cmd="${cmd}" class="action_button" style="background-color:#cfc">Добавить товары (${action.row_count})</div>`;
                 }
                 if( action.action==='update' && action.row_count>0 ){
                     let cmd=`${action.action}:${action.row_count}`;
                     all_cmds+=','+cmd;
-                    update=`<div data-cmd="${cmd}" style="background-color:#def">Обновить товары (${action.row_count})</div>`;
+                    update=`<div data-cmd="${cmd}" class="action_button" style="background-color:#def">Обновить товары (${action.row_count})</div>`;
                 }
                 if( action.action==='delete' && action.row_count>0 ){
                     let cmd=`${action.action}:${action.row_count}`;
                     all_cmds+=','+cmd;
-                    del=`<div data-cmd="${cmd}" style="background-color:#fdd"><i class="fa fa-fast-trash"></i> Удалить товары (${action.row_count})</div>`;
+                    del=`<div data-cmd="${cmd}" class="action_button" style="background-color:#fdd"><i class="fa fa-fast-trash"></i> Удалить товары (${action.row_count})</div>`;
                 }
                 if( action.action==='skip' && action.row_count>0 ){
                     let cmd=`${action.action}:${action.row_count}`;
-                    skip=`<div data-cmd="${cmd}">Пропустить ${action.row_count}</div>`;
+                    skip=`<div data-cmd="${cmd}" class="action_button">Пропустить ${action.row_count}</div>`;
                 }
             }
             if(all_cmds){
-                all=`<div data-cmd="${all_cmds}" style="background-color:#ddd"><i class="fas fa-file-import"></i> Импортировать всё</div>`;
+                all=`<div data-cmd="${all_cmds}" class="action_button" style="background-color:#ddd"><i class="fas fa-file-import"></i> Импортировать всё</div>`;
             }
             $("#import_table_actions").html(upload+add+update+del+skip+all);
         },
@@ -418,7 +412,11 @@
     }
 </script>
 <div style="padding: 20px;">
-    <div id="import_table_actions"></div>
+    
+    <div>
+        <div style="background-color:#ddd" class="action_button" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> | 
+        <div id="import_table_actions" style="display: inline-block"></div>
+    </div>
     
     <div class="segment" style="min-width: calc(100% - 20px);width: min-content">
         <a href='javascript:ImportList.table.reload()'>Обновить</a> | 
