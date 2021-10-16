@@ -47,7 +47,7 @@ class GroupLayer extends Model{
         if( $parent_parent_id!=0 ){
             return 'only_two_levels_allowed';
         }
-        $group_name=str_replace(',', '', $group_name);
+        $group_name=str_replace('/', '', $group_name);
         $group_id=$this->insert([
             'group_parent_id'=>$parent_id,
             'group_name'=>$group_name,
@@ -74,7 +74,7 @@ class GroupLayer extends Model{
             return 'noid';
         }
         if( !empty($group->group_name) ){
-            $group->group_name=str_replace(',', '', $group->group_name);
+            $group->group_name=str_replace('/', '', $group->group_name);
         }
         try{
             $this->update($group->group_id,$group);
@@ -121,6 +121,11 @@ class GroupLayer extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
+        
+        
+        die("DELETE CHILDREN!!!! BY PATH ID");
+        
+        
         $this->where('group_id',$group_id)->delete(true);
         return $this->db->affectedRows()?'ok':'idle';
     }
