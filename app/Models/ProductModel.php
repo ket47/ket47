@@ -147,6 +147,8 @@ class ProductModel extends Model{
         $this->update(['product_id'=>$product_id],['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
+    
+    
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////

@@ -38,8 +38,8 @@ class BaseController extends Controller
 	 * @var array
 	 */
 	protected $helpers = [
-            'p',
             'sudo',
+            'p',
             'q'
         ];
 
@@ -90,17 +90,9 @@ class BaseController extends Controller
             }
         }
         
-        
         private function guestUserInit(){
             $PermissionModel=model('PermissionModel');
             $PermissionModel->listFillSession();
             session()->set('user_id',-1);            
         }
-        
-	protected function error( $error_token='unknown_error', $error_code=500, $error_description='' ){
-		$this->response->setStatusCode($error_code,$error_description);
-		$this->response->setBody($error_token);
-		$this->response->send();
-		die();
-	}
 }

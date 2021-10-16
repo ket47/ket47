@@ -3,8 +3,9 @@
         <div class="dash_menu">
             <a href="javascript:scr.location.reload()">RELOAD</a><br><br>
             <hr>
-            <h3>Permissions</h3>
+            <h3>Admin</h3>
             <a href="Admin/Permission/" target="scr">Permissions</a><br>
+            <a href="Admin/GroupManager/" target="scr">Group Manager</a><br>
 
             
             

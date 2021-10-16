@@ -83,7 +83,9 @@
                             </div>`;
                 }
                 $('.found_store_list').html(html);
-                FoundStoreList.selectStore(store_list[0].store_id);
+                if(store_list[0]){
+                    FoundStoreList.selectStore(store_list[0].store_id);
+                }
             }).fail(function(error){
                 $('.found_store_list').html(error);
             });

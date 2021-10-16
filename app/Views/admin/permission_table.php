@@ -44,6 +44,7 @@ $(function(){
     });
 });
 </script>
+<div class="segment" style="margin: 20px">
 <form method="post" action="#">
     <table>
         <thead>
@@ -90,7 +91,7 @@ $(function(){
         </tbody>
     </table>
 </form>
-
+</div>
 <style>
     th{
         width: 150px;

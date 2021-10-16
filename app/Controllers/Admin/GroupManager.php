@@ -1,8 +1,8 @@
 <?php
-namespace App\Controllers;
+namespace App\Controllers\Admin;
 use \CodeIgniter\API\ResponseTrait;
 
-class Group extends BaseController {
+class GroupManager extends \App\Controllers\BaseController {
     use ResponseTrait;
     
 //    public function itemGet(){
@@ -18,83 +18,108 @@ class Group extends BaseController {
 //        return $this->fail($result);
 //    }
 //    
-//    public function itemCreate(){
-//        $group_table=$this->request->getVar('group_table');
-//        $group_name=$this->request->getVar('group_name');
-//        $group_type=$this->request->getVar('group_type');
-//        $group_parent_id=$this->request->getVar('group_parent_id');
-//        
-//        $GroupModel=$this->model('GroupModel');
-//        $GroupModel->tableSet($group_table);
-//        $result=$GroupModel->itemCreate( $group_parent_id, $group_name, $group_type);
-//        if( is_numeric($result) ){
-//            return $this->respondCreated($result);
-//        }
-//        return $this->fail($result);
-//    }
+    public function itemCreate(){
+        $group_table=$this->request->getVar('group_table');
+        $group_name=$this->request->getVar('group_name');
+        $group_parent_id=$this->request->getVar('group_parent_id');
+        
+        if($group_table=='product_group_list'){
+            $GroupModel=model('ProductGroupModel');
+        } else if($group_table=='store_group_list'){
+            $GroupModel=model('StoreGroupModel');
+        } else if($group_table=='user_group_list'){
+            $GroupModel=model('UserGroupModel');
+        }
+        $result=$GroupModel->itemCreate( $group_parent_id, $group_name, '');
+        if( is_numeric($result) ){
+            return $this->respondCreated($result);
+        }
+        return $this->fail($result);
+    }
 //    
 //    public function itemUpdate(){
 //        return $this->failResourceExists();
 //    }
 //    
-//    public function itemFieldUpdate(){
-//        $group_table=$this->request->getVar('group_table');
-//        $group_id=$this->request->getVar('group_id');
-//        $data= json_decode($this->request->getVar('data'));
-//
-//        
-//        $GroupModel=$this->model('GroupModel');
-//        $GroupModel->tableSet($group_table);
-//        $result=$GroupModel->itemUpdate( $group_id, $data );
-//        if( is_numeric($result) ){
-//            return $this->respondUpdated($result);
-//        }
-//        return $this->fail($result);        
-//    }
-//    
-//    public function itemDelete(){
-//        $group_table=$this->request->getVar('group_table');
-//        $group_id=$this->request->getVar('group_id');
-//        
-//        $GroupModel=$this->model('GroupModel');
-//        $GroupModel->tableSet($group_table);
-//        $result=$GroupModel->itemDelete( $group_id );
-//        if( is_numeric($result) ){
-//            return $this->respondDeleted($result);
-//        }
-//        return $this->fail($result);        
-//    }
-//    
-//    
-//    public function listGet(){
-//        $filter=[
-//            'name_query'=>$this->request->getVar('name_query'),
-//            'name_query_fields'=>$this->request->getVar('name_query_fields'),
-//            'is_disabled'=>$this->request->getVar('is_disabled'),
-//            'is_deleted'=>$this->request->getVar('is_deleted'),
-//            'is_active'=>$this->request->getVar('is_active'),
-//            'limit'=>$this->request->getVar('limit')
-//        ];
-//        $group_table=$this->request->getVar('group_table');
-//        $GroupModel=model('GroupModel');
-//        $GroupModel->tableSet($group_table);
-//        $group_list=$GroupModel->listGet($filter);
-//        if( $GroupModel->errors() ){
-//            return $this->failValidationError(json_encode($GroupModel->errors()));
-//        }
-//        return $this->respond($group_list);
-//    }
-    
-    public function listCreate(){
-        return $this->failResourceExists();
+    public function itemUpdate(){
+        $data= $this->request->getJSON();
+        if($data->group_table=='product_group_list'){
+            $GroupModel=model('ProductGroupModel');
+        } else if($data->group_table=='store_group_list'){
+            $GroupModel=model('StoreGroupModel');
+        } else if($data->group_table=='user_group_list'){
+            $GroupModel=model('UserGroupModel');
+        }
+        $result=$GroupModel->itemUpdate($data);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $GroupModel->errors() ){
+            return $this->failValidationError(json_encode($GroupModel->errors()));
+        }
+        return $this->respondUpdated($result);     
     }
     
-    public function listUpdate(){
-        return $this->failResourceExists();
+    public function itemDelete(){
+        $group_id=$this->request->getVar('group_id');
+        $group_table=$this->request->getVar('group_table');
+        if($group_table=='product_group_list'){
+            $GroupModel=model('ProductGroupModel');
+        } else if($group_table=='store_group_list'){
+            $GroupModel=model('StoreGroupModel');
+        } else if($group_table=='user_group_list'){
+            $GroupModel=model('UserGroupModel');
+        }
+        $result=$GroupModel->itemDelete($group_id);
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
     }
     
-    public function listDelete(){
-        return $this->failResourceExists();
+    
+    
+    public function index(){
+        if( !sudo() ){
+            die('Access denied!');
+        }
+        $ProductGroupModel=model('ProductGroupModel');
+        $StoreGroupModel=model('StoreGroupModel');
+        $UserGroupModel=model('UserGroupModel');
+        
+        $tables=[];
+        $tables[]=(object)[
+                'name'=>'Product groups',
+                'type'=>'product',
+                'entries'=>$ProductGroupModel->listGet()
+                ];
+        $tables[]=(object)[
+                'name'=>'Store groups',
+                'type'=>'store',
+                'entries'=>$StoreGroupModel->listGet()
+                ];
+        $tables[]=(object)[
+                'name'=>'User groups',
+                'type'=>'user',
+                'entries'=>$UserGroupModel->listGet()
+                ];
+        return view('admin/group_manager.php',['tables'=>$tables]);
     }
+    
+    public function listGet(){
+        $group_table=$this->request->getVar('group_table');
+        $GroupModel=model('GroupModel');
+        $GroupModel->tableSet($group_table);
+        $group_list=$GroupModel->listGet($filter);
+        if( $GroupModel->errors() ){
+            return $this->failValidationError(json_encode($GroupModel->errors()));
+        }
+        return $this->respond($group_list);
+    }
+    
+    
     
 }

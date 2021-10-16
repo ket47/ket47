@@ -5,7 +5,17 @@
         <script>
             $(document).ajaxComplete(function (event, xhr, settings) {
                 if(xhr.status>299){
-                    alert('Server error: '+xhr.status+'\n'+xhr.responseText);
+                    if(xhr.responseJSON.messages){
+                        let txt='';
+                        let error=JSON.parse(xhr.responseJSON.messages.error);
+                        console.log(error);
+                        for( let i in error){
+                            txt+=error[i]+'\n';
+                        }
+                        alert(txt);
+                        return;
+                    }
+                    alert('Server error: '+xhr.status+'\n'+xhr.responseJSON.message);
                 }
             });
 
@@ -46,7 +56,7 @@
             input[type=text],input[type=email],input[type=tel],input[type=number],textarea{
                 width:calc( 100% - 100px );;
             }
-            .segment{
+            .segment,segment{
                 box-shadow: 3px 5px 8px #ccc;
                 border:solid 1px #ccc;
                 border-radius: 5px;
