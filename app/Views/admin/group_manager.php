@@ -68,6 +68,12 @@
     <?php foreach( $tables as $table): ?>
     <h2><?=$table->name?></h2>
     <table>
+        <tr>
+            <td style="width:30px;"></td>
+            <td colspan="2" style="color:green;">
+                <i class="fa fa-plus" data-group_id="0" data-type="<?=$table->type?>" data-action="create"></i>
+            </td>
+        </tr>
         <?php foreach( $table->entries as $group): ?>
         <tr>
             <td style="width:30px;text-align: center;color:red;"><i class="fa fa-trash" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="delete"></i></td>

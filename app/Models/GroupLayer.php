@@ -121,12 +121,7 @@ class GroupLayer extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
-        
-        
-        die("DELETE CHILDREN!!!! BY PATH ID");
-        
-        
-        $this->where('group_id',$group_id)->delete(true);
+        $this->like('group_path_id',"/$group_id/")->delete(true);
         return $this->db->affectedRows()?'ok':'idle';
     }
 }
