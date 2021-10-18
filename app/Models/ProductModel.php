@@ -96,8 +96,7 @@ class ProductModel extends Model{
         if( !$this->permit($product_id,'w') ){
             return 'forbidden';
         }
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet('product_group_list');
+        $GroupModel=model('ProductGroupModel');
         $target_group=$GroupModel->itemGet($group_id);
         if( !$target_group ){
             return 'not_found';

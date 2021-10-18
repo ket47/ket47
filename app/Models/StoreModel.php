@@ -113,8 +113,7 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'w') ){
             return 'forbidden';
         }
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet('store_group_list');
+        $GroupModel=model('StoreGroupModel');
         $target_group=$GroupModel->itemGet($group_id);
         if( !$target_group ){
             return 'not_found';

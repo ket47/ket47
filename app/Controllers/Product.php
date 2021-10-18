@@ -7,8 +7,7 @@ class Product extends \App\Controllers\BaseController{
     use ResponseTrait;
     
     public function groupListGet(){
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet('product_group_list');
+        $GroupModel=model('ProductGroupModel');
         $group_list=$GroupModel->listGet();
         return $this->respond($group_list);
     }
@@ -34,16 +33,15 @@ class Product extends \App\Controllers\BaseController{
             'product_list' => $product_list
             ];
         return $this->respond($data);
-
-        
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet('product_group_list');
-        $product_group_list=$GroupModel->listGet();
-        $data=[
-            'product_list' => $product_list,
-            'product_group_list'=>$product_group_list
-            ];
-        return $this->respond($data);
+//
+//        
+//        $GroupModel=model('ProductGroupModel');
+//        $product_group_list=$GroupModel->listGet();
+//        $data=[
+//            'product_list' => $product_list,
+//            'product_group_list'=>$product_group_list
+//            ];
+//        return $this->respond($data);
     }
     
     public function listCreate(){

@@ -109,8 +109,7 @@ class UserModel extends Model{
         if( !$this->permit($user_id,'w') ){
             return 'forbidden';
         }
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet('user_group_list');
+        $GroupModel=model('UserGroupModel');
         $target_group=$GroupModel->itemGet($group_id);
         if( !$target_group ){
             return 'notfound';
