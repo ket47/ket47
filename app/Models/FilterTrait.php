@@ -28,7 +28,7 @@ trait FilterTrait{
                     if( !$clue || $clue==' ' ){
                         continue;
                     }
-                    $cases[]="$field LIKE '".$this->escapeLikeString($clue)."%' ESCAPE '!'";
+                    $cases[]="{$this->table}.$field LIKE '".$this->escapeLikeString($clue)."%' ESCAPE '!'";
                 }
             }
             if( $cases ){
@@ -52,15 +52,15 @@ trait FilterTrait{
         $status_where=[];
         if( $filter['is_disabled'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
-            $status_where[]="is_disabled=1 AND $permitWhere";
+            $status_where[]="{$this->table}.is_disabled=1 AND $permitWhere";
         }
         if( $filter['is_deleted'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
             $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
-            $status_where[]="deleted_at>'$olderStamp' AND $permitWhere";
+            $status_where[]="{$this->table}.deleted_at>'$olderStamp' AND $permitWhere";
         }
         if( $filter['is_active'] ){
-            $status_where[]='(is_disabled=0 AND deleted_at IS NULL)';
+            $status_where[]="({$this->table}.is_disabled=0 AND {$this->table}.deleted_at IS NULL)";
         }
         if( $status_where ){
             $this->where( '('.implode(' OR ',$status_where).')' );

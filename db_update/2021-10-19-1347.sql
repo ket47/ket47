@@ -1,0 +1,2 @@
+ALTER TABLE `store_list` 
+CHANGE COLUMN `modified_at` `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ;

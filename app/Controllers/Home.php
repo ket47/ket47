@@ -36,15 +36,29 @@ class Home extends BaseController {
             'group_id'=>$this->request->getVar('group_id'),
         ];
         $ProductModel=model('ProductModel');
-        $GroupModel=model('ProductGroupModel');
+        $ProductGroupModel=model('ProductGroupModel');
         $product_list=$ProductModel->listGet($filter);
-        //die($ProductModel->getLastQuery());
-        $product_group_list=$GroupModel->listGet();
+        $product_group_list=$ProductGroupModel->listGet(['level'=>2]);
+        
         $data=[
             'product_list' => $product_list,
             'product_group_list'=>$product_group_list
             ];
         return view('product/product_list', $data);
+    }
+    
+    public function productCardGet(){
+        $product_id=$this->request->getVar('product_id');
+        $ProductModel=model('ProductModel');
+        $ProductGroupModel=model('ProductGroupModel');
+        $product= $ProductModel->itemGet($product_id);
+        
+        $product_group_list=$ProductGroupModel->listGet();
+        $data=[
+            'product'=>$product,
+            'product_group_list'=>$product_group_list
+        ];
+        return view('product/product_card',$data);
     }
     
     
@@ -73,6 +87,19 @@ class Home extends BaseController {
             'store_list' => $store_list,
             'store_group_list'=>$store_group_list
                 ]);
+    }
+    public function storeCardGet(){
+        $product_id=$this->request->getVar('store_id');
+        $StoreModel=model('StoreModel');
+        $StoreGroupModel=model('StoreGroupModel');
+        $product= $StoreModel->itemGet($product_id);
+        
+        $product_group_list=$StoreGroupModel->listGet();
+        $data=[
+            'store'=>$product,
+            'store_group_list'=>$product_group_list
+        ];
+        return view('store/store_card',$data);
     }
     
     

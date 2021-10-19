@@ -7,10 +7,16 @@
                 if(xhr.status>299){
                     if(xhr.responseJSON.messages){
                         let txt='';
-                        let error=JSON.parse(xhr.responseJSON.messages.error);
-                        console.log(error);
-                        for( let i in error){
-                            txt+=error[i]+'\n';
+                        let error;
+                        try{
+                            error=JSON.parse(xhr.responseJSON.messages.error);
+                            for( let i in error){
+                                txt+=error[i]+'\n';
+                            }
+                            console.log(error);
+                        }
+                        catch(e){
+                            txt=xhr.responseJSON.messages.error;
                         }
                         alert(txt);
                         return;

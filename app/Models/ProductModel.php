@@ -80,14 +80,13 @@ class ProductModel extends Model{
         if( !$product || !isset($product->product_id) ){
             return 'error_empty';
         }
-        $target_store_id=$product->store_id??$this->itemGet($product->product_id)->store_id;
+        $target_store_id=$product->store_id??$this->where('product_id',$product->product_id)->get()->getRow('store_id');
         $StoreModel=model('StoreModel');
-        $permission_granted=$StoreModel->permit($target_store_id,'w');
-        if( !$permission_granted ){
+        if( !$StoreModel->permit($target_store_id,'w') || 
+            !$this->permit($product->product_id, 'w') ){
             return 'forbidden';
         }
-        
-        $this->permitWhere('w');
+
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -153,8 +152,6 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('product_group_member_list');
         if( $filter['group_id']??0 ){
             $this->join('product_group_member_list','member_id=product_id');
             $this->where('group_id',$filter['group_id']);
@@ -163,25 +160,10 @@ class ProductModel extends Model{
             $this->where('store_id',$filter['store_id']);
         }
         $this->permitWhere('r');
-        $this->orderBy('updated_at','DESC');
+        $this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
+        $this->select("{$this->table}.*,image_hash");
         $product_list= $this->get()->getResult();
-
-        $ImageModel=model('ImageModel');
-
-        foreach($product_list as $product){
-            if($product){
-                $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
-                $filter=[
-                    'image_holder'=>'product',
-                    'image_holder_id'=>$product->product_id,
-                    'is_disabled'=>1,
-                    'is_deleted'=>0,
-                    'is_active'=>1,
-                    'limit'=>30
-                ];
-                $product->images=$ImageModel->listGet($filter);
-            }
-        }
         return $product_list;
     }
     

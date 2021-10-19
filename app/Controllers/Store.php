@@ -45,10 +45,13 @@ class Store extends \App\Controllers\BaseController{
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
+        if( $result==='limit_exeeded' ){
+            return $this->failResourceExists($result);
+        }
         if( $StoreModel->errors() ){
             return $this->failValidationError(json_encode($StoreModel->errors()));
         }
-        return $this->respondUpdated($result);
+        return $this->respond($result);
     }
     
     public function itemUpdate(){

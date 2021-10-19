@@ -63,6 +63,8 @@ class StoreModel extends Model{
             $filter=[
                 'image_holder'=>'store',
                 'image_holder_id'=>$store->store_id,
+                'is_disabled'=>1,
+                'is_deleted'=>0,
                 'is_active'=>1,
                 'limit'=>30
             ];
@@ -121,6 +123,7 @@ class StoreModel extends Model{
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('store_group_member_list');
         $ok=$GroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
+        q($GroupMemberModel);
         if( $ok ){
             return 'ok';
         }
@@ -182,30 +185,15 @@ class StoreModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
+        if( $filter['group_id']??0 ){
+            $this->join('store_group_member_list','member_id=store_id');
+            $this->where('group_id',$filter['group_id']);
+        }
         $this->permitWhere('r');
-        $this->orderBy('modified_at','DESC');
-        if( !empty($filter['owner_id']) ){
-            $this->where('owner_id',$filter['owner_id']);
-        }
-        $store_list = $this->get()->getResult();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('store_group_member_list');
-        
-        $ImageModel=model('ImageModel');
-        foreach($store_list as $store){
-            if($store){
-                $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
-                $filter=[
-                    'image_holder'=>'store',
-                    'image_holder_id'=>$store->store_id,
-                    'is_disabled'=>1,
-                    'is_deleted'=>1,
-                    'is_active'=>1,
-                    'limit'=>30
-                ];
-                $store->images=$ImageModel->listGet($filter);
-            }
-        }
+        $this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->join('image_list',"image_holder='store' AND image_holder_id=store_id AND is_main=1",'left');
+        $this->select("{$this->table}.*,image_hash");
+        $store_list= $this->get()->getResult();
         return $store_list;
     }
     
@@ -213,7 +201,7 @@ class StoreModel extends Model{
         return false;
     }
     
-    public function listUpdate( $list ){
+    public function listUpdate(){
         return false;
     }
     

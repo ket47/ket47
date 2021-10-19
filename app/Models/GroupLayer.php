@@ -31,6 +31,9 @@ class GroupLayer extends Model{
     public function listGet( $filter=null ){
         $this->permitWhere('r');
         $this->filterMake($filter);
+        if( $filter['level']??0==2 ){
+            $this->where('group_parent_id IS NOT NULL AND group_parent_id<>0');
+        }
         $this->orderBy('group_path');
         return $this->get()->getResult();
     } 

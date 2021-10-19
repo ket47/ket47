@@ -98,22 +98,22 @@ trait PermissionTrait{
             $permission_filter="1=2";//All denied
         } else
         if( $owner_has && $ally_has ){//!$other_has
-            $permission_filter="(owner_id='$user_id' OR '$user_id' IN(owner_ally_ids))";
+            $permission_filter="({$this->table}.owner_id='$user_id' OR '$user_id' IN({$this->table}.owner_ally_ids))";
         } else
         if( $owner_has && $other_has ){//!$ally_has
-            $permission_filter="'$user_id' NOT IN(owner_ally_ids)";
+            $permission_filter="'$user_id' NOT IN({$this->table}.owner_ally_ids)";
         } else
         if( $ally_has ){
-            $permission_filter="'$user_id' IN(owner_ally_ids)";
+            $permission_filter="'$user_id' IN({$this->table}.owner_ally_ids)";
         } else
         if( $ally_has && $other_has ){//!$owner_has
-            $permission_filter="owner_id<>'$user_id'";
+            $permission_filter="{$this->table}.owner_id<>'$user_id'";
         } else
         if( $owner_has ){
-            $permission_filter="owner_id='$user_id'";
+            $permission_filter="{$this->table}.owner_id='$user_id'";
         } else
         if( $other_has ){
-            $permission_filter="owner_id<>'$user_id' AND '$user_id' NOT IN(owner_ally_ids)";
+            $permission_filter="{$this->table}.owner_id<>'$user_id' AND '$user_id' NOT IN({$this->table}.owner_ally_ids)";
         }
         return $permission_filter;
     }

@@ -14,6 +14,7 @@ class ImageModel extends Model{
         'image_holder_id',
         'image_hash',
         'image_order',
+        'is_main',
         'deleted_at'
         ];
 
@@ -34,6 +35,7 @@ class ImageModel extends Model{
                 ->select("COUNT(*) inserted_count")
                 ->where('image_holder_id',$data['image_holder_id'])
                 ->where('image_holder',$data['image_holder'])
+                ->where('deleted_at IS NULL')
                 ->get()
                 ->getRow('inserted_count');
         if( $inserted_count>=$limit ){
@@ -55,6 +57,25 @@ class ImageModel extends Model{
         return $this->update($data['image_id'],$data);
     }
     
+    public function itemUpdateMain( $image_id ){
+        $image=$this->where('image_id',$image_id)->get()->getRow();
+        
+        $this->where('image_holder',$image->image_holder);
+        $this->where('image_holder_id',$image->image_holder_id);
+        $this->set(['is_main'=>0]);
+        $this->update();
+        
+        $this->where('image_holder',$image->image_holder);
+        $this->where('image_holder_id',$image->image_holder_id);
+        $this->where('is_disabled',0);
+        $this->where('deleted_at IS NULL');
+        $this->orderBy('image_order');
+        $this->limit(1);
+        $this->set(['is_main'=>1]);
+        $this->update();
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
     public function itemUpdateOrder( $image_id, $dir ){
         $sql="
             SELECT 
@@ -70,16 +91,22 @@ class ImageModel extends Model{
             ORDER BY calculated_order;
             ";
         $image_list=$this->query($sql)->getResult();
-        return $this->updateBatch($image_list,'image_id');
+        $ok=$this->updateBatch($image_list,'image_id');
+        $this->itemUpdateMain( $image_id );
+        return $ok;
     }
     
     public function itemDelete( $image_id ){
-        return $this->delete($image_id);
+        $ok=$this->delete($image_id);
+        $this->itemUpdateMain( $image_id );
+        return $ok;
     }
     
     public function itemDisable( $image_id, $is_disabled ){
         $this->allowedFields[]='is_disabled';
-        return $this->update(['image_id'=>$image_id],['is_disabled'=>$is_disabled]);
+        $ok=$this->update(['image_id'=>$image_id],['is_disabled'=>$is_disabled]);
+        $this->itemUpdateMain( $image_id );
+        return $ok;
     }
     
     public function itemPurge( $image_id ){
