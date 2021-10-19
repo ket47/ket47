@@ -1,7 +1,5 @@
-    <?=($user_list?'':'No results found')?>
-    <?php foreach($user_list as $user):?>
-    <h2><?=$user->user_surname?> <?=$user->user_name?></h2>
-    <div class="segment <?=$user->deleted_at?'item_deleted':''?> <?=$user->is_disabled?'item_disabled':''?>" style="display: grid;grid-template-columns:1fr 1fr">
+<div  style="padding: 5px">
+    <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 2fr">
             
             <div>Имя</div>
@@ -99,13 +97,16 @@
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
                 <?php foreach($user_group_list as $user_group ):?>
                 <div>
-                    <input type="checkbox" name="group_id.<?=$user->user_id?>.<?=$user_group->group_id?>" <?=in_array($user_group->group_id,explode(',',$user->member_of_groups->group_ids))?'checked':''?>/>
+                    <input type="checkbox" 
+                           value="<?=$user_group->group_id?>"
+                           name="group_id.<?=$user->user_id?>.<?=$user_group->group_id?>"
+                           <?=in_array($user_group->group_id,explode(',',$user->member_of_groups->group_ids))?'checked':''?>
+                           onclick="return (<?='admin'==$user_group->group_type?1:0?> && !confirm('Вы уверены? У пользователя изменятся права админа!'))?false:true;"
+                           />
                     <?=$user_group->group_name?>
                 </div>
                 <?php endforeach; ?>
             </div>
         </div>
-        
     </div>
-    <hr style="border:1px inset #ccc">
-    <?php endforeach;?>
+</div>

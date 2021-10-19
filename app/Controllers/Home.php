@@ -151,11 +151,26 @@ class Home extends BaseController {
         
         $UserGroupModel=model('UserGroupModel');
         $user_group_list=$UserGroupModel->listGet();
-        return view('user/list', [
+        return view('user/user_list', [
             'user_list' => $user_list,
             'user_group_list'=>$user_group_list
                 ]); 
     }
+    public function userCardGet(){
+        $user_id=$this->request->getVar('user_id');
+        $UserModel=model('UserModel');
+        $UserGroupModel=model('UserGroupModel');
+        $user= $UserModel->itemGet($user_id);
+        
+        $user_group_list=$UserGroupModel->listGet();
+        $data=[
+            'user'=>$user,
+            'user_group_list'=>$user_group_list
+        ];
+        return view('user/user_card',$data);
+    }
+
+    
 
     public function user_register_form() {
         return view('user/register_form');
