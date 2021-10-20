@@ -1,5 +1,3 @@
 ALTER TABLE `store_list` 
-ADD COLUMN `store_time_opens` VARCHAR(45) NULL AFTER `store_company_name`,
-ADD COLUMN `store_time_closes` VARCHAR(45) NULL AFTER `store_time_opens`,
-ADD COLUMN `store_time_preparation` VARCHAR(45) NULL AFTER `store_time_closes`,
-ADD COLUMN `store_minimal_order` INT NULL AFTER `store_time_preparation`;
+ADD COLUMN `store_email` VARCHAR(45) NULL AFTER `store_name`,
+ADD COLUMN `store_company_name` VARCHAR(45) NULL AFTER `store_email`;
