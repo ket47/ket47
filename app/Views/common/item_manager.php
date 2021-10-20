@@ -150,7 +150,7 @@
             if(!item_name){
                 return;
             }
-            ItemList.addItemRequest.name=item_name;
+            ItemList.addItemRequest.<?=$item_name?>_name=item_name;
             $.post('/<?=$ItemName?>/itemCreate',this.addItemRequest).done(function(){
                 $('.search_bar input').val(ItemList.addItemRequest.name);
                 ItemList.reload();
