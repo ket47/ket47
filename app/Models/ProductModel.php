@@ -63,7 +63,7 @@ class ProductModel extends Model{
         $store_id=$product['store_id'];
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($store_id);
-        if( !$store ){
+        if( $store=='notfound' ){
             return 'nostore';
         }
         $permission_granted=$StoreModel->permit($store_id,'w');

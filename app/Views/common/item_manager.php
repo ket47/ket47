@@ -146,7 +146,11 @@
         },
         addItemRequest:{},
         addItem:function(){
-            ItemList.addItemRequest.name="NEW ITEM";
+            let item_name=prompt("Название","NEW ITEM");
+            if(!item_name){
+                return;
+            }
+            ItemList.addItemRequest.name=item_name;
             $.post('/<?=$ItemName?>/itemCreate',this.addItemRequest).done(function(){
                 $('.search_bar input').val(ItemList.addItemRequest.name);
                 ItemList.reload();
