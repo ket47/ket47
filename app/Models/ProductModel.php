@@ -330,7 +330,7 @@ class ProductModel extends Model{
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
-    }    
+    }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -394,4 +394,31 @@ class ProductModel extends Model{
         }
         return 'error';
     }
+    /////////////////////////////////////////////////////
+    //UTILS
+    /////////////////////////////////////////////////////
+    public function groupTreeGet($filter){
+        if($filter['store_id']??0){
+            $this->where('store_id',$filter['store_id']);
+        }
+        $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path');
+        $this->join('product_group_member_list pgml','member_id=product_id');
+        $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
+        $this->groupBy('pgl.group_id');
+        $children_groups=$this->get()->getResult();
+        $parent_groups=[];
+        
+        foreach($children_groups as $child){
+            if( !isset($parent_groups[$child->group_parent_id]) ){
+                $parent_groups[$child->group_parent_id]=[
+                    'group_id'=>$child->group_parent_id,
+                    'group_name'=>explode('/',$child->group_path)[1],
+                    'children'=>[]
+                ];
+            }
+            $parent_groups[$child->group_parent_id]['children'][]=$child;
+        }
+        return $parent_groups;
+    }
+
 }

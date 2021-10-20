@@ -3,7 +3,7 @@
         <div style="display:grid;grid-template-columns:1fr 3fr">
             <div>Название</div>
             <div>
-                <input type="text" name="product_name.<?= $product->product_id ?>" value="<?= $product->product_name ?>"/>
+                <input type="text" minlength="10" name="product_name.<?= $product->product_id ?>" value="<?= $product->product_name ?>"/>
             </div>
 
 
@@ -23,7 +23,7 @@
                 <input type="number" name="product_quantity.<?= $product->product_id ?>" value="<?= $product->product_quantity ?>" <?= $product->is_produced ? 'disabled' : '' ?>/>
             </div>
 
-            <div>Вес кг</div>
+            <div>Вес кг/единица</div>
             <div>
                 <input type="number" name="product_weight.<?= $product->product_id ?>" value="<?= $product->product_weight ?>"/>
             </div>
