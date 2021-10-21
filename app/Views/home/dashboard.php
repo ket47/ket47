@@ -11,7 +11,8 @@
             
             
             
-            
+            <h3>Orders</h3>
+            <a href="Home/order_manager" target="scr">Orders</a><br>
             <h3>Products</h3>
             <a href="Home/product_manager" target="scr">Product</a><br>
             <a href="Home/product_importer" target="scr">Product Importer</a><br>

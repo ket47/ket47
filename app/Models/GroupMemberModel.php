@@ -13,6 +13,11 @@ class GroupMemberModel extends Model{
         'group_id',
         'member_id'
         ];
+    protected $useSoftDeletes = false;
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';   
     
     public function tableSet( $table_name ){
         $allowed_tables=[

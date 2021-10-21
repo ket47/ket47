@@ -15,9 +15,15 @@ class GroupLayer extends Model{
         'group_type',
         'group_path_id'
         ];
+    protected $useSoftDeletes = true;
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';   
     
     public function tableSet( $table_name ){
         $allowed_tables=[
+            'order_group_list',
             'product_group_list',
             'store_group_list',
             'user_group_list'

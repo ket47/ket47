@@ -184,4 +184,18 @@ class Home extends BaseController {
         return view('user/password_reset');
     }
 
+
+
+
+
+
+
+
+
+
+
+    public function order_manager(){
+        return view('order/order_manager');
+    }
+
 }
