@@ -30,6 +30,9 @@
             $("input").change(function(e){
                 let $node=$(e.target);
                 let group_id=$node.data('group_id');
+                if( !group_id ){
+                    return;
+                }
                 let type=$node.data('type');
                 let val=$node.val();
                 let group_table=(type==='product')?'product_group_list':
@@ -58,6 +61,9 @@
                     group_table,group_id,group_name
                 };
                 $.post("/Admin/GroupManager/itemUpdate",JSON.stringify(request));
+            },
+            upload:function(group_table,group_id){
+                GroupManager.fileUploadInit(group_table,group_id);
             }
         },
         fileUpload:function(filelist){
@@ -70,39 +76,53 @@
                         alert("Разовый объем файлов должен быть не больше 10МБ.\nПрикреплено только: "+attached_count+"файлов");
                         break;
                     }
-                    ItemList.fileUploadFormData.append("files[]", fl);
+                    GroupManager.fileUploadFormData.append("files[]", fl);
                     attached_count++;
                 }
-                ItemList.fileUploadXhr.send(ItemList.fileUploadFormData);
+                GroupManager.fileUploadXhr.send(GroupManager.fileUploadFormData);
             }
         },
         fileUploadFormData:null,
         fileUploadXhr:null,
-        fileUploadInit:function( image_holder_id ){
-            var url = '/<?=$ItemName?>/fileUpload';
-            ItemList.fileUploadXhr = new XMLHttpRequest();
-            ItemList.fileUploadFormData = new FormData();
-            ItemList.fileUploadFormData.set('image_holder_id',image_holder_id);
+        fileUploadInit:function( group_table,image_holder_id ){
+            var url = '/Admin/GroupManager/fileUpload';
+            GroupManager.fileUploadXhr = new XMLHttpRequest();
+            GroupManager.fileUploadFormData = new FormData();
+            GroupManager.fileUploadFormData.set('group_table',group_table);
+            GroupManager.fileUploadFormData.set('image_holder_id',image_holder_id);
             
-            ItemList.fileUploadXhr.open("POST", url, true);
-            ItemList.fileUploadXhr.onreadystatechange = function() {
-                if (ItemList.fileUploadXhr.readyState === 4 && ItemList.fileUploadXhr.status === 201) {
-                    ItemList.reloadItem();
+            GroupManager.fileUploadXhr.open("POST", url, true);
+            GroupManager.fileUploadXhr.onreadystatechange = function() {
+                if (GroupManager.fileUploadXhr.readyState === 4) {
+                    App.xhr.onresponse(GroupManager.fileUploadXhr);
+                    GroupManager.fileUploadXhr.status === 201 && location.reload();
                 }
             };
-            $('#itemlist_uploader').click();
+            $('#groupmanager_uploader').click();
         },
+        imageDelete:function(image_id){
+            $.post("/Admin/GroupManager/imageDelete",{image_id}).done(function(){
+                location.reload();
+            });
+        }
     };
     $(GroupManager.init);
 </script>
+<input type="file" id="groupmanager_uploader" name="items[]" multiple style="display:none" onchange="GroupManager.fileUpload(this.files)">
 <div style="padding: 20px;">
 <div class="segment">
     <?php foreach( $tables as $table): ?>
     <h2><?=$table->name?></h2>
     <table>
         <tr>
+            <th></th>
+            <th>Глав. категория</th>
+            <th>Категория</th>
+            <th>Изобр.</th>
+        </tr>
+        <tr>
             <td style="width:30px;"></td>
-            <td colspan="2" style="color:green;">
+            <td colspan="3" style="color:green;">
                 <i class="fa fa-plus" data-group_id="0" data-type="<?=$table->type?>" data-action="create"></i>
             </td>
         </tr>
@@ -120,6 +140,22 @@
             </td>
             <td style="color:green;"><i class="fa fa-plus" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="create"></i></td>
             <?php endif;?>
+            <td style="width:100px">
+                <?php if($group->image_hash): ?>
+                <div style="background-image: url(/image/get.php/<?= $group->image_hash ?>.100.100.webp);text-align: center;border-radius: 5px;">
+                    <a href="javascript:GroupManager.imageDelete(<?=$group->image_id?>)" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="imagedelete"><div class="fa fa-trash" style="color:red"></div></a>
+                    <a href="/image/get.php/<?= $group->image_hash ?>.1024.1024.webp" target="imagepreview"><div class="fa fa-eye" style="color:blue"></div></a>
+                    <br><br>
+                </div>
+                <?php else: ?>
+                <div class="vcenter" style="border-radius: 5px;background-color: #eee"
+                     data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="upload">
+                    <i class="fa fa-upload" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="upload"></i>
+                </div>
+                <?php endif;?>
+            </td>
+            <td>
+            </td>
         </tr>
         <?php endforeach; ?>
     </table>

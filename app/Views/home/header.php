@@ -5,25 +5,42 @@
         <script>
             $(document).ajaxComplete(function (event, xhr, settings) {
                 if(xhr.status>299){
-                    if(xhr.responseJSON.messages){
-                        let txt='';
-                        let error;
-                        try{
-                            error=JSON.parse(xhr.responseJSON.messages.error);
-                            for( let i in error){
-                                txt+=error[i]+'\n';
-                            }
-                            console.log(error);
-                        }
-                        catch(e){
-                            txt=xhr.responseJSON.messages.error;
-                        }
-                        alert(txt);
-                        return;
-                    }
-                    alert('Server error: '+xhr.status+'\n'+xhr.responseJSON.message);
+                    App.xhr.onresponse(xhr);
                 }
             });
+            App={
+                xhr:{
+                    onresponse:function(xhr){
+                        if( xhr.responseText==='' ){
+                            return;
+                        }
+                        if( !xhr.responseJSON ){
+                            try{
+                                xhr.responseJSON=JSON.parse(xhr.responseText);
+                            }catch(e){
+                                return;
+                            }
+                        }
+                        if(xhr.responseJSON.messages){
+                            let txt='';
+                            let error;
+                            try{
+                                error=JSON.parse(xhr.responseJSON.messages.error);
+                                for( let i in error){
+                                    txt+=error[i]+'\n';
+                                }
+                                console.log(error);
+                            }
+                            catch(e){
+                                txt=xhr.responseJSON.messages.error;
+                            }
+                            alert(txt);
+                            return;
+                        }
+                        alert('Server error: '+xhr.status+'\n'+xhr.responseJSON.message);                        
+                    }
+                }
+            };
 
         </script>
         <link rel="stylesheet" href="https://ka-f.fontawesome.com/releases/v5.15.4/css/free.min.css?token=1825be3012">

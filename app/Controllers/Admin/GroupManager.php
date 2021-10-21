@@ -5,19 +5,6 @@ use \CodeIgniter\API\ResponseTrait;
 class GroupManager extends \App\Controllers\BaseController {
     use ResponseTrait;
     
-//    public function itemGet(){
-//        $group_table=$this->request->getVar('group_table');
-//        $group_id=$this->request->getVar('group_id');
-//        
-//        $GroupModel=$this->model('GroupModel');
-//        $GroupModel->tableSet($group_table);
-//        $result=$GroupModel->itemGet( $group_id );
-//        if( is_object($result) ){
-//            return $this->respond($result);
-//        }
-//        return $this->fail($result);
-//    }
-//    
     public function itemCreate(){
         $group_table=$this->request->getVar('group_table');
         $group_name=$this->request->getVar('group_name');
@@ -36,11 +23,7 @@ class GroupManager extends \App\Controllers\BaseController {
         }
         return $this->fail($result);
     }
-//    
-//    public function itemUpdate(){
-//        return $this->failResourceExists();
-//    }
-//    
+
     public function itemUpdate(){
         $data= $this->request->getJSON();
         if($data->group_table=='product_group_list'){
@@ -120,6 +103,72 @@ class GroupManager extends \App\Controllers\BaseController {
         return $this->respond($group_list);
     }
     
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function fileUpload(){
+        $group_table=$this->request->getVar('group_table');
+        $image_holder_id=$this->request->getVar('image_holder_id');
+        $items = $this->request->getFiles();
+        if(!$items){
+            return $this->failResourceGone('no_files_uploaded');
+        }
+        foreach($items['files'] as $file){
+            $type = $file->getClientMimeType();
+            if(!str_contains($type, 'image')){
+                continue;
+            }
+            if ($file->isValid() && ! $file->hasMoved()) {
+                $result=$this->fileSaveImage($group_table,$image_holder_id,$file);
+                if( $result!==true ){
+                    return $result;
+                }
+            }
+        }
+        return $this->respondCreated('ok');
+    }
     
+    private function fileSaveImage( $group_table, $image_holder_id, $file ){
+        $image_data=[
+            'image_holder'=>$group_table,
+            'image_holder_id'=>$image_holder_id
+        ];
+        if($group_table=='product_group_list'){
+            $GroupModel=model('ProductGroupModel');
+        } else if($group_table=='store_group_list'){
+            $GroupModel=model('StoreGroupModel');
+        } else if($group_table=='user_group_list'){
+            $GroupModel=model('UserGroupModel');
+        }
+        $image_hash=$GroupModel->imageCreate($image_data);
+        if( !$image_hash ){
+            return $this->failForbidden('forbidden');
+        }
+        if( $image_hash === 'limit_exeeded' ){
+            return $this->fail('limit_exeeded');
+        }
+        $file->move(WRITEPATH.'images/', $image_hash.'.webp');
+        
+        return \Config\Services::image()
+        ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
+        ->resize(1024, 1024, true, 'height')
+        ->convert(IMAGETYPE_WEBP)
+        ->save();
+    }
+    
+    public function imageDelete(){
+        if(!sudo()){
+            return $this->failForbidden('forbidden');
+        }
+        $image_id=$this->request->getVar('image_id');
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->itemDelete( $image_id );
+        $result=$ImageModel->itemPurge( $image_id );
+        if( $result===true ){
+            return $this->respondDeleted($result);
+        }
+        return $this->fail($result);
+    }
     
 }

@@ -35,6 +35,8 @@ class GroupLayer extends Model{
             $this->where('group_parent_id IS NOT NULL AND group_parent_id<>0');
         }
         $this->orderBy('group_path');
+        $this->join('image_list',"image_holder='{$this->table}' AND image_holder_id=group_id AND is_main=1",'left');
+        $this->select("{$this->table}.*,image_id,image_hash");
         return $this->get()->getResult();
     } 
     public function itemGet( $group_id ){
@@ -125,6 +127,56 @@ class GroupLayer extends Model{
             return 'forbidden';
         }
         $this->like('group_path_id',"/$group_id/")->delete(true);
+        
+        
+        /*
+         * TODO IMAGE DELETE 
+         */
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         return $this->db->affectedRows()?'ok':'idle';
+    }
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function imageCreate( $data ){
+        $data['is_disabled']=1;
+        $data['is_main']=1;
+        $data['owner_id']=session()->get('user_id');
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        $ImageModel=model('ImageModel');
+        $limit=1;
+        $result=$ImageModel->itemCreate($data,$limit);
+        if( $result!='limit_exeeded' ){
+            $image_id=$this->db->insertID();
+            $ImageModel->itemDisable($image_id,0);
+        }
+        return $result;
+    }
+    
+    public function imageDelete( $image_id ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $product_id=$image->image_holder_id;
+        if( !$this->permit($product_id,'w') ){
+            return 'forbidden';
+        }
+        $ImageModel->itemDelete( $image_id );
+        $ok=$ImageModel->itemPurge( $image_id );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'idle';
     }
 }

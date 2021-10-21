@@ -59,7 +59,9 @@ class ImageModel extends Model{
     
     public function itemUpdateMain( $image_id ){
         $image=$this->where('image_id',$image_id)->get()->getRow();
-        
+        if(!$image){
+            return 'ok';
+        }
         $this->where('image_holder',$image->image_holder);
         $this->where('image_holder_id',$image->image_holder_id);
         $this->set(['is_main'=>0]);
@@ -111,6 +113,9 @@ class ImageModel extends Model{
     
     public function itemPurge( $image_id ){
         $image=$this->itemGet($image_id);
+        if( !$image ){
+            return true;
+        }
         if( !$image->deleted_at ){
             return false;
         }
