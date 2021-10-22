@@ -101,7 +101,8 @@ class ProductModel extends Model{
         }
         $GroupMemberModel=model('GroupMemberModel');
         $GroupMemberModel->tableSet('product_group_member_list');
-        $ok=$GroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined );
+        $leave_other_groups=true;
+        $ok=$GroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined, $leave_other_groups );
         if( $ok ){
             return 'ok';
         }

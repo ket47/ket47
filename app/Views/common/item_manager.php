@@ -1,7 +1,7 @@
 <?=view('home/header')?>
 <?=$html_before??'' ?>
 <div style="padding: 20px;">
-    <button onclick="ItemList.addItem();">Add new Item</button>
+    <button onclick="ItemList.addItem();">Создать <i class="fa fa-plus"></i></button>
     <div class="filter segment">
         <input type="search" id="item_name_search" name="name_query" placeholder="Filter">
         <div>
@@ -146,11 +146,13 @@
         },
         addItemRequest:{},
         addItem:function(){
-            let item_name=prompt("Название","NEW ITEM");
-            if(!item_name){
-                return;
+            if( !(<?=$dontCreateWithName??0?>) ){
+                let item_name=prompt("Название","NEW ITEM");
+                if(!item_name){
+                    return;
+                }
+                ItemList.addItemRequest.<?=$item_name?>_name=item_name;
             }
-            ItemList.addItemRequest.<?=$item_name?>_name=item_name;
             $.post('/<?=$ItemName?>/itemCreate',this.addItemRequest).done(function(){
                 $('.search_bar input').val(ItemList.addItemRequest.name);
                 ItemList.reload();

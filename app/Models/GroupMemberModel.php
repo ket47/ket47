@@ -21,6 +21,7 @@ class GroupMemberModel extends Model{
     
     public function tableSet( $table_name ){
         $allowed_tables=[
+            'order_group_member_list',
             'product_group_member_list',
             'store_group_member_list',
             'user_group_member_list'
@@ -34,9 +35,9 @@ class GroupMemberModel extends Model{
         $this->groupTable=$parts[0].'_group_list';
     }
     
-    public function itemUpdate( $member_id, $group_id, $is_joined ){
+    public function itemUpdate( $member_id, $group_id, $is_joined, $leave_other_groups=false ){
         if( $is_joined ){
-            return $this->joinGroup($member_id, $group_id);
+            return $this->joinGroup($member_id, $group_id, $leave_other_groups);
         }
         return $this->leaveGroup($member_id, $group_id);
     }
@@ -55,14 +56,20 @@ class GroupMemberModel extends Model{
         return $this->joinGroup($member_id,$group_id);
     }
     
-    public function joinGroup($member_id,$group_id){
-        try{
-            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
-            return $this->affectedRows()?true:false;
+    public function joinGroup($member_id,$group_id,$leave_other_groups=false){
+        if($leave_other_groups){
+            $this->where('member_id',$member_id)->delete();
+            
         }
+
+        //try{
+            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
+            q($this);
+            return $this->affectedRows()?true:false;
+        /*}
         catch (\Exception $e){
             return true;//duplicate key
-        }
+        }*/
     }
     
     public function leaveGroup($member_id,$group_id){
@@ -70,6 +77,6 @@ class GroupMemberModel extends Model{
         return $this
                 ->where('member_id',$member_id)
                 ->where('group_id',$group_id)
-                ->delete();
+                ->delete(true);
     }
 }

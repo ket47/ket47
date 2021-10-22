@@ -49,7 +49,7 @@ class Store extends \App\Controllers\BaseController{
             return $this->failResourceExists($result);
         }
         if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
+            return $this->failValidationErrors(json_encode($StoreModel->errors()));
         }
         return $this->respond($result);
     }
@@ -62,7 +62,7 @@ class Store extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
+            return $this->failValidationErrors(json_encode($StoreModel->errors()));
         }
         return $this->respondUpdated($result);
     }
