@@ -63,7 +63,6 @@ class GroupMemberModel extends Model{
 
         try{
             $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
-            q($this);
             return $this->affectedRows()?true:false;
         }
         catch (\Exception $e){
