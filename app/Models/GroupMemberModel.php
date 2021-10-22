@@ -16,8 +16,7 @@ class GroupMemberModel extends Model{
     protected $useSoftDeletes = false;
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';   
+    protected $updatedField  = '';
     
     public function tableSet( $table_name ){
         $allowed_tables=[
@@ -27,7 +26,7 @@ class GroupMemberModel extends Model{
             'user_group_member_list'
         ];
         if( !in_array($table_name, $allowed_tables) ){
-            throw new ErrorException('Trying to use unallowed group table name');
+            throw new \ErrorException('Trying to use unallowed group table name');
         }
         $parts=explode('_',$table_name);
         
@@ -62,14 +61,14 @@ class GroupMemberModel extends Model{
             
         }
 
-        //try{
+        try{
             $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
             q($this);
             return $this->affectedRows()?true:false;
-        /*}
+        }
         catch (\Exception $e){
             return true;//duplicate key
-        }*/
+        }
     }
     
     public function leaveGroup($member_id,$group_id){
