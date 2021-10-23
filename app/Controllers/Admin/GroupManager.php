@@ -16,6 +16,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('StoreGroupModel');
         } else if($group_table=='user_group_list'){
             $GroupModel=model('UserGroupModel');
+        } else if($group_table=='order_group_list'){
+            $GroupModel=model('OrderGroupModel');
         }
         $result=$GroupModel->itemCreate( $group_parent_id, $group_name, '');
         if( is_numeric($result) ){
@@ -32,13 +34,15 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('StoreGroupModel');
         } else if($data->group_table=='user_group_list'){
             $GroupModel=model('UserGroupModel');
+        } else if($data->group_table=='order_group_list'){
+            $GroupModel=model('OrderGroupModel');
         }
         $result=$GroupModel->itemUpdate($data);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
         if( $GroupModel->errors() ){
-            return $this->failValidationError(json_encode($GroupModel->errors()));
+            return $this->failValidationErrors(json_encode($GroupModel->errors()));
         }
         return $this->respondUpdated($result);     
     }
@@ -52,8 +56,13 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('StoreGroupModel');
         } else if($group_table=='user_group_list'){
             $GroupModel=model('UserGroupModel');
+        } else if($group_table=='order_group_list'){
+            $GroupModel=model('OrderGroupModel');
         }
         $result=$GroupModel->itemDelete($group_id);
+
+        q($GroupModel);
+
         if( $result==='ok' ){
             return $this->respondDeleted($result);
         }
@@ -71,6 +80,7 @@ class GroupManager extends \App\Controllers\BaseController {
         }
         $ProductGroupModel=model('ProductGroupModel');
         $StoreGroupModel=model('StoreGroupModel');
+        $OrderGroupModel=model('OrderGroupModel');
         $UserGroupModel=model('UserGroupModel');
         
         $tables=[];
@@ -78,6 +88,11 @@ class GroupManager extends \App\Controllers\BaseController {
                 'name'=>'Product groups',
                 'type'=>'product',
                 'entries'=>$ProductGroupModel->listGet()
+                ];
+        $tables[]=(object)[
+                'name'=>'Order groups',
+                'type'=>'order',
+                'entries'=>$OrderGroupModel->listGet()
                 ];
         $tables[]=(object)[
                 'name'=>'Store groups',
@@ -96,9 +111,9 @@ class GroupManager extends \App\Controllers\BaseController {
         $group_table=$this->request->getVar('group_table');
         $GroupModel=model('GroupModel');
         $GroupModel->tableSet($group_table);
-        $group_list=$GroupModel->listGet($filter);
+        $group_list=$GroupModel->listGet();
         if( $GroupModel->errors() ){
-            return $this->failValidationError(json_encode($GroupModel->errors()));
+            return $this->failValidationErrors(json_encode($GroupModel->errors()));
         }
         return $this->respond($group_list);
     }
@@ -135,6 +150,8 @@ class GroupManager extends \App\Controllers\BaseController {
         ];
         if($group_table=='product_group_list'){
             $GroupModel=model('ProductGroupModel');
+        } else if($group_table=='order_group_list'){
+            $GroupModel=model('OrderGroupModel');
         } else if($group_table=='store_group_list'){
             $GroupModel=model('StoreGroupModel');
         } else if($group_table=='user_group_list'){

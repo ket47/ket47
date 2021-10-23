@@ -40,6 +40,9 @@ class GroupLayer extends Model{
         if( $filter['level']??0==2 ){
             $this->where('group_parent_id IS NOT NULL AND group_parent_id<>0');
         }
+        if( $filter['group_path_id']??false ){
+            $this->like('group_path_id',$filter['group_path_id']);
+        }
         $this->orderBy('group_path');
         $this->join('image_list',"image_holder='{$this->table}' AND image_holder_id=group_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_id,image_hash");
@@ -132,22 +135,11 @@ class GroupLayer extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
-        $this->like('group_path_id',"/$group_id/")->delete(true);
-        
-        
-        /*
-         * TODO IMAGE DELETE 
-         */
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        $group_list=$this->listGet(['group_path_id'=>"/$group_id/"]);
+        foreach($group_list as $group){
+            $this->imageDelete( $group->image_id );
+        }
+        $this->like('group_path_id',"/$group_id/")->delete(null,true);
         return $this->db->affectedRows()?'ok':'idle';
     }
     /////////////////////////////////////////////////////

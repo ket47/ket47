@@ -12,23 +12,21 @@ class Order extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        $store_id=$this->request->getJsonVar('store_id');
-        $entry_list=$this->request->getJsonVar('entry_list');
-
-
+        $store_id=$this->request->getVar('store_id');
+        $entry_list_json=$this->request->getVar('entry_list');
+        $entry_list=[];
+        if($entry_list_json){
+            $entry_list=json_decode($entry_list_json);
+        }
         $OrderModel=model('OrderModel');
         $result=$OrderModel->itemCreate($entry_list,$store_id);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
-        if( $result==='limit_exeeded' ){
-            return $this->failResourceExists($result);
-        }
         if( $OrderModel->errors() ){
-            return $this->failValidationErrors(json_encode($OrderModel->errors()));
+            return $this->failValidationErrors( $OrderModel->errors() );
         }
         return $this->respond($result);
-        return false;
     }
     
     public function itemUpdate(){

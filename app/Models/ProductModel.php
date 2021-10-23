@@ -402,22 +402,30 @@ class ProductModel extends Model{
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
         }
-        $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path');
+        $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash');
         $this->join('product_group_member_list pgml','member_id=product_id');
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
-        $this->groupBy('pgl.group_id');
+        $this->join('image_list il',"image_holder='product_group_list' AND image_holder_id=pgl.group_id AND is_main=1",'left');
+        $this->groupBy('pgl.group_id,image_id');
         $children_groups=$this->get()->getResult();
         $parent_groups=[];
         
+        
+        
+        
+        $ImageModel=model("ImageModel");
         foreach($children_groups as $child){
             if( !isset($parent_groups[$child->group_parent_id]) ){
+                $ImageModel->where('image_holder','product_group_list');
+                $ImageModel->where('image_holder_id',$child->group_parent_id);
                 $parent_groups[$child->group_parent_id]=[
                     'group_id'=>$child->group_parent_id,
                     'group_name'=>explode('/',$child->group_path)[1],
+                    'image_hash'=>$ImageModel->get()->getRow('image_hash'),
                     'children'=>[]
                 ];
             }
-            $parent_groups[$child->group_parent_id]['children'][]=$child;
+            $parent_groups[$child->group_parent_id]['children'][$child->group_id]=$child;
         }
         return $parent_groups;
     }

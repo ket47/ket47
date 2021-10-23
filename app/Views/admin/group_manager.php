@@ -19,9 +19,7 @@
                 let action=$node.data('action');
                 let group_id=$node.data('group_id');
                 let type=$node.data('type');
-                let group_table=(type==='product')?'product_group_list':
-                        (type==='store')?'store_group_list':
-                        (type==='user')?'user_group_list':'';
+                let group_table=`${type}_group_list`;
                 if( !action ){
                     return;
                 }
@@ -35,9 +33,7 @@
                 }
                 let type=$node.data('type');
                 let val=$node.val();
-                let group_table=(type==='product')?'product_group_list':
-                        (type==='store')?'store_group_list':
-                        (type==='user')?'user_group_list':'';
+                let group_table=`${type}_group_list`;
                 GroupManager.actions.update(group_table,group_id,val);
             });
         },
