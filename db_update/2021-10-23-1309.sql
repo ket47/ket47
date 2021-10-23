@@ -1,6 +1,6 @@
 ALTER TABLE `order_group_member_list` 
 ADD COLUMN `created_by` INT NULL AFTER `created_at`,
-ADD INDEX `orderCreatedBy_idx` (`created_by` ASC) VISIBLE;
+ADD INDEX `orderCreatedBy_idx` (`created_by` ASC);
 ;
 ALTER TABLE `order_group_member_list` 
 ADD CONSTRAINT `orderCreatedBy`
