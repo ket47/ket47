@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 trait FilterTrait{
-    protected  function filterMake( $filter=null ){
+    protected  function filterMake( $filter=null, $use_model_table=true ){
         if( !$filter ){
             return null;
         }
@@ -12,6 +12,15 @@ trait FilterTrait{
         $filter['offset']??=0;
         $filter['limit']??=30;
         $filter['order']??=0;
+        
+        if( $use_model_table ){
+            $table="{$this->table}.";
+        } else {
+            $table='';
+        }
+        
+        
+        
         
         $this->filterStatus($filter);
         
@@ -28,7 +37,7 @@ trait FilterTrait{
                     if( !$clue || $clue==' ' ){
                         continue;
                     }
-                    $cases[]="{$this->table}.$field LIKE '".$this->escapeLikeString($clue)."%' ESCAPE '!'";
+                    $cases[]="{$table}$field LIKE '%".$this->escapeLikeString($clue)."%' ESCAPE '!'";
                 }
             }
             if( $cases ){

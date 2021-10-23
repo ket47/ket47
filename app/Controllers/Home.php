@@ -210,7 +210,8 @@ class Home extends BaseController {
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
-            'limit'=>$this->request->getVar('limit')
+            'limit'=>$this->request->getVar('limit'),
+            'order_store_id'=>$this->request->getVar('order_store_id'),
         ];
         $OrderModel=model('OrderModel');
         $GroupModel=model('OrderGroupModel');

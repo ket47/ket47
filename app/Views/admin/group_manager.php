@@ -32,9 +32,10 @@
                     return;
                 }
                 let type=$node.data('type');
-                let val=$node.val();
                 let group_table=`${type}_group_list`;
-                GroupManager.actions.update(group_table,group_id,val);
+                let field=$node.data('field');
+                let value=$node.val();
+                GroupManager.actions.update(group_table,group_id,field,value);
             });
         },
         actions:{
@@ -52,10 +53,11 @@
                     location.reload();
                 });
             },
-            update:function(group_table,group_id,group_name){
+            update:function(group_table,group_id,field,value){
                 let request={
-                    group_table,group_id,group_name
+                    group_table,group_id
                 };
+                request[field]=value;
                 $.post("/Admin/GroupManager/itemUpdate",JSON.stringify(request));
             },
             upload:function(group_table,group_id){
@@ -114,11 +116,12 @@
             <th></th>
             <th>Глав. категория</th>
             <th>Категория</th>
+            <th>Код</th>
             <th>Изобр.</th>
         </tr>
         <tr>
             <td style="width:30px;"></td>
-            <td colspan="3" style="color:green;">
+            <td colspan="4" style="color:green;">
                 <i class="fa fa-plus" data-group_id="0" data-type="<?=$table->type?>" data-action="create"></i>
             </td>
         </tr>
@@ -128,14 +131,17 @@
             <?php if($group->group_parent_id):?>
             <td></td>
             <td>
-                <input value="<?=$group->group_name?>" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
+                <input value="<?=$group->group_name?>" data-value_field="group_name" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
             </td>
             <?php else: ?>
             <td>
-                <input value="<?=$group->group_name?>" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
+                <input value="<?=$group->group_name?>" data-field="group_name" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
             </td>
             <td style="color:green;"><i class="fa fa-plus" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="create"></i></td>
             <?php endif;?>
+            <td>
+                <input value="<?=$group->group_type?>" data-field="group_type" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
+            </td>
             <td style="width:100px">
                 <?php if($group->image_hash): ?>
                 <div style="background-image: url(/image/get.php/<?= $group->image_hash ?>.100.100.webp);text-align: center;border-radius: 5px;">

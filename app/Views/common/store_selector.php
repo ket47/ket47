@@ -1,7 +1,7 @@
-<div style="padding: 20px;margin: 20px;" class="segment">
-    <h3>Доступные магазины</h3>
+<div style="padding: 5px;margin: 20px;" class="segment">
+    <b>Доступные магазины</b>
     <div class="store_search_bar">
-        <input type="search" placeholder="Filter stores" style="width: 100%">
+        <input type="search" placeholder="Filter stores" style="width: calc(100% - 20px)">
     </div>
     <div class="found_store_list"></div>
 </div>
