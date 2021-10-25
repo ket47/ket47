@@ -48,6 +48,13 @@ class GroupMemberModel extends Model{
                 ->get()->getRow();
     }
     
+    public function memberOfGroupsListGet($member_id){
+        return $this
+                ->where('member_id',$member_id)
+                ->join("{$this->groupTable}", "{$this->groupTable}.group_id = {$this->table}.group_id")
+                ->get()->getResult();
+    }
+    
     public function joinGroupByType($member_id,$member_group_type){
         $group_id=$this
                 ->query("SELECT group_id FROM {$this->groupTable} WHERE group_type='$member_group_type'")
@@ -58,9 +65,7 @@ class GroupMemberModel extends Model{
     public function joinGroup($member_id,$group_id,$leave_other_groups=false){
         if($leave_other_groups){
             $this->where('member_id',$member_id)->delete();
-            
         }
-
         try{
             $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
             return $this->affectedRows()?true:false;

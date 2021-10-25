@@ -48,7 +48,7 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $user_id ){
+    public function itemGet( $user_id, $mode='all' ){
         if( $user_id<1 ){
             return (object)[
                 'user_id'=>-1,
@@ -61,13 +61,18 @@ class UserModel extends Model{
         }
         $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
-        //die($this->getLastQuery());
-        if($user){
-            $GroupMemberModel=model('GroupMemberModel');
-            $GroupMemberModel->tableSet('user_group_member_list');
-            $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user_id);
-            unset($user->user_pass);
+        if( !$user ){
+            return 'notfound';
         }
+        if( $mode=='basic' ){
+            return $user;
+        }
+
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        $UserGroupMemberModel->tableSet('user_group_member_list');
+        $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
+        unset($user->user_pass);
+        
         return $user;
     }
     
@@ -75,9 +80,9 @@ class UserModel extends Model{
         $this->transStart();
         $user_id=$this->insert($user_data,true);
         if( $user_id ){
-            $GroupMemberModel=model('GroupMemberModel');
-            $GroupMemberModel->tableSet('user_group_member_list');
-            $GroupMemberModel->joinGroupByType($user_id,'customer');
+            $UserGroupMemberModel=model('UserGroupMemberModel');
+            $UserGroupMemberModel->tableSet('user_group_member_list');
+            $UserGroupMemberModel->joinGroupByType($user_id,'customer');
             $this->allowedFields[]='owner_id';
             $this->update($user_id,['owner_id'=>$user_id]);
         }
@@ -119,9 +124,9 @@ class UserModel extends Model{
         if( !in_array($target_group->group_type, $allowed_group_types) && !sudo() ){
             return 'forbidden';
         }
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('user_group_member_list');
-        $GroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        $UserGroupMemberModel->tableSet('user_group_member_list');
+        $UserGroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
         return $this->db->affectedRows()?'ok':'idle';
     }
 
@@ -170,11 +175,11 @@ class UserModel extends Model{
             updated_at,
             deleted_at");
         $user_list= $this->get()->getResult();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('user_group_member_list');
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        $UserGroupMemberModel->tableSet('user_group_member_list');
         foreach($user_list as $user){
             if($user){
-                $user->member_of_groups=$GroupMemberModel->memberOfGroupsGet($user->user_id);
+                $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user->user_id);
             }
         }
         return $user_list;        

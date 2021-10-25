@@ -8,7 +8,16 @@ class Order extends \App\Controllers\BaseController{
     use ResponseTrait;
     
     public function itemGet(){
-        return false;
+        $order_id=$this->request->getVar('order_id');
+        $OrderModel=model('OrderModel');
+        $result=$OrderModel->itemGet($order_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
     }
     
     public function itemCreate(){

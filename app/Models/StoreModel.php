@@ -47,30 +47,33 @@ class StoreModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $store_id ){
+    public function itemGet( $store_id, $mode='all' ){
         if( !$this->permit($store_id,'r') ){
             return 'forbidden';
         }
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('store_group_member_list');
-        $ImageModel=model('ImageModel');
-        if($store){
-            $store->is_writable=$this->permit($store_id,'w');
-            $store->member_of_groups=$GroupMemberModel->memberOfGroupsGet($store->store_id);
-            $filter=[
-                'image_holder'=>'store',
-                'image_holder_id'=>$store->store_id,
-                'is_disabled'=>1,
-                'is_deleted'=>0,
-                'is_active'=>1,
-                'limit'=>30
-            ];
-            $store->images=$ImageModel->listGet($filter);
+        if( !$store ){
+            return 'notfound';
+        }
+        if( $mode=='basic' ){
             return $store;
         }
-        return 'notfound';
+
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $ImageModel=model('ImageModel');
+        $store->is_writable=$this->permit($store_id,'w');
+        $store->member_of_groups=$StoreGroupMemberModel->memberOfGroupsGet($store->store_id);
+        $filter=[
+            'image_holder'=>'store',
+            'image_holder_id'=>$store->store_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>30
+        ];
+        $store->images=$ImageModel->listGet($filter);
+        return $store;
     }
     
     public function itemCreate( $name ){
@@ -119,10 +122,10 @@ class StoreModel extends Model{
         if( !$target_group ){
             return 'not_found';
         }
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('store_group_member_list');
-        $ok=$GroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
-        q($GroupMemberModel);
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $StoreGroupMemberModel->tableSet('store_group_member_list');
+        $ok=$StoreGroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
+        q($StoreGroupMemberModel);
         if( $ok ){
             return 'ok';
         }

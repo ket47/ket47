@@ -36,12 +36,12 @@ class ProductModel extends Model{
         }
         $this->where('product_id',$product_id);
         $product = $this->get()->getRow();
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('product_group_member_list');
+        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        $ProductGroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
         if($product){
             $product->is_writable=$this->permit($product_id,'w');
-            $product->member_of_groups=$GroupMemberModel->memberOfGroupsGet($product->product_id);
+            $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product->product_id);
             $filter=[
                 'image_holder'=>'product',
                 'image_holder_id'=>$product->product_id,
@@ -99,10 +99,10 @@ class ProductModel extends Model{
         if( !$target_group ){
             return 'not_found';
         }
-        $GroupMemberModel=model('GroupMemberModel');
-        $GroupMemberModel->tableSet('product_group_member_list');
+        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        $ProductGroupMemberModel->tableSet('product_group_member_list');
         $leave_other_groups=true;
-        $ok=$GroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined, $leave_other_groups );
+        $ok=$ProductGroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined, $leave_other_groups );
         if( $ok ){
             return 'ok';
         }

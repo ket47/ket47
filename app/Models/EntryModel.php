@@ -3,7 +3,7 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class EntryModel extends Model{
-    
+    use PermissionTrait;
     use FilterTrait;
     
     protected $table      = 'order_entry_list';
@@ -37,8 +37,10 @@ class EntryModel extends Model{
         return false;
     }
     
-    public function listGet(){
-        return false;
+    public function listGet( $order_id ){
+        $this->permitWhere('r');
+        $this->where('order_id',$order_id);
+        return $this->get()->getResult();
     }
     
     public function listCount( $order_id ){
