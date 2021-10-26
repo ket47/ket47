@@ -19,33 +19,34 @@ class OrderModel extends Model{
     protected $useSoftDeletes = true;
     
     
-    public function itemGet( $order_id ){
-        if( !$this->permit($order_id,'r') ){
-            return 'forbidden';
-        }
+    public function itemGet( $order_id, $mode='all' ){
+        $this->permitWhere('r');
         $this->where('order_id',$order_id);
         $order = $this->get()->getRow();
+        if( !$order ){
+            echo 'notfound or ';
+            return 'forbidden';
+        }
+        if($mode=='basic'){
+            return $order;
+        }
+        
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $ImageModel=model('ImageModel');
         $EntryModel=model('EntryModel');
         $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
-        if($order){
-            $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
-            
-            
-            $StoreModel->select('store_name,store_phone,store_email');
-            $UserModel->select('user_name,user_phone');
-            $order->is_writable=$this->permit($order_id,'w');
-            $order->statuses=   $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
-            $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
-            $order->entries=    $EntryModel->listGet($order_id);
-            $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
-            $order->customer=   $UserModel->itemGet($order->order_customer_id);;
-            $order->courier=    [];
-            return $order;
-        }
-        return 'notfound';
+        $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
+        $StoreModel->select('store_id,store_name,store_phone');
+        $UserModel->select('user_id,user_name,user_phone');
+        $order->is_writable=$this->permit($order_id,'w');
+        $order->statuses=   $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
+        $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
+        $order->entries=    $EntryModel->listGet($order_id);
+        $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
+        $order->customer=   $UserModel->itemGet($order->order_customer_id,'basic');
+        $order->courier=    $UserModel->itemGet($order->order_courier_id,'basic');
+        return $order;
     }
     
     public function itemCreate( int $store_id, array $entry_list=null ){
@@ -86,10 +87,18 @@ class OrderModel extends Model{
             return 'forbidden';
         }
         if($entry_list){
+            $EntryModel=model('EntryModel');
             $EntryModel->listUpdate($order->order_id,$entry_list);
         }
         $order_sum=$EntryModel->listCount($order->order_id);
+        
+        /*
+         * IF owners are changed then update owner of entries
+         */
+        
+        
         //$TransactionModel=model('TransactionModel');
+        $order->updated_by=session()->get('user_id');
         $order_updated=$order+$order_sum;
         $this->update($order->order_id,$order_updated);
         return $this->db->affectedRows()>0?'ok':'idle';

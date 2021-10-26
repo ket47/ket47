@@ -30,16 +30,22 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $product_id ){
+    public function itemGet( $product_id, $mode='all' ){
         if( !$this->permit($product_id,'r') ){
             return 'forbidden';
         }
         $this->where('product_id',$product_id);
+        $this->select("*");
+        $this->select("IF(IFNULL(`product_promo_price`,0)>0 AND `product_promo_start` < NOW() AND `product_promo_finish` > NOW(),`product_promo_price`,`product_price`) product_final_price");
+
         $product = $this->get()->getRow();
-        $ProductGroupMemberModel=model('ProductGroupMemberModel');
-        $ProductGroupMemberModel->tableSet('product_group_member_list');
-        $ImageModel=model('ImageModel');
+        if($mode=='basic'){
+            return $product;
+        }
         if($product){
+            $ProductGroupMemberModel=model('ProductGroupMemberModel');
+            $ProductGroupMemberModel->tableSet('product_group_member_list');
+            $ImageModel=model('ImageModel');
             $product->is_writable=$this->permit($product_id,'w');
             $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product->product_id);
             $filter=[
@@ -163,6 +169,7 @@ class ProductModel extends Model{
         $this->orderBy("{$this->table}.updated_at",'DESC');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_hash");
+        $this->select("IF(IFNULL(product_promo_price,0)>0 AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price) product_final_price");
         $product_list= $this->get()->getResult();
         return $product_list;
     }

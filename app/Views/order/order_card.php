@@ -1,37 +1,98 @@
+<?php 
+    function dmyt( $iso ){
+        if( !$iso ){
+            return "";
+        }
+        $expl= explode('-', $iso);
+        return "$expl[2].$expl[1].$expl[0]$expl[3]";
+    }
+    include APPPATH.'Views/home/header.php';
+?>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+<script>
+var order_id="<?php echo $order->order_id?>";
+var Order={
+    init:function(){
+        Order.suggestion.init();
+    },
+    suggestion:{
+        init:function(){
+            $( "#order_suggest" ).autocomplete({
+                source: function( request, response ) {
+                    let req={
+                        name_query:request.term,
+                        name_query_fields:'product_name'
+                    };
+                    $.get('/Product/listGet/',req).done(function(resp,status,xhr){
+                        let product_list=xhr.responseJSON.product_list || [];
+                        let suggestions=[];
+                        for( let product of product_list ){
+                            let sugg=`${product.product_name} [${product.product_quantity}] ${product.product_price}руб`;
+                            product.label=sugg;
+                            suggestions.push(product);
+                        }
+                        response( suggestions );
+                    });
+                },
+                select: function( event, ui ) {
+                    let request={
+                        order_id:order_id,
+                        product_id:ui.item.product_id,
+                        product_quantity:prompt(`Введите количество [${ui.item.product_quantity}]`,1)||1
+                    };
+                    $.post('/Entry/itemCreate',request).done(function(resp,status,xhr){
+
+                    });
+                }
+            });
+        }
+    },
+    entryTable:{
+        init:function(){
+            
+        },
+        load:function(){
+            
+        }
+    }
+};
+$(Order.init);
+
+
+</script>
+<style>
+    #order_suggest{
+        width:calc( 100% - 10px );
+        padding: 5px;
+        border: 1px solid #ddd;
+        background-color: #ffa;
+    }
+</style>
+
+
+
 <div  style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 3fr">
             <div>Продавец</div>
             <div>
-                <?=$order->store->store_name ?> (<?=$order->store->store_phone ?>, <?=$order->store->store_email ?>)
+                <?=$order->store->store_name ?> (<?=$order->store->store_phone ?>)
             </div>
-
 
             <div>Покупатель</div>
             <div>
-                <?= $order->customer->user_name?> (<?=$order->customer->user_phone ?>, <?=$order->customer->user_email ?>)
+                <?= $order->customer->user_name?> (<?=$order->customer->user_phone ?>)
             </div>
-
 
             <div>Комментарий</div>
             <div>
                 <?= $order->order_description?>
             </div>
 
-            <div>Количество</div>
-            <div>
-                <?= $order->order_shipping_fee?>
-            </div>
-
-            <div>Вес кг/единица</div>
-            <div>
-                <?= $order->order_tax?>
-            </div>
 
         </div>
         <div style="display:grid;grid-template-columns:1fr 3fr">
-
-
             <div>Отключен</div>
             <div>
                 <input type="checkbox" name="is_disabled.<?= $order->order_id ?>" <?= $order->is_disabled ? 'checked' : '' ?>/>
@@ -39,43 +100,62 @@
 
             <div>Создан</div>
             <div>
-                <input type="date" readonly="readonly" name="created_at.<?= $order->order_id ?>.date" value="<?php $date_time = explode(' ', $order->created_at); echo $date_time[0] ?? ''?>"/>
-                <input type="time" readonly="readonly" name="created_at.<?= $order->order_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
+                <?=dmyt($order->created_at)?>
             </div>
 
             <div>Изменен</div>
             <div>
-                <input type="date" readonly="readonly" name="updated_at.<?= $order->order_id ?>.date" value="<?php $date_time = explode(' ', $order->updated_at);
-                   echo $date_time[0] ?? ''
-                   ?>"/>
-                <input type="time" readonly="readonly" name="updated_at.<?= $order->order_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
+                <?=dmyt($order->updated_at)?>
             </div>
 
             <div>Удален</div>
             <div>
-                <input type="date" readonly="readonly" name="deleted_at.<?= $order->order_id ?>.date" value="<?php $date_time = explode(' ', $order->deleted_at);
-                   echo $date_time[0] ?? ''
-                   ?>"/>
-                <input type="time" readonly="readonly" name="deleted_at.<?= $order->order_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
-                <button type="button" onclick="ItemList.deleteItem(<?= $order->order_id ?>)">Удалить</button>
-                <button type="button" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)">Восстановить</button>
+                <?php if($order->deleted_at): ?>
+                    <?=dmyt($order->deleted_at)?>
+                    <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)"> Восстановить</i>
+                <?php else: ?>
+                    <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $order->order_id ?>)"> Удалить</i>
+                <?php endif; ?>
             </div>
 
-            <div>Группа</div>
-            <div>
-                <select name="group_id.<?= $order->order_id ?>.<?= $order->member_of_groups->group_ids ?>">
-                    <option value="0">---</option>
-                    <?php foreach ($order_group_list as $order_group):?>
-                    <?php if( !$order_group->group_parent_id ):?>
-                    <optgroup label="<?= $order_group->group_name ?>">
-                    <?php continue; endif; ?>
-                    <option value="<?= $order_group->group_id ?>" <?= in_array($order_group->group_id, explode(',', $order->member_of_groups->group_ids)) ? 'selected' : '' ?>><?= $order_group->group_name ?></option>
-                    <?php endforeach;?>
-                </select>
-            </div>
         </div>
     </div>
 
+    <div style="border:1px solid #666">
+        <div style="position: relative">
+            <input id="order_suggest" placeholder="код или название товара"/>
+        </div>
+        <div style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr;">
+            
+            <?php if($order->entries):foreach($order->entries as $entry): ?>
+            <div style="display: contents">
+                <div><?=$entry->entry_text?></div>
+                <div><?=$entry->entry_quantity?></div>
+                <div><?=$entry->entry_price?></div>
+                <div><?=$entry->entry_comment?></div>
+            </div>
+            <?php endforeach;else: ?>
+            <div style="grid-column: 1 / span 4;text-align: center">Заказ пуст</div>
+            <?php endif;?>
+        </div>
+    </div>
+    
+    <div>
+        <div>Сумма доставки</div>
+        <div>
+            <?= $order->order_sum_shipping?>
+        </div>
+
+        <div>Сумма налога</div>
+        <div>
+            <?= $order->order_sum_tax?>
+        </div>
+
+        <div>Сумма итого</div>
+        <div>
+            <?= $order->order_sum_total?>
+        </div>
+    </div>
 
     <div>
         <h3>Изображения </h3>
@@ -99,4 +179,15 @@
             </div>
         </div>
     </div>
+    
+    
+    <div>
+        <h3>История </h3>
+        <?php foreach ($order_group_list as $order_group):?>
+        <h3><?= $order_group->group_name ?></h3>
+        <?php endforeach;?>
+    </div>
+    
+    
+    
 </div>

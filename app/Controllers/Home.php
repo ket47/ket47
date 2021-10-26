@@ -227,14 +227,14 @@ class Home extends BaseController {
         $OrderModel=model('OrderModel');
         $OrderGroupModel=model('OrderGroupModel');
         $product= $OrderModel->itemGet($product_id);
-        
-        $product_group_list=$OrderGroupModel->listGet();
-        $data=[
-            'order'=>$product,
-            'order_group_list'=>$product_group_list
-        ];
-        return view('order/order_card',$data);
+        if(is_object($product)){
+            $product_group_list=$OrderGroupModel->listGet();
+            $data=[
+                'order'=>$product,
+                'order_group_list'=>$product_group_list
+            ];
+            return view('order/order_card',$data);
+        }
+        return 'notfound or forbidden';
     }
-
-
 }
