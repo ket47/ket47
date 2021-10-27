@@ -2,6 +2,8 @@
     <head>
         <title></title>
         <script src="/js/jquery-3.5.1.min.js"></script>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
         <script>
             $(document).ajaxComplete(function (event, xhr, settings) {
                 if(xhr.status>299){
@@ -90,6 +92,11 @@
             }
             .primary{
                 background-color: #6cf;
+            }
+            .grid_header>div{
+                border-bottom: 2px #6cf solid;
+                text-align: center;
+                font-weight: bold;
             }
             .secondary{
                 background-color: #eee;

@@ -165,9 +165,11 @@ class GroupLayer extends Model{
     public function imageDelete( $image_id ){
         $ImageModel=model('ImageModel');
         $image=$ImageModel->itemGet( $image_id );
-        
-        $product_id=$image->image_holder_id;
-        if( !$this->permit($product_id,'w') ){
+        if(!$image){
+            return 'idle';
+        }
+        $group_id=$image->image_holder_id;
+        if( !$this->permit($group_id,'w') ){
             return 'forbidden';
         }
         $ImageModel->itemDelete( $image_id );

@@ -25,3 +25,8 @@
 <?php else: ?>
 Заказы не найдены
 <?php endif; ?>
+<script>
+
+$(".item_list i[data-action=edit]").trigger("click");
+
+</script>

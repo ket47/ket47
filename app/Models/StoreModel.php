@@ -125,7 +125,6 @@ class StoreModel extends Model{
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
         $StoreGroupMemberModel->tableSet('store_group_member_list');
         $ok=$StoreGroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
-        q($StoreGroupMemberModel);
         if( $ok ){
             return 'ok';
         }

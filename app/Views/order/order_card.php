@@ -3,13 +3,11 @@
         if( !$iso ){
             return "";
         }
-        $expl= explode('-', $iso);
-        return "$expl[2].$expl[1].$expl[0]$expl[3]";
+        $expl= explode('-', str_replace(' ', '-', $iso));
+        return "$expl[2].$expl[1].$expl[0] ".($expl[3]??'');
     }
-    include APPPATH.'Views/home/header.php';
+    //include APPPATH.'Views/home/header.php';
 ?>
-<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
 <script>
 var order_id="<?php echo $order->order_id?>";
 var Order={
@@ -42,18 +40,57 @@ var Order={
                         product_quantity:prompt(`Введите количество [${ui.item.product_quantity}]`,1)||1
                     };
                     $.post('/Entry/itemCreate',request).done(function(resp,status,xhr){
-
+                        Order.entryTable.load();
+                        $( "#order_suggest" ).val('');
                     });
                 }
             });
+            Order.entryTable.init();
         }
     },
     entryTable:{
         init:function(){
-            
+            Order.entryTable.load();
+            $('#order_entry_list').on('change',function(e){
+                e.stopPropagation();
+                var $input=$(e.target);
+                var name_parts=$input.attr('name').split('.');
+                var name=name_parts[0];
+                var item_id=name_parts[1];
+                var value=$input.val();
+
+                Order.entryTable.saveItem(item_id,name,value);
+            });
         },
         load:function(){
-            
+            $("#order_entry_list").load('/Home/orderEntryListGet',{order_id});
+        },
+        saveItem:function(entry_id,name,value){
+            var request={
+                entry_id
+            };
+            request[name]=value;
+            return $.post('/Entry/itemUpdate',JSON.stringify(request)).done(function(){
+                if( name==='entry_quantity' ){
+                    Order.entryTable.load();
+                }
+            }).fail(Order.entryTable.load);            
+        },
+        deleteItem:function(entry_id){
+            var request={
+                entry_id
+            };
+            return $.post('/Entry/itemDelete',request).done(function(){
+                Order.entryTable.load();
+            }).fail();
+        },
+        undeleteItem:function(entry_id){
+            var request={
+                entry_id
+            };
+            return $.post('/Entry/itemUnDelete',request).done(function(){
+                Order.entryTable.load();
+            }).fail();
         }
     }
 };
@@ -65,16 +102,32 @@ $(Order.init);
     #order_suggest{
         width:calc( 100% - 10px );
         padding: 5px;
-        border: 1px solid #ddd;
-        background-color: #ffa;
+        border: 1px solid #ccc;
+    }
+    #order_entry_list{
+        background-color: white;
+    }
+    #order input,#order textarea{
+        width:calc(100% - 10px);
+        border:1px #ccc solid;
+        background: none;
+    }
+    #order_entry_list div{
+        padding: 3px;
+    }
+    #order_entry_list>div>div:nth-child(even)>div{
+        background-color: #f5f5f5;
     }
 </style>
 
 
 
-<div  style="padding: 5px">
+<div id="order" style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
-        <div style="display:grid;grid-template-columns:1fr 3fr">
+        <div style="grid-column: 1 / 2 span">
+            <h3>Заказ #<?=$order->order_id?></h3>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Продавец</div>
             <div>
                 <?=$order->store->store_name ?> (<?=$order->store->store_phone ?>)
@@ -87,12 +140,12 @@ $(Order.init);
 
             <div>Комментарий</div>
             <div>
-                <?= $order->order_description?>
+                <textarea name="order_description.<?= $order->order_id ?>"><?= $order->order_description?></textarea>
             </div>
 
 
         </div>
-        <div style="display:grid;grid-template-columns:1fr 3fr">
+        <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Отключен</div>
             <div>
                 <input type="checkbox" name="is_disabled.<?= $order->order_id ?>" <?= $order->is_disabled ? 'checked' : '' ?>/>
@@ -106,56 +159,44 @@ $(Order.init);
             <div>Изменен</div>
             <div>
                 <?=dmyt($order->updated_at)?>
+                
+                <?php 
+                switch($order->updated_by){
+                    case $order->order_customer_id:
+                        $updated_by=$order->customer;
+                        break;
+                    case $order->order_courier_id:
+                        $updated_by=$order->courier;
+                        break;
+                    default :
+                        $updated_by=model('UserModel')->itemGet($order->updated_by,'basic');
+                }
+                echo "{$updated_by->user_name} ({$updated_by->user_phone})";
+                ?>
+                
             </div>
 
             <div>Удален</div>
             <div>
                 <?php if($order->deleted_at): ?>
                     <?=dmyt($order->deleted_at)?>
-                    <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)"> Восстановить</i>
+                <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)" title="Восстановить"></i>
                 <?php else: ?>
-                    <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $order->order_id ?>)"> Удалить</i>
+                    <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $order->order_id ?>)" title="Удалить"></i>
                 <?php endif; ?>
             </div>
 
         </div>
     </div>
 
-    <div style="border:1px solid #666">
+    <div class="segment">
+        <h3>Состав заказа </h3>
         <div style="position: relative">
-            <input id="order_suggest" placeholder="код или название товара"/>
+            <input id="order_suggest" placeholder="добавить по коду или названию товара"/>
         </div>
-        <div style="display:grid;grid-template-columns:3fr 1fr 1fr 1fr;">
-            
-            <?php if($order->entries):foreach($order->entries as $entry): ?>
-            <div style="display: contents">
-                <div><?=$entry->entry_text?></div>
-                <div><?=$entry->entry_quantity?></div>
-                <div><?=$entry->entry_price?></div>
-                <div><?=$entry->entry_comment?></div>
-            </div>
-            <?php endforeach;else: ?>
-            <div style="grid-column: 1 / span 4;text-align: center">Заказ пуст</div>
-            <?php endif;?>
-        </div>
+        <div id="order_entry_list"></div>
     </div>
-    
-    <div>
-        <div>Сумма доставки</div>
-        <div>
-            <?= $order->order_sum_shipping?>
-        </div>
 
-        <div>Сумма налога</div>
-        <div>
-            <?= $order->order_sum_tax?>
-        </div>
-
-        <div>Сумма итого</div>
-        <div>
-            <?= $order->order_sum_total?>
-        </div>
-    </div>
 
     <div>
         <h3>Изображения </h3>
@@ -163,13 +204,11 @@ $(Order.init);
                 <?php if (isset($order->images)): foreach ($order->images as $image): ?>
                     <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
                          class=" <?= $image->is_disabled ? 'disabled' : '' ?> <?= $image->deleted_at ? 'deleted' : '' ?>">
-                        <a href="javascript:ItemList.imageOrder(<?= $image->image_id ?>,'up')"><div class="fa fa-arrow-left" style="color:black"></div></a>
                         <?php if (sudo() && $image->is_disabled): ?>
                         <a href="javascript:ItemList.imageApprove(<?= $image->image_id ?>)"><div class="fa fa-check" style="color:green"></div></a>
                         <?php endif; ?>
                         <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-trash" style="color:red"></div></a>
                         <a href="/image/get.php/<?= $image->image_hash ?>.1024.1024.webp" target="imagepreview"><div class="fa fa-eye" style="color:blue"></div></a>
-                        <a href="javascript:ItemList.imageOrder(<?= $image->image_id ?>,'down')"><div class="fa fa-arrow-right" style="color:black"></div></a>
                         <br><br>
                         <?=$image->is_disabled ? 'Ждет одобрения' : '' ?>
                     </div>
@@ -181,13 +220,10 @@ $(Order.init);
     </div>
     
     
-    <div>
+    <div class="segment">
         <h3>История </h3>
         <?php foreach ($order_group_list as $order_group):?>
         <h3><?= $order_group->group_name ?></h3>
         <?php endforeach;?>
     </div>
-    
-    
-    
 </div>

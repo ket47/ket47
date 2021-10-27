@@ -44,7 +44,6 @@ class ImageModel extends Model{
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $data['image_order']=$inserted_count+1;
-        $data['is_disabled']=1;
         $data['owner_id']=session()->get('user_id');
         $data['image_hash']=md5(microtime().rand(1,1000));
         if( $this->insert($data) ){

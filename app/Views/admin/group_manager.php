@@ -131,7 +131,7 @@
             <?php if($group->group_parent_id):?>
             <td></td>
             <td>
-                <input value="<?=$group->group_name?>" data-value_field="group_name" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
+                <input value="<?=$group->group_name?>" data-field="group_name" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
             </td>
             <?php else: ?>
             <td>

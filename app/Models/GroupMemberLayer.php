@@ -18,6 +18,12 @@ class GroupMemberLayer extends Model{
     protected $createdField  = 'created_at';
     protected $updatedField  = '';
     
+    /**
+     * 
+     * @param type $table_name
+     * @throws \ErrorException
+     * @deprecated use specialized models instead
+     */
     public function tableSet( $table_name ){
         $allowed_tables=[
             'order_group_member_list',
@@ -67,7 +73,8 @@ class GroupMemberLayer extends Model{
             $this->where('member_id',$member_id)->delete();
         }
         try{
-            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id],true);
+            $created_by=session()->get('user_id');
+            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id,'created_by'=>$created_by],true);
             return $this->affectedRows()?true:false;
         }
         catch (\Exception $e){

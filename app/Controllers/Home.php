@@ -223,18 +223,27 @@ class Home extends BaseController {
                 ]);
     }
     public function orderCardGet(){
-        $product_id=$this->request->getVar('order_id');
+        $order_id=$this->request->getVar('order_id');
         $OrderModel=model('OrderModel');
         $OrderGroupModel=model('OrderGroupModel');
-        $product= $OrderModel->itemGet($product_id);
-        if(is_object($product)){
-            $product_group_list=$OrderGroupModel->listGet();
+        $order= $OrderModel->itemGet($order_id);
+        if(is_object($order)){
+            $order_group_list=$OrderGroupModel->listGet();
             $data=[
-                'order'=>$product,
-                'order_group_list'=>$product_group_list
+                'order'=>$order,
+                'order_group_list'=>$order_group_list
             ];
             return view('order/order_card',$data);
         }
-        return 'notfound or forbidden';
+        return 'forbidden';
+    }
+    
+    public function orderEntryListGet(){
+        $order_id=$this->request->getVar('order_id');
+        $EntryModel=model('EntryModel');
+        $entry_list=$EntryModel->listGet($order_id);
+        $OrderModel=model('OrderModel');
+        $order= $OrderModel->itemGet($order_id);
+        return view('order/entry_list',['entry_list'=>$entry_list,'order'=>$order]);
     }
 }

@@ -11,9 +11,14 @@ class OrderModel extends Model{
     protected $primaryKey = 'order_id';
     protected $allowedFields = [
         'order_store_id',
-        'order_shipping_fee',
-        'order_tax',
-        'owner_id'
+        'order_sum_shipping',
+        'order_sum_total',
+        'order_sum_tax',
+        'updated_by',
+        'deleted_at',
+        'order_description',
+        'owner_id',
+        'owner_ally_ids'
     ];
 
     protected $useSoftDeletes = true;
@@ -43,6 +48,7 @@ class OrderModel extends Model{
         $order->statuses=   $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
         $order->entries=    $EntryModel->listGet($order_id);
+        
         $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
         $order->customer=   $UserModel->itemGet($order->order_customer_id,'basic');
         $order->courier=    $UserModel->itemGet($order->order_courier_id,'basic');
@@ -86,12 +92,10 @@ class OrderModel extends Model{
         if( !$this->permit($order->order_id,'w') ){
             return 'forbidden';
         }
-        if($entry_list){
+        if( isset($order->entry_list) ){
             $EntryModel=model('EntryModel');
-            $EntryModel->listUpdate($order->order_id,$entry_list);
+            $EntryModel->listUpdate($order->order_id,$order->entry_list);
         }
-        $order_sum=$EntryModel->listCount($order->order_id);
-        
         /*
          * IF owners are changed then update owner of entries
          */
@@ -99,14 +103,87 @@ class OrderModel extends Model{
         
         //$TransactionModel=model('TransactionModel');
         $order->updated_by=session()->get('user_id');
-        $order_updated=$order+$order_sum;
-        $this->update($order->order_id,$order_updated);
+        $this->update($order->order_id,$order);
         return $this->db->affectedRows()>0?'ok':'idle';
     }
     
-    public function itemDelete(){
-        return false;
+    public function itemCalculate( $order_id ){
+        $EntryModel=model('EntryModel');
+        $order=$EntryModel->listSumGet( $order_id );
+        $order->order_id=$order_id;
+        return $this->itemUpdate($order);
     }
+    
+    public function itemUpdateGroup($order_id,$group_id,$is_joined){
+        if( !$this->permit($order_id,'w') ){
+            return 'forbidden';
+        }
+        $GroupModel=model('OrderGroupModel');
+        $target_group=$GroupModel->itemGet($group_id);
+        if( !$target_group ){
+            return 'not_found';
+        }
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $ok=$OrderGroupMemberModel->itemUpdate( $order_id, $group_id, $is_joined );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'error';
+    }
+    
+    public function itemDelete( $order_id ){
+        if( !$this->permit($order_id,'w') ){
+            return 'forbidden';
+        }
+        $EntryModel=model('EntryModel');
+        $EntryModel->listDeleteChildren( $order_id );
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDelete('order', $order_id);
+        
+        $this->delete($order_id);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function itemUnDelete( $order_id ){
+        if( !$this->permit($order_id,'w') ){
+            return 'forbidden';
+        }
+        $EntryModel=model('EntryModel');
+        $EntryModel->listUnDeleteChildren( $order_id );
+        
+        $ImageModel=model('ImageModel');
+        $ImageModel->listUnDelete('order', $order_id);
+        
+        $this->update($order_id,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function itemDisable( $order_id, $is_disabled ){
+        if( !$this->permit($order_id,'w','disabled') ){
+            return 'forbidden';
+        }
+        $this->allowedFields[]='is_disabled';
+        $this->update(['order_id'=>$order_id],['is_disabled'=>$is_disabled?1:0]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function itemHistoryCreate( $order_id, $group_id=null, $group_type=null){
+        if( !$this->permit($order_id,'w') ){
+            return 'forbidden';
+        }
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        if($group_id){
+            return $OrderGroupMemberModel->joinGroup($order_id,$group_id);
+        }
+        return $OrderGroupMemberModel->joinGroupByType($order_id,$group_type);
+    }
+    
+    
+    
+    
+    
+    
     
     public function listGet( $filter ){
         $this->filterMake($filter,false);
@@ -131,6 +208,36 @@ class OrderModel extends Model{
     
     public function listDelete(){
         return false;
+    }
+    
+    
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function imageCreate( $data ){
+        $data['is_disabled']=0;
+        $data['owner_id']=session()->get('user_id');
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemCreate($data);
+        }
+        return 0;
+    }
+    
+    public function imageDelete( $image_id ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $order_id=$image->image_holder_id;
+        if( !$this->permit($order_id,'w') ){
+            return 'forbidden';
+        }
+        $ImageModel->itemDelete( $image_id );
+        $ok=$ImageModel->itemPurge( $image_id );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'idle';
     }
     
 }

@@ -20,21 +20,51 @@ class Entry extends \App\Controllers\BaseController{
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
-        if( $result==='nostore' ){
-            return $this->fail($result);
-        }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
+        $OrderModel=model('OrderModel');
+        $OrderModel->itemCalculate( $order_id );
         return $this->respond($result);
     }
     
     public function itemUpdate(){
-        return false;
+        $entry=$this->request->getJSON();
+        $EntryModel=model('EntryModel');
+        $result=$EntryModel->itemUpdate($entry);
+        if( $EntryModel->errors() ){
+            return $this->failValidationErrors( $EntryModel->errors() );
+        }
+        if( $result=='ok' && isset($entry->entry_quantity) ){
+            $entry=$EntryModel->itemGet( $entry->entry_id );
+            $OrderModel=model('OrderModel');
+            $OrderModel->itemCalculate( $entry->order_id );
+        }
+        return $this->respond($result);
     }
     
     public function itemDelete(){
-        return false;
+        $entry_id=$this->request->getVar('entry_id');
+        $EntryModel=model('EntryModel');
+        $result=$EntryModel->itemDelete($entry_id);
+        if( $result=='ok' ){
+            $entry=$EntryModel->itemGet( $entry_id );
+            $OrderModel=model('OrderModel');
+            $OrderModel->itemCalculate( $entry->order_id );
+        }
+        return $this->respond($result);
+    }
+    
+    public function itemUnDelete(){
+        $entry_id=$this->request->getVar('entry_id');
+        $EntryModel=model('EntryModel');
+        $result=$EntryModel->itemUnDelete($entry_id);
+        if( $result=='ok' ){
+            $entry=$EntryModel->itemGet( $entry_id );
+            $OrderModel=model('OrderModel');
+            $OrderModel->itemCalculate( $entry->order_id );
+        }
+        return $this->respond($result);
     }
     
     public function listGet(){
