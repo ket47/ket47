@@ -125,7 +125,7 @@ $(Order.init);
 <div id="order" style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="grid-column: 1 / 2 span">
-            <h3>Заказ #<?=$order->order_id?></h3>
+            <h3>Заказ #<?=$order->order_id?> (<?=$order->group_name?>)</h3>
         </div>
         <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Продавец</div>
@@ -171,7 +171,9 @@ $(Order.init);
                     default :
                         $updated_by=model('UserModel')->itemGet($order->updated_by,'basic');
                 }
-                echo "{$updated_by->user_name} ({$updated_by->user_phone})";
+                if( is_object($updated_by) ){
+                    echo "{$updated_by->user_name} ({$updated_by->user_phone})";
+                }
                 ?>
                 
             </div>

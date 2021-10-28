@@ -47,10 +47,16 @@ class GroupLayer extends Model{
         $this->join('image_list',"image_holder='{$this->table}' AND image_holder_id=group_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_id,image_hash");
         return $this->get()->getResult();
-    } 
-    public function itemGet( $group_id ){
+    }
+    
+    public function itemGet( $group_id=null, $group_type=null ){
         $this->permitWhere('r');
-        return $this->where('group_id',$group_id)->get()->getRow();
+        if( $group_id ){
+            $this->where('group_id',$group_id);
+        } else {
+            $this->where('group_type',$group_type);
+        }
+        return $this->get()->getRow();
     }
     
     public function itemCreate( int $parent_id, string $group_name, string $group_type=null ){
