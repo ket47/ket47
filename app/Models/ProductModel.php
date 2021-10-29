@@ -159,7 +159,6 @@ class ProductModel extends Model{
     public function listGet( $filter=null ){
         $this->filterMake( $filter );
         if( $filter['group_id']??0 ){
-            $this->join('product_group_member_list','member_id=product_id');
             $this->where('group_id',$filter['group_id']);
         }
         if( $filter['store_id']??0 ){
@@ -167,8 +166,9 @@ class ProductModel extends Model{
         }
         $this->permitWhere('r');
         $this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
-        $this->select("{$this->table}.*,image_hash");
+        $this->select("{$this->table}.*,image_hash,group_id");
         $this->select("IF(IFNULL(product_promo_price,0)>0 AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price) product_final_price");
         $product_list= $this->get()->getResult();
         return $product_list;
@@ -409,7 +409,7 @@ class ProductModel extends Model{
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
         }
-        $this->filterMake( $filter );
+        //$this->filterMake( $filter );
         $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash');
         $this->join('product_group_member_list pgml','member_id=product_id');
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
