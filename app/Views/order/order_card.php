@@ -103,6 +103,7 @@ $(Order.init);
         width:calc( 100% - 10px );
         padding: 5px;
         border: 1px solid #ccc;
+        border-radius: 3px;
     }
     #order_entry_list{
         background-color: white;
@@ -116,7 +117,7 @@ $(Order.init);
         padding: 3px;
     }
     #order_entry_list>div>div:nth-child(even)>div{
-        background-color: #f5f5f5;
+        background-color: #f5fcff;
     }
 </style>
 
@@ -125,7 +126,7 @@ $(Order.init);
 <div id="order" style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="grid-column: 1 / 2 span">
-            <h3>Заказ #<?=$order->order_id?> (<?=$order->group_name?>)</h3>
+            <h3>Заказ #<?=$order->order_id?> (<?=$order->stage_current_name?>)</h3>
         </div>
         <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Продавец</div>
@@ -194,7 +195,7 @@ $(Order.init);
     <div class="segment">
         <h3>Состав заказа </h3>
         <div style="position: relative">
-            <input id="order_suggest" placeholder="добавить по коду или названию товара"/>
+            <input id="order_suggest" placeholder="добавить по коду или названию товара" />
         </div>
         <div id="order_entry_list"></div>
     </div>
@@ -222,10 +223,23 @@ $(Order.init);
     </div>
     
     
-    <div class="segment">
-        <h3>История </h3>
-        <?php foreach ($order_group_list as $order_group):?>
-        <h3><?= $order_group->group_name ?></h3>
-        <?php endforeach;?>
+    <div class="segment11">
+        <h3>Стадии заказа</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;">
+            <div style="display: contents;" class="grid_header">
+                <div>Название</div>
+                <div>Начало</div>
+                <div>Начал</div>
+            </div>
+            <?php foreach ($order->stages as $stage):?>
+            <div><?= $stage->group_name ?></div>
+            <div><?= dmyt($stage->created_at) ?></div>
+            <?php if($stage->created_user): ?>
+                <div><?= $stage->created_user->user_name ?> (<?= $stage->created_user->user_phone ?>)</div>
+            <?php else: ?>
+                <div>-</div>
+            <?php endif; ?>
+            <?php endforeach;?>
+        </div>
     </div>
 </div>

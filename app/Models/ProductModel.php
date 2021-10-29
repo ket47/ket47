@@ -409,6 +409,7 @@ class ProductModel extends Model{
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
         }
+        $this->filterMake( $filter );
         $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash');
         $this->join('product_group_member_list pgml','member_id=product_id');
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
@@ -416,9 +417,6 @@ class ProductModel extends Model{
         $this->groupBy('pgl.group_id,image_id');
         $children_groups=$this->get()->getResult();
         $parent_groups=[];
-        
-        
-        
         
         $ImageModel=model("ImageModel");
         foreach($children_groups as $child){

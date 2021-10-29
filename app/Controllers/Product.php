@@ -22,15 +22,6 @@ class Product extends \App\Controllers\BaseController{
             'product_list' => $product_list
             ];
         return $this->respond($data);
-//
-//        
-//        $GroupModel=model('ProductGroupModel');
-//        $product_group_list=$GroupModel->listGet();
-//        $data=[
-//            'product_list' => $product_list,
-//            'product_group_list'=>$product_group_list
-//            ];
-//        return $this->respond($data);
     }
     
     public function listCreate(){
@@ -44,9 +35,6 @@ class Product extends \App\Controllers\BaseController{
     public function listDelete(){
         return false;
     }
-
-
-
     
     public function itemGet(){
         $product_id=$this->request->getVar('product_id');
@@ -234,6 +222,12 @@ class Product extends \App\Controllers\BaseController{
         
     public function groupTreeGet(){
         $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
         ];
         $ProductModel=model('ProductModel');

@@ -225,13 +225,10 @@ class Home extends BaseController {
     public function orderCardGet(){
         $order_id=$this->request->getVar('order_id');
         $OrderModel=model('OrderModel');
-        $OrderGroupModel=model('OrderGroupModel');
         $order= $OrderModel->itemGet($order_id);
         if(is_object($order)){
-            $order_group_list=$OrderGroupModel->listGet();
             $data=[
                 'order'=>$order,
-                'order_group_list'=>$order_group_list
             ];
             return view('order/order_card',$data);
         }

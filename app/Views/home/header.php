@@ -95,7 +95,7 @@
             }
             .grid_header>div{
                 border-bottom: 2px #6cf solid;
-                text-align: center;
+                text-align: center111;
                 font-weight: bold;
             }
             .secondary{

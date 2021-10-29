@@ -27,7 +27,7 @@ class OrderModel extends Model{
     
     public function itemGet( $order_id, $mode='all' ){
         $this->permitWhere('r');
-        $this->select("{$this->table}.*,group_id,group_name,group_type");
+        $this->select("{$this->table}.*,group_name stage_current_name,group_type stage_current");
         $this->where('order_id',$order_id);
         $this->join('order_group_list','order_group_id=group_id','left');
         $order = $this->get()->getRow();
@@ -47,21 +47,23 @@ class OrderModel extends Model{
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
         $StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
-        $order->is_writable=$this->permit($order_id,'w');
-        $order->statuses=   $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
+        $order->stage_next= $this->stageMap[$order->current_stage??''][0]??'';
+        $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
         $order->entries=    $EntryModel->listGet($order_id);
         
         $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
         $order->customer=   $UserModel->itemGet($order->order_customer_id,'basic');
         $order->courier=    $UserModel->itemGet($order->order_courier_id,'basic');
+        $order->is_writable=$this->permit($order_id,'w');
         
         
-        
-        $this->itemHistoryCreate( $order_id, 'customer_created' );
-        
-        
-        
+        //$this->itemHistoryCreate( $order_id, 'customer_created' );
+        if( sudo() ){
+            foreach($order->stages as $stage){
+                $stage->created_user=$UserModel->itemGet($stage->created_by,'basic');
+            }
+        }
         return $order;
     }
     
@@ -209,6 +211,7 @@ class OrderModel extends Model{
     
     protected $stageMap=[
         ''=>                    ['customer_created'],
+        'customer_deleted'=>    ['customer_created'],
         'customer_created'=>    ['customer_deleted,customer_payed'],
         'customer_payed'=>      ['customer_confirmed'],
         'customer_confirmed'=>  ['supplier_start,supplier_reject,delivery_search'],
