@@ -54,13 +54,15 @@ class Order extends \App\Controllers\BaseController{
         return $this->respondUpdated($result);
     }
     
-    public function itemUpdateGroup(){
+    public function itemStageCreate(){
         $order_id=$this->request->getVar('order_id');
-        $group_id=$this->request->getVar('group_id');
-        $is_joined=$this->request->getVar('is_joined');
-        
+        $new_stage=$this->request->getVar('new_stage');
+        return $this->itemStage($order_id,$new_stage);
+    }
+    
+    private function itemStage($order_id,$stage){
         $OrderModel=model('OrderModel');
-        $result=$OrderModel->itemUpdateGroup($order_id,$group_id,$is_joined);
+        $result=$OrderModel->itemStageCreate($order_id,$stage);
         if( $result==='ok' ){
             return $this->respondUpdated($result);
         }
@@ -72,53 +74,75 @@ class Order extends \App\Controllers\BaseController{
     
     public function itemDelete(){
         $order_id=$this->request->getVar('order_id');
-        
-        $OrderModel=model('OrderModel');
-        $result=$OrderModel->itemDelete($order_id);        
-        if( $result==='ok' ){
-            return $this->respondDeleted($result);
-        }
-        if( $result==='forbidden' ){
-            return $this->failForbidden($result);
-        }
-        return $this->fail($result);   
+        return $this->itemStage($order_id,'customer_deleted');
     }
     
     public function itemUnDelete(){
         $order_id=$this->request->getVar('order_id');
-        
-        $OrderModel=model('OrderModel');
-        $result=$OrderModel->itemUnDelete($order_id);        
-        if( $result==='ok' ){
-            return $this->respondUpdated($result);
-        }
-        if( $result==='forbidden' ){
-            return $this->failForbidden($result);
-        }
-        return $this->fail($result);   
+        return $this->itemStage($order_id,'customer_created');
     }
-
     
     public function itemDisable(){
-        $order_id=$this->request->getVar('order_id');
-        $is_disabled=$this->request->getVar('is_disabled');
-        
-        $OrderModel=model('OrderModel');
-        $result=$OrderModel->itemDisable($order_id,$is_disabled);
-        if( $result==='ok' ){
-            return $this->respondUpdated($result);
-        }
-        if( $result==='forbidden' ){
-            return $this->failForbidden($result);
-        }
-        return $this->fail($result);
+        return $this->failNotFound();
     }
+    
+    
+//    public function itemDelete(){
+//        $order_id=$this->request->getVar('order_id');
+//        
+//        $OrderModel=model('OrderModel');
+//        $result=$OrderModel->itemDelete($order_id);        
+//        if( $result==='ok' ){
+//            return $this->respondDeleted($result);
+//        }
+//        if( $result==='forbidden' ){
+//            return $this->failForbidden($result);
+//        }
+//        return $this->fail($result);   
+//    }
+//    
+//    public function itemUnDelete(){
+//        $order_id=$this->request->getVar('order_id');
+//        
+//        $OrderModel=model('OrderModel');
+//        $result=$OrderModel->itemUnDelete($order_id);        
+//        if( $result==='ok' ){
+//            return $this->respondUpdated($result);
+//        }
+//        if( $result==='forbidden' ){
+//            return $this->failForbidden($result);
+//        }
+//        return $this->fail($result);   
+//    }
+//
+//    
+//    public function itemDisable(){
+//        $order_id=$this->request->getVar('order_id');
+//        $is_disabled=$this->request->getVar('is_disabled');
+//        
+//        $OrderModel=model('OrderModel');
+//        $result=$OrderModel->itemDisable($order_id,$is_disabled);
+//        if( $result==='ok' ){
+//            return $this->respondUpdated($result);
+//        }
+//        if( $result==='forbidden' ){
+//            return $this->failForbidden($result);
+//        }
+//        return $this->fail($result);
+//    }
 
     
     public function listGet(){
         return false;
     }
     
+    public function listStageGet(){
+        $OrderGroupModel=model('OrderGroupModel');
+        $result=$OrderGroupModel->listGet();
+        return $this->respond($result);
+    }
+
+
     public function listCreate(){
         return false;
     }

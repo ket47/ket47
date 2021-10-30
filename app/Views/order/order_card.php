@@ -13,6 +13,7 @@ var order_id="<?php echo $order->order_id?>";
 var Order={
     init:function(){
         Order.suggestion.init();
+        Order.stage.init();
     },
     suggestion:{
         init:function(){
@@ -92,6 +93,23 @@ var Order={
                 Order.entryTable.load();
             }).fail();
         }
+    },
+    stage:{
+        init:function(){
+            $("#order_stage_actions").click(function(e){
+                let $button=$(e.target);
+                let new_stage=$button.data('new_stage');
+                if( !new_stage ){
+                    return;
+                }
+                $.post('/Order/itemStageCreate',{order_id,new_stage}).done(function(){
+                    ItemList.reloadItem();
+                });
+            });
+        },
+        create:function( new_stage ){
+            //let html=`<div data-stage_next=""></div>`;
+        }
     }
 };
 $(Order.init);
@@ -118,6 +136,17 @@ $(Order.init);
     }
     #order_entry_list>div>div:nth-child(even)>div{
         background-color: #f5fcff;
+    }
+    #order_stage_actions>div{
+        background-color: #6cf;
+        border-radius: 10px;
+        padding: 10px;
+        display: inline-block;
+        cursor: default;
+        min-width: 100px;
+    }
+    #order_stage_actions{
+        text-align: center;
     }
 </style>
 
@@ -199,6 +228,23 @@ $(Order.init);
         </div>
         <div id="order_entry_list"></div>
     </div>
+    
+    <div class="segment">
+        <h3>Перевести в состояние</h3>
+        <div id="order_stage_actions">
+            <?php 
+                $order->stage_next_array=explode(',',$order->stage_next);
+            ?>
+            
+            <?php foreach($stage_list as $stage):
+                if( !in_array($stage->group_type, $order->stage_next_array) ){
+                    continue;
+                } ?>
+            <div data-new_stage="<?=$stage->group_type?>"><?=$stage->group_name?></div>
+            <?php endforeach;?>
+        </div>
+    </div>
+
 
 
     <div>
