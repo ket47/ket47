@@ -53,7 +53,16 @@ class BaseController extends Controller
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
             $this->handleCors();
             $this->handleSession($request,$response);
-            \CodeIgniter\Events\Events::on('post_system', [$this, 'onAfterResponse']);
+            \CodeIgniter\Events\Events::on('post_system', function(){
+                if (is_callable('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                }
+                session()->destroy();
+                ob_end_flush();
+                @ob_flush();
+                flush();
+                \CodeIgniter\Events\Events::trigger('post_response');
+            });
             // Do Not Edit This Line
             parent::initController($request, $response, $logger);
             //--------------------------------------------------------------------
@@ -64,17 +73,6 @@ class BaseController extends Controller
                 $this->guestUserInit();
             }
 	}
-        
-        private function onAfterResponse(){
-            if (is_callable('fastcgi_finish_request')) {
-                fastcgi_finish_request();
-            }
-            session()->destroy();
-            ob_end_flush();
-            @ob_flush();
-            flush();
-            \CodeIgniter\Events\Events::trigger('post_response');
-        }
         
         private function handleSession($request,$response){
             $session_id=$request->getHeaderLine('x-sid');
