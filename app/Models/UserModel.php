@@ -61,8 +61,8 @@ class UserModel extends Model{
             ];
         }
         $this->permitWhere('r');
-        if( $userItemCache[$mode.$user_id]??0 ){
-            return $userItemCache[$mode.$user_id];
+        if( $this->userItemCache[$mode.$user_id]??0 ){
+            return $this->userItemCache[$mode.$user_id];
         }
         $user= $this->where('user_id',$user_id)->get()->getRow();
         if( !$user ){

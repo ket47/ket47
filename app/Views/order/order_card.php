@@ -230,7 +230,7 @@ $(Order.init);
     </div>
     
     <div class="segment">
-        <h3>Перевести в состояние</h3>
+        <h3>Изменить статус</h3>
         <div id="order_stage_actions">
             <?php 
                 $order->stage_next_array=explode(',',$order->stage_next);
@@ -280,7 +280,7 @@ $(Order.init);
             <?php foreach ($order->stages as $stage):?>
             <div><?= $stage->group_name ?></div>
             <div><?= dmyt($stage->created_at) ?></div>
-            <?php if($stage->created_user): ?>
+            <?php if($stage->created_user??0): ?>
                 <div><?= $stage->created_user->user_name ?> (<?= $stage->created_user->user_phone ?>)</div>
             <?php else: ?>
                 <div>-</div>

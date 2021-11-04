@@ -18,6 +18,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('UserGroupModel');
         } else if($group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
+        } else if($group_table=='trans_group_list'){
+            $GroupModel=model('TransGroupModel');
         }
         $result=$GroupModel->itemCreate( $group_parent_id, $group_name, '');
         if( is_numeric($result) ){
@@ -36,6 +38,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('UserGroupModel');
         } else if($data->group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
+        } else if($data->group_table=='trans_group_list'){
+            $GroupModel=model('TransGroupModel');
         }
         $result=$GroupModel->itemUpdate($data);
         if( $result==='forbidden' ){
@@ -58,6 +62,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('UserGroupModel');
         } else if($group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
+        } else if($group_table=='trans_group_list'){
+            $GroupModel=model('TransGroupModel');
         }
         $result=$GroupModel->itemDelete($group_id);
 
@@ -82,6 +88,7 @@ class GroupManager extends \App\Controllers\BaseController {
         $StoreGroupModel=model('StoreGroupModel');
         $OrderGroupModel=model('OrderGroupModel');
         $UserGroupModel=model('UserGroupModel');
+        $TransGroupModel=model('TransGroupModel');
         
         $tables=[];
         $tables[]=(object)[
@@ -103,6 +110,11 @@ class GroupManager extends \App\Controllers\BaseController {
                 'name'=>'User groups',
                 'type'=>'user',
                 'entries'=>$UserGroupModel->listGet()
+                ];
+        $tables[]=(object)[
+                'name'=>'Trans groups',
+                'type'=>'trans',
+                'entries'=>$TransGroupModel->listGet()
                 ];
         return view('admin/group_manager.php',['tables'=>$tables]);
     }

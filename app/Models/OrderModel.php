@@ -24,8 +24,11 @@ class OrderModel extends Model{
 
     protected $useSoftDeletes = true;
     
-    
+    private $itemCache=[];
     public function itemGet( $order_id, $mode='all' ){
+        if( $this->itemCache[$mode.$order_id]??0 ){
+            return $this->itemCache[$mode.$order_id];
+        }
         $this->permitWhere('r');
         $this->select("{$this->table}.*,group_name stage_current_name,group_type stage_current");
         $this->where('order_id',$order_id);

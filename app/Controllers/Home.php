@@ -13,6 +13,24 @@ class Home extends BaseController {
 
 
     
+    public function payment_form(){
+        $payment_description=$this->request->getVar('payment_description');
+        $payment_amount=$this->request->getVar('payment_amount');
+        $payment=[
+            'payment_description'=>$payment_description,
+            'payment_amount'=>$payment_amount
+        ];
+        return view('payment/payment_form',$payment);
+    }
+    
+    public function payment_submit(){
+        
+    }
+    
+    
+    
+    
+    
     
     
     
