@@ -144,36 +144,16 @@ class Order extends \App\Controllers\BaseController {
 
     public function listCreate() {
 
-        \CodeIgniter\Events\Events::on('post_system', [$this, 'long_wait']);
-
-
-        return false;
+        \CodeIgniter\Events\Events::on('post_response', [$this, 'long_wait']);
+        echo 'hahaha';
     }
 
-    public function respondOK($text = null) {
-        ignore_user_abort(true);
-
-
-//        $serverProtocol = filter_input(INPUT_SERVER, 'SERVER_PROTOCOL', FILTER_SANITIZE_STRING);
-//        header($serverProtocol . ' 200 OK');
-//        // Disable compression (in case content length is compressed).
-//        header('Content-Encoding: none');
-//        header('Content-Length: ' . ob_get_length());
-
-        // Close the connection.
-        //header('Connection: close');
-
-        ob_end_flush();
-        ob_flush();
-        flush();
-    }
 
     public function long_wait() {
-        $this->respondOK();
         sleep(1);
         echo('Text user will never see');
 
-        sleep(1);
+        sleep(10);
         echo 'hahaha';
         die();
     }

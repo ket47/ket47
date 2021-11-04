@@ -51,18 +51,30 @@ class BaseController extends Controller
 	 * @param LoggerInterface   $logger
 	 */
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
-                $this->handleCors();
-                $this->handleSession($request,$response);
-		// Do Not Edit This Line
-		parent::initController($request, $response, $logger);
-		//--------------------------------------------------------------------
-		// Preload any models, libraries, etc, here.
-		//--------------------------------------------------------------------
-                
-                if( session()->get('user_id')==null ){
-                    $this->guestUserInit();
-                }
+            $this->handleCors();
+            $this->handleSession($request,$response);
+            \CodeIgniter\Events\Events::on('post_system', [$this, 'onAfterResponse']);
+            // Do Not Edit This Line
+            parent::initController($request, $response, $logger);
+            //--------------------------------------------------------------------
+            // Preload any models, libraries, etc, here.
+            //--------------------------------------------------------------------
+
+            if( session()->get('user_id')==null ){
+                $this->guestUserInit();
+            }
 	}
+        
+        private function onAfterResponse(){
+            if (is_callable('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            session()->destroy();
+            ob_end_flush();
+            @ob_flush();
+            flush();
+            \CodeIgniter\Events\Events::trigger('post_response');
+        }
         
         private function handleSession($request,$response){
             $session_id=$request->getHeaderLine('x-sid');
