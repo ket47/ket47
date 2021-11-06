@@ -54,6 +54,7 @@ class UserModel extends Model{
             return (object)[
                 'user_id'=>-1,
                 'user_name'=>'Guest',
+                'user_phone'=>'-',
                 'member_of_groups'=>(object)[
                     'group_ids'=>'1',
                     'group_types'=>'guest'
