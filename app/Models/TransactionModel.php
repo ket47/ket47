@@ -37,7 +37,7 @@ class TransactionModel extends Model{
     }
     
     public function itemCreate( $trans ){
-        if( !$this->permit(null, w) ){
+        if( !$this->permit(null, 'w') ){
             return 'forbidden';
         }
         $trans_id=$this->insert($trans,true);

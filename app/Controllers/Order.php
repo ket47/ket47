@@ -143,19 +143,7 @@ class Order extends \App\Controllers\BaseController {
     }
 
     public function listCreate() {
-
-        \CodeIgniter\Events\Events::on('post_response', [$this, 'long_wait']);
-        echo 'hahaha';
-    }
-
-
-    public function long_wait() {
-        sleep(1);
-        echo('Text user will never see');
-
-        sleep(10);
-        echo 'hahaha';
-        die();
+        
     }
 
     public function listUpdate() {

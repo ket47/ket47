@@ -238,10 +238,10 @@ $(Order.init);
             
             <?php for($i=0;$i<count($stage_next_array);$i++):
                     $label_action=explode('|',$stage_next_label_array[$i]); ?>
-                <?php if($label_action[1]): ?>
-                    <div data-action="<?=$label_action[1]?>" style="background-color:#Fc0"><?=$stage_next_label_array[$i][0]?></div>
+                <?php if($label_action[1]??0): ?>
+                    <div data-action="<?=$label_action[1]??''?>" style="background-color:#Fc0"><?=$stage_next_label_array[$i][0]?></div>
                 <?php else: ?>
-                    <div data-new_stage="<?=$stage_next_array[$i]?>"><?=$stage_next_label_array[$i][0]?></div>
+                    <div data-new_stage="<?=$stage_next_array[$i]?>"><?=$label_action[0]?></div>
                 <?php endif;?>
             <?php endfor;?>
         </div>

@@ -7,7 +7,7 @@ trait OrderStageTrait{
         'customer_deleted'=>        ['customer_created',"Восстановить"],
         'customer_created'=>        ['customer_deleted,customer_confirmed',"Удалить,Подтвердить заказ"],
         'customer_confirmed'=>      ['customer_payed_cloud,customer_created','Оплатить картой|cloudPaymentsInit,Отменить заказ'],
-        'customer_payed_cloud'=>    ['customer_start',"В обработке"],
+        'customer_payed_cloud'=>    ['customer_start'],
         'customer_start'=>          ['supplier_start,supplier_reject',"Начать подготовку,Отказаться от заказа"],
         
         'supplier_start'=>          ['supplier_correction,supplier_finish'],
@@ -33,14 +33,15 @@ trait OrderStageTrait{
         if( !is_object($order) ){
             return $order;
         }
+        $OrderGroupModel=model('OrderGroupModel');
+        $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
         $next_stages=$this->stageMap[$order->stage_current??''][0]??'';
-        if( !in_array($stage, explode(',', $next_stages)) ){
+        
+        if( !in_array($stage, explode(',', $next_stages)) || !$group->group_id??0 ){
             return 'invalid_next_stage';
         }
-        $OrderGroupModel=model('OrderGroupModel');
+        
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
-
         $this->transStart();
         $this->allowedFields[]='order_group_id';
         $updated=$this->update($order_id,['order_group_id'=>$group->group_id]);
@@ -75,7 +76,7 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onCustomerPayed( $order_id, $data ){
+    private function onCustomerPayedCloud( $order_id, $data ){
         if( !$data??0 || !$data->Amount??0 ){
             return 'forbidden';
         }
@@ -86,7 +87,7 @@ trait OrderStageTrait{
         $order_sum=$EntryModel->listSumGet( $order_id );
         $order=$this->itemGet($order_id);
         
-        if($order_sum!=$data->Amount){
+        if($order_sum->order_sum_total!=$data->Amount){
             return 'wrong_amount';
         }
         $trans=[
