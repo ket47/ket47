@@ -6,8 +6,8 @@ trait OrderStageTrait{
         ''=>                        ['customer_created,customer_deleted','Создать,Удалить'],
         'customer_deleted'=>        ['customer_created',"Восстановить"],
         'customer_created'=>        ['customer_deleted,customer_confirmed',"Удалить,Подтвердить заказ"],
-        'customer_confirmed'=>      ['customer_payed_cloud,customer_created','Оплатить картой|cloudPaymentsInit,Отменить заказ'],
-        'customer_payed_cloud'=>    ['customer_start'],
+        'customer_confirmed'=>      ['other_payed_cloud,customer_created','Оплатить картой|cloudPaymentsInit,Отменить заказ'],
+        'other_payed_cloud'=>       ['customer_start'],
         'customer_start'=>          ['supplier_start,supplier_reject',"Начать подготовку,Отказаться от заказа"],
         
         'supplier_start'=>          ['supplier_correction,supplier_finish'],
@@ -35,10 +35,9 @@ trait OrderStageTrait{
         }
         $OrderGroupModel=model('OrderGroupModel');
         $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
-        $next_stages=$this->stageMap[$order->stage_current??''][0]??'';
-        
-        if( !in_array($stage, explode(',', $next_stages)) || !$group->group_id??0 ){
-            return 'invalid_next_stage';
+        $result=$this->itemStageValidate($stage,$order,$group);
+        if( $result!=='ok' ){
+            return $result;
         }
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
@@ -52,6 +51,17 @@ trait OrderStageTrait{
             $this->transComplete();
         }
         return $handled;
+    }
+    
+    private function itemStageValidate($stage,$order,$group){
+        $next_stages=explode(',', $this->stageMap[$order->stage_current??'']??'');
+        if( !in_array($stage, $next_stages) || !$group->group_id??0 ){
+            return 'invalid_next_stage';
+        }
+        if( $order->user_role!='admin' && strpos($stage, $order->user_role)!==0 ){
+            return 'invalid_stage_role';
+        }
+        return 'ok';
     }
     
     private function itemStageHandle( $order_id, $stage, $data ){

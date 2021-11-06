@@ -24,6 +24,26 @@ class OrderModel extends Model{
 
     protected $useSoftDeletes = true;
     
+    private function itemUserRoleGet($order){
+        $user_id=session()->get('user_id');
+        if( sudo() ){
+            return 'admin';
+        }
+        if( $user_id==-1 ){
+            return 'guest';
+        }
+        if( $order->owner_id==$user_id ){
+            return 'customer';
+        }
+        if( $order->order_courier_id==$user_id ){
+            return 'delivery';
+        }
+        if( in_array($user_id, explode(',',$order->owner_ally_ids)) ){
+            return 'supplier';
+        }
+        return 'other';
+    }
+    
     private $itemCache=[];
     public function itemGet( $order_id, $mode='all' ){
         if( $this->itemCache[$mode.$order_id]??0 ){
@@ -34,6 +54,7 @@ class OrderModel extends Model{
         $this->where('order_id',$order_id);
         $this->join('order_group_list','order_group_id=group_id','left');
         $order = $this->get()->getRow();
+        $order->user_role=$this->itemUserRoleGet($order);
         if( !$order ){
             return 'forbidden';
         }
