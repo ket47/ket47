@@ -1,3 +1,24 @@
+
+CREATE TABLE `order_list` (
+  `order_id` int NOT NULL AUTO_INCREMENT,
+  `order_group_id` int DEFAULT NULL,
+  `order_store_id` int DEFAULT NULL,
+  `order_customer_id` int DEFAULT NULL,
+  `order_courier_id` int DEFAULT NULL,
+  `order_description` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `order_sum_tax` float DEFAULT NULL,
+  `order_sum_shipping` float DEFAULT NULL,
+  `order_sum_total` float DEFAULT NULL,
+  `is_disabled` tinyint NOT NULL DEFAULT '0',
+  `owner_id` int NOT NULL DEFAULT '0',
+  `owner_ally_ids` varchar(45) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+
 CREATE TABLE `order_entry_list` (
   `entry_id` int NOT NULL AUTO_INCREMENT,
   `order_id` int DEFAULT NULL,
@@ -46,26 +67,6 @@ CREATE TABLE `order_group_member_list` (
   CONSTRAINT `orderCreatedBy` FOREIGN KEY (`created_by`) REFERENCES `user_list` (`user_id`),
   CONSTRAINT `ordergrpId` FOREIGN KEY (`group_id`) REFERENCES `order_group_list` (`group_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `orderId` FOREIGN KEY (`member_id`) REFERENCES `order_list` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
-
-CREATE TABLE `order_list` (
-  `order_id` int NOT NULL AUTO_INCREMENT,
-  `order_group_id` int DEFAULT NULL,
-  `order_store_id` int DEFAULT NULL,
-  `order_customer_id` int DEFAULT NULL,
-  `order_courier_id` int DEFAULT NULL,
-  `order_description` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `order_sum_tax` float DEFAULT NULL,
-  `order_sum_shipping` float DEFAULT NULL,
-  `order_sum_total` float DEFAULT NULL,
-  `is_disabled` tinyint NOT NULL DEFAULT '0',
-  `owner_id` int NOT NULL DEFAULT '0',
-  `owner_ally_ids` varchar(45) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `updated_by` int DEFAULT NULL,
-  `deleted_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 
 
