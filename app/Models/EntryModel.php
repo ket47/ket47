@@ -126,7 +126,10 @@ class EntryModel extends Model{
     }
     
     public function listUpdate( $order_id, $entry_list ){
-        return false;
+        foreach($entry_list as $entry){
+            $this->itemCreate($order_id,$entry->product_id,$entry->product_quantity);
+        }
+        return 'ok';
     }
     
     public function listDelete(){

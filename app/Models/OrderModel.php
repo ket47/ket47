@@ -12,14 +12,14 @@ class OrderModel extends Model{
     protected $primaryKey = 'order_id';
     protected $allowedFields = [
         'order_store_id',
+        'order_customer_id',
+        'order_courier_id',
         'order_sum_shipping',
         'order_sum_total',
         'order_sum_tax',
         'order_description',
         'updated_by',
-        'deleted_at',
-        'owner_id',
-        'owner_ally_ids'
+        'deleted_at'
     ];
 
     protected $useSoftDeletes = true;
@@ -80,11 +80,16 @@ class OrderModel extends Model{
         if( !$store ){
             return 'nostore';
         }
+        $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
+        $order_owner_allys=$store->owner_ally_ids?"$store->owner_id,$store->owner_ally_ids":"$store->owner_id";
         $new_order=[
             'order_store_id'=>$store_id,
+            'order_customer_id'=>$user_id,
             'order_shipping_fee'=>$this->shippingFeeGet(),
             'order_tax'=>0,
-            'owner_id'=>$user_id
+            'owner_id'=>$user_id,
+            'owner_ally_id'=>$order_owner_allys
         ];
         $this->insert($new_order);
         $order_id=$this->db->insertID();
