@@ -1,0 +1,1 @@
+Tezkel: Вам поступил заказ №<?=$order->order_id?>

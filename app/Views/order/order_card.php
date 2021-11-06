@@ -229,19 +229,21 @@ $(Order.init);
         <div id="order_entry_list"></div>
     </div>
     
-    <div class="segment">
-        <h3>Изменить статус</h3>
+    <div class="segment1">
         <div id="order_stage_actions">
             <?php 
-                $order->stage_next_array=explode(',',$order->stage_next);
+                $stage_next_array=explode(',',$order->stage_next[0]);
+                $stage_next_label_array=explode(',',$order->stage_next[1]);
             ?>
             
-            <?php foreach($stage_list as $stage):
-                if( !in_array($stage->group_type, $order->stage_next_array) ){
-                    continue;
-                } ?>
-            <div data-new_stage="<?=$stage->group_type?>"><?=$stage->group_name?></div>
-            <?php endforeach;?>
+            <?php for($i=0;$i<count($stage_next_array);$i++):
+                    $label_action=explode('|',$stage_next_label_array[$i]); ?>
+                <?php if($label_action[1]): ?>
+                    <div data-action="<?=$label_action[1]?>" style="background-color:#Fc0"><?=$stage_next_label_array[$i][0]?></div>
+                <?php else: ?>
+                    <div data-new_stage="<?=$stage_next_array[$i]?>"><?=$stage_next_label_array[$i][0]?></div>
+                <?php endif;?>
+            <?php endfor;?>
         </div>
     </div>
 

@@ -8,7 +8,7 @@ class OrderGroupModel extends GroupLayer{
     ];
     protected $validationMessages = [
         'group_name'        => [
-            'is_unique' => 'Group name already exists'
+            'is_unique' => 'Stage name already exists'
         ]
     ];
 }

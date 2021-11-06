@@ -35,10 +35,10 @@ class OrderModel extends Model{
         $this->join('order_group_list','order_group_id=group_id','left');
         $order = $this->get()->getRow();
         if( !$order ){
-            echo 'notfound or ';
             return 'forbidden';
         }
         if($mode=='basic'){
+            $this->itemCache[$mode.$order_id]=$order;
             return $order;
         }
         
@@ -50,7 +50,7 @@ class OrderModel extends Model{
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
         $StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
-        $order->stage_next= $this->stageMap[$order->stage_current??''][0]??'';
+        $order->stage_next= $this->stageMap[$order->stage_current??'']??[];
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
         $order->entries=    $EntryModel->listGet($order_id);
@@ -65,6 +65,7 @@ class OrderModel extends Model{
                 $stage->created_user=$UserModel->itemGet($stage->created_by,'basic');
             }
         }
+        $this->itemCache[$mode.$order_id]=$order;
         return $order;
     }
     
@@ -131,9 +132,9 @@ class OrderModel extends Model{
         if( !$this->permit($order_id,'w') ){
             return 'forbidden';
         }
-        if( !$this->itemStageCreate( $order_id, 'order_deleted' ) ){
-            return 'wrong_stage';
-        }
+//        if( !$this->itemStageCreate( $order_id, 'order_deleted' ) ){
+//            return 'wrong_stage';
+//        }
         $EntryModel=model('EntryModel');
         $EntryModel->listDeleteChildren( $order_id );
         
@@ -148,9 +149,9 @@ class OrderModel extends Model{
         if( !$this->permit($order_id,'w') ){
             return 'forbidden';
         }
-        if( !$this->itemStageCreate( $order_id, 'customer_created' ) ){
-            return 'wrong_stage';
-        }
+//        if( !$this->itemStageCreate( $order_id, 'customer_created' ) ){
+//            return 'wrong_stage';
+//        }
         $EntryModel=model('EntryModel');
         $EntryModel->listUnDeleteChildren( $order_id );
         

@@ -3,12 +3,12 @@
 namespace App\Models;
 trait OrderStageTrait{
     protected $stageMap=[
-        ''=>                        ['customer_created,customer_deleted'],
-        'customer_deleted'=>        ['customer_created'],
-        'customer_created'=>        ['customer_deleted,customer_confirmed'],
-        'customer_confirmed'=>      ['customer_payed'],
-        'customer_payed'=>          ['customer_start'],
-        'customer_start'=>          ['supplier_start,supplier_reject'],
+        ''=>                        ['customer_created,customer_deleted','Создать,Удалить'],
+        'customer_deleted'=>        ['customer_created',"Восстановить"],
+        'customer_created'=>        ['customer_deleted,customer_confirmed',"Удалить,Подтвердить заказ"],
+        'customer_confirmed'=>      ['customer_payed_cloud,customer_created','Оплатить картой|cloudPaymentsInit,Отменить заказ'],
+        'customer_payed_cloud'=>    ['customer_start',"В обработке"],
+        'customer_start'=>          ['supplier_start,supplier_reject',"Начать подготовку,Отказаться от заказа"],
         
         'supplier_start'=>          ['supplier_correction,supplier_finish'],
         'supplier_finish'=>         ['delivery_start'],
@@ -58,12 +58,17 @@ trait OrderStageTrait{
         return $this->{$stageHandlerName}($order_id, $data);
     }
     
+    ////////////////////////////////////////////////
+    //ORDER STAGE HANDLING LISTENERS
+    ////////////////////////////////////////////////
+    
     private function onCustomerDeleted($order_id){
         return $this->itemDelete($order_id);
     }
     
     private function onCustomerCreated($order_id){
-        return $this->itemUnDelete($order_id);
+        $this->itemUnDelete($order_id);
+        return 'ok';
     }
     
     private function onCustomerConfirmed( $order_id ){
@@ -71,17 +76,19 @@ trait OrderStageTrait{
     }
     
     private function onCustomerPayed( $order_id, $data ){
+        if( !$data??0 || !$data->Amount??0 ){
+            return 'forbidden';
+        }
         $EntryModel=model('EntryModel');
         $TransactionModel=model('TransactionModel');
         
-        $user_id=session()->getVar('user_id');
+        $user_id=session()->get('user_id');
         $order_sum=$EntryModel->listSumGet( $order_id );
         $order=$this->itemGet($order_id);
         
         if($order_sum!=$data->Amount){
             return 'wrong_amount';
         }
-        
         $trans=[
             'trans_amount'=>$order_sum->order_sum_total,
             'trans_data'=>json_encode($data),
@@ -102,7 +109,40 @@ trait OrderStageTrait{
     }
     
     private function onCustomerStart( $order_id, $data ){
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $MessageModel=model('MessageModel');
         
+        $order=$this->itemGet($order_id);
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');//should we notify only owner of store or also allys?
+        $customer=$UserModel->itemGet($order->owner_id);
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        
+        $store_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'sms',
+            'template'=>'messages/order/on_customer_start_STORE_sms.php',
+            'context'=>$context
+        ];
+        $store_email=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'email',
+            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_start_STORE_email.php',
+            'context'=>$context
+        ];
+        $cust_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'sms',
+            'template'=>'messages/order/on_customer_start_CUST_sms.php',
+            'context'=>$context
+        ];
+        $MessageModel->listSend([$store_sms,$store_email,$cust_sms]);
+        return 'ok';
     }
     
     private function onSupplierStart(){

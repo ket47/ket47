@@ -56,6 +56,7 @@ class GroupMemberLayer extends Model{
     
     public function memberOfGroupsListGet($member_id){
         return $this
+                ->select("{$this->table}.*,group_name,group_type")
                 ->where('member_id',$member_id)
                 ->join("{$this->groupTable}", "{$this->groupTable}.group_id = {$this->table}.group_id")
                 ->get()->getResult();
@@ -72,14 +73,9 @@ class GroupMemberLayer extends Model{
         if($leave_other_groups){
             $this->where('member_id',$member_id)->delete();
         }
-        try{
-            $created_by=session()->get('user_id');
-            $this->insert(['member_id'=>$member_id,'group_id'=>$group_id,'created_by'=>$created_by],true);
-            return $this->affectedRows()?true:false;
-        }
-        catch (\Exception $e){
-            return true;//duplicate key
-        }
+        $created_by=session()->get('user_id');
+        $this->replace(['member_id'=>$member_id,'group_id'=>$group_id,'created_by'=>$created_by]);
+        return $this->affectedRows()?true:false;
     }
     
     public function leaveGroup($member_id,$group_id){

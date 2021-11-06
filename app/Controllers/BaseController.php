@@ -57,7 +57,7 @@ class BaseController extends Controller
                 if (is_callable('fastcgi_finish_request')) {
                     fastcgi_finish_request();
                 }
-                session()->destroy();
+                session_write_close();
                 header('Content-Length: '.ob_get_length());
                 ob_end_flush();
                 @ob_flush();

@@ -48,7 +48,7 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    private $userItemCache=[];
+    private $itemCache=[];
     public function itemGet( $user_id, $mode='all' ){
         if( $user_id<1 ){
             return (object)[
@@ -60,16 +60,16 @@ class UserModel extends Model{
                 ]
             ];
         }
-        $this->permitWhere('r');
-        if( $this->userItemCache[$mode.$user_id]??0 ){
-            return $this->userItemCache[$mode.$user_id];
+        if( $this->itemCache[$mode.$user_id]??0 ){
+            return $this->itemCache[$mode.$user_id];
         }
+        $this->permitWhere('r');
         $user= $this->where('user_id',$user_id)->get()->getRow();
         if( !$user ){
             return 'notfound';
         }
         if( $mode=='basic' ){
-            $userItemCache[$mode.$user_id]=$user;
+            $this->itemCache[$mode.$user_id]=$user;
             return $user;
         }
 
@@ -77,7 +77,8 @@ class UserModel extends Model{
         $UserGroupMemberModel->tableSet('user_group_member_list');
         $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
         unset($user->user_pass);
-        $userItemCache[$mode.$user_id]=$user;
+        
+        $this->itemCache[$mode.$user_id]=$user;
         return $user;
     }
     

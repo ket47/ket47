@@ -13,14 +13,12 @@ class Cloudpayments extends \App\Controllers\BaseController{
             return $this->respond(['code'=>13]);
         }
         $OrderModel=model('OrderModel');
-        $EntryModel=model('EntryModel');
         
         $order=$OrderModel->itemGet($data->InvoiceId,'basic');
-        $order_sum=$EntryModel->listSumGet( $data->InvoiceId );
-        if( $order->current_stage!=='customer_confirmed' ){
+        if( $order->stage_current!=='customer_confirmed' ){
             return $this->respond(['code'=>20]);//Платеж просрочен
         }
-        if($order_sum!=$data->Amount){
+        if($order->order_sum_total!=$data->Amount){
             return $this->respond(['code'=>12]);//Неверная сумма
         }
         if($order->owner_id!=$data->AccountId){
@@ -37,7 +35,10 @@ class Cloudpayments extends \App\Controllers\BaseController{
         }
         
         $OrderModel=model('OrderModel');
-        $result=$OrderModel->itemStageCreate( $data->InvoiceId, 'customer_payed', $data, false );
+        $result=$OrderModel->itemStageCreate( $data->InvoiceId, 'customer_payed_cloud', $data, false );
+        
+        die($result);
+        
         if( $result=='ok' ){
             return $this->respond(['code'=>0]); 
         }

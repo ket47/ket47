@@ -47,7 +47,11 @@ class StoreModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
+    private $itemCache=[];
     public function itemGet( $store_id, $mode='all' ){
+        if( $this->itemCache[$mode.$store_id]??0 ){
+            return $this->itemCache[$mode.$store_id];
+        }
         if( !$this->permit($store_id,'r') ){
             return 'forbidden';
         }
@@ -57,6 +61,7 @@ class StoreModel extends Model{
             return 'notfound';
         }
         if( $mode=='basic' ){
+            $this->itemCache[$mode.$store_id]=$store;
             return $store;
         }
 
@@ -73,6 +78,7 @@ class StoreModel extends Model{
             'limit'=>30
         ];
         $store->images=$ImageModel->listGet($filter);
+        $this->itemCache[$mode.$store_id]=$store;
         return $store;
     }
     
