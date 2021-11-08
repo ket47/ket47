@@ -44,6 +44,17 @@ class OrderModel extends Model{
         return 'other';
     }
     
+    private function itemGetNextStages($current_stage,$user_role){
+        $unfilterd_stage_next= $this->stageMap[$current_stage??'']??[];
+        $stage_next=[];
+        foreach($unfilterd_stage_next as $stage=>$config){
+            if( $user_role=='admin' || strpos($stage, $user_role)===0 ){
+                $stage_next[$stage]=$config;
+            }
+        }
+        return $stage_next;
+    }
+    
     private $itemCache=[];
     public function itemGet( $order_id, $mode='all' ){
         if( $this->itemCache[$mode.$order_id]??0 ){
@@ -71,7 +82,7 @@ class OrderModel extends Model{
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
         $StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
-        $order->stage_next= $this->stageMap[$order->stage_current??'']??[];
+        $order->stage_next=  $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
         $order->entries=    $EntryModel->listGet($order_id);
@@ -115,7 +126,7 @@ class OrderModel extends Model{
         $this->insert($new_order);
         $order_id=$this->db->insertID();
         if($entry_list){
-            $this->itemUpdate([
+            $this->listUpdate([
                 'order_id'=>$order_id,
                 'entry_list'=>$entry_list
             ]);

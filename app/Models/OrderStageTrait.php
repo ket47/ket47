@@ -1,29 +1,57 @@
 <?php
-
 namespace App\Models;
 trait OrderStageTrait{
     protected $stageMap=[
-        ''=>                        ['customer_created,customer_deleted','Создать,Удалить'],
-        'customer_deleted'=>        ['customer_created',"Восстановить"],
-        'customer_created'=>        ['customer_deleted,customer_confirmed',"Удалить,Подтвердить заказ"],
-        'customer_confirmed'=>      ['other_payed_cloud,customer_created','Оплатить картой|cloudPaymentsInit,Отменить заказ'],
-        'other_payed_cloud'=>       ['customer_start'],
-        'customer_start'=>          ['supplier_start,supplier_reject',"Начать подготовку,Отказаться от заказа"],
+        ''=>[
+            'customer_created'=>    ['Создать'],
+            'customer_deleted'=>    ['Удалить','negative']
+            ],
+        'customer_deleted'=>[
+            'customer_created'=>    ['Восстановить'],
+            ],
+        'customer_created'=>[
+            'customer_deleted'=>    ['Удалить','negative'],
+            'customer_confirmed'=>  ['Подтвердить заказ']
+            ],
+        'customer_confirmed'=>[
+            'action_cloud_pay'=>    ['Оплатить картой'],
+            'customer_created'=>    ['Отменить заказ'],
+            'other_payed_cloud'=>   [],
+            ],
+        'other_payed_cloud'=>[
+            'customer_start'=>      []
+            ],
+        'customer_start'=>[
+            'supplier_start'=>      ['Начать подготовку'],
+            'supplier_rejected'=>   ['Отказаться от заказа!','negative']
+            ],
         
-        'supplier_start'=>          ['supplier_correction,supplier_finish'],
-        'supplier_finish'=>         ['delivery_start'],
-        'delivery_search'=>         ['delivery_start,delivery_no_courier'],
-        'delivery_start'=>          ['delivery_finish,delivery_no_address,delivery_rejected'],
-        'delivery_finish'=>         ['customer_accepted,customer_partly_accepted,customer_rejected'],
+        
+        
+        'supplier_start'=>[
+            'supplier_correction'=> [],
+            'supplier_finish'=>     ['Закончить сборку']
+            ],
+        'supplier_rejected'=>[
+            
+            ],
+        
+        'supplier_finish'=>[
+            'delivery_start'=>      [],
+            ],
+        
+        'delivery_search'=>['delivery_start,delivery_no_courier'],
+        'delivery_start'=>['delivery_finish,delivery_no_address,delivery_rejected'],
+        'delivery_finish'=>['customer_accepted,customer_partly_accepted,customer_rejected'],
         
         'customer_partly_accepted'=>['supplier_reclaimed'],
-        'customer_rejected'=>       ['supplier_reclaimed'],
-        'delivery_no_address'=>     ['supplier_reclaimed'],
-        'delivery_rejected'=>       ['supplier_reclaimed'],
+        'customer_rejected'=>['supplier_reclaimed'],
+        'delivery_no_address'=>['supplier_reclaimed'],
+        'delivery_rejected'=>['supplier_reclaimed'],
         
-        'supplier_reclaimed'=>      ['customer_refunded'],
-        'customer_refunded'=>       ['customer_finish'],
-        'customer_accepted'=>       ['customer_finish'],
+        'supplier_reclaimed'=>['customer_refunded'],
+        'customer_refunded'=>['customer_finish'],
+        'customer_accepted'=>['customer_finish'],
     ];
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
         if( $check_permission ){
@@ -54,8 +82,8 @@ trait OrderStageTrait{
     }
     
     private function itemStageValidate($stage,$order,$group){
-        $next_stages=explode(',', $this->stageMap[$order->stage_current??'']??'');
-        if( !in_array($stage, $next_stages) || !$group->group_id??0 ){
+        $next_stages=$this->stageMap[$order->stage_current??'']??[];
+        if( !$next_stages[$stage] || empty($group->group_id) ){
             return 'invalid_next_stage';
         }
         if( $order->user_role!='admin' && strpos($stage, $order->user_role)!==0 ){
@@ -157,7 +185,11 @@ trait OrderStageTrait{
     }
     
     private function onSupplierStart(){
-        
+        return 'ok';
+    }
+    
+    private function onSupplierRejected(){
+        return 'ok';
     }
     
     private function onSupplierCorrection(){

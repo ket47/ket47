@@ -138,7 +138,6 @@ $(Order.init);
         background-color: #f5fcff;
     }
     #order_stage_actions>div{
-        background-color: #6cf;
         border-radius: 10px;
         padding: 10px;
         display: inline-block;
@@ -147,6 +146,7 @@ $(Order.init);
     }
     #order_stage_actions{
         text-align: center;
+        padding: 10px;
     }
 </style>
 
@@ -229,21 +229,15 @@ $(Order.init);
         <div id="order_entry_list"></div>
     </div>
     
-    <div class="segment1">
+    <div>
         <div id="order_stage_actions">
-            <?php 
-                $stage_next_array=explode(',',$order->stage_next[0]);
-                $stage_next_label_array=explode(',',$order->stage_next[1]);
-            ?>
-            
-            <?php for($i=0;$i<count($stage_next_array);$i++):
-                    $label_action=explode('|',$stage_next_label_array[$i]); ?>
-                <?php if($label_action[1]??0): ?>
-                    <div data-action="<?=$label_action[1]??''?>" style="background-color:#Fc0"><?=$stage_next_label_array[$i][0]?></div>
+            <?php foreach($order->stage_next as $stage=>$config):?>
+                <?php if( strpos($stage,'action')===0 ): ?>
+                    <div data-action="<?=$stage?>" class="<?=$config[1]??'primary'?>"><?=$config[0]?></div>
                 <?php else: ?>
-                    <div data-new_stage="<?=$stage_next_array[$i]?>"><?=$label_action[0]?></div>
+                    <div data-new_stage="<?=$stage?>" class="<?=$config[1]??'primary'?>"><?=$config[0]?></div>
                 <?php endif;?>
-            <?php endfor;?>
+            <?php endforeach;?>
         </div>
     </div>
 

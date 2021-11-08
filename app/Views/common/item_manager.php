@@ -49,6 +49,9 @@
         init:function (){
             $('.item_list').on('change',function(e){
                 var $input=$(e.target);
+                if( !$input.attr('name') ){
+                    return;
+                }
                 var name_parts=$input.attr('name').split('.');
                 var name=name_parts[0];
                 var item_id=name_parts[1];

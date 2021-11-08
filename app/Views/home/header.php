@@ -93,13 +93,26 @@
             .primary{
                 background-color: #6cf;
             }
+            .secondary{
+                background-color: #ccc;
+            }
+            .negative{
+                color:white;
+                background-color: #f66;
+            }
+            .positive{
+                background-color: #6d9;
+            }
+            h2,h3{
+                -border-bottom: 1px #6cf solid;
+            }
+            
+            
+            
+            
             .grid_header>div{
                 border-bottom: 2px #6cf solid;
-                text-align: center111;
                 font-weight: bold;
-            }
-            .secondary{
-                background-color: #eee;
             }
             button{
                 padding: 5px;
