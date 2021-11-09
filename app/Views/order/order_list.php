@@ -29,6 +29,6 @@
 <?php endif; ?>
 <script>
 
-$(".item_list i[data-action=edit]").trigger("click");
+$(".item_list i[data-action=edit]").last().trigger("click");
 
 </script>

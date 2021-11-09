@@ -9,5 +9,4 @@ class OrderGroupMemberModel extends GroupMemberLayer{
         'member_id',
         'created_by'
         ];
-
 }

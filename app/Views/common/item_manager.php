@@ -144,6 +144,9 @@
         undeleteItem:function( <?=$item_name?>_id ){
             $.post('/<?=$ItemName?>/itemUnDelete',{<?=$item_name?>_id}).done(ItemList.reload);
         },
+        purgeItem:function( <?=$item_name?>_id ){
+            $.post('/<?=$ItemName?>/itemPurge',{<?=$item_name?>_id}).done(ItemList.reload);
+        },
         approve:function( <?=$item_name?>_id,field_name ){
             $.post('/<?=$ItemName?>/fieldApprove',{<?=$item_name?>_id,field_name:field_name}).always(ItemList.reloadItem);
         },

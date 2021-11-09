@@ -166,18 +166,27 @@ class OrderModel extends Model{
         return $this->itemUpdate($order);
     }
     
+    public function itemPurge( $order_id ){
+        $this->itemDelete($order_id);
+        
+        $EntryModel=model('EntryModel');
+        $EntryModel->where(['order_id',$order_id])->delete(null,true);
+        $this->delete($order_id,true);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
     public function itemDelete( $order_id ){
         if( !$this->permit($order_id,'w') ){
             return 'forbidden';
         }
-//        if( !$this->itemStageCreate( $order_id, 'order_deleted' ) ){
-//            return 'wrong_stage';
-//        }
         $EntryModel=model('EntryModel');
         $EntryModel->listDeleteChildren( $order_id );
         
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('order', $order_id);
+        
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $OrderGroupMemberModel->where('member_id',$order_id)->delete();
         
         $this->delete($order_id);
         return $this->db->affectedRows()?'ok':'idle';
@@ -186,10 +195,7 @@ class OrderModel extends Model{
     public function itemUnDelete( $order_id ){
         if( !$this->permit($order_id,'w') ){
             return 'forbidden';
-        }
-//        if( !$this->itemStageCreate( $order_id, 'customer_created' ) ){
-//            return 'wrong_stage';
-//        }
+        }//group member list
         $EntryModel=model('EntryModel');
         $EntryModel->listUnDeleteChildren( $order_id );
         

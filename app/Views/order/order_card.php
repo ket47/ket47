@@ -212,7 +212,8 @@ $(Order.init);
             <div>
                 <?php if($order->deleted_at): ?>
                     <?=dmyt($order->deleted_at)?>
-                <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)" title="Восстановить"></i>
+                    <i class="fa fa-trash" style="color:red" onclick="ItemList.purgeItem(<?= $order->order_id ?>)" title="Окончательно удалить"></i>
+                    <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $order->order_id ?>)" title="Восстановить"></i>
                 <?php else: ?>
                     <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $order->order_id ?>)" title="Удалить"></i>
                 <?php endif; ?>

@@ -20,6 +20,9 @@ trait OrderStageTrait{
             ],
         'customer_payed_cloud'=>[
             'customer_start'=>      [],
+            
+            
+            
             'customer_confirmed'=>  ['Test rollback'],
             ],
         'customer_start'=>[

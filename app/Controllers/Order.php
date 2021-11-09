@@ -87,19 +87,19 @@ class Order extends \App\Controllers\BaseController {
         return $this->failNotFound();
     }
 
-//    public function itemDelete(){
-//        $order_id=$this->request->getVar('order_id');
-//        
-//        $OrderModel=model('OrderModel');
-//        $result=$OrderModel->itemDelete($order_id);        
-//        if( $result==='ok' ){
-//            return $this->respondDeleted($result);
-//        }
-//        if( $result==='forbidden' ){
-//            return $this->failForbidden($result);
-//        }
-//        return $this->fail($result);   
-//    }
+    public function itemPurge(){
+        $order_id=$this->request->getVar('order_id');
+        
+        $OrderModel=model('OrderModel');
+        $result=$OrderModel->itemPurge($order_id);        
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
 //    
 //    public function itemUnDelete(){
 //        $order_id=$this->request->getVar('order_id');
