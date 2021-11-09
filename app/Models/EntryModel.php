@@ -163,7 +163,7 @@ class EntryModel extends Model{
     
     public function listUpdate( $order_id, $entry_list ){
         foreach($entry_list as $entry){
-            echo $this->itemCreate($order_id,$entry->product_id,$entry->product_quantity);
+            $this->itemCreate($order_id,$entry->product_id,$entry->product_quantity);
         }
         return 'ok';
     }
