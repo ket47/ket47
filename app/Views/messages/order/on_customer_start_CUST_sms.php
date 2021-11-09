@@ -1,1 +1,1 @@
-Tezkel: Ваш заказ №<?=$order->order_id?> принят к обработке
+Tezkel: <?=$user->user_name?>, ваш заказ №<?=$order->order_id?> принят к обработке

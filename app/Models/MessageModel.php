@@ -19,29 +19,30 @@ class MessageModel extends Model{
 
     protected $useSoftDeletes = false;
 
-    public function itemCreate( object $message ){
-        //\CodeIgniter\Events\Events::on('post_response', [$this, 'itemSend'], $message);
-        
-        
-        $this->itemSend($message);
+    public function itemCreate( object $message, $lazy_send=false ){
+        if( $lazy_send ){
+            $MessageModel=$this;
+            \CodeIgniter\Events\Events::on('post_response',function () use ($MessageModel,$message) {
+                $MessageModel->itemSend($message);
+            });
+        } else {
+            $this->itemSend($message);
+        }
     }
     
     private function itemSend( $message ){
-        
-        p($message);
-        
-        
-        $multiple_recievers=explode($message->reciever_id);
+        $multiple_recievers=explode(',',$message->message_reciever_id);
         if( count($multiple_recievers)>1 ){
             foreach($multiple_recievers as $current_reciever_id){
-                $message->reciever_id=$current_reciever_id;
+                if( !$current_reciever_id ){
+                    continue;
+                }
+                $message->message_reciever_id=$current_reciever_id;
                 $this->itemSend($message);
             }
+            return true;
         }
-        if( isset($message->template) ){
-            $message->message_text=view($message->template,$message->context);
-        }
-        switch( $message->message_tarnsport??null ){
+        switch( $message->message_transport ){
             case 'email':
                 $this->itemSendEmail($message);
                 break;
@@ -58,15 +59,20 @@ class MessageModel extends Model{
     
     private function itemSendEmail( $message ){
         $UserModel=model('UserModel');
-        $user=$UserModel->itemGet($message->reciever_id);
-        if( !$user->user_email_verified || !$message->message_text ){
+        $user=$UserModel->itemGet($message->message_reciever_id);
+        if( isset($message->template) ){
+            $message->context['user']=$user;
+            $message->message_text=view($message->template,$message->context);
+        }
+        if( /*!$user->user_email_verified ||*/ !$message->message_text ){
             return false;
         }
         $email = \Config\Services::email();
         $config=[
             'SMTPHost'=>getenv('email_server'),
             'SMTPUser'=>getenv('email_username'),
-            'SMTPPass'=>getenv('email_password')
+            'SMTPPass'=>getenv('email_password'),
+            'mailType'=>'html',
         ];
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
@@ -74,6 +80,7 @@ class MessageModel extends Model{
         $email->setSubject($message->message_subject??getenv('email_sendername'));
         $email->setMessage($message->message_text);
         $email_send_ok=$email->send();
+        
         if( !$email_send_ok ){
             log_message('error', 'Cant send email:'. json_encode($message).$email->printDebugger(['headers']) );
             return false;
@@ -83,7 +90,11 @@ class MessageModel extends Model{
     
     private function itemSendSms( $message ){
         $UserModel=model('UserModel');
-        $user=$UserModel->itemGet($message->reciever_id);
+        $user=$UserModel->itemGet($message->message_reciever_id);
+        if( isset($message->template) ){
+            $message->context['user']=$user;
+            $message->message_text=view($message->template,$message->context);
+        }
         if( !$user->user_phone_verified || !$message->message_text ){
             return false;
         }
@@ -103,9 +114,9 @@ class MessageModel extends Model{
         return false;
     }
     
-    public function listSend( array $message_list ){
+    public function listSend( array $message_list, $lazy_send=false ){
         foreach( $message_list as $message){
-            $this->itemCreate($message);
+            $this->itemCreate($message,$lazy_send);
         }
     }
 }

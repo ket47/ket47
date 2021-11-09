@@ -52,9 +52,8 @@ class OrderModel extends Model{
         return $stage_next;
     }
     
-    private function itemCacheClear( $order_id ){
-        unset($this->itemCache['basic'.$order_id]);
-        unset($this->itemCache['all'.$order_id]);
+    public function itemCacheClear(){
+        $this->itemCache=[];
     }
     
     public $checkPermissionForItemGet=true;
@@ -128,13 +127,13 @@ class OrderModel extends Model{
         ];
         $this->insert($new_order);
         $order_id=$this->db->insertID();
+        $this->itemStageCreate( $order_id, 'customer_created' );
         if($entry_list){
-            $this->listUpdate([
+            $this->itemUpdate((object)[
                 'order_id'=>$order_id,
                 'entry_list'=>$entry_list
             ]);
         }
-        $this->itemStageCreate( $order_id, 'customer_created' );
         return $order_id;
     }
     

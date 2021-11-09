@@ -24,7 +24,12 @@ trait OrderStageTrait{
             ],
         'customer_start'=>[
             'supplier_start'=>      ['Начать подготовку'],
-            'supplier_rejected'=>   ['Отказаться от заказа!','negative']
+            'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
+            
+            
+            
+            
+            'customer_start'=>      ['Test notify'],
             ],
         
         
@@ -64,12 +69,6 @@ trait OrderStageTrait{
         }
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
-            
-            print_r($this->itemCache);
-            
-            echo 'Order get failed'.$this->checkPermissionForItemGet;
-            
-            
             return $order;
         }
         $OrderGroupModel=model('OrderGroupModel');
@@ -85,7 +84,7 @@ trait OrderStageTrait{
         $this->allowedFields[]='order_group_id';
         $updated=$this->update($order_id,['order_group_id'=>$group->group_id]);
         $joined=$OrderGroupMemberModel->joinGroup($order_id,$group->group_id);
-        $this->itemCacheClear($order_id);
+        $this->itemCacheClear();
         
         $handled=$this->itemStageHandle( $order_id, $stage, $data );
         if( $updated && $joined && $handled==='ok' ){
@@ -167,6 +166,7 @@ trait OrderStageTrait{
         $MessageModel=model('MessageModel');
         
         $order=$this->itemGet($order_id);
+        $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');//should we notify only owner of store or also allys?
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
@@ -174,15 +174,14 @@ trait OrderStageTrait{
             'store'=>$store,
             'customer'=>$customer
         ];
-        
         $store_sms=(object)[
-            'message_reciever_id'=>$order->owner_id,
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_transport'=>'sms',
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context
         ];
         $store_email=(object)[
-            'message_reciever_id'=>$order->owner_id,
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_transport'=>'email',
             'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_start_STORE_email.php',
@@ -194,7 +193,7 @@ trait OrderStageTrait{
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
         ];
-        $MessageModel->listSend([$store_sms,$store_email,$cust_sms]);
+        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
         return 'ok';
     }
     
