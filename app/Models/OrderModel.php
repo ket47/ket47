@@ -26,12 +26,6 @@ class OrderModel extends Model{
     
     private function itemUserRoleGet($order){
         $user_id=session()->get('user_id');
-        if( sudo() ){
-            return 'admin';
-        }
-        if( $user_id==-1 ){
-            return 'guest';
-        }
         if( $order->owner_id==$user_id ){
             return 'customer';
         }
@@ -40,6 +34,9 @@ class OrderModel extends Model{
         }
         if( in_array($user_id, explode(',',$order->owner_ally_ids)) ){
             return 'supplier';
+        }
+        if( sudo() ){
+            return 'admin';
         }
         return 'other';
     }
@@ -55,6 +52,12 @@ class OrderModel extends Model{
         return $stage_next;
     }
     
+    private function itemCacheClear( $order_id ){
+        unset($this->itemCache['basic'.$order_id]);
+        unset($this->itemCache['all'.$order_id]);
+    }
+    
+    public $checkPermissionForItemGet=true;
     private $itemCache=[];
     public function itemGet( $order_id, $mode='all' ){
         if( $this->itemCache[$mode.$order_id]??0 ){
@@ -65,10 +68,10 @@ class OrderModel extends Model{
         $this->where('order_id',$order_id);
         $this->join('order_group_list','order_group_id=group_id','left');
         $order = $this->get()->getRow();
-        $order->user_role=$this->itemUserRoleGet($order);
         if( !$order ){
             return 'forbidden';
         }
+        $order->user_role=$this->itemUserRoleGet($order);
         if($mode=='basic'){
             $this->itemCache[$mode.$order_id]=$order;
             return $order;
@@ -148,7 +151,6 @@ class OrderModel extends Model{
             $EntryModel=model('EntryModel');
             $EntryModel->listUpdate($order->order_id,$order->entry_list);
         }
-        //$this->itemStageCreate( $order->order_id, 'customer_created' );
         /*
          * IF owners are changed then update owner of entries
          */
@@ -195,7 +197,6 @@ class OrderModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->listUnDelete('order', $order_id);
         
-        $this->itemStageCreate( $order_id, 'order_created' );
         $this->update($order_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';
     }

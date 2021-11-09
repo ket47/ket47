@@ -29,7 +29,7 @@
         border-bottom: 1px solid white;
     }
     .item_card>div{
-        border: 2px #999 dashed;
+        border: 2px #ccc dashed;
         width: 100%;
     }
     .item_disabled>div{

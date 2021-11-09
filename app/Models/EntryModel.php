@@ -36,11 +36,28 @@ class EntryModel extends Model{
         return $this->get()->getRow();
     }
     
+    
+    private function itemEditAllow( $order ){
+        if( $order->user_role=='customer' && $order->stage_current=='customer_created' ){
+            return true;
+        }
+        if( $order->user_role=='supplier' && $order->stage_current=='supplier_corrected' ){
+            return true;
+        }
+        if( $order->user_role=='admin' && in_array($order->stage_current,['supplier_corrected','customer_created']) ){
+            return true;
+        }
+        return false;
+    }
+    
     public function itemCreate($order_id,$product_id,$product_quantity){
         $OrderModel=model('OrderModel');
         $ProductModel=model('ProductModel');
         $OrderModel->permitWhere('w');
         $order_basic=$OrderModel->itemGet($order_id,'basic');
+        if( !$this->itemEditAllow( $order_basic ) ){
+            return 'forbidden_at_this_stage';
+        }
         $product_basic=$ProductModel->itemGet($product_id,'basic');
         if( !is_object($order_basic) || !is_object($product_basic) ){
             echo "order, product notfound or ";
@@ -75,14 +92,21 @@ class EntryModel extends Model{
         $this->permitWhere('w');
         $stock_check_sql="SELECT 
                 product_quantity,
-                entry_comment
+                entry_comment,
+                order_id
             FROM
                 order_entry_list
                     JOIN
                 product_list USING (product_id)
             WHERE
-                entry_id = {$entry->entry_id}";
+                entry_id = '{$entry->entry_id}'";
         $stock=$this->query($stock_check_sql)->getRow();
+        
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($stock->order_id,'basic');
+        if( !$this->itemEditAllow( $order_basic ) ){
+            return 'forbidden_at_this_stage';
+        }
         if( isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
             $entry->entry_comment= preg_replace('/\[.+\]/u', '', $stock->entry_comment);
             $entry->entry_comment.="[Количество уменьшено с {$entry->entry_quantity} до {$stock->product_quantity}]";
@@ -93,12 +117,24 @@ class EntryModel extends Model{
     }
     
     public function itemDelete( $entry_id ){
+        $entry=$this->itemGet($entry_id);
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($entry->order_id,'basic');
+        if( !$this->itemEditAllow( $order_basic ) ){
+            return 'forbidden_at_this_stage';
+        }
         $this->permitWhere('w');
         $this->delete($entry_id);
         return $this->db->affectedRows()>0?'ok':'idle';
     }
     
     public function itemUnDelete( $entry_id ){
+        $entry=$this->itemGet($entry_id);
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($entry->order_id,'basic');
+        if( !$this->itemEditAllow( $order_basic ) ){
+            return 'forbidden_at_this_stage';
+        }
         $this->permitWhere('w');
         $this->update($entry_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';

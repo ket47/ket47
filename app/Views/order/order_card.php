@@ -176,10 +176,10 @@ $(Order.init);
 
         </div>
         <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
-            <div>Отключен</div>
+<!--            <div>Отключен</div>
             <div>
                 <input type="checkbox" name="is_disabled.<?= $order->order_id ?>" <?= $order->is_disabled ? 'checked' : '' ?>/>
-            </div>
+            </div>-->
 
             <div>Создан</div>
             <div>
@@ -231,7 +231,9 @@ $(Order.init);
     
     <div>
         <div id="order_stage_actions">
-            <?php foreach($order->stage_next as $stage=>$config):?>
+            <?php foreach($order->stage_next as $stage=>$config):
+                if(!isset($config[0])){continue;}
+                ?>
                 <?php if( strpos($stage,'action')===0 ): ?>
                     <div data-action="<?=$stage?>" class="<?=$config[1]??'primary'?>"><?=$config[0]?></div>
                 <?php else: ?>

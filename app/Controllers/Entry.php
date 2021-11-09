@@ -20,6 +20,9 @@ class Entry extends \App\Controllers\BaseController{
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
+        if( $result==='forbidden_at_this_stage' ){
+            return $this->failForbidden($result);
+        }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
@@ -32,6 +35,12 @@ class Entry extends \App\Controllers\BaseController{
         $entry=$this->request->getJSON();
         $EntryModel=model('EntryModel');
         $result=$EntryModel->itemUpdate($entry);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='forbidden_at_this_stage' ){
+            return $this->failForbidden($result);
+        }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
@@ -47,6 +56,12 @@ class Entry extends \App\Controllers\BaseController{
         $entry_id=$this->request->getVar('entry_id');
         $EntryModel=model('EntryModel');
         $result=$EntryModel->itemDelete($entry_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='forbidden_at_this_stage' ){
+            return $this->failForbidden($result);
+        }
         if( $result=='ok' ){
             $entry=$EntryModel->itemGet( $entry_id );
             $OrderModel=model('OrderModel');
@@ -59,6 +74,12 @@ class Entry extends \App\Controllers\BaseController{
         $entry_id=$this->request->getVar('entry_id');
         $EntryModel=model('EntryModel');
         $result=$EntryModel->itemUnDelete($entry_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='forbidden_at_this_stage' ){
+            return $this->failForbidden($result);
+        }
         if( $result=='ok' ){
             $entry=$EntryModel->itemGet( $entry_id );
             $OrderModel=model('OrderModel');

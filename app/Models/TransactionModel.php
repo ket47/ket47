@@ -13,6 +13,7 @@ class TransactionModel extends Model{
         'trans_amount',
         'acc_debit_code',
         'acc_credit_code',
+        'owner_id',
         'holder',
         'holder_id'
         ];

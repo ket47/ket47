@@ -20,10 +20,17 @@ class MessageModel extends Model{
     protected $useSoftDeletes = false;
 
     public function itemCreate( object $message ){
-        \CodeIgniter\Events\Events::on('post_response', [$this, 'itemSend'], $message);
+        //\CodeIgniter\Events\Events::on('post_response', [$this, 'itemSend'], $message);
+        
+        
+        $this->itemSend($message);
     }
     
     private function itemSend( $message ){
+        
+        p($message);
+        
+        
         $multiple_recievers=explode($message->reciever_id);
         if( count($multiple_recievers)>1 ){
             foreach($multiple_recievers as $current_reciever_id){

@@ -14,12 +14,13 @@ trait OrderStageTrait{
             'customer_confirmed'=>  ['Подтвердить заказ']
             ],
         'customer_confirmed'=>[
-            'action_cloud_pay'=>    ['Оплатить картой'],
+            'action_cloud_pay'=>    ['Оплатить картой','positive'],
             'customer_created'=>    ['Отменить заказ'],
-            'other_payed_cloud'=>   [],
+            'customer_payed_cloud'=>   [],
             ],
-        'other_payed_cloud'=>[
-            'customer_start'=>      []
+        'customer_payed_cloud'=>[
+            'customer_start'=>      [],
+            'customer_confirmed'=>  ['Test rollback'],
             ],
         'customer_start'=>[
             'supplier_start'=>      ['Начать подготовку'],
@@ -29,7 +30,11 @@ trait OrderStageTrait{
         
         
         'supplier_start'=>[
-            'supplier_correction'=> [],
+            'supplier_corrected'=>  ['Изменить заказ'],
+            'supplier_finish'=>     ['Закончить сборку']
+            ],
+        'supplier_corrected'=>[
+            'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
             'supplier_finish'=>     ['Закончить сборку']
             ],
         'supplier_rejected'=>[
@@ -59,6 +64,12 @@ trait OrderStageTrait{
         }
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
+            
+            print_r($this->itemCache);
+            
+            echo 'Order get failed'.$this->checkPermissionForItemGet;
+            
+            
             return $order;
         }
         $OrderGroupModel=model('OrderGroupModel');
@@ -70,11 +81,13 @@ trait OrderStageTrait{
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $this->transStart();
+        
         $this->allowedFields[]='order_group_id';
         $updated=$this->update($order_id,['order_group_id'=>$group->group_id]);
         $joined=$OrderGroupMemberModel->joinGroup($order_id,$group->group_id);
-        $handled=$this->itemStageHandle( $order_id, $stage, $data );
+        $this->itemCacheClear($order_id);
         
+        $handled=$this->itemStageHandle( $order_id, $stage, $data );
         if( $updated && $joined && $handled==='ok' ){
             $this->transComplete();
         }
@@ -83,10 +96,11 @@ trait OrderStageTrait{
     
     private function itemStageValidate($stage,$order,$group){
         $next_stages=$this->stageMap[$order->stage_current??'']??[];
-        if( !$next_stages[$stage] || empty($group->group_id) ){
+        if( !isset($next_stages[$stage]) || empty($group->group_id) ){
             return 'invalid_next_stage';
         }
         if( $order->user_role!='admin' && strpos($stage, $order->user_role)!==0 ){
+            echo "$stage, $order->user_role";
             return 'invalid_stage_role';
         }
         return 'ok';
@@ -118,18 +132,16 @@ trait OrderStageTrait{
         if( !$data??0 || !$data->Amount??0 ){
             return 'forbidden';
         }
-        $EntryModel=model('EntryModel');
         $TransactionModel=model('TransactionModel');
         
         $user_id=session()->get('user_id');
-        $order_sum=$EntryModel->listSumGet( $order_id );
         $order=$this->itemGet($order_id);
         
-        if($order_sum->order_sum_total!=$data->Amount){
+        if($order->order_sum_total!=$data->Amount){
             return 'wrong_amount';
         }
         $trans=[
-            'trans_amount'=>$order_sum->order_sum_total,
+            'trans_amount'=>$order->order_sum_total,
             'trans_data'=>json_encode($data),
             'acc_debit_code'=>'account',
             'acc_credit_code'=>'customer',
@@ -139,12 +151,14 @@ trait OrderStageTrait{
             'holder_id'=>$order_id,
             'updated_by'=>$user_id,
         ];
+        
         $TransactionModel->itemCreate($trans);    
-        $creation_result=$this->db->affectedRows()?'ok':'idle';
-        if( $creation_result=='ok' ){
-            $this->itemStageCreate($order_id, 'customer_start');
+        $transaction_created=$this->db->affectedRows()?'ok':'idle';
+        $order_started=$this->itemStageCreate($order_id, 'customer_start');
+        if( $transaction_created=='ok' && $order_started=='ok' ){
+            return 'ok';
         }
-        return $creation_result;
+        return 'error';
     }
     
     private function onCustomerStart( $order_id, $data ){
@@ -185,6 +199,10 @@ trait OrderStageTrait{
     }
     
     private function onSupplierStart(){
+        return 'ok';
+    }
+    
+    private function onSupplierCorrected(){
         return 'ok';
     }
     

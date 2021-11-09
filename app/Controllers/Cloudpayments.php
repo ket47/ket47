@@ -7,11 +7,38 @@ class Cloudpayments extends \App\Controllers\BaseController{
 
     use ResponseTrait;
     
+    private function authorize( $data ){
+        if( !$data ){
+            return false;
+        }
+        /*
+         * CHECK X-Content-HMAC и Content-HMAC
+         */
+        $PermissionModel=model('PermissionModel');
+        $OrderModel=model('OrderModel');
+        
+        $order_owner_id=$OrderModel
+                ->select('owner_id')
+                ->where('order_id',$data->InvoiceId)
+                ->get()
+                ->getRow('owner_id');
+        
+        if( $order_owner_id!=$data->AccountId){
+            return false;
+        }
+        $PermissionModel->listFillSession();
+        session()->set('user_id',$order_owner_id);
+        return true;
+    }
+    
+    
+    
     public function check(){
         $data=$this->request->getJSON();
-        if( !$data || !$data->InvoiceId??0 ){
-            return $this->respond(['code'=>13]);
+        if( !$this->authorize($data) ){
+            return $this->fail(['code'=>13]);
         }
+        
         $OrderModel=model('OrderModel');
         
         $order=$OrderModel->itemGet($data->InvoiceId,'basic');
@@ -29,24 +56,23 @@ class Cloudpayments extends \App\Controllers\BaseController{
     
     public function pay(){
         $data=$this->request->getJSON();
-        
-        if( !$data || !$data->InvoiceId??0 ){
-            return $this->respond(['code'=>13]);
+        if( !$this->authorize($data) ){
+            return $this->fail(['code'=>403]);
         }
         
         $OrderModel=model('OrderModel');
         $result=$OrderModel->itemStageCreate( $data->InvoiceId, 'customer_payed_cloud', $data, false );
-        
-        die($result);
-        
         if( $result=='ok' ){
             return $this->respond(['code'=>0]); 
         }
-        return $this->respond(['code'=>500]); 
+        return $this->fail($result); 
     }
     
     public function refund(){
         $data=$this->request->getJSON();
+        if( !$this->authorize($data) ){
+            return $this->fail(['code'=>403]);
+        }
         
         if( !$data || !$data->InvoiceId??0 ){
             return $this->respond(['code'=>13]);
