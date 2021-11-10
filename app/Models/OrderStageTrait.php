@@ -39,18 +39,18 @@ trait OrderStageTrait{
         
         'supplier_start'=>[
             'supplier_corrected'=>  ['Изменить заказ'],
-            'supplier_finish'=>     ['Закончить сборку']
+            'supplier_finish'=>     ['Закончить сборку','positive'],
             ],
         'supplier_corrected'=>[
+            'supplier_finish'=>     ['Закончить сборку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-            'supplier_finish'=>     ['Закончить сборку']
             ],
         'supplier_rejected'=>[
-            
+            'customer_deleted'=>    ['Удалить','negative'],
             ],
         
         'supplier_finish'=>[
-            'delivery_start'=>      [],
+            'delivery_start'=>      ['Начать доставку'],
             ],
         
         'delivery_search'=>['delivery_start,delivery_no_courier'],
@@ -208,15 +208,47 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onSupplierRejected(){
+    private function onSupplierRejected( $order_id ){
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $MessageModel=model('MessageModel');
+        
+        $StoreModel->itemCacheClear();
+        $order=$this->itemGet($order_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $store_email=(object)[
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_transport'=>'email',
+            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_supplier_rejected_STORE_email.php',
+            'context'=>$context
+        ];
+        $cust_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'sms',
+            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
+            'context'=>$context
+        ];
+        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
         return 'ok';
     }
     
-    private function onSupplierCorrection(){
-        
+    private function onSupplierFinish(){
+        return 'ok';
     }
     
-    private function onSupplierFinish(){
-        
+    
+    
+    private function onDeliveryStart( $order_id ){
+        $order=$this->itemGet($order_id);
+        if( !$order->images ){
+            return 'photos_must_be_made';
+        }
     }
 }
