@@ -98,6 +98,11 @@ var Order={
         init:function(){
             $("#order_stage_actions").click(function(e){
                 let $button=$(e.target);
+                let action=$button.data('action');
+                if( action ){
+                    Order.stage.actions[action] && Order.stage.actions[action]();
+                    return;
+                }
                 let new_stage=$button.data('new_stage');
                 if( !new_stage ){
                     return;
@@ -107,8 +112,10 @@ var Order={
                 });
             });
         },
-        create:function( new_stage ){
-            //let html=`<div data-stage_next=""></div>`;
+        actions:{
+            action_take_photo:function(){
+                ItemList.fileUploadInit(order_id);
+            }
         }
     }
 };

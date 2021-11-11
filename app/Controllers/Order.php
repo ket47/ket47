@@ -100,40 +100,25 @@ class Order extends \App\Controllers\BaseController {
         }
         return $this->fail($result);   
     }
-//    
-//    public function itemUnDelete(){
-//        $order_id=$this->request->getVar('order_id');
-//        
-//        $OrderModel=model('OrderModel');
-//        $result=$OrderModel->itemUnDelete($order_id);        
-//        if( $result==='ok' ){
-//            return $this->respondUpdated($result);
-//        }
-//        if( $result==='forbidden' ){
-//            return $this->failForbidden($result);
-//        }
-//        return $this->fail($result);   
-//    }
-//
-//    
-//    public function itemDisable(){
-//        $order_id=$this->request->getVar('order_id');
-//        $is_disabled=$this->request->getVar('is_disabled');
-//        
-//        $OrderModel=model('OrderModel');
-//        $result=$OrderModel->itemDisable($order_id,$is_disabled);
-//        if( $result==='ok' ){
-//            return $this->respondUpdated($result);
-//        }
-//        if( $result==='forbidden' ){
-//            return $this->failForbidden($result);
-//        }
-//        return $this->fail($result);
-//    }
 
 
     public function listGet() {
-        return false;
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit'),
+            'order_store_id'=>$this->request->getVar('order_store_id'),
+            'date_start'=>$this->request->getVar('date_start'),
+            'date_finish'=>$this->request->getVar('date_finish')
+        ];
+        $OrderModel=model('OrderModel');
+        $order_list=$OrderModel->listGet($filter);
+        if( $OrderModel->errors() ){
+            return $this->failValidationError(json_encode($OrderModel->errors()));
+        }
+        return $this->respond($order_list);
     }
 
     public function listStageGet() {

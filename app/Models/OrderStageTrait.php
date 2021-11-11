@@ -20,41 +20,56 @@ trait OrderStageTrait{
             ],
         'customer_payed_cloud'=>[
             'customer_start'=>      [],
-            
-            
-            
-            'customer_confirmed'=>  ['Test rollback'],
             ],
         'customer_start'=>[
+            'delivery_search'=>      [],
+            ],
+        'delivery_search'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-            
-            
-            
-            
-            'customer_start'=>      ['Test notify'],
+        ],
+        
+        
+        
+        'supplier_rejected'=>[
             ],
-        
-        
-        
         'supplier_start'=>[
             'supplier_corrected'=>  ['Изменить заказ'],
-            'supplier_finish'=>     ['Закончить сборку','positive'],
+            'supplier_finish'=>     ['Закончить подготовку','positive'],
             ],
         'supplier_corrected'=>[
-            'supplier_finish'=>     ['Закончить сборку'],
+            'supplier_finish'=>     ['Закончить подготовку','positive'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
             ],
-        'supplier_rejected'=>[
-            'customer_deleted'=>    ['Удалить','negative'],
+        'supplier_finish'=>[
+            'supplier_corrected'=>  ['Изменить заказ'],
+            'delivery_no_courier'=> [],
+            'delivery_start'=>      ['Начать доставку','positive'],
+            'action_take_photo'=>   ['Сфотографировать заказ']
             ],
         
-        'supplier_finish'=>[
-            'delivery_start'=>      ['Начать доставку'],
+        
+        
+        'delivery_start'=>[
+            'delivery_finish'=>     ['Окончить доставку','positive'],
+            'delivery_no_address'=> ['Адресс не найден'],
+            'delivery_rejected'=>   ['Отказаться от доставки!','negative']
             ],
+        'delivery_no_address'=>[
+            'supplier_reclaimed'=>  ['Принять возврат заказа']
+        ],
+        'delivery_rejected'=>[
+            'supplier_reclaimed'=>  ['Принять возврат заказа']
+        ],
+        'delivery_finish'=>[
+            'delivery_partly_accepted'=>[],
+            'delivery_accepted'=>  ['Заказ принят','positive']
+        ],
+        
+        
         
         'delivery_search'=>['delivery_start,delivery_no_courier'],
-        'delivery_start'=>['delivery_finish,delivery_no_address,delivery_rejected'],
+        
         'delivery_finish'=>['customer_accepted,customer_partly_accepted,customer_rejected'],
         
         'customer_partly_accepted'=>['supplier_reclaimed'],
@@ -66,6 +81,7 @@ trait OrderStageTrait{
         'customer_refunded'=>['customer_finish'],
         'customer_accepted'=>['customer_finish'],
     ];
+    
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
         if( $check_permission ){
             $this->permitWhere('w');
@@ -200,15 +216,10 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onSupplierStart(){
-        return 'ok';
-    }
-    
-    private function onSupplierCorrected(){
-        return 'ok';
-    }
-    
     private function onSupplierRejected( $order_id ){
+        /*
+         * cancel product reserves
+         */
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
         $MessageModel=model('MessageModel');
@@ -235,7 +246,15 @@ trait OrderStageTrait{
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];
-        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
+        $MessageModel->listSend([$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
+        return 'ok';
+    }
+        
+    private function onSupplierStart(){
+        return 'ok';
+    }
+    
+    private function onSupplierCorrected(){
         return 'ok';
     }
     
@@ -250,5 +269,6 @@ trait OrderStageTrait{
         if( !$order->images ){
             return 'photos_must_be_made';
         }
+        return 'ok';
     }
 }

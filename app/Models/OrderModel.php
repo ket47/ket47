@@ -230,6 +230,12 @@ class OrderModel extends Model{
         if($filter['order_store_id']??0){
             $this->where('order_store_id',$filter['order_store_id']);
         }
+        if($filter['date_start']??0){
+            $this->where('created_at>',$filter['date_start']);
+        }
+        if($filter['date_finish']??0){
+            $this->where('created_at<',$filter['date_finish']);
+        }
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
