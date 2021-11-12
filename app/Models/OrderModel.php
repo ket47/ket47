@@ -230,6 +230,9 @@ class OrderModel extends Model{
         if($filter['order_store_id']??0){
             $this->where('order_store_id',$filter['order_store_id']);
         }
+        if($filter['order_group_id']??0){
+            $this->whereIn('order_group_id',$filter['order_group_id']);
+        }
         if($filter['date_start']??0){
             $this->where('created_at>',$filter['date_start']);
         }
