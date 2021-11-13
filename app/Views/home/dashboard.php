@@ -6,6 +6,7 @@
             <h3>Admin</h3>
             <a href="Admin/Permission/" target="scr">Permissions</a><br>
             <a href="Admin/GroupManager/" target="scr">Group Manager</a><br>
+            <a href="Admin/TaskManager/" target="scr">Task Manager</a><br>
 
             
             

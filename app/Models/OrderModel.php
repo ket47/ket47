@@ -258,6 +258,12 @@ class OrderModel extends Model{
         return false;
     }
     
+    public function listPurge( $olderThan=APP_TRASHED_DAYS ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
+    }
+    
     
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION

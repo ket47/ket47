@@ -16,22 +16,26 @@ trait OrderStageTrait{
         'customer_confirmed'=>[
             'action_cloud_pay'=>    ['Оплатить картой','positive'],
             'customer_created'=>    ['Отменить заказ'],
-            'customer_payed_cloud'=>   [],
+            'customer_payed_cloud'=>[],
             ],
         'customer_payed_cloud'=>[
             'customer_start'=>      [],
             ],
         'customer_start'=>[
-            'delivery_search'=>      [],
+            'delivery_search'=>     [],
             ],
         'delivery_search'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-        ],
+            ],
         
         
         
         'supplier_rejected'=>[
+            'customer_refunded'=>   []
+            ],
+        'supplier_reclaimed'=>[
+            'customer_refunded'=>   []
             ],
         'supplier_start'=>[
             'supplier_corrected'=>  ['Изменить заказ'],
@@ -52,34 +56,29 @@ trait OrderStageTrait{
         
         'delivery_start'=>[
             'delivery_finish'=>     ['Окончить доставку','positive'],
-            'delivery_no_address'=> ['Адресс не найден'],
             'delivery_rejected'=>   ['Отказаться от доставки!','negative']
             ],
-        'delivery_no_address'=>[
-            'supplier_reclaimed'=>  ['Принять возврат заказа']
-        ],
         'delivery_rejected'=>[
             'supplier_reclaimed'=>  ['Принять возврат заказа']
-        ],
+            ],
         'delivery_finish'=>[
-            'delivery_partly_accepted'=>[],
-            'delivery_accepted'=>  ['Заказ принят','positive']
-        ],
+            'customer_finish'=>     [],
+            'customer_disputed'=>   ['Открыть спор','secondary']
+            ],
         
         
         
-        'delivery_search'=>['delivery_start,delivery_no_courier'],
-        
-        'delivery_finish'=>['customer_accepted,customer_partly_accepted,customer_rejected'],
-        
-        'customer_partly_accepted'=>['supplier_reclaimed'],
-        'customer_rejected'=>['supplier_reclaimed'],
-        'delivery_no_address'=>['supplier_reclaimed'],
-        'delivery_rejected'=>['supplier_reclaimed'],
-        
-        'supplier_reclaimed'=>['customer_refunded'],
-        'customer_refunded'=>['customer_finish'],
-        'customer_accepted'=>['customer_finish'],
+        'customer_disputed'=>[
+            'customer_refunded'=>   [],
+            'customer_finish'=>     ['Завершить заказ','positive'],
+            'action_take_photo'=>   ['Сфотографировать заказ'],
+            'action_objection'=>    ['Написать возражение'],
+            ],
+        'customer_refunded'=>       [
+            'customer_finish'=>     [],
+            ],
+        'customer_finish'=>[
+            ]
     ];
     
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
@@ -143,6 +142,9 @@ trait OrderStageTrait{
     }
     
     private function onCustomerConfirmed( $order_id ){
+        /*
+         * auto rollback to customer_created after 30 min???
+         */
         return 'ok';
     }
     
@@ -216,6 +218,14 @@ trait OrderStageTrait{
         return 'ok';
     }
     
+    
+    private function onDeliverySearch( $order_id ){
+        /*
+         * should we create joblist????
+         */
+        return 'ok';
+    }
+    
     private function onSupplierRejected( $order_id ){
         /*
          * cancel product reserves
@@ -269,6 +279,9 @@ trait OrderStageTrait{
         if( !$order->images ){
             return 'photos_must_be_made';
         }
+        return 'ok';
+    }
+    private function onDeliveryRejected( $order_id ){
         return 'ok';
     }
 }

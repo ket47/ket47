@@ -66,9 +66,6 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('TransGroupModel');
         }
         $result=$GroupModel->itemDelete($group_id);
-
-        q($GroupModel);
-
         if( $result==='ok' ){
             return $this->respondDeleted($result);
         }
