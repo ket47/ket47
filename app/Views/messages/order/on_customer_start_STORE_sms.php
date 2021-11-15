@@ -1,1 +1,1 @@
-Tezkel: <?=$user->user_name?>, вам поступил заказ №<?=$order->order_id?>
+Tezkel: <?=$reciever->user_name?>, вам поступил заказ №<?=$order->order_id?>

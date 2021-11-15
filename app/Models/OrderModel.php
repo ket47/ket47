@@ -32,7 +32,7 @@ class OrderModel extends Model{
         if( $order->order_courier_id==$user_id ){
             return 'delivery';
         }
-        if( in_array($user_id, explode(',',$order->owner_ally_ids)) ){
+        if( $user_id>0 && in_array($user_id, explode(',',$order->owner_ally_ids)) ){
             return 'supplier';
         }
         if( sudo() ){
@@ -45,7 +45,7 @@ class OrderModel extends Model{
         $unfilterd_stage_next= $this->stageMap[$current_stage??'']??[];
         $stage_next=[];
         foreach($unfilterd_stage_next as $stage=>$config){
-            if( $user_role=='admin' || strpos($stage, $user_role)===0 ){
+            if( $user_role=='admin' || strpos($stage, $user_role)===0 || strpos($stage, 'action')===0 ){
                 $stage_next[$stage]=$config;
             }
         }
@@ -54,6 +54,7 @@ class OrderModel extends Model{
     
     public function itemCacheClear(){
         $this->itemCache=[];
+        $this->resetQuery();
     }
     
     public $checkPermissionForItemGet=true;

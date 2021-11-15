@@ -57,4 +57,21 @@ class Task extends \App\Controllers\BaseController{
         model("UserModel")->listPurge($trashed_days);
         return 'purged';
     }
+    
+    private function orderResetStage( $stage_from, $stage_to, $duration ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$duration minutes");
+        $OrderModel=model('OrderModel');
+        $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
+        $OrderModel->where('ogl.group_type',$stage_from);
+        $OrderModel->where('order_list.updated_at<',$olderStamp);
+        $OrderModel->select("order_list.*,group_name stage_current_name,group_type stage_current");
+        $orders=$OrderModel->get()->getResult();
+        $result='';
+        foreach($orders as $order){
+            session()->set('user_id',$order->owner_id);
+            $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
+        }
+        session()->set('user_id',-1);
+        return $result;
+    }
 }

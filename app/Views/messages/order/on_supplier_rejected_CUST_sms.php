@@ -1,1 +1,1 @@
-Tezkel: <?=$user->user_name?>, ваш заказ №<?=$order->order_id?> был отменен "<?= $store->store_name ?>"
+Tezkel: <?=$reciever->user_name?>, ваш заказ №<?=$order->order_id?> был отменен "<?= $store->store_name ?>"

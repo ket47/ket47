@@ -22,12 +22,15 @@ class Cloudpayments extends \App\Controllers\BaseController{
                 ->where('order_id',$data->InvoiceId)
                 ->get()
                 ->getRow('owner_id');
-        
         if( $order_owner_id!=$data->AccountId){
             return false;
         }
+        session_unset();//clear all session variables
         $PermissionModel->listFillSession();
         session()->set('user_id',$order_owner_id);
+        \CodeIgniter\Events\Events::on('post_response', function(){
+            session_unset();//clear all session variables
+        },555);
         return true;
     }
     

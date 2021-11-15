@@ -99,6 +99,11 @@ var Order={
             $("#order_stage_actions").click(function(e){
                 let $button=$(e.target);
                 let action=$button.data('action');
+                if( $button.hasClass('negative') ){
+                    if( !confirm($button.html()+'?') ){
+                        return;
+                    }
+                }
                 if( action ){
                     Order.stage.actions[action] && Order.stage.actions[action]();
                     return;
@@ -115,7 +120,21 @@ var Order={
         actions:{
             action_take_photo:function(){
                 ItemList.fileUploadInit(order_id);
+            },
+            action_cloud_pay:function(){
+                Order.stage.fake_pay();
             }
+        },
+        fake_pay:function(){
+            let request={
+                InvoiceId: order_id,
+                Amount: '<?=$order->order_sum_total?>',
+                AccountId:'<?=$order->owner_id?>',
+                PaymentType:'fake'
+                };
+            $.post("/Cloudpayments/pay",JSON.stringify(request)).done(function(){
+                ItemList.reloadItem();
+            });
         }
     }
 };
@@ -258,14 +277,10 @@ $(Order.init);
         <div class="image_list">
                 <?php if (isset($order->images)): foreach ($order->images as $image): ?>
                     <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
-                         class=" <?= $image->is_disabled ? 'disabled' : '' ?> <?= $image->deleted_at ? 'deleted' : '' ?>">
-                        <?php if (sudo() && $image->is_disabled): ?>
-                        <a href="javascript:ItemList.imageApprove(<?= $image->image_id ?>)"><div class="fa fa-check" style="color:green"></div></a>
-                        <?php endif; ?>
+                         class="<?= $image->deleted_at ? 'deleted' : '' ?>">
                         <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-trash" style="color:red"></div></a>
                         <a href="/image/get.php/<?= $image->image_hash ?>.1024.1024.webp" target="imagepreview"><div class="fa fa-eye" style="color:blue"></div></a>
                         <br><br>
-                        <?=$image->is_disabled ? 'Ждет одобрения' : '' ?>
                     </div>
             <?php endforeach; endif; ?>
             <div class="vcenter">

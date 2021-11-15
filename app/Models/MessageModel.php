@@ -59,12 +59,12 @@ class MessageModel extends Model{
     
     private function itemSendEmail( $message ){
         $UserModel=model('UserModel');
-        $user=$UserModel->itemGet($message->message_reciever_id);
+        $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
         if( isset($message->template) ){
-            $message->context['user']=$user;
+            $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
-        if( /*!$user->user_email_verified ||*/ !$message->message_text ){
+        if( !$message->message_text ){
             return false;
         }
         $email = \Config\Services::email();
@@ -76,7 +76,7 @@ class MessageModel extends Model{
         ];
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
-        $email->setTo($user->user_email);
+        $email->setTo($reciever->user_email);
         $email->setSubject($message->message_subject??getenv('email_sendername'));
         $email->setMessage($message->message_text);
         $email_send_ok=$email->send();
@@ -90,19 +90,19 @@ class MessageModel extends Model{
     
     private function itemSendSms( $message ){
         $UserModel=model('UserModel');
-        $user=$UserModel->itemGet($message->message_reciever_id);
+        $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
         if( isset($message->template) ){
-            $message->context['user']=$user;
+            $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
-        if( !$user->user_phone_verified || !$message->message_text ){
+        if( !$message->message_text ){
             return false;
         }
         $devinoSenderName=getenv('devinoSenderName');
         $devinoUserName=getenv('devinoUserName');
         $devinoPassword=getenv('devinoPassword');
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
-        $sms_send_ok=$Sms->send($user->user_phone,$message->message_text);        
+        $sms_send_ok=$Sms->send($reciever->user_phone,$message->message_text);        
         if( !$sms_send_ok ){
             log_message('error', 'Cant send sms:'. json_encode($message).$sms_send_ok );
             return false;

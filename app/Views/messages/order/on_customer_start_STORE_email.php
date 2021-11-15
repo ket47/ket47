@@ -7,7 +7,7 @@
         <h2>Заказ №<?= $order->order_id ?> от <?= getenv('app.title') ?></h2>
 
         <p>
-            Добрый день, <?= $user->user_name ?>.
+            Добрый день, <?= $reciever->user_name ?>.
         </p>
         <p>
             Вас приветствует служба доставки <?= getenv('app.title') ?>. 

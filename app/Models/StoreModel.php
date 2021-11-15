@@ -49,6 +49,7 @@ class StoreModel extends Model{
     /////////////////////////////////////////////////////
     public function itemCacheClear(){
         $this->itemCache=[];
+        $this->resetQuery();
     }
     private $itemCache=[];
     public function itemGet( $store_id, $mode='all' ){

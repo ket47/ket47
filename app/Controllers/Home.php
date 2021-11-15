@@ -232,12 +232,12 @@ class Home extends BaseController {
             'order_store_id'=>$this->request->getVar('order_store_id'),
         ];
         $OrderModel=model('OrderModel');
-        $GroupModel=model('OrderGroupModel');
+        //$GroupModel=model('OrderGroupModel');
         $order_list=$OrderModel->listGet($filter);
-        $order_group_list=$GroupModel->listGet();
+        //$order_group_list=$GroupModel->listGet();
         return view('order/order_list', [
             'order_list' => $order_list,
-            'order_group_list'=>$order_group_list
+            //'order_group_list'=>$order_group_list
                 ]);
     }
     public function orderCardGet(){

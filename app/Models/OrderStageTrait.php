@@ -22,9 +22,6 @@ trait OrderStageTrait{
             'customer_start'=>      [],
             ],
         'customer_start'=>[
-            'delivery_search'=>     [],
-            ],
-        'delivery_search'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
             ],
@@ -49,14 +46,16 @@ trait OrderStageTrait{
             'supplier_corrected'=>  ['Изменить заказ'],
             'delivery_no_courier'=> [],
             'delivery_start'=>      ['Начать доставку','positive'],
-            'action_take_photo'=>   ['Сфотографировать заказ']
+            'action_take_photo'=>   ['Сфотографировать']
             ],
         
         
         
         'delivery_start'=>[
-            'delivery_finish'=>     ['Окончить доставку','positive'],
-            'delivery_rejected'=>   ['Отказаться от доставки!','negative']
+            'delivery_finish'=>     ['Завершить','positive'],
+            'action_take_photo'=>   ['Сфотографировать'],
+            'action_call_customer'=>['Позвонить заказчику'],
+            'delivery_rejected'=>   ['Отказаться!','negative']
             ],
         'delivery_rejected'=>[
             'supplier_reclaimed'=>  ['Принять возврат заказа']
@@ -188,7 +187,7 @@ trait OrderStageTrait{
         
         $order=$this->itemGet($order_id);
         $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');//should we notify only owner of store or also allys?
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
             'order'=>$order,
@@ -215,6 +214,14 @@ trait OrderStageTrait{
             'context'=>$context
         ];
         $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
+        return 'ok';
+    }
+    
+    private function onCustomerRefunded( $order_id ){
+        return $this->itemStageCreate($order_id, 'customer_finish');
+    }
+    
+    private function onCustomerFinish( $order_id ){
         return 'ok';
     }
     
@@ -266,6 +273,26 @@ trait OrderStageTrait{
     
     private function onSupplierCorrected(){
         return 'ok';
+    }
+    
+    private function onSupplierReclaimed($order_id){
+        /*
+         * Should we start reclamation???? 
+         * Or admin should do it from cloud control panel???
+         * Or money should stay as prepay at account???
+         * 
+         * Penalty to courier???
+         * Penalty to customer???
+         */
+        
+        
+        
+        
+        
+        
+        
+        
+        return $this->itemStageCreate($order_id, 'customer_refunded');
     }
     
     private function onSupplierFinish(){
