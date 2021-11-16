@@ -19,7 +19,7 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
         if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
+            return $this->failValidationErrors(json_encode($StoreModel->errors()));
         }
         return $this->respond($store_list);
     }

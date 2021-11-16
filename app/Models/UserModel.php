@@ -183,7 +183,6 @@ class UserModel extends Model{
             deleted_at");
         $user_list= $this->get()->getResult();
         $UserGroupMemberModel=model('UserGroupMemberModel');
-        $UserGroupMemberModel->tableSet('user_group_member_list');
         foreach($user_list as $user){
             if($user){
                 $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user->user_id);

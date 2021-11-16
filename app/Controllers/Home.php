@@ -11,7 +11,50 @@ class Home extends BaseController {
         return view('user/signin_form');
     }
 
+    public function courier_manager(){
+        return view('courier/courier_manager');
+    }
 
+    public function courier_list(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit')
+        ];
+        $CourierModel=model('CourierModel');
+        $courier_list=$CourierModel->listGet($filter);
+        return view('courier/courier_list', [
+            'courier_list' => $courier_list,
+                ]);
+    }
+    public function courierCardGet(){
+        $order_id=$this->request->getVar('order_id');
+        $OrderModel=model('OrderModel');
+        $order= $OrderModel->itemGet($order_id);
+        
+        $OrderGroupModel=model('OrderGroupModel');
+        $stage_list=$OrderGroupModel->listGet();
+        
+        
+        if(is_object($order)){
+            $data=[
+                'order'=>$order,
+                'stage_list'=>$stage_list
+            ];
+            return view('order/order_card',$data);
+        }
+        return 'forbidden';
+    }
+    
+    
+    
+    
+    
+    
+    
     
     public function payment_form(){
         $payment_description=$this->request->getVar('payment_description');

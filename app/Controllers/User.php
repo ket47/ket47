@@ -15,10 +15,7 @@ class User extends \App\Controllers\BaseController{
         }
         $UserModel=model('UserModel');
         $user=$UserModel->itemGet($user_id);
-        if($user){
-            return $this->respond($user);
-        }
-        return $this->respond($guest);
+        return $this->respond($user);
     }
     
     
@@ -278,9 +275,4 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->fail('verification_error');
     }
-    
-    
-    
-    
-    
 }
