@@ -103,7 +103,7 @@ class User extends \App\Controllers\BaseController{
         $user_name=$this->request->getVar('user_name');
         $user_pass=$this->request->getVar('user_pass');
         $user_pass_confirm=$this->request->getVar('user_pass_confirm');
-        
+        $this->signOut();
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');

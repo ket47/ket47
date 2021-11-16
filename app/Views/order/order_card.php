@@ -143,12 +143,6 @@ $(Order.init);
 
 </script>
 <style>
-    #order_suggest{
-        width:calc( 100% - 10px );
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-    }
     #order_entry_list{
         background-color: white;
     }
@@ -173,6 +167,13 @@ $(Order.init);
     #order_stage_actions{
         text-align: center;
         padding: 10px;
+    }
+    input#order_suggest{
+        width:calc( 100% - 10px );
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        background-color: #ffc;
     }
 </style>
 

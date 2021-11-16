@@ -4,14 +4,14 @@ trait OrderStageTrait{
     protected $stageMap=[
         ''=>[
             'customer_created'=>    ['Создать'],
-            'customer_deleted'=>    ['Удалить','negative']
+            'customer_deleted'=>    ['Удалить','negative'],
             ],
         'customer_deleted'=>[
             'customer_created'=>    ['Восстановить'],
             ],
         'customer_created'=>[
+            'customer_confirmed'=>  ['Подтвердить заказ'],
             'customer_deleted'=>    ['Удалить','negative'],
-            'customer_confirmed'=>  ['Подтвердить заказ']
             ],
         'customer_confirmed'=>[
             'action_cloud_pay'=>    ['Оплатить картой','positive'],

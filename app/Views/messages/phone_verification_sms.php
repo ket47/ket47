@@ -1,1 +1,1 @@
-Your phone verification code is <?=$verification_code?>
+<?=getenv('app.title')?>: Ваш код подтверждения <?=$verification_code?>

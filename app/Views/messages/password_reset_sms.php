@@ -1,3 +1,1 @@
-
-
-Your new pass is <?=$new_pass?>
+<?=getenv('app.title')?>: Ваш новый пароль <?=$new_pass?>

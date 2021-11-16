@@ -20,16 +20,18 @@
         width: 100%;
         display: grid;
     }
-    .item_table>div:nth-child(odd)>div{
+    .item_table>div:nth-child(even)>div{
         background-color: #f5f5f5;
     }
     .item_table>div>div{
         display: flex;
         align-items: center;
-        border-bottom: 1px solid white;
+        -border-bottom: 1px solid white;
     }
     .item_card>div{
         border: 2px #ccc dashed;
+        border-left: none;
+        border-right: none;
         width: 100%;
     }
     .item_disabled>div{

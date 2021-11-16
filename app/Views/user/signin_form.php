@@ -3,7 +3,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
             <div></div>
             <div class="segment" style="display:grid;grid-template-columns:1fr 2fr;">
-                
+                <div style="grid-column:1 / 2 span"><h3>User login</h3></div>
                 <div>Phone</div>
                 <div><input name="user_phone" value="79787288233"></div>
                 
@@ -11,7 +11,7 @@
                 <div><input name="user_pass" value="123456"></div>
                 
                 <div></div>
-                <div><button>SignIn</button> | <a href="Home/user_register_form">Register</a></div>
+                <div><button>SignIn</button> | <a href="/Home/user_register_form">Register</a></div>
             </div>
             <div></div>
         </div>

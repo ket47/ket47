@@ -1,12 +1,14 @@
 <?php if($store_list): ?>
 <div class="segment">
     <div style="grid-template-columns: 30px 60px auto auto auto 30px;" class="item_table">
-        <div>#</div>
-        <div style="min-height: 30px;"></div>
-        <div>Название</div>
-        <div></div>
-        <div></div>
-        <div></div>
+        <div style="display: contents" class="grid_header">
+            <div>#</div>
+            <div style="min-height: 30px;"></div>
+            <div>Название</div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
         <?php foreach ($store_list as $i=>$store): ?>
             <div style="display: contents" class="<?= $store->is_disabled ? 'item_disabled' : '' ?> <?= $store->deleted_at ? 'item_deleted' : '' ?>">
                 <div><?=$i+1?></div>
