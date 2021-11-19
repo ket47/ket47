@@ -3,7 +3,6 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class PrefModel extends Model{
-    
     protected $table      = 'pref_list';
     protected $primaryKey = 'pref_name';
     protected $allowedFields = [
@@ -12,24 +11,49 @@ class PrefModel extends Model{
         'pref_json'
         ];
     
-    public function get( $pref_name ){
-        if( !sudo() ){
-            return null;
-        }
-        return $this->getWhere(['pref_name'=>$pref_name])->getRow();
+    public function itemGet( $pref_name ){
+        return $this->where('pref_name',$pref_name)->get()->getRow();
     }
     
-    public function setValue( $pref_name, $pref_value ){
+    public function itemCreate( $pref_name ){
         if( !sudo() ){
-            return null;
+            return 'forbidden';
         }
-        return $this->save($pref_name, ['pref_value'=>$pref_value]);
+        if( $this->getWhere(['pref_name'=>$pref_name])->getRow() ){
+            return 'duplicate';
+        }
+        $this->insert(['pref_name'=>$pref_name]);
+        return $this->db->affectedRows()>0?'ok':'idle';
     }
     
-    public function setJson( $pref_name, $pref_json ){
+    public function itemUpdate( $pref ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        $this->save($pref);
+        return $this->db->affectedRows()>0?'ok':'idle';
+    }
+    
+    public function itemUpdateValue( $pref_name, $pref_value ){
+        return $this->itemSave($pref_name, (object)['pref_name'=>$pref_name,'pref_value'=>$pref_value]);
+    }
+    
+    public function itemUpdateJson( $pref_name, $pref_json ){
+        return $this->itemSave($pref_name, (object)['pref_name'=>$pref_name,'pref_json'=>$pref_json]);
+    }
+    
+    public function itemDelete( $pref_name ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        $this->where('pref_name',$pref_name)->delete();
+        return $this->db->affectedRows()>0?'ok':'idle';
+    }
+    
+    public function listGet(){
         if( !sudo() ){
             return null;
         }
-        return $this->save($pref_name, ['pref_json'=>$pref_json]);
+        return $this->get()->getResult();
     }
 }
