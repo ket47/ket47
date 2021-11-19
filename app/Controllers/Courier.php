@@ -8,7 +8,16 @@ class Courier extends \App\Controllers\BaseController{
     use ResponseTrait;
     
     public function itemGet(){
-        return false;
+        $courier_id=$this->request->getVar('courier_id');
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemGet($courier_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
     }
     
     public function itemCreate(){
@@ -20,9 +29,73 @@ class Courier extends \App\Controllers\BaseController{
         return false;
     }
     
-    public function itemDelete(){
-        return false;
+    public function itemUpdateGroup(){
+        $courier_id=$this->request->getVar('courier_id');
+        $group_id=$this->request->getVar('group_id');
+        $is_joined=$this->request->getVar('is_joined');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemUpdateGroup($courier_id,$group_id,$is_joined);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
     }
+    
+    public function itemDelete(){
+        $courier_id=$this->request->getVar('courier_id');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemDelete($courier_id);        
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
+    
+    public function itemUnDelete(){
+        $courier_id=$this->request->getVar('courier_id');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemUnDelete($courier_id);        
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
+    
+    public function itemDisable(){
+        $courier_id=$this->request->getVar('courier_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemDisable($courier_id,$is_disabled);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
     
     public function listGet(){
         $filter=[
@@ -34,11 +107,11 @@ class Courier extends \App\Controllers\BaseController{
             'limit'=>$this->request->getVar('limit'),
         ];
         $CourierModel=model('CourierModel');
-        $store_list=$CourierModel->listGet($filter);
+        $courier_list=$CourierModel->listGet($filter);
         if( $CourierModel->errors() ){
             return $this->failValidationErrors(json_encode($CourierModel->errors()));
         }
-        return $this->respond($store_list);
+        return $this->respond($courier_list);
     }
     
     public function listCreate(){

@@ -34,6 +34,11 @@
         border-right: none;
         width: 100%;
     }
+    .card_form>div{
+        font-size: 14px;
+        padding: 5px;
+        line-height: 30px;
+    }
     .item_disabled>div{
         background-color: #ccc !important;
     }
@@ -114,10 +119,9 @@
         },
         loadItem:function(<?=$item_name?>_id){
             ItemList.itemCardId=<?=$item_name?>_id;
-            
             return $.post('/Home/<?=$item_name?>CardGet',{<?=$item_name?>_id}).done(function(resp){
                 ItemList.$itemCard.html(resp);
-                ItemList.$itemCard[0].scrollIntoView(true);
+                ItemList.$itemCard[0] && ItemList.$itemCard[0].scrollIntoView(true);
             });            
         },
         saveItem:function (<?=$item_name?>_id,name,value){
@@ -128,6 +132,13 @@
             return $.post('/<?=$ItemName?>/itemUpdate',JSON.stringify(request)).done(function(){
                 if( name==='is_disabled' ){
                     ItemList.reloadItem();
+                }
+                let row_field=$(`div[data-field='${name}.${<?=$item_name?>_id}']`);
+                if( row_field ){
+                    row_field.html(value);
+                    if(row_field.data('reload')==1){
+                        ItemList.reloadItem();
+                    }
                 }
             }).fail(ItemList.reloadItem);
         },

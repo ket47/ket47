@@ -76,10 +76,9 @@
             }
             input,textarea,.form_value{
                 padding: 5px;
-                margin: 5px;
             }
             input[type=text],input[type=email],input[type=tel],input[type=number],textarea{
-                width:calc( 100% - 100px );;
+                width:calc( 90% );;
             }
             .segment,segment{
                 box-shadow: 3px 5px 8px #ccc;

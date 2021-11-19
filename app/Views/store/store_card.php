@@ -1,6 +1,15 @@
+<?php 
+    function dmyt( $iso ){
+        if( !$iso ){
+            return "";
+        }
+        $expl= explode('-', str_replace(' ', '-', $iso));
+        return "$expl[2].$expl[1].$expl[0] ".($expl[3]??'');
+    }
+?>
 <div  style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
-            <div style="display:grid;grid-template-columns:1fr 3fr">
+        <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
                 <div>Название</div>
                 <div class="form_value">
                     <?= $store->store_name ?>
@@ -73,7 +82,7 @@
                 </div>
 
             </div>
-            <div style="display:grid;grid-template-columns:1fr 3fr">
+            <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
                 
                 <div>Время работы</div>
                 <div>
@@ -111,38 +120,41 @@
                 <div>
                     <input type="checkbox" name="is_disabled.<?= $store->store_id ?>" <?= $store->is_disabled ? 'checked' : '' ?>/>
                 </div>
+                
+                <div>Работает</div>
+                <div>
+                    <input type="checkbox" name="is_working.<?= $store->store_id ?>" <?= $store->is_working ? 'checked' : '' ?>/>
+                </div>
 
                 <div>Создан</div>
                 <div>
-                    <input type="date" readonly="readonly" name="created_at.<?= $store->store_id ?>.date" value="<?php $date_time = explode(' ', $store->created_at);
-                echo $date_time[0] ?? '' ?>"/>
-                    <input type="time" readonly="readonly" name="created_at.<?= $store->store_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
+                    <?=dmyt($store->created_at)?> 
                 </div>
 
                 <div>Изменен</div>
                 <div>
-                    <input type="date" readonly="readonly" name="updated_at.<?= $store->store_id ?>.date" value="<?php $date_time = explode(' ', $store->updated_at);
-                echo $date_time[0] ?? '' ?>"/>
-                    <input type="time" readonly="readonly" name="updated_at.<?= $store->store_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
+                    <?=dmyt($store->updated_at)?> 
                 </div>
 
-                <div>Удален</div>
+                <div>Удаление</div>
                 <div>
-                    <input type="date" readonly="readonly" name="deleted_at.<?= $store->store_id ?>.date" value="<?php $date_time = explode(' ', $store->deleted_at);
-                echo $date_time[0] ?? '' ?>"/>
-                    <input type="time" readonly="readonly" name="deleted_at.<?= $store->store_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
-                    <button type="button" onclick="ItemList.deleteItem(<?= $store->store_id ?>)">Удалить</button>
-                    <button type="button" onclick="ItemList.undeleteItem(<?= $store->store_id ?>)">Восстановить</button>
+                    <?php if($store->deleted_at): ?>
+                        <?=dmyt($store->deleted_at)?>
+                        <i class="fa fa-trash" style="color:red" onclick="ItemList.purgeItem(<?= $store->store_id ?>)" title="Окончательно удалить"></i>
+                        <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $store->store_id ?>)" title="Восстановить"></i>
+                    <?php else: ?>
+                        <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $store->store_id ?>)" title="Удалить"></i> удалить
+                    <?php endif; ?>
                 </div>
 
                 <div>Группы</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
-                        <?php foreach ($store_group_list as $group): ?>
-                        <div>
-                            <input type="checkbox" value="<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids)) ? 'checked' : '' ?>/>
-                            <?= $group->group_name ?>
-                        </div>
-                <?php endforeach; ?>
+                    <?php foreach ($store_group_list as $group): ?>
+                    <div>
+                        <input type="checkbox" value="<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids)) ? 'checked' : '' ?>/>
+                        <?= $group->group_name ?>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>

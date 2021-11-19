@@ -7,6 +7,8 @@ function image_resize($path, $width, $height) {
     $srch = imagesy($src);
     $ratio = ( $width / $srcw < $height / $srch ) ? $width / $srcw : $height / $srch;
     $thumb = imagecreatetruecolor($srcw * $ratio, $srch * $ratio);
+    imagealphablending($thumb, false);
+    imagesavealpha($thumb, true);
     imagecopyresampled($thumb, $src, 0, 0, 0, 0, $srcw * $ratio, $srch * $ratio, $srcw, $srch);
     return $thumb;
 }

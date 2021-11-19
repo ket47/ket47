@@ -32,6 +32,7 @@ class StoreModel extends Model{
         'store_time_closes_4',
         'store_time_closes_5',
         'store_time_closes_6',
+        'is_working',
         'deleted_at',
         'owner_id',
         'owner_ally_id'
@@ -200,8 +201,11 @@ class StoreModel extends Model{
             $this->join('store_group_member_list','member_id=store_id');
             $this->where('group_id',$filter['group_id']);
         }
+        $weekday=date('N');
+        $dayhour=date('H');
+        $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $this->permitWhere('r');
-        $this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->orderBy("is_opened",'DESC');
         $this->join('image_list',"image_holder='store' AND image_holder_id=store_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_hash");
         $store_list= $this->get()->getResult();

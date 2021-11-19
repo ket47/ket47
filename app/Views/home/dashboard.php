@@ -7,12 +7,6 @@
             <a href="Admin/Permission/" target="scr">Permissions</a><br>
             <a href="Admin/GroupManager/" target="scr">Group Manager</a><br>
             <a href="Admin/TaskManager/" target="scr">Task Manager</a><br>
-            <a href="Home/courier_manager/" target="scr">Courier List</a><br>
-
-            
-            
-            
-            
             <h3>Orders</h3>
             <a href="Home/order_manager" target="scr">Orders</a><br>
             <h3>Products</h3>
@@ -27,6 +21,7 @@
             <a href="User/signOut" target="scr">Sign Out</a><br>
             <a href="Home/user_password_reset" target="scr">Password Reset</a><br>
             <a href="Home/user_phone_verification" target="scr">Phone Verification</a><br>
+            <a href="Home/courier_manager/" target="scr">Couriers</a><br>
         </div>
         <iframe name="scr" style="width:100%;height: 100vh;border: none;"></iframe>
     </div>

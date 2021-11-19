@@ -31,20 +31,19 @@ class Home extends BaseController {
                 ]);
     }
     public function courierCardGet(){
-        $order_id=$this->request->getVar('order_id');
-        $OrderModel=model('OrderModel');
-        $order= $OrderModel->itemGet($order_id);
+        $courier_id=$this->request->getVar('courier_id');
+        $CourierModel=model('CourierModel');
+        $courier= $CourierModel->itemGet($courier_id);
         
-        $OrderGroupModel=model('OrderGroupModel');
-        $stage_list=$OrderGroupModel->listGet();
+        $CourierGroupModel=model('CourierGroupModel');
+        $status_list=$CourierGroupModel->listGet();
         
-        
-        if(is_object($order)){
+        if(is_object($courier)){
             $data=[
-                'order'=>$order,
-                'stage_list'=>$stage_list
+                'courier'=>$courier,
+                'courier_group_list'=>$status_list
             ];
-            return view('order/order_card',$data);
+            return view('courier/courier_card',$data);
         }
         return 'forbidden';
     }

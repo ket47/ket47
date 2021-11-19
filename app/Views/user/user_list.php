@@ -17,9 +17,9 @@
                     <img src="/img/avatar/<?=$user->user_avatar_name?>.png" style="height: 40px;max-width: 40px;" alt=" "/>
                     <?php endif; ?>
                 </div>
-                <div><?= $user->user_name ?> <?= $user->user_surname ?> <?= $user->user_middlename ?></div>
-                <div><?= $user->user_phone ?></div>
-                <div><?= $user->user_email ?></div>
+                <div data-field="user_name.<?=$user->user_id?>"><?= $user->user_name ?> <?= $user->user_surname ?> <?= $user->user_middlename ?></div>
+                <div data-field="user_phone.<?=$user->user_id?>"><?= $user->user_phone ?></div>
+                <div data-field="user_email.<?=$user->user_id?>"><?= $user->user_email ?></div>
                 <div><i class="fa fa-pencil" data-id="<?=$user->user_id?>" data-action="edit"></i></div>
                 <div style="grid-column: 1 / span 6;" class="item_card" id="itemCard<?=$user->user_id?>"></div>
             </div>

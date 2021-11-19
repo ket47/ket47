@@ -75,7 +75,6 @@ class UserModel extends Model{
         }
 
         $UserGroupMemberModel=model('UserGroupMemberModel');
-        $UserGroupMemberModel->tableSet('user_group_member_list');
         $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
         unset($user->user_pass);
         
@@ -131,8 +130,15 @@ class UserModel extends Model{
         if( !in_array($target_group->group_type, $allowed_group_types) && !sudo() ){
             return 'forbidden';
         }
+        if( $target_group->group_type=='courier' ){
+            $CourierModel=model('CourierModel');
+            if( $is_joined ){
+                $CourierModel->itemCreate($user_id);
+            } else {
+                $CourierModel->itemDelete(null,$user_id);
+            }
+        }
         $UserGroupMemberModel=model('UserGroupMemberModel');
-        $UserGroupMemberModel->tableSet('user_group_member_list');
         $UserGroupMemberModel->itemUpdate( $user_id, $group_id, $is_joined );
         return $this->db->affectedRows()?'ok':'idle';
     }
