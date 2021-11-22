@@ -261,7 +261,7 @@ class OrderModel extends Model{
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->select("{$this->table}.*,group_id,,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
-        if( $filter['user_role']??0 ){
+        //
             $user_id=session()->get('user_id');
             if( sudo() ){
                 $this->select("'admin' user_role");
@@ -276,9 +276,12 @@ class OrderModel extends Model{
                     IF('$user_id' IN (order_list.owner_ally_ids),'supplier',
                     'other'))) user_role
                     ");
+                if( $filter['user_role']??0 ){
+                    $this->having('user_role',$filter['user_role']);
+                }
             }
-            $this->having('user_role',$filter['user_role']);
-        }
+            
+        //
         return $this->get()->getResult();
     }
 
