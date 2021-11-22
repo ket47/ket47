@@ -109,6 +109,7 @@ class Order extends \App\Controllers\BaseController {
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
+            'user_role'=>$this->request->getVar('user_role'),
             'order_store_id'=>$this->request->getVar('order_store_id'),
             'date_start'=>$this->request->getVar('date_start'),
             'date_finish'=>$this->request->getVar('date_finish')
