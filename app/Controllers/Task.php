@@ -24,7 +24,7 @@ class Task extends \App\Controllers\BaseController{
             if( !$command->method??0 ){
                 return false;
             }
-            $arguments=explode(',',$command->arguments??'');
+            $arguments=$command->arguments??[];
             foreach ($arguments as $arg){
                 if($arg==='PREV-RESULT'){
                     $arg=json_decode($task->task_result);
@@ -40,6 +40,10 @@ class Task extends \App\Controllers\BaseController{
             $task_result=$Class->{$command->method}(...$arguments);
         }
         $TaskModel=model('TaskModel');
+        if( $task->is_singlerun ){
+            $TaskModel->itemDelete($task->task_id);
+            return true;
+        }
         $task->task_result=json_encode($task_result);
         $task->task_last_start=date('Y-m-d H:i:s');
         $task->task_next_start= new \CodeIgniter\I18n\Time("$task->task_interval_day days $task->task_interval_hour hours $task->task_interval_min minutes");
@@ -58,20 +62,21 @@ class Task extends \App\Controllers\BaseController{
         return 'purged';
     }
     
-    private function orderResetStage( $stage_from, $stage_to, $duration ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$duration minutes");
+    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
         $OrderModel=model('OrderModel');
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+        if( $order_id ){
+            $OrderModel->where('order_id',$order_id);
+        }
         $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
         $OrderModel->where('ogl.group_type',$stage_from);
-        $OrderModel->where('order_list.updated_at<',$olderStamp);
-        $OrderModel->select("order_list.*,group_name stage_current_name,group_type stage_current");
         $orders=$OrderModel->get()->getResult();
         $result='';
         foreach($orders as $order){
-            session()->set('user_id',$order->owner_id);
             $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
         }
-        session()->set('user_id',-1);
+        $UserModel->systemUserLogout();
         return $result;
     }
 }

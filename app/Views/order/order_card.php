@@ -302,7 +302,7 @@ $(Order.init);
             <?php foreach ($order->stages as $stage):?>
             <div><?= $stage->group_name ?></div>
             <div><?= dmyt($stage->created_at) ?></div>
-            <?php if($stage->created_user??0): ?>
+            <?php if( is_object($stage->created_user??null) ): ?>
                 <div><?= $stage->created_user->user_name ?> (<?= $stage->created_user->user_phone ?>)</div>
             <?php else: ?>
                 <div>-</div>

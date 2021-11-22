@@ -50,14 +50,23 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     private $itemCache=[];
     public function itemGet( $user_id, $mode='all' ){
-        if( $user_id<1 ){
+        if( $user_id==-1 ){
             return (object)[
                 'user_id'=>-1,
                 'user_name'=>'Guest',
                 'user_phone'=>'-',
                 'member_of_groups'=>(object)[
-                    'group_ids'=>'1',
                     'group_types'=>'guest'
+                ]
+            ];
+        }
+        if( $user_id==-100 ){
+            return (object)[
+                'user_id'=>-100,
+                'user_name'=>'SYSTEM',
+                'user_phone'=>'-',
+                'member_of_groups'=>(object)[
+                    'group_types'=>'admin'
                 ]
             ];
         }
@@ -69,6 +78,7 @@ class UserModel extends Model{
         if( !$user ){
             return 'notfound';
         }
+        unset($user->user_pass);
         if( $mode=='basic' ){
             $this->itemCache[$mode.$user_id]=$user;
             return $user;
@@ -76,7 +86,6 @@ class UserModel extends Model{
 
         $UserGroupMemberModel=model('UserGroupMemberModel');
         $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
-        unset($user->user_pass);
         
         $this->itemCache[$mode.$user_id]=$user;
         return $user;
@@ -213,7 +222,31 @@ class UserModel extends Model{
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
-    }    
+    }
+    /////////////////////////////////////////////////////
+    //SYSTEM LOGIN SECTION
+    /////////////////////////////////////////////////////
+    private $systemUserPrecededId=-1;
+    public function systemUserLogin(){
+        $current_user_id=session()->get('user_id');
+        if( $current_user_id==-100 ){
+            return true;
+        }
+        $this->systemUserPrecededId=$current_user_id;
+        $user=$this->itemGet( -100 );
+        session_unset();
+        session()->set('user_id',$user->user_id);
+        session()->set('user_data',$user);
+        return true;
+    }
+    public function systemUserLogout(){
+        $user=$this->itemGet( $this->systemUserPrecededId );
+        session_unset();
+        session()->set('user_id',$user->user_id);
+        session()->set('user_data',$user);
+        $PermissionModel=model('PermissionModel');
+        $PermissionModel->listFillSession();
+    }
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION
     /////////////////////////////////////////////////////

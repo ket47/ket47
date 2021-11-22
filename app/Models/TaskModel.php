@@ -15,7 +15,7 @@ class TaskModel extends Model{
         'task_interval_min',
         'task_next_start',
         'task_last_start',
-        'task_status'
+        'is_singlerun'
         ];
 
     protected $useSoftDeletes = false;
@@ -30,13 +30,10 @@ class TaskModel extends Model{
         return false;
     }
     
-    public function itemCreate( string $task_name ){
-        if( !sudo() ){
-            return 'forbidden';
+    public function itemCreate( $task ){
+        if( $task['task_programm']??null && is_array($task['task_programm']) ){
+            $task['task_programm']= json_encode($task['task_programm']);
         }
-        $task=[
-            'task_name'=>$task_name,
-        ];
         $this->insert($task);
         return $this->db->insertID();
     }
@@ -75,6 +72,7 @@ class TaskModel extends Model{
         if( $filter['is_pending']??0 ){
             $this->where('task_next_start<NOW() OR task_next_start IS NULL');
         }
+        $this->orderBy('task_next_start');
         $tasks=$this->get()->getResult();
         return $tasks;
     }

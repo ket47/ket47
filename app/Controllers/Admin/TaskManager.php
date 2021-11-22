@@ -24,9 +24,15 @@ class TaskManager extends \App\Controllers\BaseController {
     
     
     public function itemCreate(){
+        if( !sudo() ){
+            return $this->failForbidden();
+        }
         $task_name=$this->request->getVar('task_name');
+        $task=[
+            'task_name'=>$task_name,
+        ];
         $TaskModel=model('TaskModel');
-        $result=$TaskModel->itemCreate($task_name);
+        $result=$TaskModel->itemCreate($task);
         if( is_numeric($result) ){
             return $this->respondCreated($result);
         }
@@ -34,6 +40,9 @@ class TaskManager extends \App\Controllers\BaseController {
     }
     
     public function itemUpdate(){
+        if( !sudo() ){
+            return $this->failForbidden();
+        }
         $data= $this->request->getJSON();
         $TaskModel=model('TaskModel');
         $result=$TaskModel->itemUpdate($data);
@@ -47,6 +56,9 @@ class TaskManager extends \App\Controllers\BaseController {
     }
     
     public function itemDelete(){
+        if( !sudo() ){
+            return $this->failForbidden();
+        }
         $task_id=$this->request->getVar('task_id');
         $TaskModel=model('TaskModel');
         $result=$TaskModel->itemDelete($task_id);

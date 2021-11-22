@@ -41,9 +41,12 @@
                     return;
                 }
                 let field=$node.data('field');
-                let value=$node.val();
+                let value=TaskManager.val($node);
                 TaskManager.actions.update(task_id,field,value);
             });
+        },
+        val:function( $input ){
+            return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
         actions:{
             delete:function(task_id){
@@ -82,7 +85,7 @@
             <th>Интервал д/ч/м</th>
             <th>След. запуск</th>
             <th>Прошлый запуск</th>
-<!--            <th>Status</th>-->
+            <th>Singlerun</th>
         </tr>
         <?php foreach( $task_list as $task): ?>
         <tr>
@@ -107,9 +110,9 @@
             <td>
                 <input readonly="readonly" value="<?=$task->task_last_start?>" data-field="task_last_start" data-task_id="<?=$task->task_id?>">
             </td>
-<!--            <td>
-                <input readonly="readonly" value="<?=$task->task_status?>" data-field="task_status" data-task_id="<?=$task->task_id?>">
-            </td>-->
+            <td>
+                <input type="checkbox" value="<?=$task->task_status?>" data-field="is_singlerun" data-task_id="<?=$task->task_id?>">
+            </td>
         </tr>
         <?php endforeach; ?>
         <tr>

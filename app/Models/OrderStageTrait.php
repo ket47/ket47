@@ -29,6 +29,7 @@ trait OrderStageTrait{
         
         
         'supplier_rejected'=>[
+            'customer_created'=>    ['--reset'],
             'customer_refunded'=>   []
             ],
         'supplier_reclaimed'=>[
@@ -141,9 +142,20 @@ trait OrderStageTrait{
     }
     
     private function onCustomerConfirmed( $order_id ){
-        /*
-         * auto rollback to customer_created after 30 min???
-         */
+        $PrefModel=model('PrefModel');
+        $TaskModel=model('TaskModel');
+        
+        $timeout=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
+        $next_start=(new \CodeIgniter\I18n\Time("$timeout minutes"))->toDateTimeString();
+        $stage_reset_task=[
+            'task_name'=>"customer_confrimed Rollback #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_created',$order_id]]
+                ],
+            'is_singlerun'=>1,
+            'task_next_start'=>$next_start
+        ];
+        $TaskModel->itemCreate($stage_reset_task);
         return 'ok';
     }
     
@@ -183,7 +195,20 @@ trait OrderStageTrait{
     private function onCustomerStart( $order_id, $data ){
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
+        $PrefModel=model('PrefModel');
+        $TaskModel=model('TaskModel');
         $MessageModel=model('MessageModel');
+        $timeout=$PrefModel->itemGet('customer_start_timeout','pref_value',0);
+        $next_start=(new \CodeIgniter\I18n\Time("$timeout minutes"))->toDateTimeString();
+        $stage_reset_task=[
+            'task_name'=>"customer_start Rollback #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
+                ],
+            'is_singlerun'=>1,
+            'task_next_start'=>$next_start
+        ];
+        $TaskModel->itemCreate($stage_reset_task);
         
         $order=$this->itemGet($order_id);
         $StoreModel->itemCacheClear();
@@ -213,7 +238,17 @@ trait OrderStageTrait{
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
         ];
-        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
+        
+
+//        $notification_task=[
+//            'task_name'=>"customer_start Notify #$order_id",
+//            'task_programm'=>[
+//                    ['model'=>'MessageModel','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms],true]]
+//                ],
+//            'is_singlerun'=>1
+//        ];
+//        $TaskModel->itemCreate($notification_task);
+        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);
         return 'ok';
     }
     
@@ -253,7 +288,7 @@ trait OrderStageTrait{
         $store_email=(object)[
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_transport'=>'email',
-            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'message_subject'=>"Отмена Заказа №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_supplier_rejected_STORE_email.php',
             'context'=>$context
         ];

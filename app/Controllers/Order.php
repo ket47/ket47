@@ -115,9 +115,12 @@ class Order extends \App\Controllers\BaseController {
         ];
         $OrderModel=model('OrderModel');
         $order_list=$OrderModel->listGet($filter);
-        if( $OrderModel->errors() ){
-            return $this->failValidationError(json_encode($OrderModel->errors()));
-        }
+        return $this->respond($order_list);
+    }
+    
+    public function listPreviewGet(){
+        $OrderModel=model('OrderModel');
+        $order_list=$OrderModel->listPreviewGet();
         return $this->respond($order_list);
     }
 

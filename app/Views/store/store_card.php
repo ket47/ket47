@@ -118,12 +118,12 @@
 
                 <div>Отключен</div>
                 <div>
-                    <input type="checkbox" name="is_disabled.<?= $store->store_id ?>" <?= $store->is_disabled ? 'checked' : '' ?>/>
+                    <input type="checkbox" name="is_disabled.<?= $store->store_id ?>" value="1" <?= $store->is_disabled ? 'checked' : '' ?>/>
                 </div>
                 
                 <div>Работает</div>
                 <div>
-                    <input type="checkbox" name="is_working.<?= $store->store_id ?>" <?= $store->is_working ? 'checked' : '' ?>/>
+                    <input type="checkbox" name="is_working.<?= $store->store_id ?>" value="1" <?= $store->is_working ? 'checked' : '' ?>/>
                 </div>
 
                 <div>Создан</div>
@@ -150,9 +150,9 @@
                 <div>Группы</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
                     <?php foreach ($store_group_list as $group): ?>
-                    <div>
-                        <input type="checkbox" value="<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids)) ? 'checked' : '' ?>/>
-                        <?= $group->group_name ?>
+                    <div style="white-space: nowrap">
+                        <label for="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>"><?= $group->group_name ?></label>
+                        <input type="checkbox" value="<?= $group->group_id ?>" id="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids)) ? 'checked' : '' ?>/>
                     </div>
                     <?php endforeach; ?>
                 </div>

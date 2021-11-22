@@ -11,8 +11,12 @@ class PrefModel extends Model{
         'pref_json'
         ];
     
-    public function itemGet( $pref_name ){
-        return $this->where('pref_name',$pref_name)->get()->getRow();
+    public function itemGet( $pref_name, $pref_property=null, $pref_default=null ){
+        $pref=$this->where('pref_name',$pref_name)->get()->getRow();
+        if( $pref_property ){
+            return $pref->$pref_property??$pref_default;
+        }
+        return $pref;
     }
     
     public function itemCreate( $pref_name ){

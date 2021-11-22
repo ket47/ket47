@@ -22,6 +22,7 @@ class MessageModel extends Model{
     public function itemCreate( object $message, $lazy_send=false ){
         if( $lazy_send ){
             $MessageModel=$this;
+            //p($message);
             \CodeIgniter\Events\Events::on('post_response',function () use ($MessageModel,$message) {
                 $MessageModel->itemSend($message);
             });
@@ -53,7 +54,7 @@ class MessageModel extends Model{
                 $this->itemSendPush($message);
                 break;
             default:
-                log_message('error', 'Unknown transport. Cant send message:'. json_encode($message));
+                log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));
         }
     }
     
@@ -61,6 +62,9 @@ class MessageModel extends Model{
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
         if( isset($message->template) ){
+            if(is_object($message->context)){
+                $message->context=(array)$message->context;
+            }
             $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
@@ -92,6 +96,9 @@ class MessageModel extends Model{
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
         if( isset($message->template) ){
+            if(is_object($message->context)){
+                $message->context=(array)$message->context;
+            }
             $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }

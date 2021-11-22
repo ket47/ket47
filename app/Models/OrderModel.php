@@ -97,6 +97,7 @@ class OrderModel extends Model{
         
         if( sudo() ){
             foreach($order->stages as $stage){
+                $UserModel->select('user_id,user_name,user_phone');
                 $stage->created_user=$UserModel->itemGet($stage->created_by,'basic');
             }
         }
@@ -245,6 +246,27 @@ class OrderModel extends Model{
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->select("{$this->table}.*,group_id,,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
         return $this->get()->getResult();
+    }
+
+    public function listPreviewGet(){
+        $user_id=session()->get('user_id');
+        
+        
+        
+        $customer=$this
+                ->where('owner_id',$user_id)
+                ->listGet(['limit'=>3]);
+        $courier=$this
+                ->listGet(['limit'=>3]);
+        $supplier=$this->listGet(['limit'=>3]);
+        
+        
+
+        return [
+            'customer'=>$customer,
+            'courier'=>$courier,
+            'supplier'=>$supplier
+        ];
     }
     
     public function listCreate(){
