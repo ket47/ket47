@@ -13,7 +13,7 @@ class OrderModel extends Model{
     protected $allowedFields = [
         'order_store_id',
         'order_customer_id',
-        'order_courier_id',
+        'order_courier_user_id',
         'order_sum_shipping',
         'order_sum_total',
         'order_sum_tax',
@@ -24,21 +24,19 @@ class OrderModel extends Model{
 
     protected $useSoftDeletes = true;
     
-    private function itemUserRoleGet($order){
+    private function itemUserRoleCalc(){
         $user_id=session()->get('user_id');
-        if( $order->owner_id==$user_id ){
-            return 'customer';
-        }
-        if( $order->order_courier_id==$user_id ){
-            return 'delivery';
-        }
-        if( $user_id>0 && in_array($user_id, explode(',',$order->owner_ally_ids)) ){
-            return 'supplier';
-        }
         if( sudo() ){
-            return 'admin';
+            $this->select("'admin' user_role");
         }
-        return 'other';
+        else {
+            $this->select("
+                IF(order_list.owner_id=$user_id,'customer',
+                IF(order_list.order_courier_user_id=$user_id,'courier',
+                IF('$user_id' IN (order_list.owner_ally_ids),'supplier',
+                'other'))) user_role
+                ");
+        }
     }
     
     private function itemGetNextStages($current_stage,$user_role){
@@ -67,11 +65,11 @@ class OrderModel extends Model{
         $this->select("{$this->table}.*,group_name stage_current_name,group_type stage_current");
         $this->where('order_id',$order_id);
         $this->join('order_group_list','order_group_id=group_id','left');
+        $this->itemUserRoleCalc();
         $order = $this->get()->getRow();
         if( !$order ){
             return 'forbidden';
         }
-        $order->user_role=$this->itemUserRoleGet($order);
         if($mode=='basic'){
             $this->itemCache[$mode.$order_id]=$order;
             return $order;
@@ -92,7 +90,7 @@ class OrderModel extends Model{
         
         $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
         $order->customer=   $UserModel->itemGet($order->order_customer_id,'basic');
-        $order->courier=    $UserModel->itemGet($order->order_courier_id,'basic');
+        $order->courier=    $UserModel->itemGet($order->order_courier_user_id,'basic');
         $order->is_writable=$this->permit($order_id,'w');
         
         if( sudo() ){
@@ -217,31 +215,6 @@ class OrderModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    
-
-    
-    
-    
-    
-    
-    private function IIIitemUserRoleGet($order){
-        $user_id=session()->get('user_id');
-        if( $order->owner_id==$user_id ){
-            return 'customer';
-        }
-        if( $order->order_courier_id==$user_id ){
-            return 'delivery';
-        }
-        if( $user_id>0 && in_array($user_id, explode(',',$order->owner_ally_ids)) ){
-            return 'supplier';
-        }
-        if( sudo() ){
-            return 'admin';
-        }
-        return 'other';
-    }
-    
-    
     public function listGet( $filter ){
         $this->filterMake($filter,false);
         $this->permitWhere('r');
@@ -261,27 +234,10 @@ class OrderModel extends Model{
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->select("{$this->table}.*,group_id,,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
-        //
-            $user_id=session()->get('user_id');
-            if( sudo() ){
-                $this->select("'admin' user_role");
-            } else 
-            if($user_id<1){
-                $this->select("'other' user_role");
-            }
-            else {
-                $this->select("
-                    IF(order_list.owner_id=$user_id,'customer',
-                    IF(order_list.order_courier_user_id=$user_id,'courier',
-                    IF('$user_id' IN (order_list.owner_ally_ids),'supplier',
-                    'other'))) user_role
-                    ");
-                if( $filter['user_role']??0 ){
-                    $this->having('user_role',$filter['user_role']);
-                }
-            }
-            
-        //
+        $this->itemUserRoleCalc();
+        if( $filter['user_role']??0 ){
+            $this->having('user_role',$filter['user_role']);
+        }
         return $this->get()->getResult();
     }
 

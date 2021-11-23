@@ -24,6 +24,7 @@ trait OrderStageTrait{
         'customer_start'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
+            'delivery_start'=>      ['Начать доставку']
             ],
         
         
@@ -36,8 +37,8 @@ trait OrderStageTrait{
             'customer_refunded'=>   []
             ],
         'supplier_start'=>[
-            'supplier_corrected'=>  ['Изменить заказ'],
             'supplier_finish'=>     ['Закончить подготовку','positive'],
+            'supplier_corrected'=>  ['Изменить заказ'],
             ],
         'supplier_corrected'=>[
             'supplier_finish'=>     ['Закончить подготовку','positive'],
@@ -45,8 +46,8 @@ trait OrderStageTrait{
             ],
         'supplier_finish'=>[
             'supplier_corrected'=>  ['Изменить заказ'],
-            'delivery_no_courier'=> [],
             'delivery_start'=>      ['Начать доставку','positive'],
+            'delivery_no_courier'=> [],
             'action_take_photo'=>   ['Сфотографировать']
             ],
         
@@ -143,19 +144,17 @@ trait OrderStageTrait{
     
     private function onCustomerConfirmed( $order_id ){
         $PrefModel=model('PrefModel');
-        $TaskModel=model('TaskModel');
-        
-        $timeout=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
-        $next_start=(new \CodeIgniter\I18n\Time("$timeout minutes"))->toDateTimeString();
+        $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
+        $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
             'task_name'=>"customer_confrimed Rollback #$order_id",
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_created',$order_id]]
                 ],
             'is_singlerun'=>1,
-            'task_next_start'=>$next_start
+            'task_next_start_time'=>$next_start_time
         ];
-        $TaskModel->itemCreate($stage_reset_task);
+        jobCreate($stage_reset_task);
         return 'ok';
     }
     
@@ -193,23 +192,27 @@ trait OrderStageTrait{
     }
     
     private function onCustomerStart( $order_id, $data ){
+        helper('job');
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
         $PrefModel=model('PrefModel');
-        $TaskModel=model('TaskModel');
-        $MessageModel=model('MessageModel');
-        $timeout=$PrefModel->itemGet('customer_start_timeout','pref_value',0);
-        $next_start=(new \CodeIgniter\I18n\Time("$timeout minutes"))->toDateTimeString();
+
+        ///////////////////////////////////////////////////
+        //CREATING STAGE RESET JOB
+        ///////////////////////////////////////////////////
+        $timeout_min=$PrefModel->itemGet('customer_start_timeout','pref_value',0);
+        $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
             'task_name'=>"customer_start Rollback #$order_id",
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
                 ],
-            'is_singlerun'=>1,
-            'task_next_start'=>$next_start
+            'task_next_start_time'=>$next_start_time
         ];
-        $TaskModel->itemCreate($stage_reset_task);
-        
+        jobCreate($stage_reset_task);
+        ///////////////////////////////////////////////////
+        //CREATING STAGE NOTIFICATIONS
+        ///////////////////////////////////////////////////
         $order=$this->itemGet($order_id);
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
@@ -220,37 +223,64 @@ trait OrderStageTrait{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_transport'=>'sms',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context
         ];
         $store_email=(object)[
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_transport'=>'email',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_start_STORE_email.php',
             'context'=>$context
         ];
         $cust_sms=(object)[
-            'message_reciever_id'=>$order->owner_id,
             'message_transport'=>'sms',
+            'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
         ];
-        
-
-//        $notification_task=[
-//            'task_name'=>"customer_start Notify #$order_id",
-//            'task_programm'=>[
-//                    ['model'=>'MessageModel','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms],true]]
-//                ],
-//            'is_singlerun'=>1
-//        ];
-//        $TaskModel->itemCreate($notification_task);
-        $MessageModel->listSend([$store_sms,$store_email,$cust_sms],true);
+        $notification_task=[
+            'task_name'=>"customer_start Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+        ///////////////////////////////////////////////////
+        //CREATING READY COURIERS NOTIFICATIONS
+        ///////////////////////////////////////////////////
+        $this->readyCouriersNotify( $context );
         return 'ok';
     }
+    
+    private function readyCouriersNotify( $context ){
+        $CourierModel=model('CourierModel');
+        $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
+        if( !$ready_courier_list ){
+            return false;
+        }
+        $messages=[];
+        foreach($ready_courier_list as $courier){
+            $context['courier']=$courier;
+            $messages[]=(object)[
+                        'message_reciever_id'=>$courier->user_id,
+                        'message_transport'=>'sms',
+                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
+                        'context'=>$context];
+        }
+        $sms_job=[
+            'task_name'=>"Courier Notify #order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+                ],
+        ];
+        helper('job');
+        jobCreate($sms_job);
+        return true;
+    }
+    
     
     private function onCustomerRefunded( $order_id ){
         return $this->itemStageCreate($order_id, 'customer_finish');
@@ -274,7 +304,7 @@ trait OrderStageTrait{
          */
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
-        $MessageModel=model('MessageModel');
+        helper('job');
         
         $StoreModel->itemCacheClear();
         $order=$this->itemGet($order_id,'basic');
@@ -298,7 +328,13 @@ trait OrderStageTrait{
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];
-        $MessageModel->listSend([$store_email,$cust_sms],true);//[$store_sms,$store_email,$cust_sms]
+        $notification_task=[
+            'task_name'=>"supplier_rejected Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
         return 'ok';
     }
         
@@ -346,4 +382,23 @@ trait OrderStageTrait{
     private function onDeliveryRejected( $order_id ){
         return 'ok';
     }
+    private function onDeliveryFinish( $order_id ){
+        //make transaction for commission of courier
+        $PrefModel=model('PrefModel');
+        ///////////////////////////////////////////////////
+        //CREATING STAGE RESET JOB
+        ///////////////////////////////////////////////////
+        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout','pref_value',0);
+        $next_start_time=time()+$timeout_min*60;
+        $stage_reset_task=[
+            'task_name'=>"customer_start Rollback #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finish',$order_id]]
+                ],
+            'task_next_start_time'=>$next_start_time
+        ];
+        jobCreate($stage_reset_task);
+        return 'ok';
+    }
+    
 }

@@ -1,6 +1,7 @@
 <h2>User currently signed in</h2>
 
 <div style="display: grid;grid-template-columns:1fr 7fr">
+    <div><b>user_id:</b></div> <div><?=$user_id?></div>
 <?php foreach($user as $key=>$val): ?>
     <div><?=$key?>:</div> <div>
         <?php if(is_array($val) || is_object($val)): ?>

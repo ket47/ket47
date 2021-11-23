@@ -126,16 +126,28 @@ class CourierModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter ){
         $this->filterMake( $filter );
+        if( $filter['status']??0 ){
+            $this->where('group_type',$filter['status']);
+        }
         $this->permitWhere('r');
         $this->select($this->selectList);
         $this->join('user_list','user_id=courier_list.owner_id');
         $this->join('courier_group_member_list','member_id=courier_id','left');
         $this->join('courier_group_list','group_id','left');
         $this->join('image_list',"image_holder='user_group_list' AND image_holder_id=group_id AND is_main=1",'left');
-        $this->orderBy("group_type='busy' DESC,group_type='ready' DESC");
+        $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,courier_group_member_list.created_at DESC");
         $courier_list= $this->get()->getResult();
         return $courier_list;  
     }
+    
+    public function listNotify( $courier_status ){
+        
+    }
+    
+    
+    
+    
+    
     
     public function listCreate(){
         return false;

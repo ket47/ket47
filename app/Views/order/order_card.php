@@ -222,7 +222,7 @@ $(Order.init);
                     case $order->order_customer_id:
                         $updated_by=$order->customer;
                         break;
-                    case $order->order_courier_id:
+                    case $order->order_courier_user_id:
                         $updated_by=$order->courier;
                         break;
                     default :

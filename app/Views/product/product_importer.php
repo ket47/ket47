@@ -1,5 +1,5 @@
 <?=view('home/header')?>
-<?=view('product/store_selector',['use_all_stores'=>0,'owned_stores_only'=>1, 'store_click_handler'=>'
+<?=view('common/store_selector',['use_all_stores'=>0,'owned_stores_only'=>1, 'store_click_handler'=>'
         ImportList.table.loadrequest.holder="store";
         ImportList.table.loadrequest.holder_id=store_id;
         ImportList.listAnalyse();

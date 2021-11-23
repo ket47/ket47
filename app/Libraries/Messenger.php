@@ -1,37 +1,8 @@
 <?php
-namespace App\Models;
-use CodeIgniter\Model;
-
-class MessageModel extends Model{
-    
-    protected $table      = 'message_list';
-    protected $primaryKey = 'message_id';
-    protected $allowedFields = [
-        'message_reciever_id',
-        'message_subject',
-        'message_text',
-        'message_transport'
-    ];
-    protected $validationRules    = [
-        'message_reciever_id'   => 'required',
-        'message_text'          => 'required'
-    ];
-
-    protected $useSoftDeletes = false;
-
-    public function itemCreate( object $message, $lazy_send=false ){
-        if( $lazy_send ){
-            $MessageModel=$this;
-            //p($message);
-            \CodeIgniter\Events\Events::on('post_response',function () use ($MessageModel,$message) {
-                $MessageModel->itemSend($message);
-            });
-        } else {
-            $this->itemSend($message);
-        }
-    }
-    
-    private function itemSend( $message ){
+namespace App\Libraries;
+class Messenger{
+   
+    public function itemSend( $message ){
         $multiple_recievers=explode(',',$message->message_reciever_id);
         if( count($multiple_recievers)>1 ){
             foreach($multiple_recievers as $current_reciever_id){
@@ -49,6 +20,9 @@ class MessageModel extends Model{
                 break;
             case 'sms':
                 $this->itemSendSms($message);
+                break;
+            case 'viber':
+                $this->itemSendViber($message);
                 break;
             case 'push':
                 $this->itemSendPush($message);
@@ -121,9 +95,33 @@ class MessageModel extends Model{
         return false;
     }
     
+//    private function itemSendViber( $message ){
+//        $UserModel=model('UserModel');
+//        $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
+//        if( isset($message->template) ){
+//            if(is_object($message->context)){
+//                $message->context=(array)$message->context;
+//            }
+//            $message->context['reciever']=$reciever;
+//            $message->message_text=view($message->template,$message->context);
+//        }
+//        if( !$message->message_text ){
+//            return false;
+//        }
+//        
+//        
+//        $Viber = new \App\Libraries\Viber();
+//   
+//        
+//        $result=$Viber->send_message($reciever->user_phone,$message->message_text);
+//        
+//        p($result);
+//        log_message('VIBER', $result);
+//    }
+    
     public function listSend( array $message_list, $lazy_send=false ){
         foreach( $message_list as $message){
-            $this->itemCreate($message,$lazy_send);
+            $this->itemSend($message,$lazy_send);
         }
     }
 }

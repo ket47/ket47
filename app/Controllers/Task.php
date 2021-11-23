@@ -5,56 +5,60 @@ namespace App\Controllers;
 class Task extends \App\Controllers\BaseController{
     
     public function jobDo(){
+        require_once '../app/ThirdParty/Credis/Client.php';
         set_time_limit(0);
         session_write_close();
         
         $time_limit = 60 * 1;
         $time_limit += rand(0, 60 * 1);
         $start_time = time();
-        
-        require_once '../app/ThirdParty/Credis/Client.php';
-        $predis = new \Credis_Client();
         $worker_id = rand(100, 999);
-        header('Content-type: text/plain');
-        echo "Worker #$worker_id Starting.".date('H:i:s')."\n";
-        $predis->hset('worker.status', $worker_id, 'Started');
-        $predis->hset('worker.status.last_time', $worker_id, time());
-        echo "	Waiting for a Job";
+        
+        echo "Worker #$worker_id Starting.".date('H:i:s')."\n	Waiting for a Job";
+        $predis = new \Credis_Client();
         while(time() < $start_time + $time_limit){
-            $predis->hset('worker.status', $worker_id, 'Waiting');
-            $predis->hset('worker.status.last_time', $worker_id, time());
-            $job = $predis->blpop('queue.priority.normal',10);
-            if($job && $job[1]){
-                echo "\nJob Started at".date('H:i:s')."";
-                $predis->hset('worker.status', $worker_id, 'Working');
-                $predis->hset('worker.status.last_time', $worker_id, time());
-                $task= json_decode($job[1]);
-                $result=$this->itemExecute( $task );
-                echo " Done($result)!\n";
-            }
-            else{
+            $job = $predis->blPop('queue.priority.normal',10);
+            if(!$job || !$job[1]){
                 echo ".";
+                continue;
             }
+            $task= json_decode($job[1]);
+            if( !$task ){
+                echo "Invalid job syntax: ".json_last_error_msg();
+            }
+            if( isset($task->task_next_start_time) && $task->task_next_start_time>time() ){
+                $final_count=$predis->rPush('queue.priority.normal', $job[1]);
+                if( $final_count<2 ){
+                    sleep(1);//if only one timed job is left wait 1 sec
+                }
+                continue;
+            }
+            echo "\nJob {$task->task_name} Started at ".date('H:i:s')."";
+            $result=$this->itemExecute( $task );
+            echo " Done($result)!\n";
+            $time_limit+=2;//adding 2 seconds if there is job
         }
-        $predis->hset('worker.status', $worker_id, 'Closed');
-        $predis->hset('worker.status.last_time', $worker_id, time());
-        echo "\nWorker #$worker_id Finished! Goodbye!\n";
+        echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
     }
     
     
     public function jobCreate(){
-        echo $sms_job=json_encode([
-            'task_name'=>"customer_start Notify #order_id",
+        $ready_courier_list=model('CourierModel')->listGet(['status'=>'ready','limit'=>5,'order']);
+        $messages=[];
+        foreach($ready_courier_list as $courier){
+            $context['courier']=$courier;
+            $messages[]=(object)[
+                        'message_reciever_id'=>$courier->user_id,
+                        'message_transport'=>'sms',
+                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
+                        'context'=>$context];
+        }
+        $sms_job=[
+            'task_name'=>"Courier Notify #order_id",
             'task_programm'=>[
-                    ['model'=>'MessageModel','method'=>'listSend','arguments'=>[[(object)[
-            'message_reciever_id'=>44,
-            'message_transport'=>'sms',
-            'message_text'=>'Hello REDDIISS '.date('H:i:s')
-        ]],true]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
                 ],
-            'is_singlerun'=>1
-        ]);
-        
+        ];
         helper('job');
         jobCreate($sms_job);
     }
@@ -89,6 +93,8 @@ class Task extends \App\Controllers\BaseController{
                 $Class=model($command->model);
             } else if( $command->controller??0 ){
                 $Class=new $command->controller($this->request, $this->response, $this->logger);
+            } else if( $command->library??0 ){
+                $Class=new $command->library();
             } else {
                 $Class=$this;
             }
