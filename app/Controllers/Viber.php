@@ -10,21 +10,24 @@ class Viber extends \App\Controllers\BaseController{
     private $url_api = "https://chatapi.viber.com/pa/";
 
     public function get_account_info(){
-        $result=$this->call_api('send_message', (object)[]);
+        $result=$this->call_api('get_account_info', (object)[]);
         return $this->respond($result);
     }
     
-    public function send_message($receiver,$text){
+    public function send_message(){
+        $text=$this->request->getVar('text');
         
+        $data['receiver']   = 'f0oWLRUl0/LFWzIFgNvXwA==';
+        $data['receiver']   = 'NMs14J/ldy1RmPy9ulR7HQ==';
         
-        $data['receiver']   = $receiver;
         $data['sender'] = [
             'name' => getenv('viber.title'),
             'avatar' => getenv('viber.avatar')
         ];
         $data['type']   = 'text';
         $data['text']   = $text;
-        return $this->call_api('send_message', $data);
+        $result=$this->call_api('send_message', $data);
+        return $this->respond($result);
     }
     
     public function set_webhook(){
