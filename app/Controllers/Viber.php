@@ -17,8 +17,8 @@ class Viber extends \App\Controllers\BaseController{
     public function send_message(){
         $text=$this->request->getVar('text');
         
-        //$data['receiver']   = 'f0oWLRUl0/LFWzIFgNvXwA==';
-        $data['receiver']   = 'NMs14J/ldy1RmPy9ulR7HQ==';
+        $data['receiver']   = 'f0oWLRUl0/LFWzIFgNvXwA==';
+        //$data['receiver']   = 'NMs14J/ldy1RmPy9ulR7HQ==';
         
         $data['sender'] = [
             'name' => getenv('viber.title'),
