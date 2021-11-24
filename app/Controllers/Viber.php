@@ -67,6 +67,17 @@ class Viber extends \App\Controllers\BaseController{
         $email->setMessage(json_encode($data));
         $email->send();
         
+        
+          $webhook_response['status']=0;
+        $webhook_response['status_message']="ok";
+        $webhook_response['event_types']='delivered';
+        echo json_encode($webhook_response);
+        die;
+        
+        
+        
+        
+        
         return $this->respond(1);
     }
  
