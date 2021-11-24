@@ -48,6 +48,22 @@ class Viber extends \App\Controllers\BaseController{
         return json_decode($response);
     }    
     public function webhook(){
+        $data=$this->request->getJSON();
+        
+        $email = \Config\Services::email();
+        $config=[
+            'SMTPHost'=>getenv('email_server'),
+            'SMTPUser'=>getenv('email_username'),
+            'SMTPPass'=>getenv('email_password'),
+            'mailType'=>'html',
+        ];
+        $email->initialize($config);
+        $email->setFrom(getenv('email_from'), getenv('email_sendername'));
+        $email->setTo('bay@nilsonmag.com');
+        $email->setSubject("Viber webhook");
+        $email->setMessage(json_encode($data));
+        $email->send();
+        
         return $this->respond(1);
     }
  
