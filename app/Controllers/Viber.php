@@ -32,7 +32,8 @@ class Viber extends \App\Controllers\BaseController{
     
     public function set_webhook(){
         $data['url']   = 'https://api.tezkel.com/Viber/webhook';
-        return $this->call_api('set_webhook', $data);
+        $result=$this->call_api('set_webhook', $data);
+        return $this->respond($result);
     }
 
     private function call_api($method, $data){
