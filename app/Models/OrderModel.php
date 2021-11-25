@@ -242,19 +242,12 @@ class OrderModel extends Model{
     }
 
     public function listPreviewGet(){
-        $user_id=session()->get('user_id');
-        
-        
-        
         $customer=$this
-                ->where('owner_id',$user_id)
-                ->listGet(['limit'=>3]);
+                ->listGet(['limit'=>3,'user_role'=>'customer']);
         $courier=$this
-                ->listGet(['limit'=>3]);
-        $supplier=$this->listGet(['limit'=>3]);
-        
-        
-
+                ->listGet(['limit'=>3,'user_role'=>'courier']);
+        $supplier=$this
+                ->listGet(['limit'=>3,'user_role'=>'supplier']);
         return [
             'customer'=>$customer,
             'courier'=>$courier,
