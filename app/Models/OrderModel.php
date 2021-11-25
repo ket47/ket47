@@ -236,7 +236,7 @@ class OrderModel extends Model{
         $this->select("{$this->table}.*,group_id,,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
-            $this->having('user_role',$filter['user_role']);
+            $this->havingIn('user_role',$filter['user_role']);
         }
         return $this->get()->getResult();
     }

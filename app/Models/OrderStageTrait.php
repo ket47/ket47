@@ -54,10 +54,10 @@ trait OrderStageTrait{
         
         
         'delivery_start'=>[
-            'delivery_finish'=>     ['Завершить','positive'],
+            'delivery_finish'=>     ['Завершить доставку','positive'],
             'action_take_photo'=>   ['Сфотографировать'],
-            'action_call_customer'=>['Позвонить заказчику'],
-            'delivery_rejected'=>   ['Отказаться!','negative']
+            'action_call_customer'=>['Позвонить клиенту'],
+            'delivery_rejected'=>   ['Отказаться от доставки!','negative']
             ],
         'delivery_rejected'=>[
             'supplier_reclaimed'=>  ['Принять возврат заказа']
@@ -79,6 +79,7 @@ trait OrderStageTrait{
             'customer_finish'=>     [],
             ],
         'customer_finish'=>[
+            'customer_created'=>    ['--reset'],
             ]
     ];
     
@@ -125,6 +126,7 @@ trait OrderStageTrait{
     }
     
     private function itemStageHandle( $order_id, $stage, $data ){
+        helper('job');
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
         return $this->{$stageHandlerName}($order_id, $data);
     }
@@ -192,7 +194,6 @@ trait OrderStageTrait{
     }
     
     private function onCustomerStart( $order_id, $data ){
-        helper('job');
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
         $PrefModel=model('PrefModel');
@@ -264,11 +265,16 @@ trait OrderStageTrait{
         $messages=[];
         foreach($ready_courier_list as $courier){
             $context['courier']=$courier;
+            
+            $message_text=view('messages/order/on_customer_start_COUR_sms.php',$context);
+            
             $messages[]=(object)[
                         'message_reciever_id'=>$courier->user_id,
                         'message_transport'=>'sms',
-                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
-                        'context'=>$context];
+                        'message_text'=>$message_text,
+                        //'template'=>'messages/order/on_customer_start_COUR_sms.php',
+                        //'context'=>$context
+                    ];
         }
         $sms_job=[
             'task_name'=>"Courier Notify #order_id",
@@ -276,11 +282,17 @@ trait OrderStageTrait{
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
                 ],
         ];
-        helper('job');
+        
+        
+        
         jobCreate($sms_job);
+        p($sms_job);
         return true;
     }
     
+    private function onCustomerDisputed( $order_id ){
+        return 'ok';
+    }
     
     private function onCustomerRefunded( $order_id ){
         return $this->itemStageCreate($order_id, 'customer_finish');
@@ -397,6 +409,7 @@ trait OrderStageTrait{
                 ],
             'task_next_start_time'=>$next_start_time
         ];
+        helper('job');
         jobCreate($stage_reset_task);
         return 'ok';
     }
