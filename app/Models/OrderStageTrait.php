@@ -265,15 +265,11 @@ trait OrderStageTrait{
         $messages=[];
         foreach($ready_courier_list as $courier){
             $context['courier']=$courier;
-            
             $message_text=view('messages/order/on_customer_start_COUR_sms.php',$context);
-            
             $messages[]=(object)[
                         'message_reciever_id'=>$courier->user_id,
                         'message_transport'=>'sms',
-                        'message_text'=>$message_text,
-                        //'template'=>'messages/order/on_customer_start_COUR_sms.php',
-                        //'context'=>$context
+                        'message_text'=>$message_text
                     ];
         }
         $sms_job=[
@@ -282,11 +278,7 @@ trait OrderStageTrait{
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
                 ],
         ];
-        
-        
-        
         jobCreate($sms_job);
-        p($sms_job);
         return true;
     }
     
