@@ -52,14 +52,16 @@ class Viber extends \App\Controllers\BaseController{
     private function onMessage($sender,$message){
         $UserModel=model('UserModel');
         $viberId=$sender->id;
-        $user_id=0;
         if( !isset($sender->id) ){
             return false;
         }
-        $user_id=$UserModel->where("user_data->'$.viber.id'","'$viberId'")->get()->getRow('user_id');
+        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viber.id')='$viberId'")->getRow('user_id');
         if( !$user_id ){
             helper('phone_number');
             $user_phone_cleared= clearPhone($message->text);
+            die('--'.$user_phone_cleared);
+            
+            
             if( strlen($user_phone_cleared)==11 ){
                 $this->phoneVerificationSend($user_phone_cleared,$viberId);
                 $this->send_message($viberId, 'I dont recognize you. Please text me verification code');
