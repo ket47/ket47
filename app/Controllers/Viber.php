@@ -56,14 +56,19 @@ class Viber extends \App\Controllers\BaseController{
             return false;
         }
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viber.id')='$viberId'")->getRow('user_id');
-        if( !$user_id ){
+        if( $user_id ){
+            $user=$UserModel->where('user_id',$user_id)->get()->getRow();
+            $this->send_message($viberId, "{$user->user_name}, I don't understand :(. I'm only for notifying you");
+        } else {
             helper('phone_number');
             $user_phone_cleared= clearPhone($message->text);
             if( strlen($user_phone_cleared)==11 ){
-                echo $this->phoneVerificationSend($user_phone_cleared,$viberId);
-                $this->send_message($viberId, 'I dont recognize you. Please text me verification code');
-            } else {
+                $this->phoneVerificationSend($user_phone_cleared,$viberId);
+                $this->send_message($viberId, 'Sms with code has been sent. Please text me verification code');
+            } else if($this->phoneVerificationIsSent($viberId)) {
                 $this->phoneVerificationCheck($viberId,$message->text);
+            } else {
+                $this->send_message($viberId, 'I dont recognize you. Please text me your phone');
             }
         }
     }
@@ -71,6 +76,15 @@ class Viber extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////
     //VERIFICATION SECTION
     ///////////////////////////////////////////////
+    private function phoneVerificationIsSent($viberId){
+        $UserVerificationModel=model('UserVerificationModel');
+        $UserVerificationModel->like('verification_value',$viberId)->where('created_at<DATE_ADD(NOW(),INTERVAL -5 MINUTE)')->delete();
+        $user_verification_id=$UserVerificationModel->like('verification_value',$viberId)->get()->getRow('user_verification_id');
+        return $user_verification_id?1:0;
+    }
+    
+    
+    
     private function phoneVerificationSend($user_phone,$viberId){
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
@@ -110,7 +124,7 @@ class Viber extends \App\Controllers\BaseController{
             return 'verification_not_found';
         }
         $UserModel=model('UserModel');
-        $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.viber.id','$viberId') WHERE user_id='$verification->user_id'");
+        $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_MERGE_PATCH(COALESCE(user_data,'{}'),'{\"viber\":{\"id\":\"$viberId\"}}') WHERE user_id='$verification->user_id'");
         if( $ok ){
             $user=$UserModel->where('user_id',$verification->user_id)->get()->getRow();
             $this->send_message($viberId, 'Thank you.'.$user->user_name);
@@ -118,5 +132,6 @@ class Viber extends \App\Controllers\BaseController{
             return true;
         }
         $this->send_message($viberId, 'Unfortunately verification code is wrong'.$user->user_name);
+        return false;
     }
 }
