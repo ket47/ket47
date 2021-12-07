@@ -40,6 +40,7 @@ class WebHooks extends \App\Controllers\BaseController{
             "send_photo"=>0
         ];
         $response=$Viber->call_api('setWebhook',$request);
+        print_r($request);
         p($response);
     }
 }
