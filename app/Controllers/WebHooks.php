@@ -29,16 +29,17 @@ class WebHooks extends \App\Controllers\BaseController{
         $request=[
             "url"=>getenv('app.baseURL').'WebHooks/viberWebhook',
             "event_types"=>[
-               "delivered",
-               "seen",
-               "failed",
-               "subscribed",
-               "unsubscribed",
-               "conversation_started"
+                "delivered",
+                "seen",
+                "failed",
+                "subscribed",
+                "unsubscribed",
+                "conversation_started"
             ],
             "send_name"=>0,
             "send_photo"=>0
         ];
-        echo $Viber->call_api('setWebhook',$request);
+        $response=$Viber->call_api('setWebhook',$request);
+        p($response);
     }
 }
