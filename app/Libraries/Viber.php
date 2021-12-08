@@ -52,7 +52,20 @@ class Viber{
             }
         }
     }
- 
+    
+    public function onConversation_started($sender,$message){
+        $UserModel=model('UserModel');
+        $viberId=$sender->id;
+        if( !isset($sender->id) ){
+            return false;
+        }
+        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viber.id')='$viberId'")->getRow('user_id');
+        if( !$user_id ){
+            $this->send_message($viberId, 'I dont recognize you. Please text me your phone');
+        }
+    }
+
+
     ///////////////////////////////////////////////
     //VERIFICATION SECTION
     ///////////////////////////////////////////////
