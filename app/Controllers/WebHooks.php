@@ -15,7 +15,7 @@ class WebHooks extends \App\Controllers\BaseController{
             $eventName="on{$data->event}";
             if( method_exists($Viber,$eventName) ){
                 $Viber->$eventName($data->sender,$data->message);
-            } else {
+            } //else {
                 $email = \Config\Services::email();
                 $config=[
                     'SMTPHost'=>getenv('email_server'),
@@ -29,7 +29,7 @@ class WebHooks extends \App\Controllers\BaseController{
                 $email->setSubject('Viber webhook');
                 $email->setMessage(json_encode($data));
                 $email_send_ok=$email->send();
-            }
+            //}
         }
         $webhook_response['status']=0;
         $webhook_response['status_message']="ok";
@@ -52,8 +52,8 @@ class WebHooks extends \App\Controllers\BaseController{
                 "unsubscribed",
                 "conversation_started"
             ],
-            "send_name"=>0,
-            "send_photo"=>0
+            "send_name"=>false,
+            "send_photo"=>false
         ];
         $response=$Viber->call_api('setWebhook',$request);
         print_r($request);
