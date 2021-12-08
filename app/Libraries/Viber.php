@@ -35,7 +35,7 @@ class Viber{
         if( !isset($sender->id) ){
             return false;
         }
-        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viber.id')='$viberId'")->getRow('user_id');
+        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( $user_id ){
             $user=$UserModel->where('user_id',$user_id)->get()->getRow();
             $this->send_message($viberId, "{$user->user_name}, I don't understand :(. I'm only for notifying you");
