@@ -59,7 +59,7 @@ class Viber{
         if( !isset($sender->id) ){
             return false;
         }
-        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viber.id')='$viberId'")->getRow('user_id');
+        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( !$user_id ){
             $this->send_message($viberId, 'I dont recognize you. Please text me your phone');
         }
@@ -114,7 +114,7 @@ class Viber{
             return 'verification_not_found';
         }
         $UserModel=model('UserModel');
-        $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_MERGE_PATCH(COALESCE(user_data,'{}'),'{\"viber\":{\"id\":\"$viberId\"}}') WHERE user_id='$verification->user_id'");
+        $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.viberId','$viberId') WHERE user_id='$verification->user_id'");
         if( $ok ){
             $user=$UserModel->where('user_id',$verification->user_id)->get()->getRow();
             $this->send_message($viberId, 'Thank you.'.$user->user_name);
