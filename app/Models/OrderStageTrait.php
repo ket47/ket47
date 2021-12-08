@@ -224,7 +224,7 @@ trait OrderStageTrait{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'sms',
+            'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context
@@ -237,7 +237,7 @@ trait OrderStageTrait{
             'context'=>$context
         ];
         $cust_sms=(object)[
-            'message_transport'=>'sms',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
@@ -268,7 +268,7 @@ trait OrderStageTrait{
             $message_text=view('messages/order/on_customer_start_COUR_sms.php',$context);
             $messages[]=(object)[
                         'message_reciever_id'=>$courier->user_id,
-                        'message_transport'=>'sms',
+                        'message_transport'=>'message',
                         'message_text'=>$message_text
                     ];
         }
@@ -328,7 +328,7 @@ trait OrderStageTrait{
         ];
         $cust_sms=(object)[
             'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'sms',
+            'message_transport'=>'message',
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];

@@ -35,6 +35,21 @@ class Messenger{
         }
     }
     
+    private function itemSendMessage( $message ){
+        $UserModel=model('UserModel');
+        $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        if($reciever->user_data){
+            $reciever->user_data= json_decode($reciever->user_data);
+        }
+        if( isset($reciever->user_data->viberId) ){
+            $ok=$this->itemSendViber($message);
+            if( $ok ){
+                return true;
+            }
+        }
+        return $this->itemSendSms($message);
+    }
+    
     private function itemSendEmail( $message ){
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
@@ -94,28 +109,13 @@ class Messenger{
         return true;
     }
     
-    private function itemSendMessage( $message ){
-        $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$message->message_reciever_id)->get()->getRow();
-        if($reciever->user_data){
-            $reciever->user_data= json_decode($reciever->user_data);
-        }
-        if( isset($reciever->user_data->viber->Id) ){
-            $ok=$this->itemSendViber($message);
-            if( $ok ){
-                return true;
-            }
-        }
-        return $this->itemSendSms($message);
-    }
-    
     private function itemSendPush( $message ){
         return false;
     }
     
     private function itemSendViber( $message ){
         $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email,JSON_EXTRACT(user_data,'$.viber.id') viberId")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        $reciever=$UserModel->select("user_name,user_phone,user_email,JSON_EXTRACT(user_data,'$.viberId') viberId")->where('user_id',$message->message_reciever_id)->get()->getRow();
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -127,15 +127,10 @@ class Messenger{
             log_message('VIBER', 'No text or viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
-        
-        
         $Viber = new \App\Libraries\Viber();
-   
-        
         $result=$Viber->send_message($reciever->user_phone,$message->message_text);
-        
-        p($result);
         log_message('VIBER', $result);
+        return $result;
     }
     
     public function listSend( array $message_list, $lazy_send=false ){

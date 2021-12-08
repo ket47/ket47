@@ -61,7 +61,7 @@ class Viber{
         }
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( !$user_id ){
-            $this->send_message($viberId, 'I dont recognize you. Please text me your phone');
+            $this->send_message($viberId, 'I dont recognize you. Please text me your phone number');
         }
     }
 
