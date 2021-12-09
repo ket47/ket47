@@ -21,12 +21,36 @@ class Courier extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        
-        return false;
+        helper('phone_number');
+        $courier_phone_number= clearPhone($this->request->getVar('courier_name'));//didn't cahnged default name for field
+        $UserModel=model('UserModel');
+        $user_id=$UserModel->where('user_phone',$courier_phone_number)->get()->getRow('user_id');
+
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemCreate($user_id);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        if( $CourierModel->errors() ){
+            return $this->failValidationErrors(json_encode($CourierModel->errors()));
+        }
+        return $this->respond($result);
     }
     
     public function itemUpdate(){
-        return false;
+        $data= $this->request->getJSON();
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemUpdate($data);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $CourierModel->errors() ){
+            return $this->failValidationErrors(json_encode($CourierModel->errors()));
+        }
+        return $this->respondUpdated($result);
     }
     
     public function itemUpdateGroup(){
@@ -124,6 +148,86 @@ class Courier extends \App\Controllers\BaseController{
     
     public function listDelete(){
         return false;
+    }
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function fileUpload(){
+        $image_holder_id=$this->request->getVar('image_holder_id');
+        $items = $this->request->getFiles();
+        if(!$items){
+            return $this->failResourceGone('no_files_uploaded');
+        }
+        foreach($items['files'] as $file){
+            $type = $file->getClientMimeType();
+            if(!str_contains($type, 'image')){
+                continue;
+            }
+            if ($file->isValid() && ! $file->hasMoved()) {
+                $result=$this->fileSaveImage($image_holder_id,$file);
+                if( $result!==true ){
+                    return $result;
+                }
+            }
+        }
+        return $this->respondCreated('ok');
+    }
+    
+    private function fileSaveImage( $image_holder_id, $file ){
+        $image_data=[
+            'image_holder'=>'courier',
+            'image_holder_id'=>$image_holder_id
+        ];
+        $CourierModel=model('CourierModel');
+        $image_hash=$CourierModel->imageCreate($image_data);
+        if( !$image_hash ){
+            return $this->failForbidden('forbidden');
+        }
+        if( $image_hash === 'limit_exeeded' ){
+            return $this->fail('limit_exeeded');
+        }
+        $file->move(WRITEPATH.'images/', $image_hash.'.webp');
+        
+        return \Config\Services::image()
+        ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
+        ->resize(1024, 1024, true, 'height')
+        ->convert(IMAGETYPE_WEBP)
+        ->save();
+    }
+    
+    public function imageDisable(){
+        $image_id=$this->request->getVar('image_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->imageDisable( $image_id, $is_disabled );
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+    
+    public function imageDelete(){
+        $image_id=$this->request->getVar('image_id');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->imageDelete( $image_id );
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
+        }
+        return $this->fail($result);
+    }
+    
+    public function imageOrder(){
+        $image_id=$this->request->getVar('image_id');
+        $dir=$this->request->getVar('dir');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->imageOrder( $image_id, $dir );
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
     }
  
 }

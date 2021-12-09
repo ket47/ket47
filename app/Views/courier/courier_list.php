@@ -14,8 +14,10 @@
             <div style="display: contents" class="<?= $courier->is_disabled ? 'item_disabled' : '' ?> <?= $courier->deleted_at ? 'item_deleted' : '' ?>">
                 <div><?=$i+1?></div>
                 <div style="height: 50px;">
-                    <?php if($courier->user_avatar_name): ?>
-                    <img src="/img/avatar/<?=$courier->user_avatar_name?>.png" style="height: 40px;max-width: 40px;" alt=" "/>
+                    <?php if($courier->courier_photo_image_hash): ?>
+                    <img src="/image/get.php/<?=$courier->courier_photo_image_hash?>.40.40.webp" style="height: 40px;max-width: 40px;" alt=" "/>
+                    <?php else:?>
+                    <img src="/img/avatar/<?=$courier->user_avatar_name??''?>.png" style="height: 40px;max-width: 40px;" alt=" "/>
                     <?php endif; ?>
                 </div>
                 <div><?= $courier->user_name ?></div>

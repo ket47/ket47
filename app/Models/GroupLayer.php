@@ -19,20 +19,7 @@ class GroupLayer extends Model{
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';   
-    
-//    public function tableSet( $table_name ){
-//        $allowed_tables=[
-//            'order_group_list',
-//            'product_group_list',
-//            'store_group_list',
-//            'user_group_list'
-//        ];
-//        if( !in_array($table_name, $allowed_tables) ){
-//            throw new \ErrorException('Trying to use unallowed group table name '.$table_name);
-//        }
-//        $this->table=$table_name;
-//    }
+    protected $deletedField  = 'deleted_at';
     
     public function listGet( $filter=null ){
         $this->permitWhere('r');

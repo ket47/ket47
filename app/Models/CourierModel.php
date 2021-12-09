@@ -15,9 +15,7 @@ class CourierModel extends Model{
         'deleted_at'
     ];
     protected $validationRules    = [
-        'courier_name'        => 'min_length[3]',
-        'courier_description' => 'min_length[10]',
-        'courier_tax_num'     => 'exact_length[10,12]|integer'
+        'courier_tax_num'     => 'exact_length[0,10,12]'
     ];
 
     protected $useSoftDeletes = true;
@@ -30,7 +28,8 @@ class CourierModel extends Model{
             courier_list.is_disabled,
             courier_list.deleted_at,
             group_name,
-            image_hash group_image_hash,
+            status_icon.image_hash group_image_hash,
+            courier_photo.image_hash courier_photo_image_hash,
             current_order_id";
    
     /////////////////////////////////////////////////////
@@ -52,10 +51,23 @@ class CourierModel extends Model{
         if( !$courier ){
             return 'notfound';
         }
+        $filter=[
+            'image_holder'=>'courier',
+            'image_holder_id'=>$courier->courier_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>30
+        ];
+        $ImageModel=model('ImageModel');
+        $courier->images=$ImageModel->listGet($filter);
         return $courier;  
     }
     
     public function itemCreate($user_id){
+        if(!$user_id){
+            return 'notfound';
+        }
         $UserModel=model('UserModel');
         if( !$UserModel->permit($user_id,'w') || !$this->permit(null,'w') ){
             return 'forbidden';
@@ -64,12 +76,18 @@ class CourierModel extends Model{
         $courier=[
             'owner_id'=>$user_id
         ];
-        $this->insert($courier);
-        return $this->db->insertID();
+        $this->get()->getRow();
+        $courier_id=$this->insert($courier,true);
+        return $courier_id;
     }
     
-    public function itemUpdate(){
-        return false;
+    public function itemUpdate( $courier ){
+        if( empty($courier->courier_id) ){
+            return 'noid';
+        }
+        $this->permitWhere('w');
+        $this->update($courier->courier_id,$courier);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUpdateGroup($courier_id,$group_id,$is_joined){
@@ -134,8 +152,9 @@ class CourierModel extends Model{
         $this->join('user_list','user_id=courier_list.owner_id');
         $this->join('courier_group_member_list','member_id=courier_id','left');
         $this->join('courier_group_list','group_id','left');
-        $this->join('image_list',"image_holder='user_group_list' AND image_holder_id=group_id AND is_main=1",'left');
+        $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
         $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,courier_group_member_list.created_at DESC");
+        $this->join('image_list courier_photo',"courier_photo.image_holder='courier' AND courier_photo.image_holder_id=courier_id AND courier_photo.is_main=1",'left');
         $courier_list= $this->get()->getResult();
         return $courier_list;  
     }
@@ -160,5 +179,67 @@ class CourierModel extends Model{
     public function listDelete(){
         return false;
     }
+    /////////////////////////////////////////////////////
+    //IMAGE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function imageCreate( $data ){
+        $data['is_disabled']=1;
+        $data['owner_id']=session()->get('user_id');
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemCreate($data,1);
+        }
+        return 0;
+    }
+
+    public function imageUpdate( $data ){
+        if( $this->permit($data['image_holder_id'], 'w') ){
+            $ImageModel=model('ImageModel');
+            return $ImageModel->itemUpdate($data);
+        }
+        return 0;
+    }
     
+    public function imageDisable( $image_id, $is_disabled ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        $ImageModel=model('ImageModel');
+        $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'error';
+    }    
+    
+    public function imageDelete( $image_id ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $courier_id=$image->image_holder_id;
+        if( !$this->permit($courier_id,'w') ){
+            return 'forbidden';
+        }
+        $ImageModel->itemDelete( $image_id );
+        $ok=$ImageModel->itemPurge( $image_id );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'idle';
+    }
+    
+    public function imageOrder( $image_id, $dir ){
+        $ImageModel=model('ImageModel');
+        $image=$ImageModel->itemGet( $image_id );
+        
+        $courier_id=$image->image_holder_id;
+        if( !$this->permit($courier_id,'w') ){
+            return 'forbidden';
+        }
+        $ok=$ImageModel->itemUpdateOrder( $image_id, $dir );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'error';
+    }
 }

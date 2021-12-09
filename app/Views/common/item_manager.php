@@ -166,7 +166,7 @@
         addItemRequest:{},
         addItem:function(){
             if( !(<?=$dontCreateWithName??0?>) ){
-                let item_name=prompt("Название","NEW ITEM");
+                let item_name=prompt("<?=$newItemFieldName??'Название'?>","<?=$newItemPlaceholder??'Новая запись'?>");
                 if(!item_name){
                     return;
                 }

@@ -40,9 +40,9 @@ class StoreModel extends Model{
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
-        'store_name'        => 'min_length[3]',
-        'store_description' => 'min_length[10]',
-        'store_company_name' => 'min_length[3]',
+        'store_name'            => 'min_length[3]',
+        'store_description'     => 'min_length[10]',
+        'store_company_name'    => 'min_length[3]',
         'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
     /////////////////////////////////////////////////////
