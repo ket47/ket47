@@ -16,13 +16,13 @@
             <h3>Stores</h3>
             <a href="Home/store_manager" target="scr">Stores</a><br>
             <h3>Users</h3>
+            <a href="Home/courier_manager/" target="scr">Couriers</a><br>
             <a href="Home/user_manager" target="scr">Users</a><br>
             <a href="Home/user_register_form" target="scr">Sign Up</a><br>
             <a href="Home/user_login_form" target="scr">Sign In</a><br>
             <a href="User/signOut" target="scr">Sign Out</a><br>
             <a href="Home/user_password_reset" target="scr">Password Reset</a><br>
             <a href="Home/user_phone_verification" target="scr">Phone Verification</a><br>
-            <a href="Home/courier_manager/" target="scr">Couriers</a><br>
         </div>
         <iframe name="scr" style="width:100%;height: 100vh;border: none;"></iframe>
     </div>

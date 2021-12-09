@@ -15,7 +15,8 @@ class CourierModel extends Model{
         'deleted_at'
     ];
     protected $validationRules    = [
-        'courier_tax_num'     => 'exact_length[0,10,12]'
+        'courier_tax_num'   => 'exact_length[0,10,12]',
+        'owner_id'          => 'is_unique[courier_list.owner_id]'
     ];
 
     protected $useSoftDeletes = true;
@@ -68,7 +69,9 @@ class CourierModel extends Model{
         if(!$user_id){
             return 'notfound';
         }
+        
         $UserModel=model('UserModel');
+        $UserGroupMemberModel=model('UserGroupMemberModel');
         if( !$UserModel->permit($user_id,'w') || !$this->permit(null,'w') ){
             return 'forbidden';
         }
@@ -76,8 +79,11 @@ class CourierModel extends Model{
         $courier=[
             'owner_id'=>$user_id
         ];
-        $this->get()->getRow();
+        
+        $this->transStart();
+        $UserGroupMemberModel->joinGroupByType($user_id,'courier');
         $courier_id=$this->insert($courier,true);
+        $this->transComplete();
         return $courier_id;
     }
     
@@ -115,8 +121,12 @@ class CourierModel extends Model{
         }
         if($user_id){
             $this->where('owner_id',$user_id);
-        }        
+        }
+        $this->transStart();
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        $UserGroupMemberModel->leaveGroupByType($user_id,'courier');
         $this->delete();
+        $this->transComplete();
         return $this->db->affectedRows()?'ok':'idle';
     }
     

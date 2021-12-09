@@ -82,6 +82,13 @@ class GroupMemberLayer extends Model{
         return $this->affectedRows()?true:false;
     }
     
+    public function leaveGroupByType($member_id,$member_group_type){
+        $group_id=$this
+                ->query("SELECT group_id FROM {$this->groupTable} WHERE group_type='$member_group_type'")
+                ->getRow('group_id');
+        return $this->leaveGroup($member_id,$group_id);
+    }
+    
     public function leaveGroup($member_id,$group_id){
         //$this->permitWhere('w');
         return $this
