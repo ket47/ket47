@@ -127,7 +127,8 @@ class Viber{
         $UserVerificationModel->where('verification_value',$viberId.'|'.$verification_code);
         $verification=$UserVerificationModel->get()->getRow();
         if( !$verification ){
-            return 'verification_not_found';
+            $this->send_message($viberId, view('messages/viber/verification_code_wrong',[]));
+            return false;
         }
         $UserModel=model('UserModel');
         $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.viberId','$viberId') WHERE user_id='$verification->user_id'");
