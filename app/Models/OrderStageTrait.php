@@ -193,6 +193,36 @@ trait OrderStageTrait{
         return 'error';
     }
     
+    
+    
+    
+    
+    public function test(){
+        return $this->onCustomerStart(1,[]);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     private function onCustomerStart( $order_id, $data ){
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -273,7 +303,7 @@ trait OrderStageTrait{
                     ];
         }
         $sms_job=[
-            'task_name'=>"Courier Notify #order_id",
+            'task_name'=>"Courier Notify Order",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
                 ],

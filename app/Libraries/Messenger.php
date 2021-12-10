@@ -14,6 +14,10 @@ class Messenger{
             }
             return true;
         }
+        
+        log_message('error','Message to be send:'.json_encode($message));
+        
+        
         switch( $message->message_transport ){
             case 'email':
                 $this->itemSendEmail($message);
@@ -41,7 +45,7 @@ class Messenger{
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
-        if( isset($reciever->user_data->viberId) ){
+        if( $reciever->user_data->viberId??'' ){
             $ok=$this->itemSendViber($message);
             if( $ok ){
                 return true;
@@ -124,13 +128,16 @@ class Messenger{
             $message->message_text=view($message->template,$message->context);
         }
         if( !$message->message_text || !$reciever->viberId ){
-            log_message('VIBER', 'No text or viberId for user_id:'.$message->message_reciever_id);
+            log_message('error', 'No text or viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
         $Viber = new \App\Libraries\Viber();
-        $result=$Viber->send_message($reciever->user_phone,$message->message_text);
-        log_message('VIBER', $result);
-        return $result;
+        $result=$Viber->send_message($reciever->viberId,$message->message_text);
+        if( $result && ($result->status??null)==0 ){
+            return true;
+        }
+        log_message('error', 'Viber message failed: '.json_encode([$result,$message]));
+        return false;
     }
     
     public function listSend( array $message_list, $lazy_send=false ){

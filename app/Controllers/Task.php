@@ -35,33 +35,33 @@ class Task extends \App\Controllers\BaseController{
             }
             echo "\nJob {$task->task_name} Started at ".date('H:i:s')."";
             $result=$this->itemExecute( $task );
-            echo " Done($result)!\n";
+            echo " Done!\n";
             $time_limit+=2;//adding 2 seconds if there is job
         }
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
     }
     
     
-    public function jobCreate(){
-        $ready_courier_list=model('CourierModel')->listGet(['status'=>'ready','limit'=>5,'order']);
-        $messages=[];
-        foreach($ready_courier_list as $courier){
-            $context['courier']=$courier;
-            $messages[]=(object)[
-                        'message_reciever_id'=>$courier->user_id,
-                        'message_transport'=>'sms',
-                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
-                        'context'=>$context];
-        }
-        $sms_job=[
-            'task_name'=>"Courier Notify #order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        helper('job');
-        jobCreate($sms_job);
-    }
+//    public function jobCreate(){
+//        $ready_courier_list=model('CourierModel')->listGet(['status'=>'ready','limit'=>5,'order']);
+//        $messages=[];
+//        foreach($ready_courier_list as $courier){
+//            $context['courier']=$courier;
+//            $messages[]=(object)[
+//                        'message_reciever_id'=>$courier->user_id,
+//                        'message_transport'=>'sms',
+//                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
+//                        'context'=>$context];
+//        }
+//        $sms_job=[
+//            'task_name'=>"Courier Notify #order_id",
+//            'task_programm'=>[
+//                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+//                ],
+//        ];
+//        helper('job');
+//        jobCreate($sms_job);
+//    }
 
     public function run(){
         $TaskModel=model('TaskModel');
@@ -79,10 +79,20 @@ class Task extends \App\Controllers\BaseController{
         if( !is_array($programm) && !is_array($programm= json_decode($programm)) ){
             return true;
         }
+        $task_result=[];
         foreach($programm as $command){
             if( !$command->method??0 ){
                 return false;
             }
+            
+//            echo "\n--------------------------------";
+//            print_r($command);
+//            echo "/--------------------------------\n";
+//            
+//            log_message('error', 'taskExecute', (array)$command);
+            
+            
+            
             $arguments=$command->arguments??[];
             foreach ($arguments as $arg){
                 if($arg==='PREV-RESULT'){
@@ -101,7 +111,7 @@ class Task extends \App\Controllers\BaseController{
             try{
                 $task_result=$Class->{$command->method}(...$arguments);
             } catch (\Exception $e){
-                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task)."\n".$e->getTrace() );
+                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task)."\n".$e->getMessage() );
             }
         }
         if( isset($task->task_id) ){//task from task_list

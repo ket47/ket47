@@ -8,6 +8,47 @@ class Order extends \App\Controllers\BaseController {
 
     use ResponseTrait;
 
+    public function test(){
+        echo model('OrderModel')->test();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function itemGet() {
         $order_id = $this->request->getVar('order_id');
         $OrderModel = model('OrderModel');
