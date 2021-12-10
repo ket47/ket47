@@ -38,13 +38,12 @@ class Viber{
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( $user_id ){
             $user=$UserModel->where('user_id',$user_id)->get()->getRow();
-            $this->send_message($viberId, view('messages/viber/dont_understand',[]));
+            $this->send_message($viberId, view('messages/viber/dont_understand',['user'=>$user]));
         } else {
             helper('phone_number');
             $user_phone_cleared= clearPhone($message->text);
             if( strlen($user_phone_cleared)==11 ){
                 $this->phoneVerificationSend($user_phone_cleared,$viberId);
-                $this->send_message($viberId, view('messages/viber/verification_code_sent',['user_phone'=>$user_phone_cleared]));
             } else if($this->phoneVerificationIsSent($viberId)) {
                 $this->phoneVerificationCheck($viberId,$message->text);
             } else {
@@ -82,7 +81,8 @@ class Viber{
         $UserModel=model('UserModel');
         $unverified_user_id=$UserModel->where('user_phone',$user_phone_cleared)->get()->getRow('user_id');
         if( !$unverified_user_id ){
-            return $this->failNotFound('unverified_phone_not_found');
+            $this->send_message($viberId, view('messages/viber/verification_code_send_notfound',['user_phone'=>$user_phone_cleared]));
+            return false;
         }
         
         helper('hash_generate');
@@ -104,6 +104,12 @@ class Viber{
         $devinoPassword=getenv('devinoPassword');
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
         $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
+        if( $ok ){
+            $this->send_message($viberId, view('messages/viber/verification_code_sent',['user_phone'=>$user_phone_cleared]));
+            return true;
+        }
+        $this->send_message($viberId, view('messages/viber/verification_code_send_error',['user_phone'=>$user_phone_cleared]));
+        return false;
     }
     
     private function phoneVerificationCheck($viberId,$verification_code){
