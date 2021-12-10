@@ -58,10 +58,20 @@ class Viber{
         if( !isset($sender->id) ){
             return false;
         }
-        $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
-        if( !$user_id ){
-            $this->send_message($viberId, view('messages/viber/write_me_phone_number',[]));
+        $user=$UserModel->query("SELECT user_id,user_name FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow();
+        if( $user->user_id ){
+            $text=view('messages/viber/hello',['user'=>$user]);
+        } else {
+            $text= view('messages/viber/write_me_phone_number',[]);
         }
+        $response=[
+            'sender'=>[
+                'name'=> getenv('viber.title'),
+                'avatar'=>getenv('viber.avatar')
+            ],
+            'text'=>$text
+        ];
+        return $response;
     }
 
 
@@ -123,7 +133,8 @@ class Viber{
         $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.viberId','$viberId') WHERE user_id='$verification->user_id'");
         if( $ok ){
             $user=$UserModel->where('user_id',$verification->user_id)->get()->getRow();
-            $this->send_message($viberId, view('messages/viber/verification_code_right',[]));
+            $this->send_message($viberId, view('messages/viber/verification_code_right',['user'=>$user]));
+            $this->send_message($viberId, view('messages/viber/hello',['user'=>$user]));
             $UserVerificationModel->delete($verification->user_verification_id);
             return true;
         }

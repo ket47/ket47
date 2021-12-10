@@ -1,1 +1,1 @@
-Приветствую, <?=$user_name?>. Я <?=getenv('app.title')?>бот.
+Приветствую, <?=$user->user_name?>. Я <?=getenv('app.title')?>бот.

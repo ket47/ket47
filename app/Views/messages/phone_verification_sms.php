@@ -1,1 +1,1 @@
-<?=getenv('app.title')?>: Ваш код подтверждения <?=$verification_code?>
+<?=$verification_code?> Ваш код подтверждения из приложения <?=getenv('app.title')?>
