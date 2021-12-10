@@ -38,17 +38,17 @@ class Viber{
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( $user_id ){
             $user=$UserModel->where('user_id',$user_id)->get()->getRow();
-            $this->send_message($viberId, "{$user->user_name}, I don't understand :(. I'm only for notifying you");
+            $this->send_message($viberId, view('messages/viber/dont_understand',[]));
         } else {
             helper('phone_number');
             $user_phone_cleared= clearPhone($message->text);
             if( strlen($user_phone_cleared)==11 ){
                 $this->phoneVerificationSend($user_phone_cleared,$viberId);
-                $this->send_message($viberId, 'Sms with code has been sent. Please text me verification code');
+                $this->send_message($viberId, view('messages/viber/verification_code_sent',['user_phone'=>$user_phone_cleared]));
             } else if($this->phoneVerificationIsSent($viberId)) {
                 $this->phoneVerificationCheck($viberId,$message->text);
             } else {
-                $this->send_message($viberId, 'I dont recognize you. Please text me your phone');
+                $this->send_message($viberId, view('messages/viber/write_me_phone_number',[]));
             }
         }
     }
@@ -61,7 +61,7 @@ class Viber{
         }
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( !$user_id ){
-            $this->send_message($viberId, 'I dont recognize you. Please text me your phone number');
+            $this->send_message($viberId, view('messages/viber/write_me_phone_number',[]));
         }
     }
 
@@ -117,11 +117,11 @@ class Viber{
         $ok=$UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.viberId','$viberId') WHERE user_id='$verification->user_id'");
         if( $ok ){
             $user=$UserModel->where('user_id',$verification->user_id)->get()->getRow();
-            $this->send_message($viberId, 'Thank you.'.$user->user_name);
+            $this->send_message($viberId, view('messages/viber/verification_code_right',[]));
             $UserVerificationModel->delete($verification->user_verification_id);
             return true;
         }
-        $this->send_message($viberId, 'Unfortunately verification code is wrong'.$user->user_name);
+        $this->send_message($viberId, view('messages/viber/verification_code_wrong',[]));
         return false;
     }
 }
