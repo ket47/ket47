@@ -275,4 +275,23 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->fail('verification_error');
     }
+    
+    
+    public function locationSave(){
+        $user_id=$this->request->getVar('user_id');
+        $location_type_id=$this->request->getVar('location_type_id');
+        $coordsSelected=$this->request->getVar('coordsSelected');
+        $addressSelected=$this->request->getVar('addressSelected');
+        
+        $LocationModel=model('LocationModel');
+        $data=[
+            'loc_holder'=>'user',
+            'loc_holder_id'=>$user_id,
+            'loc_address'=>$addressSelected
+        ];
+    }
+    
+    public function locationDelete(){
+        
+    }
 }

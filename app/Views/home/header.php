@@ -41,7 +41,96 @@
                         }
                         alert('Server error: '+xhr.status+'\n'+xhr.responseJSON.message);                        
                     }
-                }
+                },
+                createWindow:function(){
+                    
+                },
+                closeWindow:function( module ){
+                    module.node.hide();
+                    //module.node.remove();
+                    delete App[module.id];
+                    $("#appWindowDimmer").hide();
+                },
+                loadWindow:function(path,data){
+                    var id = path.replace(/\//g, '_');
+                    if (!$('#' + id).length) {
+                        $('#appWindowContainer').append('<div id="' + id + '" class="app_window"></div>');
+                    }
+                    $("#appWindowDimmer").show();
+                    return App.loadModule(path, data || {});
+                },
+                loadModule:function(path,data){
+                    var id = path.replace(/\//g, '_');
+                    var handler = $.Deferred();
+                    if( App[id] ){
+                        App.initModule(id,data,handler);
+                    } else {
+                        App[id] = {
+                            id:id
+                        };
+                        $.get(path,function(html){
+                            App.setHTML("#"+id,html);
+                            if(App[id].require){
+                                App.require(App[id].require,function(){
+                                    App.initModule(id,data,handler);
+                                });
+                            } else {
+                                App.initModule(id,data,handler);
+                            }
+                        });   
+                    }
+                    return handler.promise();	
+                },
+                initModule: function(id,data,handler){
+                    App[id].data = data;
+                    App[id].handler = handler;
+                    App[id].node = $("#" + id);
+                    App[id].init ? App[id].init(data, handler) : '';
+                    App[id].node.show();
+                    handler&&handler.notify('inited',App[id]);
+                },
+                setHTML:function( query, html ){
+                    $(query).html(html);
+                    $(query).find("script").each(function() { eval(this.text);} );
+                },
+                loadedScripts:[],
+                require:function(urls,callback){
+                    if(!urls){
+                        callback&&callback();
+                        return false;
+                    }
+                    var filesLeft=urls.length;
+                    function ok(){
+                        if( --filesLeft<=0){
+                            callback&&callback();
+                        }
+                    }
+                    for(var i in urls){
+                        var url=urls[i];
+                        if( Array.isArray(url) ){
+                            var original_callback=callback;
+                            callback=function(){
+                                App.require(url,original_callback);
+                            };
+                            ok();
+                        } else
+                        if( url.indexOf('.css')>-1 ){
+                            $('head').append( $('<link rel="stylesheet" type="text/css" />').attr('href', url) );
+                            ok();
+                        } else
+                        if( App.loadedScripts.indexOf(url)>-1 ){
+                            ok();
+                        } else {
+                            App.loadedScripts.push(url);
+                            $.ajax({url: url,dataType: "script",cache: true,async:true}).done(function(a,b,c){
+                                ok();
+                            }).fail(function(a,b,c){
+                                ok();
+                                console.log('failed',b,c);
+                            });
+                        }
+                    }
+                },
             };
 
         </script>
@@ -89,6 +178,21 @@
                 margin-top: 4px;
                 margin-bottom: 4px;
             }
+            .action_buttons>div{
+                border-radius: 10px;
+                padding: 10px;
+                display: inline-block;
+                cursor: default;
+                min-width: 100px;
+            }
+            .action_buttons{
+                text-align: center;
+                padding: 10px;
+            }
+            
+            
+            
+            
             .primary{
                 background-color: #6cf;
             }
@@ -147,6 +251,30 @@
                 justify-content: center;
                 align-items: center;
             }
+            .app_window{
+                border:2px #6cf solid;
+                background-color: #fff;
+                border-radius: 8px;
+                box-shadow: 3px 5px 8px #ccc;
+                width: 70%;
+                position: absolute;
+                top: 10%;
+                bottom: 10%;
+                z-index: 200;
+            }
+            #appWindowContainer{
+                position: absolute;
+            }
+            #appWindowDimmer{
+                background-color: #ffffffcc;
+                z-index: 100;
+                width: 100vw;
+                height: 100vh;
+                display: none;
+            }
         </style>
     </head>
     <body>
+        <div id="appWindowContainer" class="vcenter">
+            <div id="appWindowDimmer"></div>
+        </div>

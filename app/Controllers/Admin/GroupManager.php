@@ -22,6 +22,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('TransGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
+        } else if($group_table=='location_group_list'){
+            $GroupModel=model('LocationGroupModel');
         }
         $result=$GroupModel->itemCreate( $group_parent_id, $group_name, '');
         if( is_numeric($result) ){
@@ -44,6 +46,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('TransGroupModel');
         } else if($data->group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
+        } else if($data->group_table=='location_group_list'){
+            $GroupModel=model('LocationGroupModel');
         }
         $result=$GroupModel->itemUpdate($data);
         if( $result==='forbidden' ){
@@ -70,6 +74,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('TransGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
+        } else if($group_table=='location_group_list'){
+            $GroupModel=model('LocationGroupModel');
         }
         $result=$GroupModel->itemDelete($group_id);
         if( $result==='ok' ){
@@ -93,6 +99,7 @@ class GroupManager extends \App\Controllers\BaseController {
         $UserGroupModel=model('UserGroupModel');
         $CourierGroupModel=model('CourierGroupModel');
         $TransGroupModel=model('TransGroupModel');
+        $LocationGroupModel=model('LocationGroupModel');
         
         $tables=[];
         $tables[]=(object)[
@@ -124,6 +131,11 @@ class GroupManager extends \App\Controllers\BaseController {
                 'name'=>'Courier statuses',
                 'type'=>'courier',
                 'entries'=>$CourierGroupModel->listGet()
+                ];
+        $tables[]=(object)[
+                'name'=>'Location types',
+                'type'=>'location',
+                'entries'=>$LocationGroupModel->listGet()
                 ];
         return view('admin/group_manager.php',['tables'=>$tables]);
     }
@@ -179,6 +191,8 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('UserGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
+        } else if($group_table=='location_group_list'){
+            $GroupModel=model('LocationGroupModel');
         }
         $image_hash=$GroupModel->imageCreate($image_data);
         if( !$image_hash ){

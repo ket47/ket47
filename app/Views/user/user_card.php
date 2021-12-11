@@ -1,6 +1,38 @@
+<?php 
+    function dmyt( $iso ){
+        if( !$iso ){
+            return "";
+        }
+        $expl= explode('-', str_replace(' ', '-', $iso));
+        return "$expl[2].$expl[1].$expl[0] ".($expl[3]??'');
+    }
+?>
+<script>
+    User={
+        user_id:'<?=$user->user_id?>',
+        address:{
+            pick:function(coordsStart,location_type_id){
+                App.loadWindow('Location/pickerModal',{coordsStart}).progress(function(status,data){
+                    if(status==='selected'){
+                        data.location_type_id=location_type_id;
+                        data.loc_altitude=data.coordsSelected[0];
+                        data.loc_longitude=data.coordsSelected[1];
+                        $.post('User/locationSave',data).done(function(){
+                            //set updated address to card
+                        });
+                    }
+                });
+            }
+        }
+    };
+</script>
+
+
+
+
 <div  style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
-        <div style="display:grid;grid-template-columns:1fr 2fr">
+        <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
             
             <div>Имя</div>
             <div>
@@ -40,10 +72,16 @@
                 </label>
                 <input type="radio" id="user_avatar_woman"  value="woman" name="user_avatar_name.<?=$user->user_id?>" <?=$user->user_avatar_name=='woman'?'checked':''?>/>
             </div>
+            
+            <div>Адреса</div>
+            <div>
+                <div>Домашний: --- <i class="fa fa-map-marker" aria-hidden="true" onclick="">Выбрать</i></div>
+                <div>Рабочий: --- <i class="fa fa-map-marker" aria-hidden="true">Выбрать</i></div>
+            </div>
 
 
         </div>
-        <div style="display:grid;grid-template-columns:1fr 2fr">
+        <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
 
             <div>Телефон подтвержден</div>
             <div>
@@ -63,35 +101,34 @@
 
             <div>Вход</div>
             <div>
-                <input type="date" readonly="readonly" name="signed_in_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->signed_in_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="signed_in_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <?=dmyt($user->signed_in_at)?> 
             </div>
 
             <div>Выход</div>
             <div>
-                <input type="date" readonly="readonly" name="signed_out_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->signed_out_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="signed_out_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <?=dmyt($user->signed_out_at)?> 
             </div>
 
             <div>Создан</div>
             <div>
-                <input type="date" readonly="readonly" name="created_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->created_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="created_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <?=dmyt($user->created_at)?> 
             </div>
 
             <div>Изменен</div>
             <div>
-                <input type="date" readonly="readonly" name="updated_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->updated_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="updated_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
+                <?=dmyt($user->updated_at)?> 
             </div>
 
-            <div>Удален</div>
-            <div>
-                <input type="date" readonly="readonly" name="deleted_at.<?=$user->user_id?>.date" value="<?php $date_time=explode(' ',$user->deleted_at);echo $date_time[0]??''?>"/>
-                <input type="time" readonly="readonly" name="deleted_at.<?=$user->user_id?>.time" value="<?php echo $date_time[1]??''?>"/>
-                <button type="button" onclick="ItemList.deleteItem(<?=$user->user_id?>)">Удалить</button>
-                <button type="button" onclick="ItemList.undeleteItem(<?=$user->user_id?>)">Восстановить</button>
-            </div>
+                <div>Удаление</div>
+                <div>
+                    <?php if($user->deleted_at): ?>
+                        <?=dmyt($user->deleted_at)?>
+                        <i class="fa fa-trash" style="color:red" onclick="ItemList.purgeItem(<?= $user->user_id ?>)" title="Окончательно удалить"></i>
+                        <i class="fas fa-trash-restore" onclick="ItemList.undeleteItem(<?= $user->user_id ?>)" title="Восстановить"></i>
+                    <?php else: ?>
+                        <i class="fa fa-trash" onclick="ItemList.deleteItem(<?= $user->user_id ?>)" title="Удалить"></i> удалить
+                    <?php endif; ?>
+                </div>
             
             <div>Группы</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr">
