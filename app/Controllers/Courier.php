@@ -229,5 +229,43 @@ class Courier extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
- 
+
+    public function locationAdd(){
+        $location_holder_id=$this->request->getVar('location_holder_id');
+        //$location_type_id=$this->request->getVar('location_type_id');
+        $location_longitude=$this->request->getVar('location_longitude');
+        $location_latitude=$this->request->getVar('location_latitude');
+        $location_address=$this->request->getVar('location_address');
+        
+        $data=[
+            'location_holder'=>'courier',
+            'location_holder_id'=>$location_holder_id,
+            //'location_type_id'=>$location_type_id,
+            'location_longitude'=>$location_longitude,
+            'location_latitude'=>$location_latitude,
+            'location_address'=>$location_address,
+            'is_disabled'=>0,
+            'owner_id'=>$location_holder_id
+        ];
+        $CourierModel=model('CourierModel');
+        $LocationModel=model('LocationModel');
+        if( !$CourierModel->permit($data['owner_id'],'w') ){
+            return $this->failForbidden('forbidden');
+        }
+        $result= $LocationModel->itemAdd($data);
+        if( $LocationModel->errors() ){
+            return $this->failValidationError(json_encode($LocationModel->errors()));
+        }
+        return $this->respondCreated($result);
+    }
+    
+    public function locationDelete(){
+        $location_id=$this->request->getVar('location_id');
+        $LocationModel=model('LocationModel');
+        $result=$LocationModel->itemDelete($location_id);
+        if( $result=='ok' ){
+            return $this->respondDeleted('ok');
+        }
+        return $this->fail('idle');
+    }
 }

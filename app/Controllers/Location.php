@@ -12,8 +12,7 @@ class Location extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        
-        return false;
+
     }
     
     public function itemUpdate(){
@@ -25,26 +24,30 @@ class Location extends \App\Controllers\BaseController{
     }
     
     public function pickerModal(){
-        $loc_longitude=$this->request->getVar('longitude');
-        $loc_altitude=$this->request->getVar('altitude');
-        
-        $data=[
-            'loc_longitude'=>$loc_longitude,
-            'loc_altitude'=>$loc_altitude
-        ];
-        
         return view('common/location_picker');
     }
     
-    public function pickerTest(){
-        return view('common/location_picker_test');
+    
+    public function distanceGet(){
+        $start_location_id=$this->request->getVar('start_location_id');
+        $finish_location_id=$this->request->getVar('finish_location_id');
+        
+        $LocationModel=model('LocationModel');
+        $distance=$LocationModel->distanceGet($start_location_id,$finish_location_id);
+        return $this->respond($distance);
     }
-    
-    
-    
-    
-    
-    
+    public function distanceListGet(){
+        $center_location_id =$this->request->getVar('center_location_id');
+        $point_distance=$this->request->getVar('point_distance');
+        $point_holder=$this->request->getVar('point_holder');
+        
+        $LocationModel=model('LocationModel');
+        $distance=$LocationModel->distanceListGet($center_location_id, $point_distance, $point_holder);
+        
+        //q($LocationModel);
+        
+        return $this->respond($distance);
+    }
     
     
     

@@ -48,7 +48,7 @@
                 closeWindow:function( module ){
                     module.node.hide();
                     //module.node.remove();
-                    delete App[module.id];
+                    delete module;
                     $("#appWindowDimmer").hide();
                 },
                 loadWindow:function(path,data){

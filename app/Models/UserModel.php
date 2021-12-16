@@ -85,9 +85,19 @@ class UserModel extends Model{
             return $user;
         }
 
+        $LocationModel=model('LocationModel');
         $UserGroupMemberModel=model('UserGroupMemberModel');
         $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
         
+        $filter=[
+            'location_holder'=>'user',
+            'location_holder_id'=>$user->user_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>30
+        ];
+        $user->locations=$LocationModel->listGet($filter);
         $this->itemCache[$mode.$user_id]=$user;
         return $user;
     }

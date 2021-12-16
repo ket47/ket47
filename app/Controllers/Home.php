@@ -130,12 +130,15 @@ class Home extends BaseController {
         $user_id=$this->request->getVar('user_id');
         $UserModel=model('UserModel');
         $UserGroupModel=model('UserGroupModel');
+        $LocationGroupModel=model('LocationGroupModel');
         $user= $UserModel->itemGet($user_id);
         
         $user_group_list=$UserGroupModel->listGet();
+        $location_group_list=$LocationGroupModel->listGet(['name_query'=>'address','name_query_fields'=>'group_type']);
         $data=[
             'user'=>$user,
-            'user_group_list'=>$user_group_list
+            'user_group_list'=>$user_group_list,
+            'location_group_list'=>$location_group_list
         ];
         return view('user/user_card',$data);
     }
@@ -238,14 +241,17 @@ class Home extends BaseController {
     }
     public function storeCardGet(){
         $product_id=$this->request->getVar('store_id');
+        $LocationGroupModel=model('LocationGroupModel');
         $StoreModel=model('StoreModel');
         $StoreGroupModel=model('StoreGroupModel');
         $product= $StoreModel->itemGet($product_id);
-        
+                
+        $location_group_list=$LocationGroupModel->listGet(['name_query'=>'address_work','name_query_fields'=>'group_type']);
         $product_group_list=$StoreGroupModel->listGet();
         $data=[
             'store'=>$product,
-            'store_group_list'=>$product_group_list
+            'store_group_list'=>$product_group_list,
+            'location_group_list'=>$location_group_list
         ];
         return view('store/store_card',$data);
     }

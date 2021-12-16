@@ -14,13 +14,17 @@
         },
         actions:{
             select:function(){
+                if( !App._Location_pickerModal.data.addressSelected ){
+                    alert("Отметьте адрес на карте");
+                    return;
+                }
                 App._Location_pickerModal.handler.notify('selected',App._Location_pickerModal.data);
                 App._Location_pickerModal.actions.close();
             },
             close:function(){
-                App.closeWindow(App._Location_pickerModal);
                 App._Location_pickerModal.myMap.destroy();
-                //delete ymaps;
+                App.closeWindow(App._Location_pickerModal);
+                delete App._Location_pickerModal;
             }
         },
         ymapsInit:function(){

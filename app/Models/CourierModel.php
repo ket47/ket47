@@ -31,7 +31,8 @@ class CourierModel extends Model{
             group_name,
             status_icon.image_hash group_image_hash,
             courier_photo.image_hash courier_photo_image_hash,
-            current_order_id";
+            current_order_id,
+            location_address";
    
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
@@ -41,9 +42,10 @@ class CourierModel extends Model{
         if( !$this->permit($courier_id,'r') ){
             return 'forbidden';
         }
-        $this->select('courier_list.*,user_list.user_id');
+        $this->select('courier_list.*,user_list.user_id,location_address,location_latitude,location_longitude');
         $this->where('courier_id',$courier_id);
         $this->join('user_list','user_id=courier_list.owner_id');
+        $this->join('location_list','location_holder_id=courier_id AND is_main=1','left');
         $courier = $this->get()->getRow();
         $CourierGroupMemberModel=model('CourierGroupMemberModel');
         $courier->member_of_groups=$CourierGroupMemberModel->memberOfGroupsGet($courier_id);
@@ -165,6 +167,7 @@ class CourierModel extends Model{
         $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
         $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,courier_group_member_list.created_at DESC");
         $this->join('image_list courier_photo',"courier_photo.image_holder='courier' AND courier_photo.image_holder_id=courier_id AND courier_photo.is_main=1",'left');
+        $this->join('location_list','location_holder_id=courier_id AND location_list.is_main=1','left');
         $courier_list= $this->get()->getResult();
         return $courier_list;  
     }

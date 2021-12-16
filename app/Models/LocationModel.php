@@ -3,180 +3,170 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class LocationModel extends Model{
+    
     use PermissionTrait;
     use FilterTrait;
     
     protected $table      = 'location_list';
     protected $primaryKey = 'location_id';
     protected $allowedFields = [
-        'location_vehicle',
-        'location_tax_num',
-        'current_order_id',
+        'location_holder',
+        'location_holder_id',
+        'location_order',
+        'location_address',
+        'location_latitude',
+        'location_longitude',
+        'location_point',
+        'is_main',
         'deleted_at'
-    ];
-    protected $validationRules    = [
-        'location_tax_num'   => 'exact_length[0,10,12]',
-        'owner_id'          => 'is_unique[location_list.owner_id]'
-    ];
+        ];
 
     protected $useSoftDeletes = true;
-    protected $selectList="
-            location_id,
-            user_id,
-            user_name,
-            user_phone,
-            user_avatar_name,
-            location_list.is_disabled,
-            location_list.deleted_at,
-            group_name,
-            status_icon.image_hash group_image_hash,
-            location_photo.image_hash location_photo_image_hash,
-            current_order_id";
-   
+    protected $useTimestamps = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';    
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $location_id ){
-        $this->permitWhere('r');
-        if( !$this->permit($location_id,'r') ){
-            return 'forbidden';
-        }
-        $this->select('location_list.*,user_list.user_id');
-        $this->where('location_id',$location_id);
-        $this->join('user_list','user_id=location_list.owner_id');
-        $location = $this->get()->getRow();
-        $LocationGroupMemberModel=model('LocationGroupMemberModel');
-        $location->member_of_groups=$LocationGroupMemberModel->memberOfGroupsGet($location_id);
-        unset($location->user_pass);
-        
-        if( !$location ){
-            return 'notfound';
-        }
-        $filter=[
-            'image_holder'=>'location',
-            'image_holder_id'=>$location->location_id,
-            'is_disabled'=>1,
-            'is_deleted'=>0,
-            'is_active'=>1,
-            'limit'=>30
-        ];
-        $ImageModel=model('ImageModel');
-        $location->images=$ImageModel->listGet($filter);
-        return $location;  
+        return $this->where('location_id',$location_id)->get()->getRow();
     }
     
-    public function itemCreate($user_id){
-        if(!$user_id){
-            return 'notfound';
+    public function itemCreate( $data, $limit=5 ){
+        $inserted_count=$this
+                ->select("COUNT(*) inserted_count")
+                ->where('location_holder_id',$data['location_holder_id'])
+                ->where('location_holder',$data['location_holder'])
+                ->where('deleted_at IS NULL')
+                ->get()
+                ->getRow('inserted_count');
+        if( $inserted_count>=$limit ){
+            return 'limit_exeeded';
         }
+        $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
+        $location_id=$this->insert();
         
-        $UserModel=model('UserModel');
-        $UserGroupMemberModel=model('UserGroupMemberModel');
-        if( !$UserModel->permit($user_id,'w') || !$this->permit(null,'w') ){
-            return 'forbidden';
-        }
+        $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
-        $location=[
-            'owner_id'=>$user_id
-        ];
-        
-        $this->transStart();
-        $UserGroupMemberModel->joinGroupByType($user_id,'location');
-        $location_id=$this->insert($location,true);
-        $this->transComplete();
-        return $location_id;
-    }
-    
-    public function itemUpdate( $location ){
-        if( empty($location->location_id) ){
-            return 'noid';
-        }
-        $this->permitWhere('w');
-        $this->update($location->location_id,$location);
-        return $this->db->affectedRows()?'ok':'idle';
-    }
-    
-    public function itemUpdateGroup($location_id,$group_id,$is_joined){
-        if( !$this->permit($location_id,'w') ){
-            return 'forbidden';
-        }
-        $GroupModel=model('LocationGroupModel');
-        $target_group=$GroupModel->itemGet($group_id);
-        if( !$target_group ){
-            return 'not_found';
-        }
-        $LocationGroupMemberModel=model('LocationGroupMemberModel');
-        $leave_other_groups=true;
-        $ok=$LocationGroupMemberModel->itemUpdate( $location_id, $group_id, $is_joined, $leave_other_groups );
-        if( $ok ){
+        $data['location_order']=$inserted_count+1;
+        if( $location_id ){
+            $this->update($location_id,$data);
+            $this->itemUpdateMain( $location_id );
+            $LocationGroupMemberModel=model('LocationGroupMemberModel');
+            $LocationGroupMemberModel->joinGroup($location_id,$data['location_type_id']);
             return 'ok';
         }
-        return 'error';
+        return 'idle';
     }
     
-    public function itemDelete($location_id=null,$user_id=null){
+    public function itemAdd( $data ){
+        $this->where('location_holder',$data['location_holder']);
+        $this->where('location_holder_id',$data['location_holder_id']);
+        $this->where('is_main',1);
+        $this->update(['is_main'=>0]);
+        $data['is_main']=1;
+        return $this->insert($data,true);
+    }
+    
+    public function itemUpdate( $data ){
         $this->permitWhere('w');
-        if($location_id){
-            $this->where('location_id',$location_id);
+        return $this->update($data['location_id'],$data);
+    }
+    
+    public function itemUpdateMain( $location_id ){
+        $loc=$this->where('location_id',$location_id)->get()->getRow();
+        if(!$loc){
+            return 'ok';
         }
-        if($user_id){
-            $this->where('owner_id',$user_id);
-        }
-        $this->transStart();
-        $UserGroupMemberModel=model('UserGroupMemberModel');
-        $UserGroupMemberModel->leaveGroupByType($user_id,'location');
-        $this->delete();
-        $this->transComplete();
+        $this->where('location_holder',$loc->location_holder);
+        $this->where('location_holder_id',$loc->location_holder_id);
+        $this->set(['is_main'=>0]);
+        $this->update();
+        
+        $this->where('location_holder',$loc->location_holder);
+        $this->where('location_holder_id',$loc->location_holder_id);
+        $this->where('is_disabled',0);
+        $this->where('deleted_at IS NULL');
+        $this->orderBy('location_order');
+        $this->limit(1);
+        $this->set(['is_main'=>1]);
+        $this->update();
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function itemUnDelete( $location_id ){
-        if( !$this->permit($location_id,'w') ){
-            return 'forbidden';
-        }
-
-        $this->update($location_id,['deleted_at'=>NULL]);
-        return $this->db->affectedRows()?'ok':'idle';
+    public function itemUpdateOrder( $location_id, $dir ){
+        $sql="
+            SELECT 
+                il.location_id, 
+                IF(il.location_id=$location_id,IF('$dir'='up',il.location_order-1.5,il.location_order+1.5),il.location_order) calculated_order,
+                @order:=@order+1 location_order
+            FROM
+                location_list il
+                JOIN (SELECT @order:=0) i
+                JOIN location_list i2 USING(location_holder_id,location_holder)
+            WHERE
+                i2.location_id=$location_id
+            ORDER BY calculated_order;
+            ";
+        $location_list=$this->query($sql)->getResult();
+        $ok=$this->updateBatch($location_list,'location_id');
+        $this->itemUpdateMain( $location_id );
+        return $ok;
+    }
+    
+    public function itemDelete( $location_id ){
+        $this->permitWhere('w');
+        $this->delete($location_id);
+        $ok=$this->db->affectedRows()?'ok':'idle';
+        $this->itemUpdateMain( $location_id );
+        $this->itemPurge( $location_id );
+        return $ok;
     }
     
     public function itemDisable( $location_id, $is_disabled ){
-        if( !$this->permit($location_id,'w','disabled') ){
-            return 'forbidden';
-        }
         $this->allowedFields[]='is_disabled';
-        $this->update(['location_id'=>$location_id],['is_disabled'=>$is_disabled?1:0]);
-        return $this->db->affectedRows()?'ok':'idle';
+        $ok=$this->update(['location_id'=>$location_id],['is_disabled'=>$is_disabled]);
+        $this->itemUpdateMain( $location_id );
+        return $ok;
     }
     
-    
+    public function itemPurge( $location_id ){
+        $loc=$this->itemGet($location_id);
+        if( !$loc ){
+            return true;
+        }
+        if( !$loc->deleted_at ){
+            return false;
+        }
+        return $this->delete([$location_id],true);
+    }
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
+    protected $selectList="
+            location_id,
+            location_holder,
+            location_holder_id,
+            location_latitude,
+            location_longitude,
+            location_address,
+            group_name,
+            type_icon.image_hash image_hash";
     public function listGet( $filter ){
-        $this->filterMake( $filter );
-        if( $filter['status']??0 ){
-            $this->where('group_type',$filter['status']);
-        }
+        $filter['order']='location_order';
+        $filter['limit']=5;
+        $this->filterMake($filter);
         $this->permitWhere('r');
         $this->select($this->selectList);
-        $this->join('user_list','user_id=location_list.owner_id');
+        $this->where('location_holder',$filter['location_holder']);
+        $this->where('location_holder_id',$filter['location_holder_id']);
         $this->join('location_group_member_list','member_id=location_id','left');
         $this->join('location_group_list','group_id','left');
-        $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
-        $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,location_group_member_list.created_at DESC");
-        $this->join('image_list location_photo',"location_photo.image_holder='location' AND location_photo.image_holder_id=location_id AND location_photo.is_main=1",'left');
-        $location_list= $this->get()->getResult();
-        return $location_list;  
+        $this->join('image_list type_icon',"type_icon.image_holder='location_group_list' AND type_icon.image_holder_id=group_id AND type_icon.is_main=1",'left');
+        $this->select($this->selectList);
+        return $this->get()->getResult();
     }
-    
-    public function listNotify( $location_status ){
-        
-    }
-    
-    
-    
-    
-    
     
     public function listCreate(){
         return false;
@@ -186,70 +176,54 @@ class LocationModel extends Model{
         return false;
     }
     
-    public function listDelete(){
-        return false;
-    }
-    /////////////////////////////////////////////////////
-    //IMAGE HANDLING SECTION
-    /////////////////////////////////////////////////////
-    public function imageCreate( $data ){
-        $data['is_disabled']=1;
-        $data['owner_id']=session()->get('user_id');
-        if( $this->permit($data['image_holder_id'], 'w') ){
-            $ImageModel=model('ImageModel');
-            return $ImageModel->itemCreate($data,1);
-        }
-        return 0;
-    }
-
-    public function imageUpdate( $data ){
-        if( $this->permit($data['image_holder_id'], 'w') ){
-            $ImageModel=model('ImageModel');
-            return $ImageModel->itemUpdate($data);
-        }
-        return 0;
+    public function listDelete( $location_holder, $location_holder_id ){
+        $this->where('location_holder',$location_holder);
+        $this->whereIn('location_holder_id',$location_holder_id);
+        $this->delete();
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function imageDisable( $image_id, $is_disabled ){
-        if( !sudo() ){
-            return 'forbidden';
-        }
-        $ImageModel=model('ImageModel');
-        $ok=$ImageModel->itemDisable( $image_id, $is_disabled );
-        if( $ok ){
-            return 'ok';
-        }
-        return 'error';
-    }    
-    
-    public function imageDelete( $image_id ){
-        $ImageModel=model('ImageModel');
-        $image=$ImageModel->itemGet( $image_id );
-        
-        $location_id=$image->image_holder_id;
-        if( !$this->permit($location_id,'w') ){
-            return 'forbidden';
-        }
-        $ImageModel->itemDelete( $image_id );
-        $ok=$ImageModel->itemPurge( $image_id );
-        if( $ok ){
-            return 'ok';
-        }
-        return 'idle';
+    public function listUnDelete( $location_holder, $location_holder_id ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $this->where('location_holder',$location_holder);
+        $this->where('location_holder_id',$location_holder_id);
+        $this->where('deleted_at>',$olderStamp);
+        $this->update(null,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function imageOrder( $image_id, $dir ){
-        $ImageModel=model('ImageModel');
-        $image=$ImageModel->itemGet( $image_id );
-        
-        $location_id=$image->image_holder_id;
-        if( !$this->permit($location_id,'w') ){
-            return 'forbidden';
-        }
-        $ok=$ImageModel->itemUpdateOrder( $image_id, $dir );
-        if( $ok ){
-            return 'ok';
-        }
-        return 'error';
+    public function listDeleteDirectly( $location_holder, $location_holder_id ){
+        $this->where('location_holder',$location_holder);
+        $this->where('location_holder_id',$location_holder_id);
+        $this->update(null,['deleted_at'=>'2000-01-01 00:00:00']);
+        return $this->db->affectedRows()?'ok':'error';
+    }
+    
+    public function listPurge( $olderThan=45 ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $this->where('created_at<',$olderStamp);
+        $this->delete(null,true);
+        return 'ok';
+    }
+    
+    public function distanceGet($start_location_id, $finish_location_id){
+        $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE location_id=$start_location_id)");
+        $this->select("ST_Distance_Sphere(@start_point,location_point) distance");
+        $this->where('location_id',$finish_location_id);
+        return $this->get()->getRow('distance');
+    }
+    
+    public function distanceListGet( int $center_location_id, float $point_distance, string $point_holder ){
+        $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
+        $this->select("
+            location_id,
+            location_holder_id,
+            location_address,
+            updated_at,
+            ST_Distance_Sphere(@center_point,location_point) distance");
+        $this->where('location_holder',$point_holder);
+        $this->having('distance<=',$point_distance);
+        $this->orderBy('distance');
+        return $this->get()->getResult();
     }
 }

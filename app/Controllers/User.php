@@ -277,21 +277,42 @@ class User extends \App\Controllers\BaseController{
     }
     
     
-    public function locationSave(){
-        $user_id=$this->request->getVar('user_id');
+    public function locationCreate(){
+        $location_holder_id=$this->request->getVar('location_holder_id');
         $location_type_id=$this->request->getVar('location_type_id');
-        $coordsSelected=$this->request->getVar('coordsSelected');
-        $addressSelected=$this->request->getVar('addressSelected');
+        $location_longitude=$this->request->getVar('location_longitude');
+        $location_latitude=$this->request->getVar('location_latitude');
+        $location_address=$this->request->getVar('location_address');
         
-        $LocationModel=model('LocationModel');
         $data=[
-            'loc_holder'=>'user',
-            'loc_holder_id'=>$user_id,
-            'loc_address'=>$addressSelected
+            'location_holder'=>'user',
+            'location_holder_id'=>$location_holder_id,
+            'location_type_id'=>$location_type_id,
+            'location_longitude'=>$location_longitude,
+            'location_latitude'=>$location_latitude,
+            'location_address'=>$location_address,
+            'is_disabled'=>0,
+            'owner_id'=>$location_holder_id
         ];
+        $UserModel=model('UserModel');
+        $LocationModel=model('LocationModel');
+        if( !$UserModel->permit($data['owner_id'],'w') ){
+            return $this->failForbidden('forbidden');
+        }
+        $result= $LocationModel->itemCreate($data);
+        if( $LocationModel->errors() ){
+            return $this->failValidationError(json_encode($LocationModel->errors()));
+        }
+        return $this->respondCreated($result);
     }
     
     public function locationDelete(){
-        
+        $location_id=$this->request->getVar('location_id');
+        $LocationModel=model('LocationModel');
+        $result=$LocationModel->itemDelete($location_id);
+        if( $result=='ok' ){
+            return $this->respondDeleted('ok');
+        }
+        return $this->fail('idle');
     }
 }

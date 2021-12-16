@@ -7,6 +7,69 @@
         return "$expl[2].$expl[1].$expl[0] ".($expl[3]??'');
     }
 ?>
+
+<script>
+    Store={
+        store_id:'<?=$store->store_id??0?>',
+        address:{
+            init:function(){
+                $("#address_manager").on('click',function(e){
+                    let $button=$(e.target);
+                    let action=$button.parent().data('action') || $button.parent().parent().data('action');
+                    let location_type_id=$button.parent().data('group_id') || $button.parent().parent().data('group_id');
+                    if( action==='add_location' ){
+                        Store.address.pick([],location_type_id);
+                    } else 
+                    if( action==='delete_location' && confirm("Удалить адрес?") ){
+                        let location_id=$button.parent().data('location_id');
+                        $.post('/Store/locationDelete',{location_id}).done(function(){
+                            ItemList.reloadItem();
+                        });
+                    }
+                });
+            },
+            pick:function(coordsStart,location_type_id){
+                App.loadWindow('/Location/pickerModal',{coordsStart}).progress(function(status,data){
+                    if(status==='selected'){
+                        let request={};
+                        request.location_holder_id=Store.store_id;
+                        request.location_type_id=location_type_id;
+                        request.location_latitude=data.coordsSelected[0];
+                        request.location_longitude=data.coordsSelected[1];
+                        request.location_address=data.addressSelected;
+                        $.post('/Store/locationCreate',request).done(function(response){
+                            if( response=='limit_exeeded' ){
+                                alert("Лимит количества адресов");
+                            }
+                            ItemList.reloadItem();
+                        });
+                    }
+                });
+            }
+        }
+    };
+    Store.address.init();
+</script>
+
+<style>
+    #address_manager{
+        display: grid;
+        grid-template-columns: 32px auto 32px;
+        width: 100%;
+    }
+    #address_manager .row>div{
+        background-color: white;
+        padding: 3px;
+    }
+    #address_manager .row>div:nth-child(2){
+        border-bottom: 1px solid #ccc;
+    }
+    #address_manager .row:last-child>div{
+        border-bottom: none !important;
+    }
+</style>
+
+
 <div  style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
@@ -81,6 +144,27 @@
                     <input type="number" name="store_time_preparation.<?= $store->store_id ?>" value="<?= $store->store_time_preparation ?>"/>
                 </div>
 
+                <div>Адреса</div>
+                <div id="address_manager" class="item_table">
+                    <?php foreach( $store->locations as $location ): ?>
+                    <div style="display:contents;" class="row">
+                        <div><img src="/image/get.php/<?= $location->image_hash ?>.24.24.webp" style="width:24px;height:auto;"/></div>
+                        <div style="font-size:11px;line-height:1em;"><?=$location->location_address?></div>
+                        <div data-action="delete_location" data-location_id="<?=$location->location_id?>"><i class="fa fa-trash" aria-hidden="true" style="float:right"></i></div>
+                    </div>
+                    <?php endforeach; ?>
+                    <div style="grid-column: 1 / span 3;">Добавить адрес</div>
+
+                    <?php foreach( $location_group_list as $loc_group ): ?>
+                    <div style="display:contents;" class="row" data-action="add_location" data-group_id="<?=$loc_group->group_id?>" class="primary">
+                        <div><img src="/image/get.php/<?= $loc_group->image_hash ?>.24.24.webp" style="width:24px;height:auto;"/></div>
+                        <div style="font-size:11px;line-height:1em;">Добавить <?=$loc_group->group_name?> адрес</div>
+                        <div><i class="fa fa-plus" aria-hidden="true" style="float:right"></i></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                
             </div>
             <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
                 

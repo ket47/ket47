@@ -69,7 +69,8 @@ class StoreModel extends Model{
             $this->itemCache[$mode.$store_id]=$store;
             return $store;
         }
-
+        
+        $LocationModel=model('LocationModel');
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
         $ImageModel=model('ImageModel');
         $store->is_writable=$this->permit($store_id,'w');
@@ -83,6 +84,17 @@ class StoreModel extends Model{
             'limit'=>30
         ];
         $store->images=$ImageModel->listGet($filter);
+        
+        $filter_loc=[
+            'location_holder'=>'store',
+            'location_holder_id'=>$store->store_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>30
+        ];
+
+        $store->locations=$LocationModel->listGet($filter_loc);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
     }
@@ -267,7 +279,7 @@ class StoreModel extends Model{
         $image=$ImageModel->itemGet( $image_id );
         
         $store_id=$image->image_holder_id;
-        if( !$this->permit($store_id,'w') ){
+        if( !$this->permit($store_id,'w') || $image->image_holder!='store' ){
             return 'forbidden';
         }
         $ImageModel->itemDelete( $image_id );

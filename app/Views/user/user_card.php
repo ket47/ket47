@@ -9,25 +9,61 @@
 ?>
 <script>
     User={
-        user_id:'<?=$user->user_id?>',
+        user_id:'<?=$user->user_id??0?>',
         address:{
+            init:function(){
+                $("#address_manager").on('click',function(e){
+                    let $button=$(e.target);
+                    let action=$button.parent().data('action') || $button.parent().parent().data('action');
+                    let location_type_id=$button.parent().data('group_id') || $button.parent().parent().data('group_id');
+                    if( action==='add_location' ){
+                        User.address.pick([],location_type_id);
+                    } else 
+                    if( action==='delete_location' && confirm("Удалить адрес?") ){
+                        let location_id=$button.parent().data('location_id');
+                        $.post('/User/locationDelete',{location_id}).done(function(){
+                            ItemList.reloadItem();
+                        });
+                    }
+                });
+            },
             pick:function(coordsStart,location_type_id){
-                App.loadWindow('Location/pickerModal',{coordsStart}).progress(function(status,data){
+                App.loadWindow('/Location/pickerModal',{coordsStart}).progress(function(status,data){
                     if(status==='selected'){
-                        data.location_type_id=location_type_id;
-                        data.loc_altitude=data.coordsSelected[0];
-                        data.loc_longitude=data.coordsSelected[1];
-                        $.post('User/locationSave',data).done(function(){
-                            //set updated address to card
+                        let request={};
+                        request.location_holder_id=User.user_id;
+                        request.location_type_id=location_type_id;
+                        request.location_latitude=data.coordsSelected[0];
+                        request.location_longitude=data.coordsSelected[1];
+                        request.location_address=data.addressSelected;
+                        $.post('/User/locationCreate',request).done(function(){
+                            ItemList.reloadItem();
                         });
                     }
                 });
             }
         }
     };
+    User.address.init();
 </script>
 
-
+<style>
+    #address_manager{
+        display: grid;
+        grid-template-columns: 32px auto 32px;
+        width: 100%;
+    }
+    #address_manager .row>div{
+        background-color: white;
+        padding: 3px;
+    }
+    #address_manager .row>div:nth-child(2){
+        border-bottom: 1px solid #ccc;
+    }
+    #address_manager .row:last-child>div{
+        border-bottom: none !important;
+    }
+</style>
 
 
 <div  style="padding: 5px">
@@ -74,10 +110,28 @@
             </div>
             
             <div>Адреса</div>
-            <div>
-                <div>Домашний: --- <i class="fa fa-map-marker" aria-hidden="true" onclick="">Выбрать</i></div>
-                <div>Рабочий: --- <i class="fa fa-map-marker" aria-hidden="true">Выбрать</i></div>
+            
+            
+            
+            
+        <div id="address_manager" class="item_table">
+            <?php foreach( $user->locations as $location ): ?>
+            <div style="display:contents;" class="row">
+                <div><img src="/image/get.php/<?= $location->image_hash ?>.24.24.webp" style="width:24px;height:auto;"/></div>
+                <div style="font-size:11px;line-height:1em;"><?=$location->location_address?></div>
+                <div data-action="delete_location" data-location_id="<?=$location->location_id?>"><i class="fa fa-trash" aria-hidden="true" style="float:right"></i></div>
             </div>
+            <?php endforeach; ?>
+            <div style="grid-column: 1 / span 3;">Добавить адрес</div>
+
+            <?php foreach( $location_group_list as $loc_group ): ?>
+            <div style="display:contents;" class="row" data-action="add_location" data-group_id="<?=$loc_group->group_id?>" class="primary">
+                <div><img src="/image/get.php/<?= $loc_group->image_hash ?>.24.24.webp" style="width:24px;height:auto;"/></div>
+                <div style="font-size:11px;line-height:1em;">Добавить <?=$loc_group->group_name?> адрес</div>
+                <div><i class="fa fa-plus" aria-hidden="true" style="float:right"></i></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
 
 
         </div>
