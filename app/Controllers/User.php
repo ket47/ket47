@@ -277,6 +277,21 @@ class User extends \App\Controllers\BaseController{
     }
     
     
+    public function locationListGet(){
+        $user_id=session()->get('user_id');
+        $filter=[
+            'is_disabled'=>0,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>10,
+            'location_holder'=>'user',
+            'location_holder_id'=>$user_id,
+        ];
+        $LocationModel=model('LocationModel');
+        $location_list=$LocationModel->listGet($filter);
+        return $this->respond($location_list);
+    }
+
     public function locationCreate(){
         $location_holder_id=$this->request->getVar('location_holder_id');
         $location_type_id=$this->request->getVar('location_type_id');
@@ -301,7 +316,7 @@ class User extends \App\Controllers\BaseController{
         }
         $result= $LocationModel->itemCreate($data);
         if( $LocationModel->errors() ){
-            return $this->failValidationError(json_encode($LocationModel->errors()));
+            return $this->failValidationErrors(json_encode($LocationModel->errors()));
         }
         return $this->respondCreated($result);
     }

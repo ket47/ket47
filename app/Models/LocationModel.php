@@ -60,14 +60,14 @@ class LocationModel extends Model{
         return 'idle';
     }
     
-    public function itemAdd( $data ){
+    /*public function itemAdd( $data ){
         $this->where('location_holder',$data['location_holder']);
         $this->where('location_holder_id',$data['location_holder_id']);
         $this->where('is_main',1);
         $this->update(['is_main'=>0]);
         $data['is_main']=1;
         return $this->insert($data,true);
-    }
+    }*/
     
     public function itemUpdate( $data ){
         $this->permitWhere('w');
@@ -152,6 +152,7 @@ class LocationModel extends Model{
             location_longitude,
             location_address,
             group_name,
+            group_type,
             type_icon.image_hash image_hash";
     public function listGet( $filter ){
         $filter['order']='location_order';

@@ -12,7 +12,7 @@ class Location extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-
+        return false;//at specialized controllers
     }
     
     public function itemUpdate(){
@@ -58,7 +58,19 @@ class Location extends \App\Controllers\BaseController{
     
     
     public function listGet(){
-        return false;
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit'),
+            'location_holder'=>$this->request->getVar('location_holder'),
+            'location_holder_id'=>$this->request->getVar('location_holder_id'),
+        ];
+        $LocationModel=model('LocationModel');
+        $location_list=$LocationModel->listGet($filter);
+        return $this->respond($location_list);
     }
     
     public function listCreate(){
