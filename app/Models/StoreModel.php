@@ -213,7 +213,7 @@ class StoreModel extends Model{
             $this->join('store_group_member_list','member_id=store_id');
             $this->where('group_id',$filter['group_id']);
         }
-        $weekday=date('N');
+        $weekday=date('N')-1;
         $dayhour=date('H');
         $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $this->permitWhere('r');
