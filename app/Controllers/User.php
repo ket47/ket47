@@ -278,6 +278,7 @@ class User extends \App\Controllers\BaseController{
     
     
     public function locationListGet(){
+        $incluideGroupList=$this->request->getVar('includeGroupList');
         $user_id=session()->get('user_id');
         $filter=[
             'is_disabled'=>0,
@@ -285,11 +286,23 @@ class User extends \App\Controllers\BaseController{
             'is_active'=>1,
             'limit'=>10,
             'location_holder'=>'user',
-            'location_holder_id'=>$user_id,
+            'location_holder_id'=>$user_id
         ];
         $LocationModel=model('LocationModel');
+
         $location_list=$LocationModel->listGet($filter);
-        return $this->respond($location_list);
+        $response=[
+            'location_list'=>$location_list
+        ];
+        if( $incluideGroupList ){
+            $LocationGroupModel=model('LocationGroupModel');
+            $filter=[
+                'name_query'=>'address',
+                'name_query_fields'=>'group_type'
+            ];
+            $response['location_group_list']=$LocationGroupModel->listGet($filter);
+        }
+        return $this->respond($response);
     }
 
     public function locationCreate(){
