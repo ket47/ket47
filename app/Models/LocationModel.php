@@ -52,14 +52,15 @@ class LocationModel extends Model{
         $this->set($data);
         $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
         $this->insert();
-        $location_id=$this->insertID();
+        $location_id=$this->getInsertID();
         
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $data['location_order']=$inserted_count+1;
+        $data['is_main']=1;
         if( $location_id ){
+            $this->itemUpdateMain( $data['location_holder'], $data['location_holder_id'], $location_id );
             $this->update($location_id,$data);
-            $this->itemUpdateMain( $location_id );
             $LocationGroupMemberModel=model('LocationGroupMemberModel');
             $LocationGroupMemberModel->joinGroup($location_id,$data['location_type_id']);
             return 'ok';
@@ -67,59 +68,18 @@ class LocationModel extends Model{
         return 'idle';
     }
     
-    /*public function itemAdd( $data ){
-        $this->where('location_holder',$data['location_holder']);
-        $this->where('location_holder_id',$data['location_holder_id']);
-        $this->where('is_main',1);
-        $this->update(['is_main'=>0]);
-        $data['is_main']=1;
-        return $this->insert($data,true);
-    }*/
-    
     public function itemUpdate( $data ){
         $this->permitWhere('w');
         return $this->update($data['location_id'],$data);
     }
     
-    public function itemUpdateMain( $location_id ){
-        $loc=$this->where('location_id',$location_id)->get()->getRow();
-        if(!$loc){
-            return 'ok';
-        }
-        $this->where('location_holder',$loc->location_holder);
-        $this->where('location_holder_id',$loc->location_holder_id);
+    public function itemResetMain( $location_holder, $location_holder_id, $location_id ){
+        $this->where('location_holder',$location_holder);
+        $this->where('location_holder_id',$location_holder_id);
+        $this->where('is_main',1);
         $this->set(['is_main'=>0]);
         $this->update();
-        
-        $this->where('location_holder',$loc->location_holder);
-        $this->where('location_holder_id',$loc->location_holder_id);
-        $this->where('is_disabled',0);
-        $this->where('deleted_at IS NULL');
-        $this->orderBy('location_order');
-        $this->limit(1);
-        $this->set(['is_main'=>1]);
-        $this->update();
         return $this->db->affectedRows()?'ok':'idle';
-    }
-    
-    public function itemUpdateOrder( $location_id, $dir ){
-        $sql="
-            SELECT 
-                il.location_id, 
-                IF(il.location_id=$location_id,IF('$dir'='up',il.location_order-1.5,il.location_order+1.5),il.location_order) calculated_order,
-                @order:=@order+1 location_order
-            FROM
-                location_list il
-                JOIN (SELECT @order:=0) i
-                JOIN location_list i2 USING(location_holder_id,location_holder)
-            WHERE
-                i2.location_id=$location_id
-            ORDER BY calculated_order;
-            ";
-        $location_list=$this->query($sql)->getResult();
-        $ok=$this->updateBatch($location_list,'location_id');
-        $this->itemUpdateMain( $location_id );
-        return $ok;
     }
     
     public function itemDelete( $location_id ){
