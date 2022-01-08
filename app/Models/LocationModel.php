@@ -39,9 +39,6 @@ class LocationModel extends Model{
     }
     
     public function itemCreate( $data, $limit=5 ){
-        if( !$data['location_holder_id'] ){
-            //return 'holder_id_required';
-        }
         $inserted_count=$this
                 ->select("COUNT(*) inserted_count")
                 ->where('location_holder_id',$data['location_holder_id'])
@@ -54,7 +51,8 @@ class LocationModel extends Model{
         }
         $this->set($data);
         $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
-        $location_id=$this->insert();
+        $this->insert();
+        $location_id=$this->insertID();
         
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
