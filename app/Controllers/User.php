@@ -328,10 +328,13 @@ class User extends \App\Controllers\BaseController{
             return $this->failForbidden('forbidden');
         }
         $result= $LocationModel->itemCreate($data);
+        if( $result=='ok' ){
+            return $this->respondCreated($result);
+        }
         if( $LocationModel->errors() ){
             return $this->failValidationErrors(json_encode($LocationModel->errors()));
         }
-        return $this->respondCreated($result);
+        return $this->fail($result);
     }
     
     public function locationDelete(){

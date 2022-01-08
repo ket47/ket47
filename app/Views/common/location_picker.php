@@ -29,8 +29,9 @@
         },
         ymapsInit:function(){
             var myPlacemark;
+            var mapCenter=[44.98, 34.18];
             App._Location_pickerModal.myMap = new ymaps.Map('map', {
-                center: [44.98, 34.18],
+                center: mapCenter,
                 zoom: 16
             }, {
                 searchControlProvider: 'yandex#search'
