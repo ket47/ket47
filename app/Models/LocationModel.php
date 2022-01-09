@@ -54,12 +54,12 @@ class LocationModel extends Model{
         $this->insert();
         $location_id=$this->getInsertID();
         
-        $this->allowedFields[]='is_disabled';
-        $this->allowedFields[]='owner_id';
-        $data['location_order']=$inserted_count+1;
-        $data['is_main']=1;
         if( $location_id ){
-            $this->itemUpdateMain( $data['location_holder'], $data['location_holder_id'], $location_id );
+            $this->allowedFields[]='is_disabled';
+            $this->allowedFields[]='owner_id';
+            $this->itemResetMain( $data['location_holder'], $data['location_holder_id'], $location_id );
+            $data['location_order']=$inserted_count+1;
+            $data['is_main']=1;
             $this->update($location_id,$data);
             $LocationGroupMemberModel=model('LocationGroupMemberModel');
             $LocationGroupMemberModel->joinGroup($location_id,$data['location_type_id']);
@@ -73,11 +73,30 @@ class LocationModel extends Model{
         return $this->update($data['location_id'],$data);
     }
     
-    public function itemResetMain( $location_holder, $location_holder_id, $location_id ){
+    private function itemResetMain( $location_holder, $location_holder_id ){
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('is_main',1);
         $this->set(['is_main'=>0]);
+        $this->update();
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    private function itemUpdateMain( $location_id ){
+        $loc=$this->where('location_id',$location_id)->get()->getRow();
+        if(!$loc){
+            return 'ok';
+        }
+        $this->itemResetMain( $loc->location_holder, $loc->location_holder_id );
+        
+        $this->where('location_holder',$loc->location_holder);
+        $this->where('location_holder_id',$loc->location_holder_id);
+        $this->where('is_disabled',0);
+        $this->where('deleted_at IS NULL');
+        $this->orderBy('is_main','DESC');
+        $this->orderBy('location_address');
+        $this->limit(1);
+        $this->set(['is_main'=>1]);
         $this->update();
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -122,7 +141,7 @@ class LocationModel extends Model{
             group_type,
             type_icon.image_hash image_hash";
     public function listGet( $filter ){
-        $filter['order']='location_order';
+        $filter['order']=null;
         $filter['limit']=5;
         $this->filterMake($filter);
         $this->permitWhere('r');
@@ -132,6 +151,7 @@ class LocationModel extends Model{
         $this->join('location_group_member_list','member_id=location_id','left');
         $this->join('location_group_list','group_id','left');
         $this->join('image_list type_icon',"type_icon.image_holder='location_group_list' AND type_icon.image_holder_id=group_id AND type_icon.is_main=1",'left');
+        $this->orderBy("location_list.is_main DESC,location_list.created_at DESC");
         $this->select($this->selectList);
         return $this->get()->getResult();
     }
@@ -147,7 +167,7 @@ class LocationModel extends Model{
     public function listDelete( $location_holder, $location_holder_id ){
         $this->where('location_holder',$location_holder);
         $this->whereIn('location_holder_id',$location_holder_id);
-        $this->delete();
+        $this->delete();    
         return $this->db->affectedRows()?'ok':'idle';
     }
     
