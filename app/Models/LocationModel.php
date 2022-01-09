@@ -72,6 +72,19 @@ class LocationModel extends Model{
         $this->permitWhere('w');
         return $this->update($data['location_id'],$data);
     }
+
+    public function itemSetMain($location_id){
+        $loc=$this->where('location_id',$location_id)->get()->getRow();
+        if(!$loc){
+            return 'ok';
+        }
+        $this->itemResetMain( $loc->location_holder, $loc->location_holder_id );
+        
+        $this->where('location_id',$location_id);
+        $this->set(['is_main'=>1]);
+        $this->update();
+        return $this->db->affectedRows()?'ok':'idle';        
+    }
     
     private function itemResetMain( $location_holder, $location_holder_id ){
         $this->where('location_holder',$location_holder);

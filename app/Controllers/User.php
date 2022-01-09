@@ -336,6 +336,16 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+
+    public function locationSetMain(){
+        $location_id=$this->request->getVar('location_id');
+        $LocationModel=model('LocationModel');
+        $result=$LocationModel->itemSetMain($location_id);
+        if( $result=='ok' ){
+            return $this->respondUpdated('ok');
+        }
+        return $this->fail('idle');
+    }
     
     public function locationDelete(){
         $location_id=$this->request->getVar('location_id');
