@@ -158,7 +158,7 @@ class LocationModel extends Model{
             location_latitude,
             location_longitude,
             location_address,
-            is_main,
+            location_list.is_main,
             group_name,
             group_type,
             type_icon.image_hash image_hash";
