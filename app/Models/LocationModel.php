@@ -77,6 +77,7 @@ class LocationModel extends Model{
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('is_main',1);
+        $this->select('location_id,location_latitude,location_longitude,location_address');
         return $this->get()->getRow();        
     }
 
