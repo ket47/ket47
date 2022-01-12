@@ -57,7 +57,7 @@ class LocationModel extends Model{
         if( $location_id ){
             $this->allowedFields[]='is_disabled';
             $this->allowedFields[]='owner_id';
-            $this->itemResetMain( $data['location_holder'], $data['location_holder_id'], $location_id );
+            $this->itemMainReset( $data['location_holder'], $data['location_holder_id'], $location_id );
             $data['location_order']=$inserted_count+1;
             $data['is_main']=1;
             $this->update($location_id,$data);
@@ -73,12 +73,19 @@ class LocationModel extends Model{
         return $this->update($data['location_id'],$data);
     }
 
-    public function itemSetMain($location_id){
+    public function itemMainGet($location_holder, $location_holder_id){
+        $this->where('location_holder',$location_holder);
+        $this->where('location_holder_id',$location_holder_id);
+        $this->where('is_main',1);
+        return $this->get()->getRow();        
+    }
+
+    public function itemMainSet($location_id){
         $loc=$this->where('location_id',$location_id)->get()->getRow();
         if(!$loc){
             return 'ok';
         }
-        $this->itemResetMain( $loc->location_holder, $loc->location_holder_id );
+        $this->itemMainReset( $loc->location_holder, $loc->location_holder_id );
         
         $this->where('location_id',$location_id);
         $this->set(['is_main'=>1]);
@@ -86,7 +93,7 @@ class LocationModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';        
     }
     
-    private function itemResetMain( $location_holder, $location_holder_id ){
+    private function itemMainReset( $location_holder, $location_holder_id ){
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('is_main',1);
@@ -95,12 +102,12 @@ class LocationModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    private function itemUpdateMain( $location_id ){
+    private function itemMainUpdate( $location_id ){
         $loc=$this->where('location_id',$location_id)->get()->getRow();
         if(!$loc){
             return 'ok';
         }
-        $this->itemResetMain( $loc->location_holder, $loc->location_holder_id );
+        $this->itemMainReset( $loc->location_holder, $loc->location_holder_id );
         
         $this->where('location_holder',$loc->location_holder);
         $this->where('location_holder_id',$loc->location_holder_id);
@@ -118,7 +125,7 @@ class LocationModel extends Model{
         $this->permitWhere('w');
         $this->delete($location_id);
         $ok=$this->db->affectedRows()?'ok':'idle';
-        $this->itemUpdateMain( $location_id );
+        $this->itemMainUpdate( $location_id );
         $this->itemPurge( $location_id );
         return $ok;
     }
@@ -126,7 +133,7 @@ class LocationModel extends Model{
     public function itemDisable( $location_id, $is_disabled ){
         $this->allowedFields[]='is_disabled';
         $ok=$this->update(['location_id'=>$location_id],['is_disabled'=>$is_disabled]);
-        $this->itemUpdateMain( $location_id );
+        $this->itemMainUpdate( $location_id );
         return $ok;
     }
     

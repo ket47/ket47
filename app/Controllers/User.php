@@ -32,7 +32,7 @@ class User extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
+            return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         return $this->respondUpdated($result);
     }
@@ -340,7 +340,7 @@ class User extends \App\Controllers\BaseController{
     public function locationSetMain(){
         $location_id=$this->request->getVar('location_id');
         $LocationModel=model('LocationModel');
-        $result=$LocationModel->itemSetMain($location_id);
+        $result=$LocationModel->itemMainSet($location_id);
         if( $result=='ok' ){
             return $this->respondUpdated('ok');
         }
