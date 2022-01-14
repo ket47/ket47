@@ -23,11 +23,11 @@ var Order={
                         name_query:request.term,
                         name_query_fields:'product_name'
                     };
-                    $.get('/Product/listGet/',req).done(function(resp,status,xhr){
+                    $.get('/Product/listGet',req).done(function(resp,status,xhr){
                         let product_list=xhr.responseJSON.product_list || [];
                         let suggestions=[];
                         for( let product of product_list ){
-                            let sugg=`${product.product_name} [${product.product_quantity}] ${product.product_price}руб`;
+                            let sugg=`${product.product_name} ${product.product_price}руб [${product.product_quantity}]`;
                             product.label=sugg;
                             suggestions.push(product);
                         }
