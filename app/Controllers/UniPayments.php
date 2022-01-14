@@ -74,6 +74,8 @@ class UniPayments extends \App\Controllers\BaseController{
         $signature_check = strtoupper(md5($order_id.$status.getenv('uniteller.password')));
         $this->sendErrorEmail(["paymentStatusSet $status; order_id $order_id; $signature!=$signature_check"]);
 
+        log_message('error', "paymentStatusSet $status; order_id $order_id; $signature!=$signature_check");
+
 
         if($signature!=$signature_check){
             return $this->failUnauthorized();
