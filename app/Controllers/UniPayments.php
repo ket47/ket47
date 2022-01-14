@@ -83,10 +83,11 @@ class UniPayments extends \App\Controllers\BaseController{
         if( !$this->authorize($order_id) ){
             return $this->failUnauthorized();
         }
+        log_message('error', "paymentStatusSet $status; autorized");
         $OrderModel=model('OrderModel');
         switch($status){
             case 'authorized':
-                $result='ok';
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', null, false );
                 break;
             case 'paid':
                 $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', null, false );
@@ -104,6 +105,7 @@ class UniPayments extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
+        log_message('error', "paymentStatusSet $status; autorized");
         if( $result=='ok' ){
             return $this->respond('OK'); 
         }
