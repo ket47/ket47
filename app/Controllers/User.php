@@ -52,7 +52,7 @@ class User extends \App\Controllers\BaseController{
             return $this->failNotFound($result);
         }
         if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
+            return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         return $this->respondUpdated($result);
     }
@@ -75,7 +75,7 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $ok=$UserModel->itemDelete($user_id);
         if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
+            return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         return $this->respondDeleted($ok);        
     }

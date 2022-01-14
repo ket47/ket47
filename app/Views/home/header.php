@@ -56,7 +56,9 @@
                     if (!$('#' + id).length) {
                         $('#appWindowContainer').append('<div id="' + id + '" class="app_window"></div>');
                     }
-                    $("#appWindowDimmer").show();
+                    $("#appWindowDimmer").show().click(
+                        function(){App.closeWindow(App[id])}
+                    );
                     return App.loadModule(path, data || {});
                 },
                 loadModule:function(path,data){
@@ -70,7 +72,7 @@
                         };
                         $.get(path,function(html){
                             App.setHTML("#"+id,html);
-                            if(App[id].require){
+                            if(App[id].require && App[id].require.length){
                                 App.require(App[id].require,function(){
                                     App.initModule(id,data,handler);
                                 });
@@ -252,8 +254,8 @@
                 align-items: center;
             }
             .app_window{
-                border:2px #6cf solid;
-                background-color: #fff;
+                border:4px #6cf solid;
+                background-color: #fcfeff;
                 border-radius: 8px;
                 box-shadow: 3px 5px 8px #ccc;
                 width: 70%;
@@ -263,7 +265,9 @@
                 z-index: 200;
             }
             #appWindowContainer{
-                position: absolute;
+                position: fixed;
+                z-index: 200;
+                top:0px;
             }
             #appWindowDimmer{
                 background-color: #ffffffcc;
@@ -271,6 +275,7 @@
                 width: 100vw;
                 height: 100vh;
                 display: none;
+
             }
         </style>
     </head>

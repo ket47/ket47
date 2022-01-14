@@ -115,7 +115,7 @@
             
             
         <div id="address_manager" class="item_table">
-            <?php foreach( $user->locations as $location ): ?>
+            <?php foreach( $user->location_list as $location ): ?>
             <div style="display:contents;" class="row">
                 <div><img src="/image/get.php/<?= $location->image_hash ?>.24.24.webp" style="width:24px;height:auto;"/></div>
                 <div style="font-size:11px;line-height:1em;"><?=$location->location_address?></div>

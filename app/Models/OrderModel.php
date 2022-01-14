@@ -139,7 +139,7 @@ class OrderModel extends Model{
     
     private function shippingFeeGet(){
         $PrefModel=model('PrefModel');
-        return $PrefModel->get('shipping_fee');
+        return $PrefModel->itemGet('shipping_fee');
     }
     
     public function itemUpdate( $order ){

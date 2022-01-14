@@ -121,19 +121,20 @@ var Order={
             action_take_photo:function(){
                 ItemList.fileUploadInit(order_id);
             },
-            action_cloud_pay:function(){
-                Order.stage.fake_pay();
+            action_card_pay:function(){
+                Order.stage.payment_modal();
             }
         },
-        fake_pay:function(){
+        payment_modal:function(){
             let request={
-                InvoiceId: order_id,
-                Amount: '<?=$order->order_sum_total?>',
-                AccountId:'<?=$order->owner_id?>',
-                PaymentType:'fake'
+                order_id: order_id,
+                order_sum_total: '<?=$order->order_sum_total?>',
+                user_id:'<?=$order->owner_id?>'
                 };
-            $.post("/Cloudpayments/pay",JSON.stringify(request)).done(function(){
-                ItemList.reloadItem();
+            App.loadWindow('/Home/paymentModal',request).progress(function(status,data){
+                if(status==='closed'){
+                    ItemList.reloadItem();
+                }
             });
         }
     }

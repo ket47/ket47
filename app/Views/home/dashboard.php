@@ -15,6 +15,8 @@
             <a href="Home/product_importer" target="scr">Product Importer</a><br>
             <h3>Stores</h3>
             <a href="Home/store_manager" target="scr">Stores</a><br>
+            <h3>Payments</h3>
+            <a href="Home/payment_card_manager" target="scr">Payment Cards</a><br>
             <h3>Users</h3>
             <a href="Home/courier_manager" target="scr">Couriers</a><br>
             <a href="Home/user_manager" target="scr">Users</a><br>

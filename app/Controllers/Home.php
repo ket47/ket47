@@ -55,19 +55,14 @@ class Home extends BaseController {
     
     
     
-    public function payment_form(){
-        $payment_description=$this->request->getVar('payment_description');
-        $payment_amount=$this->request->getVar('payment_amount');
-        $payment=[
-            'payment_description'=>$payment_description,
-            'payment_amount'=>$payment_amount
-        ];
-        return view('payment/payment_form',$payment);
+    public function payment_card_manager(){
+        return view('payment/payment_card_manager');
     }
-    
-    public function payment_submit(){
-        
+
+    public function paymentModal(){
+        return view('payment/payment_modal');
     }
+
     
     
     
@@ -131,7 +126,11 @@ class Home extends BaseController {
         $UserModel=model('UserModel');
         $UserGroupModel=model('UserGroupModel');
         $LocationGroupModel=model('LocationGroupModel');
+        $LocationModel=model('LocationModel');
         $user= $UserModel->itemGet($user_id);
+
+
+        $user->location_list=$LocationModel->listGet(['location_holder'=>'user','location_holder_id'=>$user_id]);
         
         $user_group_list=$UserGroupModel->listGet();
         $location_group_list=$LocationGroupModel->listGet(['name_query'=>'address','name_query_fields'=>'group_type']);
@@ -140,6 +139,7 @@ class Home extends BaseController {
             'user_group_list'=>$user_group_list,
             'location_group_list'=>$location_group_list
         ];
+        //p($data);
         return view('user/user_card',$data);
     }
 

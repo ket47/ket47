@@ -14,11 +14,11 @@ trait OrderStageTrait{
             'customer_deleted'=>    ['Удалить','negative'],
             ],
         'customer_confirmed'=>[
-            'action_cloud_pay'=>    ['Оплатить картой','positive'],
+            'action_card_pay'=>    ['Оплатить картой','positive'],
             'customer_created'=>    ['Отменить заказ'],
-            'customer_payed_cloud'=>[],
+            'customer_payed_card'=>[],
             ],
-        'customer_payed_cloud'=>[
+        'customer_payed_card'=>[
             'customer_start'=>      [],
             ],
         'customer_start'=>[
@@ -160,7 +160,7 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onCustomerPayedCloud( $order_id, $data ){
+    private function onCustomerPayedCard( $order_id, $data ){
         if( !$data??0 || !$data->Amount??0 ){
             return 'forbidden';
         }
