@@ -75,7 +75,10 @@ class UniPayments extends \App\Controllers\BaseController{
         $balance=$this->request->getVar('Balance');
         $approvalCode=$this->request->getVar('ApprovalCode');
 
-        $signature_check = strtoupper(md5($order_id.$status.$total.$approvalCode.getenv('uniteller.password')));
+
+        $this->log_message('error',"$order_id.$status.$total.$balance.$approvalCode".getenv('uniteller.password'));
+
+        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.getenv('uniteller.password')));
         if($signature!=$signature_check){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
             //return $this->failUnauthorized();
