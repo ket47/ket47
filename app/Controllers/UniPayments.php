@@ -72,18 +72,14 @@ class UniPayments extends \App\Controllers\BaseController{
         $signature=$this->request->getVar('Signature');
 
         $signature_check = strtoupper(md5($order_id.$status.getenv('uniteller.password')));
-        
-
-        log_message('error', "paymentStatusSet $status; order_id $order_id; $signature!=$signature_check");
-
-
         if($signature!=$signature_check){
+            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
             return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
+            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM");
             return $this->failUnauthorized();
         }
-        log_message('error', "paymentStatusSet $status; autorized");
         $OrderModel=model('OrderModel');
         switch($status){
             case 'authorized':
@@ -105,37 +101,43 @@ class UniPayments extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
-        log_message('error', "paymentStatusSet $result=='ok'");
         if( $result=='ok' ){
             return $this->respond('OK'); 
         }
-        $this->sendErrorEmail(["ERROR paymentStatusSet $status; order_id $order_id; $signature!=$signature_check"]);
+        $this->log_message('error', "paymentStatusSet $status; order_id:$order_id; STAGE CANT BE CHANGED $result=='ok'");
         return $this->failValidationErrors('cant_change_order_stage');
     }
 
     public function paymentStatusCheck(){
         $order_id=$this->request->getVar('order_id');
         $upoint_id=$this->request->getVar('upoint_id');
-
-        $this->sendErrorEmail(["paymentStatusCheck ; order_id $order_id; upoint_id $upoint_id"]);
-
         if( $upoint_id!=getenv('uniteller.Shop_IDP') ){
+            $this->log_message('error', "paymentStatusCheck; order_id:$order_id Shop_IDP NOT MATCH $upoint_id");
             return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
+            $this->log_message('error', "paymentStatusCheck; order_id:$order_id CANT AUTORIZE AS SYSTEM");
             return $this->failUnauthorized();
         }
         $OrderModel=model('OrderModel');
         $order=$OrderModel->itemGet($order_id);
         if( $order->stage_current==='customer_confirmed' ){
+            $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS NEW");
             return $this->respond('NEW');//Заказ не оплачен
         }
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_payed_card')->memberOfGroupsGet($order->order_id);
         if($customer_payed_card){
+            $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS PAID");
             return $this->respond('PAID');//Заказ оплачен
         }
+        $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
         return $this->respond('CANCELLED');
+    }
+
+    private function log_message($severity,$message){
+        log_message($severity, $message);
+        $this->sendErrorEmail($message);
     }
 
     private function authorizeAsSystem( $order_id ){
@@ -171,7 +173,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo(getenv('email_admin'));
         $email->setSubject('Cloud Payments Error');
-        $email->setMessage(json_encode($data));
+        $email->setMessage($data);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){
             log_message('error', $email->printDebugger(['headers']) );
