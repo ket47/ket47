@@ -32,7 +32,7 @@
         }
     };
 </script>
-<iframe name="unipay_iframe" style="width: 100%; height: 70vh;border:none"></iframe>
 <div class="action_buttons">
-    <div class="secondary" data-action="close">Закрыть окно</div>
+    <div class="secondary" data-action="close"><i class="fa fa-window-close"></i> Закрыть окно</div>
 </div>
+<iframe name="unipay_iframe" style="width: 100%; height: 600px;border:none"></iframe>
