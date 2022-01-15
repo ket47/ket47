@@ -72,7 +72,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $signature=$this->request->getVar('Signature');
 
         $signature_check = strtoupper(md5($order_id.$status.getenv('uniteller.password')));
-        $this->sendErrorEmail(["paymentStatusSet $status; order_id $order_id; $signature!=$signature_check"]);
+        
 
         log_message('error', "paymentStatusSet $status; order_id $order_id; $signature!=$signature_check");
 
@@ -80,7 +80,7 @@ class UniPayments extends \App\Controllers\BaseController{
         if($signature!=$signature_check){
             return $this->failUnauthorized();
         }
-        if( !$this->authorize($order_id) ){
+        if( !$this->authorizeAsSystem($order_id) ){
             return $this->failUnauthorized();
         }
         log_message('error', "paymentStatusSet $status; autorized");
@@ -105,10 +105,12 @@ class UniPayments extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
-        log_message('error', "paymentStatusSet $status; autorized");
+        log_message('error', "paymentStatusSet $result=='ok'");
         if( $result=='ok' ){
             return $this->respond('OK'); 
         }
+        $this->sendErrorEmail(["ERROR paymentStatusSet $status; order_id $order_id; $signature!=$signature_check"]);
+        return $this->failValidationErrors('cant_change_order_stage');
     }
 
     public function paymentStatusCheck(){
@@ -120,7 +122,7 @@ class UniPayments extends \App\Controllers\BaseController{
         if( $upoint_id!=getenv('uniteller.Shop_IDP') ){
             return $this->failUnauthorized();
         }
-        if( !$this->authorize($order_id) ){
+        if( !$this->authorizeAsSystem($order_id) ){
             return $this->failUnauthorized();
         }
         $OrderModel=model('OrderModel');
@@ -136,7 +138,7 @@ class UniPayments extends \App\Controllers\BaseController{
         return $this->respond('CANCELLED');
     }
 
-    private function authorize( $order_id ){
+    private function authorizeAsSystem( $order_id ){
         if( !$order_id ){
             return false;
         }
@@ -172,7 +174,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $email->setMessage(json_encode($data));
         $email_send_ok=$email->send();
         if( !$email_send_ok ){
-            return $this->fail($email->printDebugger(['headers']));
+            log_message('error', $email->printDebugger(['headers']) );
         }
     }
  
