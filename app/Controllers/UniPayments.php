@@ -75,9 +75,6 @@ class UniPayments extends \App\Controllers\BaseController{
         $balance=$this->request->getVar('Balance');
         $approvalCode=$this->request->getVar('ApprovalCode');
 
-
-        //$this->log_message('error',"$order_id.$status.$total.$balance.$approvalCode".getenv('uniteller.password'));
-
         $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.getenv('uniteller.password')));
         if($signature!=$signature_check){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
@@ -85,7 +82,7 @@ class UniPayments extends \App\Controllers\BaseController{
         }
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM");
-            return $this->failUnauthorized();
+            return $this->respond('CANT AUTORIZE AS SYSTEM');
         }
         $data=(object)[
             'total'=>$total,
@@ -93,21 +90,21 @@ class UniPayments extends \App\Controllers\BaseController{
             'approvalCode'=>$approvalCode
         ];
         $OrderModel=model('OrderModel');
+        $result='ok';
         switch($status){
             case 'authorized':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
-                break;
             case 'paid':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
+                if( !$this->paymentIsDone($order_id) ){
+                    $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
+                }
                 break;
             case 'canceled':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
-                break;
             case 'partly canceled':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
+                if( !$this->paymentIsRefunded($order_id) ){
+                    $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
+                }
                 break;
             case 'waiting':
-                $result='ok';
                 break;
             default:
                 $this->log_message('error', "paymentStatusSet $status; wrong_status");
@@ -119,6 +116,23 @@ class UniPayments extends \App\Controllers\BaseController{
         }
         $this->log_message('error', "paymentStatusSet $status; order_id:$order_id; STAGE CANT BE CHANGED $result=='ok'");
         return $this->failValidationErrors('cant_change_order_stage');
+    }
+
+    private function paymentIsDone( $order_id ){
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_payed_card')->memberOfGroupsGet($order_id);
+        if($customer_payed_card){
+            return true;
+        }
+        return false;
+    }
+    private function paymentIsRefunded( $order_id ){
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_refunded')->memberOfGroupsGet($order_id);
+        if($customer_payed_card){
+            return true;
+        }
+        return false;
     }
 
     public function paymentStatusCheck(){
@@ -138,14 +152,33 @@ class UniPayments extends \App\Controllers\BaseController{
             $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS NEW");
             return $this->respond('NEW');//Заказ не оплачен
         }
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_payed_card')->memberOfGroupsGet($order->order_id);
-        if($customer_payed_card){
+        if( $this->paymentIsDone($order_id) ){
             $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS PAID");
             return $this->respond('PAID');//Заказ оплачен
         }
         $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
         return $this->respond('CANCELLED');
+    }
+
+    public function paymentStatusRequest(){
+        $order_id=$this->request->getVar('order_id');
+        $request=[
+            'Shop_ID'=>getenv('uniteller.Shop_IDP'),
+            'Login'=>getenv('uniteller.login'),
+            'Password'=>getenv('uniteller.password'),
+            'Format'=>'1',
+            'ShopOrderNumber'=>$order_id,
+            'S_FIELDS'=>'Status'
+        ];
+        $context  = stream_context_create([
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded",
+                'method'  => 'POST',
+                'content' => http_build_query($request)
+                ]
+        ]);
+        $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
+        return $this->respond($result);
     }
 
     private function log_message($severity,$message){

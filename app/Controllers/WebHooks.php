@@ -15,7 +15,7 @@ class WebHooks extends \App\Controllers\BaseController{
             $this->incoming=$data;
             $eventName="on{$data->event}";
             if( method_exists($Viber,$eventName) ){
-                $response=$Viber->$eventName($data->sender,$data->message);
+                $response=$Viber->$eventName($data->sender??null,$data->message??'');
             } else {
                 $email = \Config\Services::email();
                 $config=[

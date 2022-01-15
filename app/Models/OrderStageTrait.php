@@ -185,9 +185,9 @@ trait OrderStageTrait{
             'holder_id'=>$order_id,
             'updated_by'=>$user_id,
         ];
+
         $TransactionModel->itemCreate($trans);    
         $transaction_created=$this->db->affectedRows()?'ok':'idle';
-
         if($order->order_sum_total!=$data->total){//would be wrong to deny or not???????
             //return 'wrong_amount';
         }

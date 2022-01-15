@@ -11,6 +11,7 @@ class TransactionModel extends Model{
     protected $primaryKey = 'trans_id';
     protected $allowedFields = [
         'trans_amount',
+        'trans_data',
         'acc_debit_code',
         'acc_credit_code',
         'owner_id',
