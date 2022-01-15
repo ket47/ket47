@@ -24,7 +24,8 @@ trait OrderStageTrait{
         'customer_start'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-            'delivery_start'=>      ['Начать доставку']
+            'delivery_start'=>      ['Начать доставку'],
+            'customer_refunded'=>   []//payment can be canceled by uniteller...
             ],
         
         
@@ -145,16 +146,10 @@ trait OrderStageTrait{
     }
     
     private function onCustomerConfirmed( $order_id ){
-        //check if order is valid. not empty etc
-
-
-
-
-
-
-
-
-
+        $order=$this->itemGet( $order_id, 'basic' );
+        if( !$order->order_sum_total??0 ){
+            return 'order_is_empty';
+        }
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
@@ -177,7 +172,7 @@ trait OrderStageTrait{
         $TransactionModel=model('TransactionModel');
         
         $user_id=session()->get('user_id');
-        $order=$this->itemGet($order_id);
+        $order=$this->itemGet($order_id,'basic');
         
         $trans=[
             'trans_amount'=>$order->order_sum_total,
@@ -190,7 +185,6 @@ trait OrderStageTrait{
             'holder_id'=>$order_id,
             'updated_by'=>$user_id,
         ];
-        
         $TransactionModel->itemCreate($trans);    
         $transaction_created=$this->db->affectedRows()?'ok':'idle';
 
@@ -297,7 +291,29 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onCustomerRefunded( $order_id ){
+    private function onCustomerRefunded( $order_id, $data ){
+        if( !$data??0 || !$data->total??0 ){
+            return 'forbidden';
+        }
+        $TransactionModel=model('TransactionModel');
+        
+        $user_id=session()->get('user_id');
+        $order=$this->itemGet($order_id,'basic');
+        
+        $TransactionModel=model('TransactionModel');
+        $trans=[
+            'trans_amount'=>$order->order_sum_total,
+            'trans_data'=>json_encode($data),
+            'acc_debit_code'=>'account',
+            'acc_credit_code'=>'customer',
+            'owner_id'=>$order->owner_id,
+            'is_disabled'=>0,
+            'holder'=>'order',
+            'holder_id'=>$order_id,
+            'updated_by'=>$user_id,
+        ];
+        $TransactionModel->itemCreate($trans);    
+        $transaction_created=$this->db->affectedRows()?'ok':'idle';
         return $this->itemStageCreate($order_id, 'customer_finish');
     }
     
