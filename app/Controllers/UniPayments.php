@@ -35,7 +35,8 @@ class UniPayments extends \App\Controllers\BaseController{
             'URL_RETURN_OK'=>getenv('app.baseURL').'UniPayments/paymentOk',
             'URL_RETURN_NO'=>getenv('app.baseURL').'UniPayments/paymentNo',
             'IsRecurrentStart'=>0,
-            'Lifetime' => 15*60*60,
+            'Lifetime' => 5*60*60,// 5 min
+            'CallbackFields'=>'Total Balance ApprovalCode'
             //'MeanType' => '','EMoneyType' => '','OrderLifetime' => 15*60*60,'Card_IDP' => '','IData' => '','PT_Code' => '',
         ];
         $p->Signature = strtoupper(
@@ -70,29 +71,37 @@ class UniPayments extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('Order_ID');
         $status=$this->request->getVar('Status');
         $signature=$this->request->getVar('Signature');
+        $total=$this->request->getVar('Total');
+        $balance=$this->request->getVar('Balance');
+        $approvalCode=$this->request->getVar('ApprovalCode');
 
-        $signature_check = strtoupper(md5($order_id.$status.getenv('uniteller.password')));
+        $signature_check = strtoupper(md5($order_id.$status.$total.$approvalCode.getenv('uniteller.password')));
         if($signature!=$signature_check){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
-            return $this->failUnauthorized();
+            //return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM");
             return $this->failUnauthorized();
         }
+        $data=(object)[
+            'total'=>$total,
+            'balance'=>$balance,
+            'approvalCode'=>$approvalCode
+        ];
         $OrderModel=model('OrderModel');
         switch($status){
             case 'authorized':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', null, false );
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
                 break;
             case 'paid':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', null, false );
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
                 break;
             case 'canceled':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', null, false );
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
                 break;
             case 'partly canceled':
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', null, false );
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
                 break;
             case 'waiting':
                 $result='ok';
@@ -172,7 +181,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo(getenv('email_admin'));
-        $email->setSubject('Cloud Payments Error');
+        $email->setSubject('Uniteller Payment Error');
         $email->setMessage($data);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){

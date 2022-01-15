@@ -261,7 +261,6 @@
                 width: 70%;
                 position: absolute;
                 top: 10%;
-                bottom: 10%;
                 z-index: 200;
             }
             #appWindowContainer{

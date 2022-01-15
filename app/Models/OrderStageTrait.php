@@ -14,9 +14,9 @@ trait OrderStageTrait{
             'customer_deleted'=>    ['Удалить','negative'],
             ],
         'customer_confirmed'=>[
-            'action_card_pay'=>    ['Оплатить картой','positive'],
+            'action_card_pay'=>     ['Оплатить картой','positive'],
             'customer_created'=>    ['Отменить заказ'],
-            'customer_payed_card'=>[],
+            'customer_payed_card'=> [],
             ],
         'customer_payed_card'=>[
             'customer_start'=>      [],
@@ -145,6 +145,16 @@ trait OrderStageTrait{
     }
     
     private function onCustomerConfirmed( $order_id ){
+        //check if order is valid. not empty etc
+
+
+
+
+
+
+
+
+        
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
@@ -161,7 +171,7 @@ trait OrderStageTrait{
     }
     
     private function onCustomerPayedCard( $order_id, $data ){
-        if( !$data??0 || !$data->Amount??0 ){
+        if( !$data??0 || !$data->total??0 ){
             return 'forbidden';
         }
         $TransactionModel=model('TransactionModel');
@@ -169,9 +179,6 @@ trait OrderStageTrait{
         $user_id=session()->get('user_id');
         $order=$this->itemGet($order_id);
         
-        if($order->order_sum_total!=$data->Amount){
-            return 'wrong_amount';
-        }
         $trans=[
             'trans_amount'=>$order->order_sum_total,
             'trans_data'=>json_encode($data),
@@ -186,6 +193,10 @@ trait OrderStageTrait{
         
         $TransactionModel->itemCreate($trans);    
         $transaction_created=$this->db->affectedRows()?'ok':'idle';
+
+        if($order->order_sum_total!=$data->total){//would be wrong to deny or not???????
+            //return 'wrong_amount';
+        }
         $order_started=$this->itemStageCreate($order_id, 'customer_start');
         if( $transaction_created=='ok' && $order_started=='ok' ){
             return 'ok';
