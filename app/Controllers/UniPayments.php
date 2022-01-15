@@ -76,12 +76,12 @@ class UniPayments extends \App\Controllers\BaseController{
         $approvalCode=$this->request->getVar('ApprovalCode');
 
 
-        $this->log_message('error',"$order_id.$status.$total.$balance.$approvalCode".getenv('uniteller.password'));
+        //$this->log_message('error',"$order_id.$status.$total.$balance.$approvalCode".getenv('uniteller.password'));
 
         $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.getenv('uniteller.password')));
         if($signature!=$signature_check){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
-            //return $this->failUnauthorized();
+            return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM");
@@ -110,6 +110,7 @@ class UniPayments extends \App\Controllers\BaseController{
                 $result='ok';
                 break;
             default:
+                $this->log_message('error', "paymentStatusSet $status; wrong_status");
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
@@ -165,6 +166,7 @@ class UniPayments extends \App\Controllers\BaseController{
                 ->get()
                 ->getRow('owner_id');
         if( !$order_owner_id ){
+            log_message('error', "authorizeAsSystem order_id:$order_id NO SUCH ORDER IN SYSTEM");
             return false;
         }
         $UserModel->systemUserLogin();
@@ -184,7 +186,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo(getenv('email_admin'));
-        $email->setSubject('Uniteller Payment Error');
+        $email->setSubject(getenv('app.baseURL').' Uniteller Payment Error');
         $email->setMessage($data);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){

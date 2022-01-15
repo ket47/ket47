@@ -74,6 +74,20 @@ class Viber{
         return $response;
     }
 
+    public function ondelivered($sender,$message){
+        return [
+            'status'=>0,
+            'status_message'=>'ok'
+        ];
+    }
+
+    public function onseen($sender,$message){
+        return [
+            'status'=>0,
+            'status_message'=>'ok'
+        ];
+    }
+
 
     ///////////////////////////////////////////////
     //VERIFICATION SECTION

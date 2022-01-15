@@ -10,6 +10,7 @@ class WebHooks extends \App\Controllers\BaseController{
     public function viberWebhook(){
         $Viber= new \App\Libraries\Viber();
         $data=$this->request->getJSON();
+        $response=null;
         if( isset($data->event) ){
             $this->incoming=$data;
             $eventName="on{$data->event}";
@@ -26,7 +27,7 @@ class WebHooks extends \App\Controllers\BaseController{
                 $email->initialize($config);
                 $email->setFrom(getenv('email_from'), getenv('email_sendername'));
                 $email->setTo(getenv('email_admin'));
-                $email->setSubject('Viber webhook');
+                $email->setSubject(getenv('app.baseURL').' Viber webhook');
                 $email->setMessage(json_encode($data));
                 $email_send_ok=$email->send();
             }

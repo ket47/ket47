@@ -154,7 +154,7 @@ trait OrderStageTrait{
 
 
 
-        
+
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
@@ -203,36 +203,6 @@ trait OrderStageTrait{
         }
         return 'error';
     }
-    
-    
-    
-    
-    
-    public function test(){
-        return $this->onCustomerStart(1,[]);
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     private function onCustomerStart( $order_id, $data ){
         $UserModel=model('UserModel');
