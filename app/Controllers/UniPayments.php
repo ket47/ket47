@@ -81,7 +81,7 @@ class UniPayments extends \App\Controllers\BaseController{
             return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
-            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM");
+            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->respond('CANT AUTORIZE AS SYSTEM');
         }
         $data=(object)[

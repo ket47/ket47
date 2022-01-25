@@ -32,7 +32,7 @@ trait OrderStageTrait{
         
         'supplier_rejected'=>[
             'customer_created'=>    ['--reset'],
-            'customer_refunded'=>   []
+            'customer_refunded'=>   [],
             ],
         'supplier_reclaimed'=>[
             'customer_refunded'=>   []
@@ -80,7 +80,7 @@ trait OrderStageTrait{
             'customer_finish'=>     [],
             ],
         'customer_finish'=>[
-            'customer_created'=>    ['--reset'],
+            'customer_deleted'=>    ['Удалить','negative'],
             ]
     ];
     
