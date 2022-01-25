@@ -89,6 +89,11 @@ class UniPayments extends \App\Controllers\BaseController{
             'balance'=>$balance,
             'approvalCode'=>$approvalCode
         ];
+        
+        
+        $this->log_message('error', "paymentStatusSet $status; order_id:$order_id $status total:$total balance:$balance approvalCode:$approvalCode");
+        
+        
         $OrderModel=model('OrderModel');
         $result='ok';
         switch($status){
@@ -139,7 +144,7 @@ class UniPayments extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('order_id');
         $upoint_id=$this->request->getVar('upoint_id');
         if( $upoint_id!=getenv('uniteller.Shop_IDP') ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$order_id Shop_IDP NOT MATCH $upoint_id");
+            $this->log_message('error', "paymentStatusCheck; order_id:$order_id Shop_IDP DO NOT MATCH upoint_id:$upoint_id");
             return $this->failUnauthorized();
         }
         if( !$this->authorizeAsSystem($order_id) ){
