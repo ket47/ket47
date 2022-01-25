@@ -89,25 +89,22 @@ class UniPayments extends \App\Controllers\BaseController{
             'balance'=>$balance,
             'approvalCode'=>$approvalCode
         ];
-        
-        
-        $this->log_message('error', "paymentStatusSet $status; order_id:$order_id $status total:$total balance:$balance approvalCode:$approvalCode");
-        
-        
         $OrderModel=model('OrderModel');
         $result='ok';
         switch($status){
             case 'authorized':
             case 'paid':
-                if( !$this->paymentIsDone($order_id) ){
-                    $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
+                if( $this->paymentIsDone($order_id) ){
+                    return $this->respond('OK');
                 }
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
                 break;
             case 'canceled':
             case 'partly canceled':
-                if( !$this->paymentIsRefunded($order_id) ){
-                    $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
+                if( $this->paymentIsRefunded($order_id) ){
+                    return $this->respond('OK');
                 }
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
                 break;
             case 'waiting':
                 break;
@@ -125,19 +122,12 @@ class UniPayments extends \App\Controllers\BaseController{
 
     private function paymentIsDone( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_payed_card')->memberOfGroupsGet($order_id);
-        if($customer_payed_card){
-            return true;
-        }
-        return false;
+        return $OrderGroupMemberModel->isMemberOf($order_id,'customer_payed_card');
     }
+    
     private function paymentIsRefunded( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $customer_payed_card=$OrderGroupMemberModel->where('group_type','customer_refunded')->memberOfGroupsGet($order_id);
-        if($customer_payed_card){
-            return true;
-        }
-        return false;
+        return $OrderGroupMemberModel->isMemberOf($order_id,'customer_refunded');
     }
 
     public function paymentStatusCheck(){

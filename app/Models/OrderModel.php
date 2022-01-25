@@ -80,7 +80,7 @@ class OrderModel extends Model{
         $EntryModel=model('EntryModel');
         $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
-        $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC');
+        $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
         $StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
         $order->stage_next=  $this->itemGetNextStages($order->stage_current,$order->user_role);

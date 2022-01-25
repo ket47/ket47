@@ -47,6 +47,14 @@ class GroupMemberLayer extends Model{
         return $this->leaveGroup($member_id, $group_id);
     }
     
+    public function isMemberOf($member_id,$group_type){
+        return $this
+                ->where('member_id',$member_id)
+                ->where('group_type',$group_type)
+                ->join("{$this->groupTable}", "{$this->groupTable}.group_id = {$this->table}.group_id")
+                ->get()->getRow()?1:0;
+    }
+    
     public function memberOfGroupsGet($member_id){
         return $this->select("GROUP_CONCAT({$this->groupTable}.group_id) group_ids,GROUP_CONCAT(group_type) group_types")
                 ->where('member_id',$member_id)
