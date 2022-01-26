@@ -123,6 +123,10 @@ var Order={
             },
             action_card_pay:function(){
                 Order.stage.payment_modal();
+            },
+            action_call_customer:function(){
+                var customer_phone="<?=$order->customer->user_phone ?>";
+                document.location.href = `tel:${customer_phone}`;
             }
         },
         payment_modal:function(){
@@ -178,12 +182,10 @@ $(Order.init);
     }
 </style>
 
-
-
 <div id="order" style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="grid-column: 1 / 2 span">
-            <h3>Заказ #<?=$order->order_id?> (<?=$order->stage_current_name?>)</h3>
+            <h2>Заказ #<?=$order->order_id?> (<?=$order->stage_current_name?>)</h2>
         </div>
         <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Продавец</div>

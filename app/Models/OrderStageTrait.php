@@ -80,7 +80,7 @@ trait OrderStageTrait{
             'customer_finish'=>     [],
             ],
         'customer_finish'=>[
-            'customer_deleted'=>    ['Удалить','negative'],
+            //'customer_deleted'=>    ['Удалить','negative'],
             ]
     ];
     
