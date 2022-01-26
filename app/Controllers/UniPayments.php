@@ -67,6 +67,28 @@ class UniPayments extends \App\Controllers\BaseController{
         echo 'Payment basarisiz?!?!?!?';
     }
 
+    public function paymentStatusRequest(){
+        $order_id=$this->request->getVar('order_id');
+        $request=[
+            'Shop_ID'=>getenv('uniteller.Shop_IDP'),
+            'Login'=>getenv('uniteller.login'),
+            'Password'=>getenv('uniteller.password'),
+            'Format'=>'1',
+            'ShopOrderNumber'=>$order_id,
+            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode'
+        ];
+        $context  = stream_context_create([
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded",
+                'method'  => 'POST',
+                'content' => http_build_query($request)
+                ]
+        ]);
+        $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
+        $response=explode(';',$result);
+        return $this->paymentStatusSetApply($response[0],$response[1],$response[2],$response[2],$response[3]);
+    }
+
     public function paymentStatusSet(){
         $order_id=$this->request->getVar('Order_ID');
         $status=$this->request->getVar('Status');
@@ -80,6 +102,10 @@ class UniPayments extends \App\Controllers\BaseController{
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
             return $this->failUnauthorized();
         }
+        return $this->paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode);
+    }
+
+    private function paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode){
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->respond('CANT AUTORIZE AS SYSTEM');
@@ -117,9 +143,9 @@ class UniPayments extends \App\Controllers\BaseController{
             return $this->respond('OK'); 
         }
         $this->log_message('error', "paymentStatusSet $status; order_id:$order_id; STAGE CANT BE CHANGED $result=='ok'");
-        return $this->failValidationErrors('cant_change_order_stage');
+        return $this->failValidationErrors('cant_change_order_stage');        
     }
-
+    
     private function paymentIsDone( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         return $OrderGroupMemberModel->isMemberOf($order_id,'customer_payed_card');
@@ -153,27 +179,6 @@ class UniPayments extends \App\Controllers\BaseController{
         }
         $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
         return $this->respond('CANCELLED');
-    }
-
-    public function paymentStatusRequest(){
-        $order_id=$this->request->getVar('order_id');
-        $request=[
-            'Shop_ID'=>getenv('uniteller.Shop_IDP'),
-            'Login'=>getenv('uniteller.login'),
-            'Password'=>getenv('uniteller.password'),
-            'Format'=>'1',
-            'ShopOrderNumber'=>$order_id,
-            'S_FIELDS'=>'Status'
-        ];
-        $context  = stream_context_create([
-            'http' => [
-                'header'  => "Content-type: application/x-www-form-urlencoded",
-                'method'  => 'POST',
-                'content' => http_build_query($request)
-                ]
-        ]);
-        $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
-        return $this->respond($result);
     }
 
     private function log_message($severity,$message){
