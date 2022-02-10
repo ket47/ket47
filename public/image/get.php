@@ -33,7 +33,7 @@ if ( !file_exists($file_optimised) ) {
     switch( $extension ){
         case 'jpg':
         case 'jpeg':
-            imagejpeg($thumb,$file_optimised);
+            imagejpeg($thumb,$file_optimised,80);
             $content_type='image/jpeg';
             break;
         case 'png':
@@ -41,7 +41,7 @@ if ( !file_exists($file_optimised) ) {
             $content_type='image/png';
             break;
         case 'webp':
-            imagewebp($thumb,$file_optimised);
+            imagewebp($thumb,$file_optimised,80);
             $content_type='image/webp';
             break;
         case 'default':

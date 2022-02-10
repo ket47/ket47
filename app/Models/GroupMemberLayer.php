@@ -56,7 +56,7 @@ class GroupMemberLayer extends Model{
     }
     
     public function memberOfGroupsGet($member_id){
-        return $this->select("GROUP_CONCAT({$this->groupTable}.group_id) group_ids,GROUP_CONCAT(group_type) group_types")
+        return $this->select("GROUP_CONCAT({$this->groupTable}.group_id) group_ids,GROUP_CONCAT(group_type) group_types,GROUP_CONCAT(group_name) group_names")
                 ->where('member_id',$member_id)
                 ->join("{$this->groupTable}", "{$this->groupTable}.group_id = {$this->table}.group_id")
                 ->get()->getRow();

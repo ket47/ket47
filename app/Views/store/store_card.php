@@ -210,6 +210,11 @@
                     <input type="checkbox" name="is_working.<?= $store->store_id ?>" value="1" <?= $store->is_working ? 'checked' : '' ?>/>
                 </div>
 
+                <div>Опорный склад</div>
+                <div>
+                    <input type="checkbox" name="is_primary.<?= $store->store_id ?>" value="1" <?= $store->is_primary ? 'checked' : '' ?>/>
+                </div>
+
                 <div>Создан</div>
                 <div>
                     <?=dmyt($store->created_at)?> 

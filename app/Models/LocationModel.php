@@ -76,8 +76,13 @@ class LocationModel extends Model{
     public function itemMainGet($location_holder, $location_holder_id){
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
-        $this->where('is_main',1);
-        $this->select('location_id,location_latitude,location_longitude,location_address');
+        $this->where('location_list.is_main',1);
+        $this->select('location_id,location_latitude,location_longitude,location_address,image_hash,group_name,group_type');
+        //join group & image
+        $this->join('location_group_member_list','member_id=location_id','left');
+        $this->join('location_group_list','group_id','left');
+        $this->join('image_list type_icon',"type_icon.image_holder='location_group_list' AND type_icon.image_holder_id=group_id AND type_icon.is_main=1",'left');
+        
         return $this->get()->getRow();        
     }
 
@@ -177,6 +182,16 @@ class LocationModel extends Model{
         $this->select($this->selectList);
         return $this->get()->getResult();
     }
+
+    public function distanceToUserInclude(){
+        $user_id=session()->get('user_id');
+        if($user_id>0){
+            $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE is_main=1 AND location_holder='user' AND location_holder_id=$user_id)");
+            $this->select("ST_Distance_Sphere(@start_point,location_point) distance");
+            return true;
+        }
+        return false;
+    }
     
     public function listCreate(){
         return false;
@@ -229,7 +244,7 @@ class LocationModel extends Model{
             location_id,
             location_holder_id,
             location_address,
-            updated_at,
+            location_list.updated_at,
             ST_Distance_Sphere(@center_point,location_point) distance");
         $this->where('location_holder',$point_holder);
         $this->having('distance<=',$point_distance);

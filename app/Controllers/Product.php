@@ -75,7 +75,7 @@ class Product extends \App\Controllers\BaseController{
             return $this->respondUpdated('ok');
         }
         if( $ProductModel->errors() ){
-            return $this->failValidationError(json_encode($ProductModel->errors()));
+            return $this->failValidationErrors(json_encode($ProductModel->errors()));
         }
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
@@ -216,10 +216,10 @@ class Product extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
-    
-    
-    
-        
+
+    /////////////////////////////////////////////////////
+    //PRODUCT CATEGORIES SECTION
+    /////////////////////////////////////////////////////
     public function groupTreeGet(){
         $filter=[
 //            'name_query'=>$this->request->getVar('name_query'),
@@ -234,4 +234,15 @@ class Product extends \App\Controllers\BaseController{
         $group_list=$ProductModel->groupTreeGet($filter);
         return $this->respond($group_list);
     }
+
+    // public function groupListGet(){
+    //     $group_parent_id=$this->request->getVar('group_parent_id');
+    //     $ProductGroupModel=model('ProductGroupModel');
+
+    //     if($group_parent_id!=null){
+    //         $ProductGroupModel->where('group_parent_id',$group_parent_id);
+    //     }
+    //     $group_list=$ProductGroupModel->listGet();
+    //     return $this->respond($group_list);
+    // }
 }

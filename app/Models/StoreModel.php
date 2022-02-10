@@ -53,7 +53,7 @@ class StoreModel extends Model{
         $this->resetQuery();
     }
     private $itemCache=[];
-    public function itemGet( $store_id, $mode='all' ){
+    public function itemGet( $store_id, $mode='all', $distanceToUserInclude=false ){
         if( $this->itemCache[$mode.$store_id]??0 ){
             return $this->itemCache[$mode.$store_id];
         }
@@ -93,7 +93,9 @@ class StoreModel extends Model{
             'is_active'=>1,
             'limit'=>30
         ];
-
+        if($distanceToUserInclude){
+            $LocationModel->distanceToUserInclude();
+        }
         $store->locations=$LocationModel->listGet($filter_loc);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
@@ -131,6 +133,9 @@ class StoreModel extends Model{
         }
         if( !$this->permit($store->store_id,'w') ){
             return 'forbidden';
+        }
+        if( sudo() ){
+            $this->allowedFields[]='is_primary';
         }
         $this->update($store->store_id,$store);
         return $this->db->affectedRows()?'ok':'idle';
@@ -241,6 +246,62 @@ class StoreModel extends Model{
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }
+
+    public function listNearGet($filter){
+        if( !$filter['location_id'] ){
+            return 'location_required'; 
+        }
+        $weekday=date('N')-1;
+        $dayhour=date('H');
+        $point_distance=15000;//15km
+
+        $permission_filter=$this->permitWhereGet('r','item');
+        $LocationModel=model('LocationModel');
+        $LocationModel->select("store_id,store_name,store_time_preparation,image_hash");
+        $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $LocationModel->join('store_list','store_id=location_holder_id');
+        $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
+        if( $permission_filter ){
+            $LocationModel->where($permission_filter);
+        }
+        $LocationModel->orderBy("is_opened",'DESC');
+        $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
+        $store_list=$LocationModel->distanceListGet( $filter['location_id'], $point_distance, 'store' );
+        if( !is_array($store_list) ){
+            return 'not_found';
+        }
+        return $store_list;
+    }
+
+    public function primaryNearGet($filter){
+        if( !$filter['location_id'] ){
+            return 'location_required'; 
+        }
+        $weekday=date('N')-1;
+        $dayhour=date('H');
+        $point_distance=15000;//15km
+        $permission_filter=$this->permitWhereGet('r','item');
+        $LocationModel=model('LocationModel');
+        $LocationModel->select("store_id,store_name,store_time_preparation,is_primary,image_hash");
+        $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $LocationModel->join('store_list','store_id=location_holder_id');
+        $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
+        if( $permission_filter ){
+            $LocationModel->where($permission_filter);
+        }
+        $LocationModel->orderBy("is_opened",'DESC');
+        $LocationModel->where("is_primary",1);
+        $LocationModel->limit(1);
+        $result=$LocationModel->distanceListGet( $filter['location_id'], $point_distance, 'store' );
+        if( !isset($result[0]) ){
+           return 'not_found';
+        }
+        $primary_store=$result[0];
+        $ProductModel=model('ProductModel');
+        $primary_store->category_list=$ProductModel->groupTreeGet(['store_id'=>$primary_store->store_id],'all');
+        return $primary_store;
+    }
+
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////

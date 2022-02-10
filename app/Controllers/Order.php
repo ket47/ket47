@@ -111,6 +111,7 @@ class Order extends \App\Controllers\BaseController {
             'limit'=>$this->request->getVar('limit'),
             'user_role'=>$this->request->getVar('user_role'),
             'order_store_id'=>$this->request->getVar('order_store_id'),
+            'order_group_type'=>$this->request->getVar('order_group_type'),
             'date_start'=>$this->request->getVar('date_start'),
             'date_finish'=>$this->request->getVar('date_finish')
         ];
@@ -122,6 +123,12 @@ class Order extends \App\Controllers\BaseController {
     public function listPreviewGet(){
         $OrderModel=model('OrderModel');
         $order_list=$OrderModel->listPreviewGet();
+        return $this->respond($order_list);
+    }
+
+    public function listCartGet(){
+        $OrderModel=model('OrderModel');
+        $order_list=$OrderModel->listCartGet();
         return $this->respond($order_list);
     }
 

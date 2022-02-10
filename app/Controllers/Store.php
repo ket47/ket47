@@ -6,6 +6,9 @@ use \CodeIgniter\API\ResponseTrait;
 class Store extends \App\Controllers\BaseController{
     use ResponseTrait;
     
+    /////////////////////////////////////////////////////
+    //LIST HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function listGet(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
@@ -23,11 +26,33 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->respond($store_list);
     }
-    
+
+    public function listNearGet(){
+        $location_id=$this->request->getVar('location_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
+        if( !is_array($result) ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
+    }
+    public function primaryNearGet(){
+        $location_id=$this->request->getVar('location_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->primaryNearGet(['location_id'=>$location_id]);
+        if( $result=='not_found' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
+    }
+    /////////////////////////////////////////////////////
+    //ITEM HANDLING SECTION
+    /////////////////////////////////////////////////////
     public function itemGet(){
         $store_id=$this->request->getVar('store_id');
+        $distance_include=$this->request->getVar('distance_include');
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->itemGet($store_id);
+        $result=$StoreModel->itemGet($store_id,'all',$distance_include);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
@@ -137,11 +162,11 @@ class Store extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $StoreModel->errors() ){
-            return $this->failValidationError(json_encode($StoreModel->errors()));
+            return $this->failValidationErrors(json_encode($StoreModel->errors()));
         }
         return $this->respondUpdated($result);
     }
-    
+
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -241,12 +266,12 @@ class Store extends \App\Controllers\BaseController{
         ];
         $StoreModel=model('StoreModel');
         $LocationModel=model('LocationModel');
-        if( !$StoreModel->permit($data['owner_id'],'w') ){
+        if( !$StoreModel->permit($location_holder_id,'w') ){
             return $this->failForbidden('forbidden');
         }
         $result= $LocationModel->itemCreate($data,1);
         if( $LocationModel->errors() ){
-            return $this->failValidationError(json_encode($LocationModel->errors()));
+            return $this->failValidationErrors(json_encode($LocationModel->errors()));
         }
         return $this->respondCreated($result);
     }

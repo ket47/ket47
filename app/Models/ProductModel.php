@@ -14,9 +14,14 @@ class ProductModel extends Model{
         'product_code',
         'product_name',
         'product_quantity',
+        'product_quantity_min',
         'product_description',
         'product_weight',
+        'product_unit',
         'product_price',
+        'product_promo_price',
+        'product_promo_start',
+        'product_promo_finish',
         'is_produced',
         'deleted_at'
         ];
@@ -25,7 +30,8 @@ class ProductModel extends Model{
     protected $validationRules    = [
         'store_id'         => 'required|numeric',
         'product_name'     => 'required|min_length[10]',
-        'product_price'    => 'required|numeric'
+        'product_price'    => 'required|numeric',
+        'product_promo_price'    => 'numeric',
     ];
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
@@ -405,11 +411,16 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     //UTILS
     /////////////////////////////////////////////////////
-    public function groupTreeGet($filter){
+    /**
+     * This function returning all categories that have member products in them.
+     * Format is tree.
+     * Later caching must be done!
+     */
+    public function groupTreeGet($filter,$depth='all'){
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
         }
-        //$this->filterMake( $filter );
+        $this->filterMake( $filter );
         $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash');
         $this->join('product_group_member_list pgml','member_id=product_id');
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
@@ -426,11 +437,12 @@ class ProductModel extends Model{
                 $parent_groups[$child->group_parent_id]=[
                     'group_id'=>$child->group_parent_id,
                     'group_name'=>explode('/',$child->group_path)[1],
-                    'image_hash'=>$ImageModel->get()->getRow('image_hash'),
-                    'children'=>[]
+                    'image_hash'=>$ImageModel->get()->getRow('image_hash')
                 ];
             }
-            $parent_groups[$child->group_parent_id]['children'][$child->group_id]=$child;
+            if( $depth=='all' ){
+                $parent_groups[$child->group_parent_id]['children'][$child->group_id]=$child;
+            }
         }
         return $parent_groups;
     }

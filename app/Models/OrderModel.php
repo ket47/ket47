@@ -224,6 +224,9 @@ class OrderModel extends Model{
         if($filter['order_group_id']??0){
             $this->whereIn('order_group_id',$filter['order_group_id']);
         }
+        if($filter['order_group_type']??0){
+            $this->whereIn('order_group_type',$filter['order_group_type']);
+        }
         if($filter['date_start']??0){
             $this->where('created_at>',$filter['date_start']);
         }
@@ -233,7 +236,7 @@ class OrderModel extends Model{
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
-        $this->select("{$this->table}.*,group_id,,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
+        $this->select("{$this->table}.*,group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);
@@ -253,6 +256,19 @@ class OrderModel extends Model{
             'courier'=>$courier,
             'supplier'=>$supplier
         ];
+    }
+
+    public function listCartGet(){
+        $this->permitWhere('r');
+        $this->join('order_group_list ogl',"order_group_id=group_id");
+        $this->where('group_type','customer_created');
+        $this->select('order_id');
+        $cart_ids=$this->get()->getResult();
+        $cart_list=[];
+        foreach($cart_ids as $cart){
+            $cart_list[]=$this->itemGet($cart->order_id);
+        }
+        return $cart_list;
     }
     
     public function listCreate(){

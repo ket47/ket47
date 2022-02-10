@@ -23,7 +23,17 @@
                 <input type="number" name="product_quantity.<?= $product->product_id ?>" value="<?= $product->product_quantity ?>" <?= $product->is_produced ? 'disabled' : '' ?>/>
             </div>
 
-            <div>Вес кг/единица</div>
+            <div>Мин. заказ</div>
+            <div>
+                <input type="number" name="product_quantity_min.<?= $product->product_id ?>" value="<?= $product->product_quantity_min ?>" <?= $product->is_produced ? 'disabled' : '' ?>/>
+            </div>
+
+            <div>Единица</div>
+            <div>
+                <input type="text" name="product_unit.<?= $product->product_id ?>" value="<?= $product->product_unit ?>"/>
+            </div>
+
+            <div>Вес единицы (кг)</div>
             <div>
                 <input type="number" name="product_weight.<?= $product->product_id ?>" value="<?= $product->product_weight ?>"/>
             </div>
@@ -32,6 +42,19 @@
             <div>Описание</div>
             <div>
                 <textarea name="product_description.<?= $product->product_id ?>"><?= $product->product_description ?></textarea>
+            </div>
+
+            <div>Акция цена</div>
+            <div>
+                <input type="number" name="product_promo_price.<?= $product->product_id ?>" value="<?= $product->product_promo_price ?>"/>
+            </div>
+            <div>Акция начало</div>
+            <div>
+                <input type="date" name="product_promo_start.<?= $product->product_id ?>" value="<?= substr($product->product_promo_start??'',0,10) ?>"/>
+            </div>
+            <div>Акция конец</div>
+            <div>
+                <input type="date" name="product_promo_finish.<?= $product->product_id ?>" value="<?= substr($product->product_promo_finish??'',0,10) ?>"/>
             </div>
 
         </div>
