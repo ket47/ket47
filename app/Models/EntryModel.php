@@ -82,7 +82,7 @@ class EntryModel extends Model{
         } catch( \Exception $e ){
             $this->where('order_id',$order_id);
             $this->where('product_id',$product_id);
-            $this->set('entry_quantity',"(entry_quantity + $product_quantity)",false);
+            $this->set('entry_quantity',"$product_quantity",false);
             $this->update();
             return 'updated';
         }
@@ -163,7 +163,10 @@ class EntryModel extends Model{
     
     public function listUpdate( $order_id, $entry_list ){
         foreach($entry_list as $entry){
-            $this->itemCreate($order_id,$entry->product_id,$entry->product_quantity);
+            if(!$entry->product_id??0 || !$entry->entry_quantity??0){
+                continue;
+            }
+            $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity);
         }
         return 'ok';
     }

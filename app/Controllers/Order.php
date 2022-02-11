@@ -23,7 +23,7 @@ class Order extends \App\Controllers\BaseController {
 
     public function itemCreate() {
         $order_store_id = $this->request->getVar('order_store_id');
-        $entry_list_json = $this->request->getVar('entry_list');
+        $entry_list_json = $this->request->getVar('entries');
         $entry_list = [];
         if ($entry_list_json) {
             $entry_list = json_decode($entry_list_json);
@@ -44,6 +44,9 @@ class Order extends \App\Controllers\BaseController {
 
     public function itemUpdate() {
         $data = $this->request->getJSON();
+        if(!$data){
+            return $this->fail('malformed_request');
+        }
         $OrderModel = model('OrderModel');
         $result = $OrderModel->itemUpdate($data);
         if ($result === 'forbidden') {

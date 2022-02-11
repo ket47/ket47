@@ -6,7 +6,7 @@ class Task extends \App\Controllers\BaseController{
     
     public function jobDo(){
         require_once '../app/ThirdParty/Credis/Client.php';
-        set_time_limit(0);
+        set_time_limit(3600);
         session_write_close();
         
         $time_limit = 60 * 1;

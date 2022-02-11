@@ -146,9 +146,9 @@ class OrderModel extends Model{
         if( !$this->permit($order->order_id,'w') ){
             return 'forbidden';
         }
-        if( isset($order->entry_list) ){
+        if( isset($order->entries) ){
             $EntryModel=model('EntryModel');
-            $EntryModel->listUpdate($order->order_id,$order->entry_list);
+            $EntryModel->listUpdate($order->order_id,$order->entries);
         }
         /*
          * IF owners are changed then update owner of entries
