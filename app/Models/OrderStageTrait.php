@@ -6,12 +6,14 @@ trait OrderStageTrait{
             'customer_created'=>    ['Создать'],
             'customer_deleted'=>    ['Удалить','negative'],
             ],
+        'customer_purged'=>[],
         'customer_deleted'=>[
             'customer_created'=>    ['Восстановить'],
+            'customer_purged'=>     ['Удалить окончательно']
             ],
         'customer_created'=>[
             'customer_confirmed'=>  ['Подтвердить заказ'],
-            'customer_deleted'=>    ['Удалить','negative'],
+            'customer_purged'=>     ['Удалить','negative'],
             ],
         'customer_confirmed'=>[
             'action_card_pay'=>     ['Оплатить картой','positive'],
@@ -136,6 +138,10 @@ trait OrderStageTrait{
     //ORDER STAGE HANDLING LISTENERS
     ////////////////////////////////////////////////
     
+    private function onCustomerPurged($order_id){
+        return $this->itemPurge($order_id);
+    }
+
     private function onCustomerDeleted($order_id){
         return $this->itemDelete($order_id);
     }
@@ -150,6 +156,10 @@ trait OrderStageTrait{
         if( !$order->order_sum_total??0 ){
             return 'order_is_empty';
         }
+
+        return 'ok';
+
+
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
         $next_start_time=time()+$timeout_min*60;

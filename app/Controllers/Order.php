@@ -21,15 +21,12 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($result);
     }
 
-    public function itemCreate() {
-        $order_store_id = $this->request->getVar('order_store_id');
-        $entry_list_json = $this->request->getVar('entries');
-        $entry_list = [];
-        if ($entry_list_json) {
-            $entry_list = json_decode($entry_list_json);
+    public function itemCreate($order_store_id=null) {
+        if( !$order_store_id ){
+            $order_store_id = $this->request->getVar('order_store_id');
         }
         $OrderModel = model('OrderModel');
-        $result = $OrderModel->itemCreate($order_store_id, $entry_list);
+        $result = $OrderModel->itemCreate($order_store_id);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
@@ -41,6 +38,25 @@ class Order extends \App\Controllers\BaseController {
         }
         return $this->respond($result);
     }
+
+    public function itemSave() {
+        $data = $this->request->getJSON();
+        if(!$data){
+            return $this->fail('malformed_request');
+        }
+        if( ($data->order_id??-1)<0 ){
+            if( !isset($data->order_store_id) ){
+                return $this->fail('nostoreid');
+            }
+            $result=$this->itemCreate($data->order_store_id);
+            if (!is_numeric($result)) {
+                return $result;
+            }
+            $data->order_id=$result;
+        }
+        return $this->itemUpdate();
+    }
+
 
     public function itemUpdate() {
         $data = $this->request->getJSON();

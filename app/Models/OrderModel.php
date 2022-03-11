@@ -103,7 +103,7 @@ class OrderModel extends Model{
         return $order;
     }
     
-    public function itemCreate( int $store_id, array $entry_list=null ){
+    public function itemCreate( int $store_id ){
         if( !$this->permit(null,'w') ){
             return 'forbidden';
         }
@@ -128,12 +128,6 @@ class OrderModel extends Model{
         $this->insert($new_order);
         $order_id=$this->db->insertID();
         $this->itemStageCreate( $order_id, 'customer_created' );
-        if($entry_list){
-            $this->itemUpdate((object)[
-                'order_id'=>$order_id,
-                'entry_list'=>$entry_list
-            ]);
-        }
         return $order_id;
     }
     
@@ -259,15 +253,19 @@ class OrderModel extends Model{
     }
 
     public function listCartGet(){
+        //timer('listcartget');
         $this->permitWhere('r');
         $this->join('order_group_list ogl',"order_group_id=group_id");
-        $this->where('group_type','customer_created');
+        $this->whereIn('group_type','(customer_created)');
         $this->select('order_id');
         $cart_ids=$this->get()->getResult();
         $cart_list=[];
+        //timer('listcartget');
         foreach($cart_ids as $cart){
             $cart_list[]=$this->itemGet($cart->order_id);
         }
+        //print_r(\Config\Services::timer()->getTimers());
+
         return $cart_list;
     }
     

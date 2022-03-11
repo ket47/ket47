@@ -41,6 +41,9 @@ class Entry extends \App\Controllers\BaseController{
         if( $result==='forbidden_at_this_stage' ){
             return $this->failForbidden($result);
         }
+        if( $result==='noentryid' ){
+            return $this->fail($result);
+        }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }

@@ -38,6 +38,9 @@ class EntryModel extends Model{
     
     
     private function itemEditAllow( $order ){
+        if( !($order->user_role??null) ){
+            return false;
+        }
         if( $order->user_role=='customer' && $order->stage_current=='customer_created' ){
             return true;
         }
@@ -84,11 +87,19 @@ class EntryModel extends Model{
             $this->where('product_id',$product_id);
             $this->set('entry_quantity',"$product_quantity",false);
             $this->update();
-            return 'updated';
+            
+            
+            $this->where('order_id',$order_id);
+            $this->where('product_id',$product_id);
+            $entry_id=$this->get()->getRow('entry_id');
+            return $entry_id;
         }
     }
     
     public function itemUpdate( $entry ){
+        if( !($entry->entry_id??0) ){
+            return 'noentryid';
+        }
         $this->permitWhere('w');
         $stock_check_sql="SELECT 
                 product_quantity,
@@ -140,11 +151,26 @@ class EntryModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
+    private $listGetSelectedFields="
+        entry_id,
+        order_id,
+        product_id,
+        entry_text,
+        entry_quantity,
+        entry_price,
+        ROUND(entry_quantity*entry_price,2) entry_sum,
+        image_hash,
+        product_unit,
+        product_quantity,
+        product_quantity_min,
+        is_produced
+    ";
     public function listGet( $order_id ){
         $this->permitWhere('r');
-        $this->select("*");
-        $this->select("ROUND(entry_quantity*entry_price,2) entry_sum");
+        $this->select($this->listGetSelectedFields);
         $this->where('order_id',$order_id);
+        $this->join('image_list','image_holder_id=product_id AND image_holder="product" AND is_main=1','left');
+        $this->join('product_list','product_id','left');
         $entries=$this->get()->getResult();
         return $entries;
     }
