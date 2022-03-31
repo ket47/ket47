@@ -12,11 +12,11 @@ class CourierModel extends Model{
         'courier_vehicle',
         'courier_tax_num',
         'current_order_id',
+        'courier_comment',
         'deleted_at'
     ];
     protected $validationRules    = [
-        'courier_tax_num'   => 'exact_length[0,10,12]',
-        'owner_id'          => 'is_unique[courier_list.owner_id]'
+        'courier_tax_num'   => 'exact_length[0,10,12]'
     ];
 
     protected $useSoftDeletes = true;
@@ -37,23 +37,25 @@ class CourierModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $courier_id ){
-        $this->permitWhere('r');
-        if( !$this->permit($courier_id,'r') ){
-            return 'forbidden';
+    public function itemGet( $courier_id=null ){
+        if( $courier_id ){
+            $this->where('courier_id',$courier_id);
+        } else {
+            $this->where('user_id',session()->get('user_id'));
         }
+        $this->permitWhere('r');
         $this->select('courier_list.*,user_list.user_id,location_address,location_latitude,location_longitude');
-        $this->where('courier_id',$courier_id);
         $this->join('user_list','user_id=courier_list.owner_id');
         $this->join('location_list','location_holder_id=courier_id AND is_main=1','left');
         $courier = $this->get()->getRow();
-        $CourierGroupMemberModel=model('CourierGroupMemberModel');
-        $courier->member_of_groups=$CourierGroupMemberModel->memberOfGroupsGet($courier_id);
-        unset($courier->user_pass);
         
         if( !$courier ){
             return 'notfound';
         }
+        $courier_id=$courier->courier_id;
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        $courier->member_of_groups=$CourierGroupMemberModel->memberOfGroupsGet($courier_id);
+        unset($courier->user_pass);
         $filter=[
             'image_holder'=>'courier',
             'image_holder_id'=>$courier->courier_id,
@@ -115,8 +117,40 @@ class CourierModel extends Model{
         }
         return 'error';
     }
+
+    public function itemUpdateStatus($courier_id,$group_type){
+        if( !$this->permit($courier_id,'w') ){
+            return 'forbidden';
+        }
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        $leave_other_groups=true;
+        $ok=$CourierGroupMemberModel->joinGroupByType( $courier_id, $group_type, $leave_other_groups );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'error';
+    }
+
+    private function itemDeleteValidate($courier_id=null,$user_id=null){
+        if($courier_id){
+            $this->where('courier_id',$courier_id);
+        }
+        if($user_id){
+            $this->where('owner_id',$user_id);
+        }
+        $courier = $this->get()->getRow();
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        if( $CourierGroupMemberModel->isMemberOf($courier->courier_id,'idle') ){
+            return true;
+        }
+        return false;
+    }
     
     public function itemDelete($courier_id=null,$user_id=null){
+        $can_delete=$this->itemDeleteValidate($courier_id,$user_id);
+        if( !$can_delete ){
+            return 'invalid_status';
+        }
         $this->permitWhere('w');
         if($courier_id){
             $this->where('courier_id',$courier_id);
@@ -124,12 +158,14 @@ class CourierModel extends Model{
         if($user_id){
             $this->where('owner_id',$user_id);
         }
+
         $this->transStart();
         $UserGroupMemberModel=model('UserGroupMemberModel');
         $UserGroupMemberModel->leaveGroupByType($user_id,'courier');
         $this->delete();
+        $result=$this->db->affectedRows()?'ok':'idle';
         $this->transComplete();
-        return $this->db->affectedRows()?'ok':'idle';
+        return $result;
     }
     
     public function itemUnDelete( $courier_id ){
@@ -149,7 +185,98 @@ class CourierModel extends Model{
         $this->update(['courier_id'=>$courier_id],['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
-    
+
+    public function isReadyCourier($courier_id=null){
+        $isAdmin=sudo();
+        if( $isAdmin ){
+            return true;
+        }
+        $user=session()->get('user_data');
+        $isCourier=str_contains($user->member_of_groups->group_types??'','courier');
+        if( !$isCourier ){
+            return false;
+        }
+        $this->permitWhere('r');
+        $this->join('courier_group_member_list','member_id=courier_id');
+        $this->join('courier_group_list','group_id');
+        $this->where('group_type','ready');
+        $this->where('courier_list.is_disabled','0');
+        if($courier_id){
+            $this->where('courier_id',$courier_id);
+        } else {
+            $this->where('courier_list.owner_id',$user->user_id);
+        }
+        return $this->get()->getRow('courier_id')?true:false;
+    }
+
+    public function listJobGet( $courier_id ){
+        $isReadyCourier=$this->isReadyCourier();
+        if( !$isReadyCourier ){
+            //return [];
+        }
+        $point_distance=150000;//15km
+
+        $LocationModel=model('LocationModel');
+        $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
+
+        $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
+        $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
+        $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
+        $LocationModel->join('order_list','store_id=order_store_id');
+        $LocationModel->join('order_group_member_list ogml','member_id=order_id');
+        $LocationModel->join('order_group_list ogl','group_id');
+        $LocationModel->where('group_type','delivery_search');
+
+        $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
+        if( !is_array($job_list) ){
+            return 'not_found';
+        }
+        return $job_list;
+    }
+
+    public function itemJobGet( $order_id ){
+        $isReadyCourier=$this->isReadyCourier();
+        if( !$isReadyCourier ){
+            return [];
+        }
+        $OrderModel=model("OrderModel");
+        $LocationModel=model('LocationModel');
+
+        $job=$OrderModel->where('order_id',$order_id)->get()->getRow();
+        if( !$job ){
+            return null;
+        }
+        $job->finish_location_address=$LocationModel->itemGet($job->order_finish_location_id??0)->location_address??'';
+        $job->start_finish_distance=$LocationModel->distanceGet($job->order_start_location_id??0,$job->order_finish_location_id??0);
+        return $job;
+    }
+
+    public function itemJobStart( $order_id, $courier_id ){
+        $isReadyCourier=$this->isReadyCourier($courier_id);
+        if( !$isReadyCourier ){
+            return [];
+        }
+
+
+
+        $courier_user_id=$this->where($courier_id)->get()->getRow('owner_id');
+
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $OrderModel=model("OrderModel");
+
+        $owner_ally_ids=$OrderModel->where('order_id',$order_id)->get()->getRow('owner_ally_ids');
+        $this->transStart();
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        $OrderModel->update($order_id,['order_courier_id'=>$courier_id]);
+
+
+        
+        q($OrderModel);
+        $result=$this->db->affectedRows()?'ok':'idle';
+        $this->transComplete();
+        return $result;
+    }
+
     
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION

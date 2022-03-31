@@ -222,11 +222,8 @@ $(Order.init);
                 
                 <?php 
                 switch($order->updated_by){
-                    case $order->order_customer_id:
+                    case $order->owner_id:
                         $updated_by=$order->customer;
-                        break;
-                    case $order->order_courier_user_id:
-                        $updated_by=$order->courier;
                         break;
                     default :
                         $updated_by=model('UserModel')->itemGet($order->updated_by,'basic');
@@ -280,6 +277,7 @@ $(Order.init);
         <h3>Изображения </h3>
         <div class="image_list">
                 <?php if (isset($order->images)): foreach ($order->images as $image): ?>
+                    <?php if(!$image->image_hash)continue;?>
                     <div style="background-image: url(/image/get.php/<?= $image->image_hash ?>.160.90.webp);"
                          class="<?= $image->deleted_at ? 'deleted' : '' ?>">
                         <a href="javascript:ItemList.imageDelete(<?= $image->image_id ?>)"><div class="fa fa-trash" style="color:red"></div></a>

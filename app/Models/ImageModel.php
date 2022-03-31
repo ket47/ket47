@@ -47,6 +47,7 @@ class ImageModel extends Model{
         //$data['owner_id']=session()->get('user_id');
         $data['image_hash']=md5(microtime().rand(1,1000));
         if( $this->insert($data) ){
+            $this->itemUpdateMainOfHolder($data['image_holder'],$data['image_holder_id']);
             return $data['image_hash'];
         }
         return null;
@@ -61,13 +62,17 @@ class ImageModel extends Model{
         if(!$image){
             return 'ok';
         }
-        $this->where('image_holder',$image->image_holder);
-        $this->where('image_holder_id',$image->image_holder_id);
+        return $this->itemUpdateMainOfHolder($image->image_holder,$image->image_holder_id);
+    }
+
+    private function itemUpdateMainOfHolder($image_holder,$image_holder_id){
+        $this->where('image_holder',$image_holder);
+        $this->where('image_holder_id',$image_holder_id);
         $this->set(['is_main'=>0]);
         $this->update();
         
-        $this->where('image_holder',$image->image_holder);
-        $this->where('image_holder_id',$image->image_holder_id);
+        $this->where('image_holder',$image_holder);
+        $this->where('image_holder_id',$image_holder_id);
         $this->where('is_disabled',0);
         $this->where('deleted_at IS NULL');
         $this->orderBy('image_order');

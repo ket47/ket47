@@ -18,6 +18,11 @@
                     alert("Отметьте адрес на карте");
                     return;
                 }
+                var addressErase="Россия, Республика Крым, ";
+
+
+                App._Location_pickerModal.data.addressSelected=App._Location_pickerModal.data.addressSelected.replace(addressErase,'');
+
                 App._Location_pickerModal.handler.notify('selected',App._Location_pickerModal.data);
                 App._Location_pickerModal.actions.close();
             },

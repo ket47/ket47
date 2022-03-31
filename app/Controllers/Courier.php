@@ -68,6 +68,21 @@ class Courier extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+
+    public function itemUpdateStatus(){//similar to above function
+        $courier_id=$this->request->getVar('courier_id');
+        $group_type=$this->request->getVar('group_type');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemUpdateStatus($courier_id,$group_type);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);
+    }
     
     public function itemDelete(){
         $courier_id=$this->request->getVar('courier_id');
@@ -118,8 +133,27 @@ class Courier extends \App\Controllers\BaseController{
     
     
     
-    
-    
+    public function listJobGet(){
+        $courier_id=$this->request->getVar('courier_id');
+        $CourierModel=model('CourierModel');
+        $job_list=$CourierModel->listJobGet($courier_id);
+        return $this->respond($job_list);
+    }
+
+    public function itemJobGet(){
+        $order_id=$this->request->getVar('order_id');
+        $CourierModel=model('CourierModel');
+        $job=$CourierModel->itemJobGet($order_id);
+        return $this->respond($job);
+    }
+
+    public function itemJobStart(){
+        $order_id=$this->request->getVar('order_id');
+        $courier_id=$this->request->getVar('courier_id');
+        $CourierModel=model('CourierModel');
+        $job=$CourierModel->itemJobStart($order_id,$courier_id);
+        return $this->respond($job);
+    }
     
     public function listGet(){
         $filter=[
@@ -173,11 +207,23 @@ class Courier extends \App\Controllers\BaseController{
         return $this->respondCreated('ok');
     }
     
+
+    private function imagePurgeCurrent($courier_id){
+        $CourierModel=model('CourierModel');
+        $courier=$CourierModel->itemGet($courier_id);
+        $courierImageId=$courier->images[0]->image_id??0;
+        if($courierImageId){
+            $CourierModel->imageDelete($courierImageId);
+        }
+    }
+
     private function fileSaveImage( $image_holder_id, $file ){
         $image_data=[
             'image_holder'=>'courier',
             'image_holder_id'=>$image_holder_id
         ];
+        $this->imagePurgeCurrent($image_holder_id);
+
         $CourierModel=model('CourierModel');
         $image_hash=$CourierModel->imageCreate($image_data);
         if( !$image_hash ){
@@ -232,29 +278,25 @@ class Courier extends \App\Controllers\BaseController{
 
     public function locationAdd(){
         $location_holder_id=$this->request->getVar('location_holder_id');
-        //$location_type_id=$this->request->getVar('location_type_id');
         $location_longitude=$this->request->getVar('location_longitude');
         $location_latitude=$this->request->getVar('location_latitude');
         $location_address=$this->request->getVar('location_address');
         
         $data=[
-            'location_holder'=>'courier',
+            'location_holder'   =>'courier',
             'location_holder_id'=>$location_holder_id,
-            //'location_type_id'=>$location_type_id,
             'location_longitude'=>$location_longitude,
-            'location_latitude'=>$location_latitude,
-            'location_address'=>$location_address,
-            'is_disabled'=>0,
-            'owner_id'=>$location_holder_id
+            'location_latitude' =>$location_latitude,
+            'location_address'  =>$location_address
         ];
         $CourierModel=model('CourierModel');
         $LocationModel=model('LocationModel');
-        if( !$CourierModel->permit($data['owner_id'],'w') ){
+        if( !$CourierModel->permit($location_holder_id,'w') ){
             return $this->failForbidden('forbidden');
         }
         $result= $LocationModel->itemAdd($data);
         if( $LocationModel->errors() ){
-            return $this->failValidationError(json_encode($LocationModel->errors()));
+            return $this->failValidationErrors(json_encode($LocationModel->errors()));
         }
         return $this->respondCreated($result);
     }

@@ -8,9 +8,18 @@ class Order extends \App\Controllers\BaseController {
 
     use ResponseTrait;
 
-    public function itemGet() {
-        $order_id = $this->request->getVar('order_id');
+    public function itemGet($order_id=null) {
+        if( !$order_id ){
+            $order_id = $this->request->getVar('order_id');
+        }
         $OrderModel = model('OrderModel');
+
+        $OrderModel->itemUpdateOwners($order_id);
+
+
+        return;
+
+
         $result = $OrderModel->itemGet($order_id);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
@@ -22,9 +31,7 @@ class Order extends \App\Controllers\BaseController {
     }
 
     public function itemCreate($order_store_id=null) {
-        if( !$order_store_id ){
-            $order_store_id = $this->request->getVar('order_store_id');
-        }
+        $order_store_id = $this->request->getVar('order_store_id');
         $OrderModel = model('OrderModel');
         $result = $OrderModel->itemCreate($order_store_id);
         if ($result === 'forbidden') {
@@ -39,22 +46,35 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($result);
     }
 
-    public function itemSave() {
+    public function itemSync() {
         $data = $this->request->getJSON();
         if(!$data){
             return $this->fail('malformed_request');
         }
-        if( ($data->order_id??-1)<0 ){
+        $OrderModel = model('OrderModel');
+
+        $order_id_exists=false;
+        if( ($data->order_id??-1)>0 ){
+            $order_id_exists=$OrderModel->where($data->order_id)->get()->getRow('order_id');
+        }
+        if( !$order_id_exists ){
             if( !isset($data->order_store_id) ){
                 return $this->fail('nostoreid');
             }
-            $result=$this->itemCreate($data->order_store_id);
+            $result=$OrderModel->itemCreate($data->order_store_id);
             if (!is_numeric($result)) {
-                return $result;
+                return $this->fail($result);
             }
             $data->order_id=$result;
         }
-        return $this->itemUpdate();
+        $result = $OrderModel->itemUpdate($data);
+        if ($result === 'forbidden') {
+            return $this->failForbidden($result);
+        }
+        if ($OrderModel->errors()) {
+            return $this->failValidationErrors($OrderModel->errors());
+        }
+        return $this->itemGet($data->order_id);
     }
 
 
@@ -99,7 +119,7 @@ class Order extends \App\Controllers\BaseController {
 
     public function itemUnDelete() {
         $order_id = $this->request->getVar('order_id');
-        return $this->itemStage($order_id, 'customer_created');
+        return $this->itemStage($order_id, 'customer_cart');
     }
 
     public function itemDisable() {
@@ -139,17 +159,12 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($order_list);
     }
     
-    public function listPreviewGet(){
-        $OrderModel=model('OrderModel');
-        $order_list=$OrderModel->listPreviewGet();
-        return $this->respond($order_list);
-    }
 
-    public function listCartGet(){
-        $OrderModel=model('OrderModel');
-        $order_list=$OrderModel->listCartGet();
-        return $this->respond($order_list);
-    }
+    // public function listCartGet(){
+    //     $OrderModel=model('OrderModel');
+    //     $order_list=$OrderModel->listCartGet();
+    //     return $this->respond($order_list);
+    // }
 
     public function listStageGet() {
         $OrderGroupModel = model('OrderGroupModel');

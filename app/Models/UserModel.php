@@ -52,14 +52,7 @@ class UserModel extends Model{
     private $itemCache=[];
     public function itemGet( $user_id, $mode='all' ){
         if( $user_id==-1 ){
-            return (object)[
-                'user_id'=>-1,
-                'user_name'=>'Guest',
-                'user_phone'=>'-',
-                'member_of_groups'=>(object)[
-                    'group_types'=>'guest'
-                ]
-            ];
+            return $this->itemGetGuest();
         }
         if( $user_id==-100 ){
             return (object)[
@@ -92,6 +85,20 @@ class UserModel extends Model{
         $user->location_main=$LocationModel->itemMainGet('user', $user_id);
         $this->itemCache[$mode.$user_id]=$user;
         return $user;
+    }
+
+    private function itemGetGuest(){
+        $LocationModel=model('LocationModel');
+        $default_location=$LocationModel->itemMainGet('default_location','-1');
+        return (object)[
+            'user_id'=>-1,
+            'user_name'=>'Guest',
+            'user_phone'=>'-',
+            'member_of_groups'=>(object)[
+                'group_types'=>'guest'
+            ],
+            'location_main'=>$default_location
+        ];
     }
     
     public function itemCreate( $user_data ){
@@ -226,6 +233,8 @@ class UserModel extends Model{
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }
+
+
     /////////////////////////////////////////////////////
     //SYSTEM LOGIN SECTION
     /////////////////////////////////////////////////////
@@ -291,6 +300,7 @@ class UserModel extends Model{
         if( $user->deleted_at ){
             return 'user_is_deleted';
         }
+
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
         $this->protect(false)
@@ -303,7 +313,6 @@ class UserModel extends Model{
     public function getSignedUser(){
         return $this->itemGet( session()->get('user_id') );
     }
-
     
     public function getUnverifiedUserIdByPhone($user_phone_cleared){
         $sql="SELECT 

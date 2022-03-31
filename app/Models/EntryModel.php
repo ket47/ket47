@@ -41,13 +41,13 @@ class EntryModel extends Model{
         if( !($order->user_role??null) ){
             return false;
         }
-        if( $order->user_role=='customer' && $order->stage_current=='customer_created' ){
+        if( $order->user_role=='customer' && $order->stage_current=='customer_cart' ){
             return true;
         }
         if( $order->user_role=='supplier' && $order->stage_current=='supplier_corrected' ){
             return true;
         }
-        if( $order->user_role=='admin' && in_array($order->stage_current,['supplier_corrected','customer_created']) ){
+        if( $order->user_role=='admin' && in_array($order->stage_current,['supplier_corrected','customer_cart']) ){
             return true;
         }
         return false;
@@ -163,7 +163,9 @@ class EntryModel extends Model{
         product_unit,
         product_quantity,
         product_quantity_min,
-        is_produced
+        is_produced,
+        order_entry_list.deleted_at,
+        entry_comment
     ";
     public function listGet( $order_id ){
         $this->permitWhere('r');

@@ -70,11 +70,11 @@ class GroupMemberLayer extends Model{
                 ->get()->getResult();
     }
     
-    public function joinGroupByType($member_id,$member_group_type){
+    public function joinGroupByType($member_id,$member_group_type,$leave_other_groups=false){
         $group_id=$this
                 ->query("SELECT group_id FROM {$this->groupTable} WHERE group_type='$member_group_type'")
                 ->getRow('group_id');
-        return $this->joinGroup($member_id,$group_id);
+        return $this->joinGroup($member_id,$group_id,$leave_other_groups);
     }
     
     public function joinGroup($member_id,$group_id,$leave_other_groups=false){

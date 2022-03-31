@@ -12,8 +12,9 @@ class OrderModel extends Model{
     protected $primaryKey = 'order_id';
     protected $allowedFields = [
         'order_store_id',
-        'order_customer_id',
-        'order_courier_user_id',
+        'order_courier_id',
+        'order_start_location_id',
+        'order_finish_location_id',
         'order_sum_shipping',
         'order_sum_total',
         'order_sum_tax',
@@ -26,13 +27,14 @@ class OrderModel extends Model{
     
     private function itemUserRoleCalc(){
         $user_id=session()->get('user_id');
+        $courier_id=session()->get('courier_id');//must be inited at login
         if( sudo() ){
             $this->select("'admin' user_role");
         }
         else {
             $this->select("
                 IF(order_list.owner_id=$user_id,'customer',
-                IF(order_list.order_courier_user_id=$user_id,'courier',
+                IF(order_list.order_courier_id='$courier_id','courier',
                 IF('$user_id' IN (order_list.owner_ally_ids),'supplier',
                 'other'))) user_role
                 ");
@@ -89,8 +91,8 @@ class OrderModel extends Model{
         $order->entries=    $EntryModel->listGet($order_id);
         
         $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
-        $order->customer=   $UserModel->itemGet($order->order_customer_id,'basic');
-        $order->courier=    $UserModel->itemGet($order->order_courier_user_id,'basic');
+        $order->customer=   $UserModel->itemGet($order->owner_id,'basic');
+        $order->courier=    [];//$CourierModel->itemGet($order->order_courier_id,'basic');
         $order->is_writable=$this->permit($order_id,'w');
         
         if( sudo() ){
@@ -110,7 +112,7 @@ class OrderModel extends Model{
         $user_id=session()->get('user_id');
         
         $StoreModel=model('StoreModel');
-        $store=$StoreModel->itemGet($store_id);
+        $store=$StoreModel->itemGet($store_id,'basic');
         if( !$store ){
             return 'nostore';
         }
@@ -119,15 +121,14 @@ class OrderModel extends Model{
         $order_owner_allys=$store->owner_ally_ids?"$store->owner_id,$store->owner_ally_ids":"$store->owner_id";
         $new_order=[
             'order_store_id'=>$store_id,
-            'order_customer_id'=>$user_id,
             'order_shipping_fee'=>$this->shippingFeeGet(),
             'order_tax'=>0,
             'owner_id'=>$user_id,
-            'owner_ally_id'=>$order_owner_allys
+            'owner_ally_ids'=>$order_owner_allys
         ];
         $this->insert($new_order);
         $order_id=$this->db->insertID();
-        $this->itemStageCreate( $order_id, 'customer_created' );
+        $this->itemStageCreate( $order_id, 'customer_cart' );
         return $order_id;
     }
     
@@ -143,6 +144,10 @@ class OrderModel extends Model{
         if( isset($order->entries) ){
             $EntryModel=model('EntryModel');
             $EntryModel->listUpdate($order->order_id,$order->entries);
+            $order_calc=$EntryModel->listSumGet($order->order_id);
+            if( $order_calc ){
+                $order->order_sum_total=$order_calc->order_sum_total;
+            }
         }
         /*
          * IF owners are changed then update owner of entries
@@ -151,6 +156,43 @@ class OrderModel extends Model{
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
         return $this->db->affectedRows()>0?'ok':'idle';
+    }
+
+    public function itemUpdateOwners( $order_id ){
+        $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM store_list WHERE order_store_id=store_id) store_owners");
+        $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM courier_list WHERE order_courier_id=courier_id) courier_owners");
+        $all_owners=$this->getWhere(['order_id'=>$order_id])->getRow();
+        $owners=array_unique(explode(',',"0,$all_owners->store_owners,$all_owners->courier_owners"),SORT_NUMERIC);
+        array_shift($owners);
+        $owner_list=implode(',',$owners);
+
+        $this->allowedFields[]='owner_ally_ids';
+        $this->protect(false);
+        $this->join('order_entry_list el','order_id');
+        $this->join('transaction_list tl',"holder_id=order_id AND holder='order'");
+        $this->where('order_id',$order_id);
+        $this->update($order_id,
+            [
+            'el.owner_ally_ids'=>$owner_list,
+            'transaction_list.owner_ally_ids'=>$owner_list,
+            'order_list.owner_ally_ids'=>$owner_list
+        ]);
+
+
+
+
+        q($this);
+
+        // $this->protect(false);
+        // if($owner_id){
+        //     $this->update($order_id,['owner_id'=>$owner_id]);
+        // }
+        // if($owner_ally_ids){
+        //     $order_owner_allys_id=$this->where('order_id',$order_id)->get()->getRow('owner_ally_ids');
+        //     $order_owner_allys_id=$order_owner_allys_id?"$order_owner_allys_id,$owner_ally_ids":"$owner_ally_ids";
+        //     $this->update($order_id,['owner_ally_ids'=>$order_owner_allys_id]);
+        // }
+        // $this->protect(true);
     }
     
     public function itemCalculate( $order_id ){
@@ -215,11 +257,16 @@ class OrderModel extends Model{
         if($filter['order_store_id']??0){
             $this->where('order_store_id',$filter['order_store_id']);
         }
-        if($filter['order_group_id']??0){
-            $this->whereIn('order_group_id',$filter['order_group_id']);
-        }
         if($filter['order_group_type']??0){
-            $this->whereIn('order_group_type',$filter['order_group_type']);
+            $firstChar=substr($filter['order_group_type'],0,1);
+            if( $firstChar=='!' ){
+                $this->where('ogl.group_type <>',substr($filter['order_group_type'],1));
+            } else {
+                $this->where('ogl.group_type',$filter['order_group_type']);
+            }
+        }
+        /*if($filter['order_group_id']??0){
+            $this->whereIn('order_group_id',$filter['order_group_id']);
         }
         if($filter['date_start']??0){
             $this->where('created_at>',$filter['date_start']);
@@ -227,9 +274,16 @@ class OrderModel extends Model{
         if($filter['date_finish']??0){
             $this->where('created_at<',$filter['date_finish']);
         }
+        if( $filter['user_role']??0 ){
+            $this->havingIn('user_role',$filter['user_role']);
+        }*/
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
+        $this->join('location_list ll',"location_holder='store' AND location_holder_id=order_store_id AND ll.is_main=1",'left');
+        $this->join('store_list sl',"store_id=order_store_id",'left');
+
+        $this->select("ll.location_address,store_name");
         $this->select("{$this->table}.*,group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
@@ -238,36 +292,39 @@ class OrderModel extends Model{
         return $this->get()->getResult();
     }
 
-    public function listPreviewGet(){
-        $customer=$this
-                ->listGet(['limit'=>3,'user_role'=>'customer']);
-        $courier=$this
-                ->listGet(['limit'=>3,'user_role'=>'courier']);
-        $supplier=$this
-                ->listGet(['limit'=>3,'user_role'=>'supplier']);
-        return [
-            'customer'=>$customer,
-            'courier'=>$courier,
-            'supplier'=>$supplier
-        ];
-    }
 
-    public function listCartGet(){
-        //timer('listcartget');
-        $this->permitWhere('r');
-        $this->join('order_group_list ogl',"order_group_id=group_id");
-        $this->whereIn('group_type','(customer_created)');
-        $this->select('order_id');
-        $cart_ids=$this->get()->getResult();
-        $cart_list=[];
-        //timer('listcartget');
-        foreach($cart_ids as $cart){
-            $cart_list[]=$this->itemGet($cart->order_id);
-        }
-        //print_r(\Config\Services::timer()->getTimers());
+    
 
-        return $cart_list;
-    }
+    // public function listPreviewGet(){
+    //     $customer=$this
+    //             ->listGet(['limit'=>3,'user_role'=>'customer']);
+    //     $courier=$this
+    //             ->listGet(['limit'=>3,'user_role'=>'courier']);
+    //     $supplier=$this
+    //             ->listGet(['limit'=>3,'user_role'=>'supplier']);
+    //     return [
+    //         'customer'=>$customer,
+    //         'courier'=>$courier,
+    //         'supplier'=>$supplier
+    //     ];
+    // }
+
+    // public function listCartGet(){
+    //     //timer('listcartget');
+    //     $this->permitWhere('r');
+    //     $this->join('order_group_list ogl',"order_group_id=group_id");
+    //     $this->whereIn('group_type','(customer_cart)');
+    //     $this->select('order_id');
+    //     $cart_ids=$this->get()->getResult();
+    //     $cart_list=[];
+    //     //timer('listcartget');
+    //     foreach($cart_ids as $cart){
+    //         $cart_list[]=$this->itemGet($cart->order_id);
+    //     }
+    //     //print_r(\Config\Services::timer()->getTimers());
+
+    //     return $cart_list;
+    // }
     
     public function listCreate(){
         return false;

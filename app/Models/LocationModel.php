@@ -57,7 +57,7 @@ class LocationModel extends Model{
         if( $location_id ){
             $this->allowedFields[]='is_disabled';
             $this->allowedFields[]='owner_id';
-            $this->itemMainReset( $data['location_holder'], $data['location_holder_id'], $location_id );
+            $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
             $data['location_order']=$inserted_count+1;
             $data['is_main']=1;
             $this->update($location_id,$data);
@@ -66,6 +66,20 @@ class LocationModel extends Model{
             return 'ok';
         }
         return 'idle';
+    }
+
+    public function itemAdd($data){
+        $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
+        $data['owner_id']=session()->get('user_id');
+        $data['is_disabled']=0;
+        $data['is_main']=1;
+        $this->allowedFields[]='is_disabled';
+        $this->allowedFields[]='owner_id';
+        $this->set($data);
+        $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
+        $this->insert();
+        $location_id=$this->getInsertID();
+        return $location_id?'ok':'idle';
     }
     
     public function itemUpdate( $data ){

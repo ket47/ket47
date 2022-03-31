@@ -3,37 +3,39 @@ namespace App\Models;
 trait OrderStageTrait{
     protected $stageMap=[
         ''=>[
-            'customer_created'=>    ['Создать'],
+            'customer_cart'=>       ['Создать'],
             'customer_deleted'=>    ['Удалить','negative'],
             ],
         'customer_purged'=>[],
         'customer_deleted'=>[
-            'customer_created'=>    ['Восстановить'],
+            'customer_cart'=>       ['Восстановить'],
             'customer_purged'=>     ['Удалить окончательно']
             ],
-        'customer_created'=>[
+        'customer_cart'=>[
             'customer_confirmed'=>  ['Подтвердить заказ'],
             'customer_purged'=>     ['Удалить','negative'],
             ],
         'customer_confirmed'=>[
             'action_card_pay'=>     ['Оплатить картой','positive'],
-            'customer_created'=>    ['Отменить заказ'],
+            'customer_cart'=>       ['Отменить заказ'],
             'customer_payed_card'=> [],
             ],
         'customer_payed_card'=>[
-            'customer_start'=>      [],
+            'delivery_search'=>      [],
             ],
+        'delivery_search'=>[
+            'customer_start'=>      [],
+        ],
         'customer_start'=>[
             'supplier_start'=>      ['Начать подготовку'],
             'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-            'delivery_start'=>      ['Начать доставку'],
             'customer_refunded'=>   []//payment can be canceled by uniteller...
             ],
         
         
         
         'supplier_rejected'=>[
-            'customer_created'=>    ['--reset'],
+            'customer_cart'=>    ['--reset'],
             'customer_refunded'=>   [],
             ],
         'supplier_reclaimed'=>[
@@ -146,7 +148,7 @@ trait OrderStageTrait{
         return $this->itemDelete($order_id);
     }
     
-    private function onCustomerCreated($order_id){
+    private function onCustomerCart($order_id){
         $this->itemUnDelete($order_id);
         return 'ok';
     }
@@ -157,16 +159,21 @@ trait OrderStageTrait{
             return 'order_is_empty';
         }
 
-        return 'ok';
+        $LocationModel=model('LocationModel');
+        $order_update=[
+            'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
+            'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id,
+        ];
+        $this->update($order_id,$order_update);
 
 
         $PrefModel=model('PrefModel');
-        $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout','pref_value',0);
+        $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
             'task_name'=>"customer_confrimed Rollback #$order_id",
             'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_created',$order_id]]
+                    ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                 ],
             'is_singlerun'=>1,
             'task_next_start_time'=>$next_start_time
@@ -201,7 +208,7 @@ trait OrderStageTrait{
         if($order->order_sum_total!=$data->total){//would be wrong to deny or not???????
             //return 'wrong_amount';
         }
-        $order_started=$this->itemStageCreate($order_id, 'customer_start');
+        $order_started=$this->itemStageCreate($order_id, 'delivery_search');
         if( $transaction_created=='ok' && $order_started=='ok' ){
             return 'ok';
         }
@@ -333,10 +340,7 @@ trait OrderStageTrait{
     
     
     private function onDeliverySearch( $order_id ){
-        /*
-         * should we create joblist????
-         */
-        return 'ok';
+        return $this->itemStageCreate($order_id, 'customer_start');
     }
     
     private function onSupplierRejected( $order_id ){

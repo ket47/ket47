@@ -14,7 +14,9 @@
             <div style="display: contents" class="<?= $order->is_disabled ? 'item_disabled' : '' ?> <?= $order->deleted_at ? 'item_deleted' : '' ?>">
                 <div><?=$i+1?></div>
                 <div style="height: 50px;">
+                    <?php if($order->image_hash): ?>
                     <img src="/image/get.php/<?= $order->image_hash ?>.50.50.webp" alt=" "/>
+                    <?php endif;?>
                 </div>
                 <div><?= $order->user_name ?></div>
                 <div><?= $order->user_phone ?></div>
