@@ -166,33 +166,20 @@ class OrderModel extends Model{
         array_shift($owners);
         $owner_list=implode(',',$owners);
 
-        $this->allowedFields[]='owner_ally_ids';
-        $this->protect(false);
-        $this->join('order_entry_list el','order_id');
-        $this->join('transaction_list tl',"holder_id=order_id AND holder='order'");
-        $this->where('order_id',$order_id);
-        $this->update($order_id,
-            [
-            'el.owner_ally_ids'=>$owner_list,
-            'transaction_list.owner_ally_ids'=>$owner_list,
-            'order_list.owner_ally_ids'=>$owner_list
-        ]);
-
-
-
-
-        q($this);
-
-        // $this->protect(false);
-        // if($owner_id){
-        //     $this->update($order_id,['owner_id'=>$owner_id]);
-        // }
-        // if($owner_ally_ids){
-        //     $order_owner_allys_id=$this->where('order_id',$order_id)->get()->getRow('owner_ally_ids');
-        //     $order_owner_allys_id=$order_owner_allys_id?"$order_owner_allys_id,$owner_ally_ids":"$owner_ally_ids";
-        //     $this->update($order_id,['owner_ally_ids'=>$order_owner_allys_id]);
-        // }
-        // $this->protect(true);
+        $sql="
+            UPDATE
+                order_list ol
+                    LEFT JOIN
+                order_entry_list el USING(order_id)
+                    LEFT JOIN
+                transaction_list tl ON holder_id=order_id AND holder='order'
+            SET
+                ol.owner_ally_ids='$owner_list',
+                el.owner_ally_ids='$owner_list',
+                tl.owner_ally_ids='$owner_list'
+            WHERE
+                ol.order_id='$order_id'";
+        $this->query($sql);
     }
     
     public function itemCalculate( $order_id ){
