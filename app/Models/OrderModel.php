@@ -117,17 +117,15 @@ class OrderModel extends Model{
             return 'nostore';
         }
         $this->allowedFields[]='owner_id';
-        $this->allowedFields[]='owner_ally_ids';
-        $order_owner_allys=$store->owner_ally_ids?"$store->owner_id,$store->owner_ally_ids":"$store->owner_id";
         $new_order=[
             'order_store_id'=>$store_id,
             'order_shipping_fee'=>$this->shippingFeeGet(),
             'order_tax'=>0,
             'owner_id'=>$user_id,
-            'owner_ally_ids'=>$order_owner_allys
         ];
         $this->insert($new_order);
         $order_id=$this->db->insertID();
+        $this->itemUpdateOwners($order_id);
         $this->itemStageCreate( $order_id, 'customer_cart' );
         return $order_id;
     }
@@ -149,13 +147,12 @@ class OrderModel extends Model{
                 $order->order_sum_total=$order_calc->order_sum_total;
             }
         }
-        /*
-         * IF owners are changed then update owner of entries
-         */
         //$TransactionModel=model('TransactionModel');
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
-        return $this->db->affectedRows()>0?'ok':'idle';
+        $update_result=$this->db->affectedRows()>0?'ok':'idle';
+        $this->itemUpdateOwners($order->order_id);
+        return $update_result;
     }
 
     public function itemUpdateOwners( $order_id ){

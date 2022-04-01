@@ -136,15 +136,27 @@ class Courier extends \App\Controllers\BaseController{
     public function listJobGet(){
         $courier_id=$this->request->getVar('courier_id');
         $CourierModel=model('CourierModel');
-        $job_list=$CourierModel->listJobGet($courier_id);
-        return $this->respond($job_list);
+        $result=$CourierModel->listJobGet($courier_id);
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        if( $result==='notready' ){
+            return $this->fail($result);
+        }
+        return $this->respond($result);
     }
 
     public function itemJobGet(){
         $order_id=$this->request->getVar('order_id');
         $CourierModel=model('CourierModel');
-        $job=$CourierModel->itemJobGet($order_id);
-        return $this->respond($job);
+        $result=$CourierModel->itemJobGet($order_id);
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        if( $result==='notready' ){
+            return $this->fail($result);
+        }
+        return $this->respond($result);
     }
 
     public function itemJobStart(){

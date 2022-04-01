@@ -212,7 +212,7 @@ class CourierModel extends Model{
     public function listJobGet( $courier_id ){
         $isReadyCourier=$this->isReadyCourier();
         if( !$isReadyCourier ){
-            //return [];
+            return 'notready';
         }
         $point_distance=150000;//15km
 
@@ -237,14 +237,14 @@ class CourierModel extends Model{
     public function itemJobGet( $order_id ){
         $isReadyCourier=$this->isReadyCourier();
         if( !$isReadyCourier ){
-            return [];
+            return 'notready';
         }
         $OrderModel=model("OrderModel");
         $LocationModel=model('LocationModel');
 
         $job=$OrderModel->where('order_id',$order_id)->get()->getRow();
         if( !$job ){
-            return null;
+            return 'notfound';
         }
         $job->finish_location_address=$LocationModel->itemGet($job->order_finish_location_id??0)->location_address??'';
         $job->start_finish_distance=$LocationModel->distanceGet($job->order_start_location_id??0,$job->order_finish_location_id??0);
@@ -254,24 +254,14 @@ class CourierModel extends Model{
     public function itemJobStart( $order_id, $courier_id ){
         $isReadyCourier=$this->isReadyCourier($courier_id);
         if( !$isReadyCourier ){
-            return [];
+            return 'notready';
         }
-
-
-
-        $courier_user_id=$this->where($courier_id)->get()->getRow('owner_id');
-
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderModel=model("OrderModel");
 
-        $owner_ally_ids=$OrderModel->where('order_id',$order_id)->get()->getRow('owner_ally_ids');
         $this->transStart();
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
-        $OrderModel->update($order_id,['order_courier_id'=>$courier_id]);
-
-
-        
-        q($OrderModel);
+        $OrderModel->itemUpdate(['order_id'=>$order_id,'order_courier_id'=>$courier_id]);
         $result=$this->db->affectedRows()?'ok':'idle';
         $this->transComplete();
         return $result;
