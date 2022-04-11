@@ -70,7 +70,7 @@ class OrderModel extends Model{
         $this->itemUserRoleCalc();
         $order = $this->get()->getRow();
         if( !$order ){
-            return 'forbidden';
+            return 'notfound';
         }
         if($mode=='basic'){
             $this->itemCache[$mode.$order_id]=$order;
@@ -234,7 +234,7 @@ class OrderModel extends Model{
         $this->update(['order_id'=>$order_id],['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
-    
+
     public function listGet( $filter ){
         $this->filterMake($filter,false);
         $this->permitWhere('r');
@@ -249,18 +249,6 @@ class OrderModel extends Model{
                 $this->where('ogl.group_type',$filter['order_group_type']);
             }
         }
-        /*if($filter['order_group_id']??0){
-            $this->whereIn('order_group_id',$filter['order_group_id']);
-        }
-        if($filter['date_start']??0){
-            $this->where('created_at>',$filter['date_start']);
-        }
-        if($filter['date_finish']??0){
-            $this->where('created_at<',$filter['date_finish']);
-        }
-        if( $filter['user_role']??0 ){
-            $this->havingIn('user_role',$filter['user_role']);
-        }*/
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
@@ -275,40 +263,6 @@ class OrderModel extends Model{
         }
         return $this->get()->getResult();
     }
-
-
-    
-
-    // public function listPreviewGet(){
-    //     $customer=$this
-    //             ->listGet(['limit'=>3,'user_role'=>'customer']);
-    //     $courier=$this
-    //             ->listGet(['limit'=>3,'user_role'=>'courier']);
-    //     $supplier=$this
-    //             ->listGet(['limit'=>3,'user_role'=>'supplier']);
-    //     return [
-    //         'customer'=>$customer,
-    //         'courier'=>$courier,
-    //         'supplier'=>$supplier
-    //     ];
-    // }
-
-    // public function listCartGet(){
-    //     //timer('listcartget');
-    //     $this->permitWhere('r');
-    //     $this->join('order_group_list ogl',"order_group_id=group_id");
-    //     $this->whereIn('group_type','(customer_cart)');
-    //     $this->select('order_id');
-    //     $cart_ids=$this->get()->getResult();
-    //     $cart_list=[];
-    //     //timer('listcartget');
-    //     foreach($cart_ids as $cart){
-    //         $cart_list[]=$this->itemGet($cart->order_id);
-    //     }
-    //     //print_r(\Config\Services::timer()->getTimers());
-
-    //     return $cart_list;
-    // }
     
     public function listCreate(){
         return false;

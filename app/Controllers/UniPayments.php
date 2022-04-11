@@ -56,7 +56,12 @@ class UniPayments extends \App\Controllers\BaseController{
             )
         );
         $queryString = http_build_query($p);
-        return $this->response->redirect(getenv('uniteller.gateway').'pay?'.$queryString);
+        return getenv('uniteller.gateway').'pay?'.$queryString;
+    }
+
+    public function paymentLinkGo(){
+        $link=$this->paymentLinkGet();
+        return $this->response->redirect($link);
     }
 
     public function paymentOk(){
@@ -85,6 +90,9 @@ class UniPayments extends \App\Controllers\BaseController{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
+        if(!$result){
+            return 'noresponse';
+        }
         $response=explode(';',$result);
         return $this->paymentStatusSetApply($response[0],$response[1],$response[2],$response[2],$response[3]);
     }

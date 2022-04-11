@@ -13,13 +13,6 @@ class Order extends \App\Controllers\BaseController {
             $order_id = $this->request->getVar('order_id');
         }
         $OrderModel = model('OrderModel');
-
-        $OrderModel->itemUpdateOwners($order_id);
-
-
-        return;
-
-
         $result = $OrderModel->itemGet($order_id);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
@@ -139,7 +132,6 @@ class Order extends \App\Controllers\BaseController {
         }
         return $this->fail($result);   
     }
-
 
     public function listGet() {
         $filter=[

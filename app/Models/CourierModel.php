@@ -261,9 +261,14 @@ class CourierModel extends Model{
 
         $this->transStart();
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
-        $OrderModel->itemUpdate(['order_id'=>$order_id,'order_courier_id'=>$courier_id]);
-        $result=$this->db->affectedRows()?'ok':'idle';
-        $this->transComplete();
+        $was_searching=$this->db->affectedRows()?true:false;
+        if( !$was_searching ){
+            return 'notsearching';
+        }
+        $result=$OrderModel->itemUpdate( (object)['order_id'=>$order_id,'order_courier_id'=>$courier_id] );
+        if($result=='ok'){
+            $this->transComplete();
+        }
         return $result;
     }
 

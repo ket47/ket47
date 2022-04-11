@@ -121,7 +121,7 @@ var Order={
             action_take_photo:function(){
                 ItemList.fileUploadInit(order_id);
             },
-            action_card_pay:function(){
+            action_checkout:function(){
                 Order.stage.payment_modal();
             },
             action_call_customer:function(){

@@ -163,8 +163,11 @@ class Courier extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('order_id');
         $courier_id=$this->request->getVar('courier_id');
         $CourierModel=model('CourierModel');
-        $job=$CourierModel->itemJobStart($order_id,$courier_id);
-        return $this->respond($job);
+        $result=$CourierModel->itemJobStart($order_id,$courier_id);
+        if( $result==='ok' ){
+            return $this->respond($result);
+        }
+        return $this->fail($result);
     }
     
     public function listGet(){

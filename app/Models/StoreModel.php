@@ -93,9 +93,9 @@ class StoreModel extends Model{
             'is_active'=>1,
             'limit'=>30
         ];
-        if($distanceToUserInclude){
-            $LocationModel->distanceToUserInclude();
-        }
+        // if($distanceToUserInclude){
+        //     $LocationModel->distanceToUserInclude();
+        // }
         $store->locations=$LocationModel->listGet($filter_loc);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;

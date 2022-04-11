@@ -16,8 +16,8 @@ trait OrderStageTrait{
             'customer_purged'=>     ['Удалить','negative'],
             ],
         'customer_confirmed'=>[
-            'action_card_pay'=>     ['Оплатить картой','positive'],
             'customer_cart'=>       ['Отменить заказ'],
+            'action_checkout'=>     ['Продолжить','positive'],
             'customer_payed_card'=> [],
             ],
         'customer_payed_card'=>[

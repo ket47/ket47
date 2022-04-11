@@ -14,6 +14,7 @@ class LocationModel extends Model{
         'location_holder_id',
         'location_order',
         'location_address',
+        'location_comment',
         'location_latitude',
         'location_longitude',
         'location_point',
@@ -83,15 +84,19 @@ class LocationModel extends Model{
     }
     
     public function itemUpdate( $data ){
+        if(!$data->location_id){
+            return 'noid';
+        }
         $this->permitWhere('w');
-        return $this->update($data['location_id'],$data);
+        $this->update($data->location_id,$data);
+        return $this->db->affectedRows()?'ok':'idle';
     }
 
     public function itemMainGet($location_holder, $location_holder_id){
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('location_list.is_main',1);
-        $this->select('location_id,location_latitude,location_longitude,location_address,image_hash,group_name,group_type');
+        $this->select('location_id,location_latitude,location_longitude,location_address,location_comment,image_hash,group_name,group_type');
         //join group & image
         $this->join('location_group_member_list','member_id=location_id','left');
         $this->join('location_group_list','group_id','left');
@@ -177,6 +182,7 @@ class LocationModel extends Model{
             location_latitude,
             location_longitude,
             location_address,
+            location_comment,
             location_list.is_main,
             group_name,
             group_type,
@@ -185,7 +191,9 @@ class LocationModel extends Model{
         $filter['order']=null;
         $filter['limit']=5;
         $this->filterMake($filter);
-        $this->permitWhere('r');
+        if( in_array($filter['location_holder'],['courier','user']) ){
+            $this->permitWhere('r');
+        }
         $this->select($this->selectList);
         $this->where('location_holder',$filter['location_holder']);
         $this->where('location_holder_id',$filter['location_holder_id']);
@@ -243,6 +251,15 @@ class LocationModel extends Model{
         $this->where('created_at<',$olderStamp);
         $this->delete(null,true);
         return 'ok';
+    }
+
+    public function distanceHolderGet($start_holder,$start_holder_id,$finish_holder,$finish_holder_id){
+        $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE `location_holder`='$start_holder' AND `location_holder_id`='$start_holder_id')");
+        $this->select("ST_Distance_Sphere(@start_point,location_point) distance");
+        $this->where('location_holder',$finish_holder);
+        $this->where('location_holder_id',$finish_holder_id);
+        $this->where('is_main',1);
+        return $this->get()->getRow('distance');
     }
     
     public function distanceGet($start_location_id, $finish_location_id){

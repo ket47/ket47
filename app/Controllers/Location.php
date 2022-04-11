@@ -16,7 +16,16 @@ class Location extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        return false;
+        $data= $this->request->getJSON();
+        $LocationModel=model('LocationModel');
+        $result=$LocationModel->itemUpdate($data);
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $LocationModel->errors() ){
+            return $this->failValidationErrors(json_encode($LocationModel->errors()));
+        }
+        return $this->respondUpdated($result);
     }
     
     public function itemDelete(){
@@ -28,6 +37,16 @@ class Location extends \App\Controllers\BaseController{
     }
     
     
+    public function distanceHolderGet(){
+        $start_holder_id=$this->request->getVar('start_holder_id');
+        $start_holder=$this->request->getVar('start_holder');
+        $finish_holder_id=$this->request->getVar('finish_holder_id');
+        $finish_holder=$this->request->getVar('finish_holder');
+        
+        $LocationModel=model('LocationModel');
+        $distance=$LocationModel->distanceHolderGet($start_holder,$start_holder_id,$finish_holder,$finish_holder_id);
+        return $this->respond($distance);
+    }
     public function distanceGet(){
         $start_location_id=$this->request->getVar('start_location_id');
         $finish_location_id=$this->request->getVar('finish_location_id');

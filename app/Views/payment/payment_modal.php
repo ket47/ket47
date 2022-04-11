@@ -9,7 +9,7 @@
                     return;
                 }
             });
-            this.postToIframe(this.data,'/UniPayments/paymentLinkGet','unipay_iframe');
+            this.postToIframe(this.data,'/UniPayments/paymentLinkGo','unipay_iframe');
         },
         close:function(){
 
@@ -28,7 +28,7 @@
             $.each(data,function(n,v){
                 $('#postToIframe').append('<input type="hidden" name="'+n+'" value="'+v+'" />');
             });
-            $('#postToIframe').submit();
+            $('#postToIframe').submit().remove();
         }
     };
 </script>
