@@ -133,7 +133,7 @@
                 if( name==='is_disabled' ){
                     ItemList.reloadItem();
                 }
-                let row_field=$(`div[data-field='${name}.${<?=$item_name?>_id}']`);
+                let row_field=$(`div[data-field='${name}.${<?=$item_name?>_id}']`)
                 if( row_field ){
                     row_field.html(value);
                     if(row_field.data('reload')==1){

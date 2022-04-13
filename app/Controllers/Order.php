@@ -233,4 +233,17 @@ class Order extends \App\Controllers\BaseController {
         return $this->fail($result);
     }
 
+    public function imageOrder(){
+        $image_id=$this->request->getVar('image_id');
+        $dir=$this->request->getVar('dir');
+        
+        $OrderModel=model('OrderModel');
+        $result=$OrderModel->imageOrder( $image_id, $dir );
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+
 }

@@ -18,12 +18,7 @@ trait FilterTrait{
         } else {
             $table='';
         }
-        
-        
-        
-        
         $this->filterStatus($filter);
-        
         if( $filter[$this->primaryKey] ){
             $this->whereIn($this->primaryKey,$filter[$this->primaryKey]);
         }

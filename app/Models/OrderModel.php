@@ -87,7 +87,7 @@ class OrderModel extends Model{
         $UserModel->select('user_id,user_name,user_phone');
         $order->stage_next=  $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
-        $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id]);
+        $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
         $order->entries=    $EntryModel->listGet($order_id);
         
         $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
@@ -158,6 +158,7 @@ class OrderModel extends Model{
     public function itemUpdateOwners( $order_id ){
         $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM store_list WHERE order_store_id=store_id) store_owners");
         $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM courier_list WHERE order_courier_id=courier_id) courier_owners");
+        //$this->select("owner_id");,$all_owners->owner_id
         $all_owners=$this->getWhere(['order_id'=>$order_id])->getRow();
         $owners=array_unique(explode(',',"0,$all_owners->store_owners,$all_owners->courier_owners"),SORT_NUMERIC);
         array_shift($owners);
@@ -170,10 +171,13 @@ class OrderModel extends Model{
                 order_entry_list el USING(order_id)
                     LEFT JOIN
                 transaction_list tl ON holder_id=order_id AND holder='order'
+                    LEFT JOIN
+                image_list il ON image_holder_id=order_id AND image_holder='order'
             SET
                 ol.owner_ally_ids='$owner_list',
                 el.owner_ally_ids='$owner_list',
-                tl.owner_ally_ids='$owner_list'
+                tl.owner_ally_ids='$owner_list',
+                il.owner_ally_ids='$owner_list'
             WHERE
                 ol.order_id='$order_id'";
         $this->query($sql);
@@ -291,7 +295,9 @@ class OrderModel extends Model{
         $data['owner_id']=session()->get('user_id');
         if( $this->permit($data['image_holder_id'], 'w') ){
             $ImageModel=model('ImageModel');
-            return $ImageModel->itemCreate($data);
+            $ok=$ImageModel->itemCreate($data);
+            $this->itemUpdateOwners($data['image_holder_id']);
+            return $ok;
         }
         return 0;
     }

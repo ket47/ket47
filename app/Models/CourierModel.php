@@ -85,8 +85,9 @@ class CourierModel extends Model{
         ];
         
         $this->transStart();
-        $UserGroupMemberModel->joinGroupByType($user_id,'courier');
-        $courier_id=$this->insert($courier,true);
+            $UserGroupMemberModel->joinGroupByType($user_id,'courier');
+            $courier_id=$this->insert($courier,true);
+            $this->itemUpdateStatus($courier_id,'idle');
         $this->transComplete();
         return $courier_id;
     }

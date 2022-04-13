@@ -21,10 +21,16 @@ class Courier extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        helper('phone_number');
-        $courier_phone_number= clearPhone($this->request->getVar('courier_name'));//didn't cahnged default name for field
-        $UserModel=model('UserModel');
-        $user_id=$UserModel->where('user_phone',$courier_phone_number)->get()->getRow('user_id');
+        $phone_raw=$this->request->getVar('courier_name');//didn't cahnged default name for field
+        if($phone_raw){
+            helper('phone_number');
+            $courier_phone_number= clearPhone($phone_raw);
+            $UserModel=model('UserModel');
+            $user_id=$UserModel->where('user_phone',$courier_phone_number)->get()->getRow('user_id');
+        } else {
+            $user_id=session()->get('user_id');
+        }
+
 
         $CourierModel=model('CourierModel');
         $result=$CourierModel->itemCreate($user_id);

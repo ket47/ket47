@@ -103,9 +103,16 @@ class ImageModel extends Model{
     }
     
     public function itemDelete( $image_id ){
+        $this->itemUpdate([
+            'image_id'=>$image_id,
+            'image_order'=>99
+        ]);
         $ok=$this->delete($image_id);
         $this->itemUpdateMain( $image_id );
-        return $ok;
+        if( $ok ){
+            return 'ok';
+        }
+        return 'idle';
     }
     
     public function itemDisable( $image_id, $is_disabled ){
@@ -136,7 +143,7 @@ class ImageModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter ){
         $filter['order']='image_order';
-        $filter['limit']=5;
+        //$filter['limit']=5;
         $this->filterMake($filter);
         $this->where('image_holder',$filter['image_holder']);
         $this->where('image_holder_id',$filter['image_holder_id']);

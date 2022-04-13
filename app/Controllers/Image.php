@@ -12,28 +12,49 @@ class Image extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        $files = $this->request->getFiles();
-        $holder=$this->request->getVar('image_holder');
-        $holder_id=$this->request->getVar('image_holder_id');
-        
-        $ImageModel=model("ImageModel");
-        
-        
         return false;
     }
     
     public function itemUpdate(){
         return false;
     }
+
+    public function itemUpdateOrder(){
+        $image_id=$this->request->getVar('image_id');
+        $dir=$this->request->getVar('dir');
+        
+        $ImageModel=model('ImageModel');
+        $result=$ImageModel->itemUpdateOrder( $image_id, $dir );
+        if( $result ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
     
-    public function itemDelete(){
-        return false;
+    public function itemDelete() {
+        $image_id = $this->request->getVar('image_id');
+
+        $ImageModel = model('ImageModel');
+        $result = $ImageModel->itemDelete($image_id);
+        if ($result === 'ok') {
+            return $this->respondDeleted($result);
+        }
+        return $this->fail($result);
     }
     
-    public function listGet( $filter ){
-        return [
-            
+    public function listGet() {
+        $filter=[
+            'image_holder'=>$this->request->getVar('image_holder'),
+            'image_holder_id'=>$this->request->getVar('image_holder_id'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit'),
         ];
+        $ImageModel=model('ImageModel');
+        $image_list=$ImageModel->listGet($filter);
+        return $this->respond($image_list);
     }
     
     public function listCreate(){
