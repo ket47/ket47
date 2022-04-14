@@ -40,6 +40,9 @@ class Courier extends \App\Controllers\BaseController{
         if( $result==='notfound' ){
             return $this->failNotFound($result);
         }
+        if( $result==='exists' ){
+            return $this->fail($result,409);
+        }
         if( $CourierModel->errors() ){
             return $this->failValidationErrors(json_encode($CourierModel->errors()));
         }
@@ -87,6 +90,9 @@ class Courier extends \App\Controllers\BaseController{
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
         }
+        if( $result==='notactive' ){
+            return $this->fail($result,409);
+        }
         return $this->fail($result);
     }
     
@@ -111,6 +117,20 @@ class Courier extends \App\Controllers\BaseController{
         $result=$CourierModel->itemUnDelete($courier_id);        
         if( $result==='ok' ){
             return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        return $this->fail($result);   
+    }
+
+    public function itemPurge(){
+        $courier_id=$this->request->getVar('courier_id');
+        
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemPurge($courier_id);        
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
         }
         if( $result==='forbidden' ){
             return $this->failForbidden($result);

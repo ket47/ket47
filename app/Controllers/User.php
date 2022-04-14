@@ -107,7 +107,7 @@ class User extends \App\Controllers\BaseController{
         $user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
         
         if( $UserModel->errors() ){
-            return $this->failValidationError(json_encode($UserModel->errors()));
+            return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         return $this->respondCreated($user_id);
     }
@@ -116,7 +116,7 @@ class User extends \App\Controllers\BaseController{
         $user_phone=$this->request->getVar('user_phone');
         $user_pass=$this->request->getVar('user_pass');
         if( !$user_phone || !$user_pass ){
-            return $this->failValidationError();
+            return $this->failValidationErrors();
         }
         $this->signOut();
         
@@ -149,10 +149,24 @@ class User extends \App\Controllers\BaseController{
     
     public function signOut(){
         $user_id=session()->get('user_id');
+        $courier_signout_result=$this->signOutCourier($user_id);
+        if( $courier_signout_result!='ok' ){
+            return $this->fail('courier_not_idle',409);
+        }
+
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
         session_unset();//clear all session variables
-        return $this->respond(1);
+        return $this->respond('ok');
+    }
+
+    private function signOutCourier($user_id){
+        $CourierModel=model('CourierModel');
+        if( $CourierModel->isIdle(null,$user_id) ){
+            return 'ok';
+        }
+        $courier_id=$CourierModel->where('owner_id',$user_id)->get()->getRow('courier_id');
+        return $CourierModel->itemUpdateStatus($courier_id,'idle');
     }
     
     public function passwordReset(){

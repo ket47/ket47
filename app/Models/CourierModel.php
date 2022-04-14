@@ -73,6 +73,10 @@ class CourierModel extends Model{
         if(!$user_id){
             return 'notfound';
         }
+        $is_exists=$this->where('owner_id',$user_id)->get()->getRow('courier_id');
+        if( $is_exists ){
+            return 'exists';
+        }
         
         $UserModel=model('UserModel');
         $UserGroupMemberModel=model('UserGroupMemberModel');
@@ -123,6 +127,11 @@ class CourierModel extends Model{
         if( !$this->permit($courier_id,'w') ){
             return 'forbidden';
         }
+        $this->select("(is_disabled=1 OR deleted_at IS NOT NULL) notactive");
+        $notactive=$this->where('courier_id',$courier_id)->get()->getRow('notactive');
+        if( $notactive && $group_type!='idle' ){
+            return 'notactive';
+        }
         $CourierGroupMemberModel=model('CourierGroupMemberModel');
         $leave_other_groups=true;
         $ok=$CourierGroupMemberModel->joinGroupByType( $courier_id, $group_type, $leave_other_groups );
@@ -132,7 +141,7 @@ class CourierModel extends Model{
         return 'error';
     }
 
-    private function itemDeleteValidate($courier_id=null,$user_id=null){
+    public function isIdle($courier_id=null,$user_id=null){
         if($courier_id){
             $this->where('courier_id',$courier_id);
         }
@@ -140,6 +149,9 @@ class CourierModel extends Model{
             $this->where('owner_id',$user_id);
         }
         $courier = $this->get()->getRow();
+        if( !$courier ){
+            return true;
+        }
         $CourierGroupMemberModel=model('CourierGroupMemberModel');
         if( $CourierGroupMemberModel->isMemberOf($courier->courier_id,'idle') ){
             return true;
@@ -148,7 +160,7 @@ class CourierModel extends Model{
     }
     
     public function itemDelete($courier_id=null,$user_id=null){
-        $can_delete=$this->itemDeleteValidate($courier_id,$user_id);
+        $can_delete=$this->isIdle($courier_id,$user_id);
         if( !$can_delete ){
             return 'invalid_status';
         }
@@ -173,12 +185,24 @@ class CourierModel extends Model{
         if( !$this->permit($courier_id,'w') ){
             return 'forbidden';
         }
-
         $this->update($courier_id,['deleted_at'=>NULL]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemPurge( $courier_id ){
+        $can_delete=$this->isIdle($courier_id,null);
+        if( !$can_delete ){
+            return 'invalid_status';
+        }
+        $this->delete($courier_id,true);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDisable( $courier_id, $is_disabled ){
+        $can_delete=$this->isIdle($courier_id,null);
+        if( !$can_delete ){
+            return 'invalid_status';
+        }
         if( !$this->permit($courier_id,'w','disabled') ){
             return 'forbidden';
         }
