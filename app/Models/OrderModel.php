@@ -34,7 +34,7 @@ class OrderModel extends Model{
         else {
             $this->select("
                 IF(order_list.owner_id=$user_id,'customer',
-                IF(order_list.order_courier_id='$courier_id','courier',
+                IF(order_list.order_courier_id='$courier_id','delivery',
                 IF('$user_id' IN (order_list.owner_ally_ids),'supplier',
                 'other'))) user_role
                 ");

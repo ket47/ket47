@@ -21,7 +21,7 @@ trait OrderStageTrait{
             'customer_payed_card'=> [],
             ],
         'customer_payed_card'=>[
-            'delivery_search'=>      [],
+            'delivery_search'=>     [],
             ],
         'delivery_search'=>[
             'customer_start'=>      [],
@@ -35,53 +35,53 @@ trait OrderStageTrait{
         
         
         'supplier_rejected'=>[
-            'customer_cart'=>    ['--reset'],
-            'customer_refunded'=>   [],
+            'customer_cart'=>               ['--reset'],
+            'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
-            'customer_refunded'=>   []
+            'customer_refunded'=>           [],
             ],
         'supplier_start'=>[
-            'supplier_finish'=>     ['Закончить подготовку','positive'],
-            'supplier_corrected'=>  ['Изменить заказ'],
+            'supplier_finish'=>             ['Закончить подготовку','positive'],
+            'supplier_corrected'=>          ['Изменить заказ'],
             ],
         'supplier_corrected'=>[
-            'supplier_finish'=>     ['Закончить подготовку','positive'],
-            'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
+            'supplier_finish'=>             ['Закончить подготовку','positive'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
             ],
         'supplier_finish'=>[
-            'supplier_corrected'=>  ['Изменить'],
-            'delivery_start'=>      ['Начать доставку','positive'],
-            'delivery_no_courier'=> [],
-            'supplier_action_take_photo'=>   ['Сфотографировать']
+            'supplier_corrected'=>          ['Изменить'],
+            'delivery_start'=>              ['Начать доставку','positive'],
+            'delivery_no_courier'=>         [],
+            'supplier_action_take_photo'=>  ['Сфотографировать']
             ],
         
         
         
         'delivery_start'=>[
-            'delivery_finish'=>     ['Завершить доставку','positive'],
-            'delivery_action_take_photo'=>   ['Сфотографировать'],
-            'action_call_customer'=>['Позвонить клиенту'],
-            'delivery_rejected'=>   ['Отказаться от доставки!','negative']
+            'delivery_finish'=>             ['Завершить доставку','positive'],
+            'delivery_action_take_photo'=>  ['Сфотографировать'],
+            'action_call_customer'=>        ['Позвонить клиенту'],
+            'delivery_rejected'=>           ['Отказаться от доставки!','negative']
             ],
         'delivery_rejected'=>[
-            'supplier_reclaimed'=>  ['Принять возврат заказа']
+            'supplier_reclaimed'=>          ['Принять возврат заказа']
             ],
         'delivery_finish'=>[
-            'customer_finish'=>     [],
-            'customer_disputed'=>   ['Открыть спор','secondary']
+            'customer_finish'=>             [],
+            'customer_disputed'=>           ['Открыть спор','secondary']
             ],
         
         
         
         'customer_disputed'=>[
-            'customer_refunded'=>   [],
-            'customer_finish'=>     ['Завершить заказ','positive'],
-            'customer_action_take_photo'=>   ['Сфотографировать заказ'],
-            'customer_action_objection'=>    ['Написать возражение'],
+            'customer_refunded'=>           [],
+            'customer_finish'=>             ['Завершить заказ','positive'],
+            'customer_action_take_photo'=>  ['Сфотографировать заказ'],
+            'customer_action_objection'=>   ['Написать возражение'],
             ],
         'customer_refunded'=>       [
-            'customer_finish'=>     [],
+            'customer_finish'=>             [],
             ],
         'customer_finish'=>[
             //'customer_deleted'=>    ['Удалить','negative'],
@@ -433,10 +433,10 @@ trait OrderStageTrait{
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout','pref_value',0);
+        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
-            'task_name'=>"customer_start Rollback #$order_id",
+            'task_name'=>"customer_finish Fastforward #$order_id",
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finish',$order_id]]
                 ],

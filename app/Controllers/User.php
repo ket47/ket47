@@ -142,9 +142,16 @@ class User extends \App\Controllers\BaseController{
             }
             session()->set('user_id',$user->user_id);
             session()->set('user_data',$user);
+            $this->signInCourier($user->user_id);
             return $this->respond($user->user_id);
         }
         return $this->fail($result);
+    }
+
+    private function signInCourier($user_id){
+        $CourierModel=model('CourierModel');
+        $courier_id=$CourierModel->where('owner_id',$user_id)->get()->getRow('courier_id');
+        session()->set('courier_id',$courier_id);
     }
     
     public function signOut(){

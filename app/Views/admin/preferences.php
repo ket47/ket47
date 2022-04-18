@@ -91,7 +91,8 @@
     $default_prefs=[
         'shipping_fee',
         'customer_confirmed_timeout_min',
-        'customer_start_timeout_min'
+        'customer_start_timeout_min',
+        'delivery_finish_timeout_min'
     ];
     foreach( $pref_list as $pref ){
         $default_pref_index=array_search($pref->pref_name,$default_prefs);
