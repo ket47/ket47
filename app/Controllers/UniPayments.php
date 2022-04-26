@@ -65,11 +65,11 @@ class UniPayments extends \App\Controllers\BaseController{
     }
 
     public function paymentOk(){
-        echo 'Payment successfull!!!!!';
+        return view('payment/payment_result_ok');
     }
 
     public function paymentNo(){
-        echo 'Payment basarisiz?!?!?!?';
+        return view('payment/payment_result_no');
     }
 
     public function paymentStatusRequest(){

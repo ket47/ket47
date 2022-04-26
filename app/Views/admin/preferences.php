@@ -88,26 +88,27 @@
 <input type="file" id="groupmanager_uploader" name="items[]" multiple style="display:none" onchange="PrefManager.fileUpload(this.files)">
 <div style="padding: 20px;">
 <?php 
-    $default_prefs=[
-        'shipping_fee',
-        'customer_confirmed_timeout_min',
-        'customer_start_timeout_min',
-        'delivery_finish_timeout_min'
+    $pref_map=[
+        'delivery_fee'=>                        ['Доставка','Стоимость доставки'],
+        'delivery_speed'=>                      ['Доставка','Скорость курьера км/ч'],
+        'delivery_radius'=>                     ['Доставка','Дальность доставки м'],
+        
+        'customer_confirmed_timeout_min'=>      ['Автосброс Статусов','Подтвержден мин.'],
+        'customer_start_timeout_min'=>          ['Автосброс Статусов','На обработке мин.'],
+        'delivery_finish_timeout_min'=>         ['Автосброс Статусов','Доставлен мин.']
     ];
-    foreach( $pref_list as $pref ){
-        $default_pref_index=array_search($pref->pref_name,$default_prefs);
-        if( $default_pref_index>-1 ){
-            array_splice($default_prefs,$default_pref_index,1);
+    foreach( $pref_map as $pref_name=>$pref){
+        $pref_map[$pref_name][2]='';
+        $pref_map[$pref_name][3]='';
+        foreach( $pref_list as $saved_pref ){
+            if($pref_name==$saved_pref->pref_name){
+                $pref_map[$pref_name][2]=$saved_pref->pref_value;
+                $pref_map[$pref_name][3]=$saved_pref->pref_json;
+                break;
+            }
         }
     }
-    //print_r();
-    foreach($default_prefs as $pref_name){
-        array_unshift($pref_list,(object)[
-            'pref_name'=>$pref_name,
-            'pref_value'=>null,
-            'pref_json'=>null
-        ]);
-    }
+    $pref_group='';
 ?>
 
 
@@ -122,19 +123,28 @@
                 <th>Значение</th>
                 <th>JSON</th>
             </tr>
-            <?php foreach( $pref_list as $pref): ?>
+            <?php foreach( $pref_map as $pref_name=>$pref): ?>
+
+            <?php if($pref[0]!=$pref_group): $pref_group=$pref[0];?>
+            <tr>
+                <td colspan="4">
+                <h2><?=$pref[0]?></h2>
+                </td>
+            </tr>
+            <?php endif;?>
+
             <tr>
                 <td style="width:30px;text-align: center;color:red;vertical-align: top">
-                    <i class="fa fa-trash" data-pref_name="<?=$pref->pref_name?>" data-action="delete"></i>
+                    <i class="fa fa-trash" data-pref_name="<?=$pref_name?>" data-action="delete"></i>
                 </td>
                 <td style="vertical-align: top">
-                    <b><?=$pref->pref_name?></b>
+                    <b><?=$pref[1]?></b>
                 </td>
                 <td style="vertical-align: top">
-                    <input data-field="pref_value" value="<?=$pref->pref_value?>" data-pref_name="<?=$pref->pref_name?>">
+                    <input data-field="pref_value" value="<?=$pref[2]?>" data-pref_name="<?=$pref_name?>">
                 </td>
                 <td style="vertical-align: top">
-                    <textarea data-field="pref_json" data-pref_name="<?=$pref->pref_name?>"><?=$pref->pref_json?></textarea>
+                    <!--<textarea data-field="pref_json" data-pref_name="<?=$pref_name?>"><?=$pref[3]?></textarea>-->
                 </td>
             </tr>
             <?php endforeach; ?>

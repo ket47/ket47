@@ -253,7 +253,10 @@ class StoreModel extends Model{
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
-        $point_distance=15000;//15km
+
+        $PrefModel=model('PrefModel');
+        $pref=$PrefModel->itemGet('delivery_radius');
+        $delivery_radius=$pref->pref_value??15000;
 
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
@@ -266,7 +269,7 @@ class StoreModel extends Model{
         }
         $LocationModel->orderBy("is_opened",'DESC');
         $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
-        $store_list=$LocationModel->distanceListGet( $filter['location_id'], $point_distance, 'store' );
+        $store_list=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
         if( !is_array($store_list) ){
             return 'not_found';
         }
@@ -279,7 +282,10 @@ class StoreModel extends Model{
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
-        $point_distance=15000;//15km
+        $PrefModel=model('PrefModel');
+        $pref=$PrefModel->itemGet('delivery_radius');
+        $delivery_radius=$pref->pref_value??15000;
+
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
         $LocationModel->select("store_id,store_name,store_time_preparation,is_primary,image_hash");
@@ -292,7 +298,7 @@ class StoreModel extends Model{
         $LocationModel->orderBy("is_opened",'DESC');
         $LocationModel->where("is_primary",1);
         $LocationModel->limit(1);
-        $result=$LocationModel->distanceListGet( $filter['location_id'], $point_distance, 'store' );
+        $result=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
         if( !isset($result[0]) ){
            return 'not_found';
         }

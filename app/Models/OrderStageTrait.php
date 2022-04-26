@@ -3,33 +3,34 @@ namespace App\Models;
 trait OrderStageTrait{
     protected $stageMap=[
         ''=>[
-            'customer_cart'=>       ['Создать'],
-            'customer_deleted'=>    ['Удалить','negative'],
+            'customer_deleted'=>            ['Удалить','negative'],
+            'customer_cart'=>               ['Создать'],
             ],
-        'customer_purged'=>[],
+        'customer_purged'=>                 [],
         'customer_deleted'=>[
-            'customer_cart'=>       ['Восстановить'],
-            'customer_purged'=>     ['Удалить окончательно']
+            'customer_purged'=>             ['Удалить окончательно'],
+            'customer_cart'=>               ['Восстановить'],
             ],
         'customer_cart'=>[
-            'customer_confirmed'=>  ['Подтвердить заказ'],
-            'customer_purged'=>     ['Удалить','negative'],
+            'customer_purged'=>             ['Удалить','negative'],
+            'customer_confirmed'=>          [],
+            'customer_action_checkout'=>    ['Продолжить','positive'],
             ],
         'customer_confirmed'=>[
-            'customer_cart'=>       ['Отменить заказ'],
-            'action_checkout'=>     ['Продолжить','positive'],
-            'customer_payed_card'=> [],
+            'customer_cart'=>               ['Изменить'],
+            'customer_payed_card'=>         [],
+            'customer_action_checkout'=>    ['Продолжить','positive'],
             ],
         'customer_payed_card'=>[
-            'delivery_search'=>     [],
+            'delivery_search'=>             [],
             ],
         'delivery_search'=>[
-            'customer_start'=>      [],
+            'customer_start'=>              [],
         ],
         'customer_start'=>[
-            'supplier_start'=>      ['Начать подготовку'],
-            'supplier_rejected'=>   ['Отказаться от заказа!','negative'],
-            'customer_refunded'=>   []//payment can be canceled by uniteller...
+            'supplier_start'=>              ['Начать подготовку'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
+            'customer_refunded'=>           []//payment can be canceled by uniteller...
             ],
         
         
@@ -120,6 +121,9 @@ trait OrderStageTrait{
     
     private function itemStageValidate($stage,$order,$group){
         $next_stages=$this->stageMap[$order->stage_current??'']??[];
+        if($order->stage_current==$stage){
+            return 'ok';
+        }
         if( !isset($next_stages[$stage]) || empty($group->group_id) ){
             return 'invalid_next_stage';
         }

@@ -348,7 +348,7 @@ class User extends \App\Controllers\BaseController{
         if( !$UserModel->permit($data['owner_id'],'w') ){
             return $this->failForbidden('forbidden');
         }
-        $result= $LocationModel->itemCreate($data,10);
+        $result= $LocationModel->itemCreate($data,5);
         if( $result=='ok' ){
             return $this->respondCreated($result);
         }
