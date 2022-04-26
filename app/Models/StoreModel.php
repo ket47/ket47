@@ -220,6 +220,7 @@ class StoreModel extends Model{
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
+        $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
         $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $this->permitWhere('r');
         $this->orderBy("is_opened",'DESC');
@@ -260,7 +261,8 @@ class StoreModel extends Model{
 
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
-        $LocationModel->select("store_id,store_name,store_time_preparation,image_hash");
+        $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,store_description");
+        $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
         $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $LocationModel->join('store_list','store_id=location_holder_id');
         $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
