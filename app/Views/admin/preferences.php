@@ -66,7 +66,7 @@
                     if(status==='selected'){
                         let request={};
                         request.location_holder_id=-1;
-                        request.location_type_id=0;
+                        request.location_group_id=0;
                         request.location_latitude=data.coordsSelected[0];
                         request.location_longitude=data.coordsSelected[1];
                         request.location_address=data.addressSelected;

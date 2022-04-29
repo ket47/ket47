@@ -33,7 +33,6 @@ class StoreModel extends Model{
         'store_time_closes_5',
         'store_time_closes_6',
         'is_working',
-        'deleted_at',
         'owner_id',
         'owner_ally_id'
         ];
@@ -134,9 +133,13 @@ class StoreModel extends Model{
         if( !$this->permit($store->store_id,'w') ){
             return 'forbidden';
         }
-        if( sudo() ){
+        if( isset($store->is_primary) ){
+            if( !sudo() ){
+                return 'forbidden';
+            }
             $this->allowedFields[]='is_primary';
         }
+        
         $this->update($store->store_id,$store);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -183,6 +186,7 @@ class StoreModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->listUnDelete('store', $store_id);
         
+        $this->allowedFields[]='deleted_at';
         $this->update($store_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';
     }

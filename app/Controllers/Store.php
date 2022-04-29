@@ -26,6 +26,11 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->respond($store_list);
     }
+    public function listGroupGet(){
+        $StoreGroupModel=model('StoreGroupModel');
+        $result=$StoreGroupModel->listGet();
+        return $this->respond($result);
+    }
 
     public function listNearGet(){
         $location_id=$this->request->getVar('location_id');
@@ -249,15 +254,17 @@ class Store extends \App\Controllers\BaseController{
     }
     public function locationCreate(){
         $location_holder_id=$this->request->getVar('location_holder_id');
-        $location_type_id=$this->request->getVar('location_type_id');
+        $location_group_id=$this->request->getVar('location_group_id');
+        $location_group_type=$this->request->getVar('location_group_type');
         $location_longitude=$this->request->getVar('location_longitude');
         $location_latitude=$this->request->getVar('location_latitude');
         $location_address=$this->request->getVar('location_address');
-        
+
         $data=[
             'location_holder'=>'store',
             'location_holder_id'=>$location_holder_id,
-            'location_type_id'=>$location_type_id,
+            'location_group_id'=>$location_group_id,
+            'location_group_type'=>$location_group_type,
             'location_longitude'=>$location_longitude,
             'location_latitude'=>$location_latitude,
             'location_address'=>$location_address,
@@ -283,6 +290,6 @@ class Store extends \App\Controllers\BaseController{
         if( $result=='ok' ){
             return $this->respondDeleted('ok');
         }
-        return $this->fail('idle');
+        return $this->fail($result);
     }
 }

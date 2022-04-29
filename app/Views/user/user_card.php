@@ -15,9 +15,9 @@
                 $("#address_manager").on('click',function(e){
                     let $button=$(e.target);
                     let action=$button.parent().data('action') || $button.parent().parent().data('action');
-                    let location_type_id=$button.parent().data('group_id') || $button.parent().parent().data('group_id');
+                    let location_group_id=$button.parent().data('group_id') || $button.parent().parent().data('group_id');
                     if( action==='add_location' ){
-                        User.address.pick([],location_type_id);
+                        User.address.pick([],location_group_id);
                     } else 
                     if( action==='delete_location' && confirm("Удалить адрес?") ){
                         let location_id=$button.parent().data('location_id');
@@ -27,12 +27,12 @@
                     }
                 });
             },
-            pick:function(coordsStart,location_type_id){
+            pick:function(coordsStart,location_group_id){
                 App.loadWindow('/Location/pickerModal',{coordsStart}).progress(function(status,data){
                     if(status==='selected'){
                         let request={};
                         request.location_holder_id=User.user_id;
-                        request.location_type_id=location_type_id;
+                        request.location_group_id=location_group_id;
                         request.location_latitude=data.coordsSelected[0];
                         request.location_longitude=data.coordsSelected[1];
                         request.location_address=data.addressSelected;

@@ -240,17 +240,17 @@ class Home extends BaseController {
                 ]);
     }
     public function storeCardGet(){
-        $product_id=$this->request->getVar('store_id');
+        $store_id=$this->request->getVar('store_id');
         $LocationGroupModel=model('LocationGroupModel');
         $StoreModel=model('StoreModel');
         $StoreGroupModel=model('StoreGroupModel');
-        $product= $StoreModel->itemGet($product_id);
+        $store= $StoreModel->itemGet($store_id);
                 
         $location_group_list=$LocationGroupModel->listGet(['name_query'=>'address_work','name_query_fields'=>'group_type']);
-        $product_group_list=$StoreGroupModel->listGet();
+        $store_group_list=$StoreGroupModel->listGet();
         $data=[
-            'store'=>$product,
-            'store_group_list'=>$product_group_list,
+            'store'=>$store,
+            'store_group_list'=>$store_group_list,
             'location_group_list'=>$location_group_list
         ];
         return view('store/store_card',$data);

@@ -328,7 +328,7 @@ class User extends \App\Controllers\BaseController{
 
     public function locationCreate(){
         $location_holder_id=$this->request->getVar('location_holder_id');
-        $location_type_id=$this->request->getVar('location_type_id');
+        $location_group_id=$this->request->getVar('location_group_id');
         $location_longitude=$this->request->getVar('location_longitude');
         $location_latitude=$this->request->getVar('location_latitude');
         $location_address=$this->request->getVar('location_address');
@@ -336,7 +336,7 @@ class User extends \App\Controllers\BaseController{
         $data=[
             'location_holder'=>'user',
             'location_holder_id'=>$location_holder_id,
-            'location_type_id'=>$location_type_id,
+            'location_group_id'=>$location_group_id,
             'location_longitude'=>$location_longitude,
             'location_latitude'=>$location_latitude,
             'location_address'=>$location_address,

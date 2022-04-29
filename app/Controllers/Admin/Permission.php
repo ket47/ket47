@@ -40,6 +40,7 @@ class Permission extends \App\Controllers\BaseController {
             //$method_list[$modelName][]="list";"Models\\".
             $method_list[$modelName][]="item";
             $method_list[$modelName][]="disabled";
+            $method_list[$modelName][]="owner";
         }
         return $method_list;
     }

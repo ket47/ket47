@@ -63,7 +63,11 @@ class LocationModel extends Model{
             $data['is_main']=1;
             $this->update($location_id,$data);
             $LocationGroupMemberModel=model('LocationGroupMemberModel');
-            $LocationGroupMemberModel->joinGroup($location_id,$data['location_type_id']);
+            if($data['location_group_id']){
+                $LocationGroupMemberModel->joinGroup($location_id,$data['location_group_id']);
+            } else {
+                $LocationGroupMemberModel->joinGroupByType($location_id,$data['location_group_type']);
+            }
             return 'ok';
         }
         return 'idle';
@@ -149,9 +153,9 @@ class LocationModel extends Model{
     public function itemDelete( $location_id ){
         $this->permitWhere('w');
         $this->delete($location_id);
-        $ok=$this->db->affectedRows()?'ok':'idle';
         $this->itemMainUpdate( $location_id );
         $this->itemPurge( $location_id );
+        $ok=$this->db->affectedRows()?'ok':'idle';
         return $ok;
     }
     
@@ -163,13 +167,13 @@ class LocationModel extends Model{
     }
     
     public function itemPurge( $location_id ){
-        $loc=$this->itemGet($location_id);
-        if( !$loc ){
-            return true;
-        }
-        if( !$loc->deleted_at ){
-            return false;
-        }
+        // $loc=$this->itemGet($location_id);
+        // if( !$loc ){
+        //     return true;
+        // }
+        // if( !$loc->deleted_at ){
+        //     return false;
+        // }
         return $this->delete([$location_id],true);
     }
     /////////////////////////////////////////////////////

@@ -75,7 +75,7 @@ class PrefManager extends \App\Controllers\BaseController {
             'location_latitude'=>$location_latitude,
             'location_longitude'=>$location_longitude,
             'location_address'=>$location_address,
-            'location_type_id'=>$group->group_id
+            'location_group_id'=>$group->group_id
         ];
         return $LocationModel->itemCreate($data,1);
     }

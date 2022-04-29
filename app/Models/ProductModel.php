@@ -57,10 +57,10 @@ class ProductModel extends Model{
             $filter=[
                 'image_holder'=>'product',
                 'image_holder_id'=>$product->product_id,
-                'is_disabled'=>1,
-                'is_deleted'=>0,
+                'is_disabled'=>$product->is_writable,
+                'is_deleted'=>$product->is_writable,
                 'is_active'=>1,
-                'limit'=>30
+                'limit'=>5
             ];
             $product->images=$ImageModel->listGet($filter);
             return $product;
