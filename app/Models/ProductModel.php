@@ -37,35 +37,33 @@ class ProductModel extends Model{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $product_id, $mode='all' ){
-        if( !$this->permit($product_id,'r') ){
-            return 'forbidden';
-        }
+        $this->permitWhere('r');
         $this->where('product_id',$product_id);
         $this->select("*");
         $this->select("IF(IFNULL(`product_promo_price`,0)>0 AND `product_promo_start` < NOW() AND `product_promo_finish` > NOW(),`product_promo_price`,`product_price`) product_final_price");
 
         $product = $this->get()->getRow();
+        if( !$product ){
+            return 'notfound';
+        }
         if($mode=='basic'){
             return $product;
         }
-        if($product){
-            $ProductGroupMemberModel=model('ProductGroupMemberModel');
-            $ProductGroupMemberModel->tableSet('product_group_member_list');
-            $ImageModel=model('ImageModel');
-            $product->is_writable=$this->permit($product_id,'w');
-            $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product->product_id);
-            $filter=[
-                'image_holder'=>'product',
-                'image_holder_id'=>$product->product_id,
-                'is_disabled'=>$product->is_writable,
-                'is_deleted'=>$product->is_writable,
-                'is_active'=>1,
-                'limit'=>5
-            ];
-            $product->images=$ImageModel->listGet($filter);
-            return $product;
-        }
-        return 'notfound';
+        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        $ProductGroupMemberModel->tableSet('product_group_member_list');
+        $ImageModel=model('ImageModel');
+        $product->is_writable=$this->permit($product_id,'w');
+        $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product->product_id);
+        $filter=[
+            'image_holder'=>'product',
+            'image_holder_id'=>$product->product_id,
+            'is_disabled'=>$product->is_writable,
+            'is_deleted'=>$product->is_writable,
+            'is_active'=>1,
+            'limit'=>5
+        ];
+        $product->images=$ImageModel->listGet($filter);
+        return $product;
     }
     
     public function itemCreate( $product ){
@@ -74,7 +72,7 @@ class ProductModel extends Model{
         }
         $store_id=$product['store_id'];
         $StoreModel=model('StoreModel');
-        $store=$StoreModel->itemGet($store_id);
+        $store=$StoreModel->itemGet($store_id,'basic');
         if( $store=='notfound' ){
             return 'nostore';
         }
@@ -83,7 +81,9 @@ class ProductModel extends Model{
             return 'forbidden';
         }
         $product['owner_id']=session()->get('user_id');
+        $product['owner_ally_ids']=$store->owner_ally_ids;
         $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
         return $this->insert($product);
     }
     
@@ -91,13 +91,7 @@ class ProductModel extends Model{
         if( !$product || !isset($product->product_id) ){
             return 'error_empty';
         }
-        $target_store_id=$product->store_id??$this->where('product_id',$product->product_id)->get()->getRow('store_id');
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($target_store_id,'w') || 
-            !$this->permit($product->product_id, 'w') ){
-            return 'forbidden';
-        }
-
+        $this->permitWhere('w');
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -122,28 +116,16 @@ class ProductModel extends Model{
     }
     
     public function itemDelete( $product_id ){
-        $target_store_id=$this->itemGet($product_id)->store_id;
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($target_store_id,'w') || 
-            !$this->permit($product_id, 'w') ){
-            return 'forbidden';
-        }
-        
         $ImageModel=model('ImageModel');
+        $ImageModel->permitWhere('w');
         $ImageModel->listDelete('product',$product_id);
         $this->delete($product_id);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUnDelete( $product_id ){
-        $target_store_id=$this->itemGet($product_id)->store_id;
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($target_store_id,'w') || 
-            !$this->permit($product_id, 'w') ){
-            return 'forbidden';
-        }
-        
         $ImageModel=model('ImageModel');
+        $ImageModel->permitWhere('w');
         $ImageModel->listUnDelete('product',$product_id);
         $this->update($product_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';

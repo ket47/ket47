@@ -38,30 +38,42 @@ class Task extends \App\Controllers\BaseController{
             echo " Done!\n";
             $time_limit+=2;//adding 2 seconds if there is job
         }
+        $this->timedJobCheck($predis);
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
     }
-    
-    
-//    public function jobCreate(){
-//        $ready_courier_list=model('CourierModel')->listGet(['status'=>'ready','limit'=>5,'order']);
-//        $messages=[];
-//        foreach($ready_courier_list as $courier){
-//            $context['courier']=$courier;
-//            $messages[]=(object)[
-//                        'message_reciever_id'=>$courier->user_id,
-//                        'message_transport'=>'sms',
-//                        'template'=>'messages/order/on_customer_start_COUR_sms.php',
-//                        'context'=>$context];
-//        }
-//        $sms_job=[
-//            'task_name'=>"Courier Notify #order_id",
-//            'task_programm'=>[
-//                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-//                ],
-//        ];
-//        helper('job');
-//        jobCreate($sms_job);
-//    }
+
+    private function timedJobCheck($predis){
+        $timer=$predis->get('cronjobtimer');
+        if($timer){//time not came
+            return false;
+        }
+        $timeout=1*60*60;//1hour
+        $predis->setEx('cronjobtimer',$timeout,1);
+        echo "\nTimed Jobs will execute:";
+        $this->timedJobDo();
+        return true;
+    }
+
+    private function timedJobDo(){
+        $this->taskPurge();
+    }
+
+    private function taskPurge(){
+        echo "\npurging started...";
+        $trashed_days= getenv('app.trashed_days');
+        model("ImageModel")->listPurge($trashed_days);
+        model("ProductModel")->listPurge($trashed_days);
+        model("StoreModel")->listPurge($trashed_days);
+        model("OrderModel")->listPurge($trashed_days);
+        model("UserModel")->listPurge($trashed_days);
+        echo "\npurged";
+    }
+
+
+
+
+
+
 
     public function run(){
         $TaskModel=model('TaskModel');
@@ -84,15 +96,6 @@ class Task extends \App\Controllers\BaseController{
             if( !$command->method??0 ){
                 return false;
             }
-            
-//            echo "\n--------------------------------";
-//            print_r($command);
-//            echo "/--------------------------------\n";
-//            
-//            log_message('error', 'taskExecute', (array)$command);
-            
-            
-            
             $arguments=$command->arguments??[];
             foreach ($arguments as $arg){
                 if($arg==='PREV-RESULT'){
@@ -129,31 +132,21 @@ class Task extends \App\Controllers\BaseController{
         return $task_result;
     }
     
-    private function taskPurge(){
-        $trashed_days= getenv('app.trashed_days');
-        model("ImageModel")->listPurge($trashed_days);
-        model("ProductModel")->listPurge($trashed_days);
-        model("StoreModel")->listPurge($trashed_days);
-        model("OrderModel")->listPurge($trashed_days);
-        model("UserModel")->listPurge($trashed_days);
-        return 'purged';
-    }
-    
-    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
-        $OrderModel=model('OrderModel');
-        $UserModel=model('UserModel');
-        $UserModel->systemUserLogin();
-        if( $order_id ){
-            $OrderModel->where('order_id',$order_id);
-        }
-        $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
-        $OrderModel->where('ogl.group_type',$stage_from);
-        $orders=$OrderModel->get()->getResult();
-        $result='';
-        foreach($orders as $order){
-            $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
-        }
-        $UserModel->systemUserLogout();
-        return $result;
-    }
+    // private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
+    //     $OrderModel=model('OrderModel');
+    //     $UserModel=model('UserModel');
+    //     $UserModel->systemUserLogin();
+    //     if( $order_id ){
+    //         $OrderModel->where('order_id',$order_id);
+    //     }
+    //     $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
+    //     $OrderModel->where('ogl.group_type',$stage_from);
+    //     $orders=$OrderModel->get()->getResult();
+    //     $result='';
+    //     foreach($orders as $order){
+    //         $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
+    //     }
+    //     $UserModel->systemUserLogout();
+    //     return $result;
+    // }
 }

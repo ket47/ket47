@@ -23,6 +23,12 @@ class Product extends \App\Controllers\BaseController{
             ];
         return $this->respond($data);
     }
+
+    public function listGroupGet(){
+        $ProductGroupModel=model('ProductGroupModel');
+        $result=$ProductGroupModel->listGet();
+        return $this->respond($result);
+    }
     
     public function listCreate(){
         return false;
@@ -59,7 +65,7 @@ class Product extends \App\Controllers\BaseController{
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemCreate($product);
         if( $ProductModel->errors() ){
-            return $this->failValidationError(json_encode($ProductModel->errors()));
+            return $this->failValidationErrors(json_encode($ProductModel->errors()));
         }
         if( is_numeric($result) ){
             return $this->respondCreated($result);

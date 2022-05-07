@@ -83,6 +83,9 @@ class UserModel extends Model{
         $user->member_of_groups=$UserGroupMemberModel->memberOfGroupsGet($user_id);
         
         $user->location_main=$LocationModel->itemMainGet('user', $user_id);
+        if(!$user->location_main){
+            $user->location_main=$LocationModel->itemMainGet('default_location','-1');
+        }
         $this->itemCache[$mode.$user_id]=$user;
         return $user;
     }

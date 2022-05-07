@@ -173,6 +173,44 @@ class Store extends \App\Controllers\BaseController{
     }
 
     /////////////////////////////////////////////////////
+    //OWNER HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function ownerListGet(){
+        $store_id=$this->request->getVar('store_id');
+
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->ownerListGet( $store_id );
+        if( $result==='unauthorized' ){
+            return $this->failUnauthorized($result);
+        }
+        if( $result==='nostore' ){
+            return $this->fail($result);
+        }
+        return $this->respond($result);
+    }
+    public function ownerSave(){
+        $store_id=$this->request->getVar('store_id');
+        $action=$this->request->getVar('action');
+        $owner_id=$this->request->getVar('owner_id');
+        $owner_phone=$this->request->getVar('owner_phone');
+
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->ownerSave( $action, $store_id, $owner_id, $owner_phone );
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        if( $result==='forbidden' ){
+            return $this->failForbidden($result);
+        }
+        if( $result==='unauthorized' ){
+            return $this->failUnauthorized($result);
+        }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->fail($result);
+    }
+    /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){

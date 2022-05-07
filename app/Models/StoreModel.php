@@ -315,6 +315,91 @@ class StoreModel extends Model{
     }
 
     /////////////////////////////////////////////////////
+    //STORE HANDLING SECTION
+    /////////////////////////////////////////////////////
+    public function ownerListGet($store_id){
+        $user_id=session()->get('user_id');
+        if( !($user_id>0) ){
+            return 'unauthorized';
+        }
+        if(!$store_id ){
+            return 'nostore';
+        }
+        $this->where('store_id',$store_id);
+        if( !sudo() ){
+            $this->where('store_list.owner_id',$user_id);
+        }
+        $owner_ally_ids=$this->get()->getRow('owner_ally_ids');
+        if($owner_ally_ids){
+            $UserModel=model('UserModel');
+            $UserModel->select('user_id,user_phone');
+            $UserModel->where("user_id IN($owner_ally_ids)");
+            $owner_allys=$UserModel->get()->getResult();
+        } else {
+            $owner_allys=[];
+        }
+        
+        return $owner_allys??[];
+    }
+    public function ownerSave($action, $store_id, $new_owner_id=null, $new_owner_phone=null){
+        if(!$store_id ){
+            return 'notfound';
+        }
+        $UserModel=model('UserModel');
+        if($new_owner_id){
+            $owner_ally_id=$UserModel->where('user_id',$new_owner_id)->get()->getRow('user_id');
+        } else 
+        if($new_owner_phone){
+            $owner_ally_id=$UserModel->where('user_phone',$new_owner_phone)->get()->getRow('user_id');
+        }
+        if( !$owner_ally_id ){
+            return 'notfound';
+        }
+        $user_id=session()->get('user_id');
+        if( !($user_id>0) ){
+            return 'unauthorized';
+        }
+        $this->where('store_id',$store_id);
+        if( !sudo() ){
+            $this->where('owner_id',$user_id);
+        }
+        $this->select('owner_id,owner_ally_ids');
+        $store_owners=$this->get()->getRow();
+
+        $owner_ally_ids=explode(',',"0,$store_owners->owner_ally_ids,$store_owners->owner_id");
+
+        if( $action=='add' ){
+            $owners=array_merge($owner_ally_ids,[$owner_ally_id]);
+        } else
+        if( $action=='delete' ){
+            $owners=array_diff($owner_ally_ids,[$owner_ally_id]);
+        } else {
+            return 'wrong_action';
+        }
+
+        $owners=array_unique($owners,SORT_NUMERIC);
+        array_shift($owners);
+        $owner_list=implode(',',$owners);
+        $sql="
+            UPDATE
+                store_list sl
+                    LEFT JOIN
+                product_list pl USING(store_id)
+                    LEFT JOIN
+                image_list ils ON ils.image_holder_id=store_id AND ils.image_holder='store'
+                    LEFT JOIN
+                image_list ilp ON ilp.image_holder_id=product_id AND ilp.image_holder='product'
+            SET
+                sl.owner_ally_ids='$owner_list',
+                pl.owner_ally_ids='$owner_list',
+                ils.owner_ally_ids='$owner_list',
+                ilp.owner_ally_ids='$owner_list'
+            WHERE
+                sl.store_id='$store_id'";
+        $this->query($sql);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function imageCreate( $data ){

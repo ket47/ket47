@@ -42,7 +42,30 @@ class Image extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
-    
+
+    public function itemUnDelete() {
+        $image_id = $this->request->getVar('image_id');
+
+        $ImageModel = model('ImageModel');
+        $result = $ImageModel->itemUnDelete($image_id);
+        if ($result === 'ok') {
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+    public function itemDisable(){
+        $image_id=$this->request->getVar('image_id');
+        $is_disabled=$this->request->getVar('is_disabled');
+        
+        $ImageModel=model('ImageModel');
+        $result=$ImageModel->itemDisable($image_id,$is_disabled);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
     public function listGet() {
         $filter=[
             'image_holder'=>$this->request->getVar('image_holder'),

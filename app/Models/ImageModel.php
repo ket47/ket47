@@ -103,6 +103,7 @@ class ImageModel extends Model{
     }
     
     public function itemDelete( $image_id ){
+        $this->permitWhere('w');
         $this->itemUpdate([
             'image_id'=>$image_id,
             'image_order'=>99
@@ -114,15 +115,28 @@ class ImageModel extends Model{
         }
         return 'idle';
     }
+
+    public function itemUnDelete( $image_id ){
+        $this->permitWhere('w');
+        $ok=$this->update(['image_id'=>$image_id],['deleted_at'=>null]);
+        $this->itemUpdateMain( $image_id );
+        if( $ok ){
+            return 'ok';
+        }
+        return 'idle';
+    }
     
     public function itemDisable( $image_id, $is_disabled ){
+        $this->permitWhere('w');
         $this->allowedFields[]='is_disabled';
-        $ok=$this->update(['image_id'=>$image_id],['is_disabled'=>$is_disabled]);
+        $this->update(['image_id'=>$image_id],['is_disabled'=>$is_disabled]);
+        $result=$this->db->affectedRows()?'ok':'idle';
         $this->itemUpdateMain( $image_id );
-        return $ok;
+        return $result;
     }
     
     public function itemPurge( $image_id ){
+        $this->permitWhere('w');
         $image=$this->itemGet($image_id);
         if( !$image ){
             return true;
