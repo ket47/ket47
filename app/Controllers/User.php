@@ -202,7 +202,7 @@ class User extends \App\Controllers\BaseController{
         $email_send_ok=false;
         $email_user_id=$UserModel->passRecoveryCheckEmail($user_email,$user_name);
         if( !$phone_user_id && !$email_user_id ){
-            return $this->failNotFound('password_reset_user_not_found');
+            return $this->failNotFound('user_not_found');
         }
         if( $user_email && $email_user_id ){
             $msg_data=[
@@ -232,11 +232,11 @@ class User extends \App\Controllers\BaseController{
                 return $this->respondUpdated('password_updated');
             }
             if( $UserModel->errors() ){
-                return $this->failValidationError(json_encode($UserModel->errors()));
+                return $this->failValidationErrors(json_encode($UserModel->errors()));
             }
-            return $this->fail('password_reset_not_updated');
+            return $this->fail('not_updated');
         } else {
-            return $this->fail('password_reset_was_not_sent');
+            return $this->fail('was_not_sent');
         }
     }
     ///////////////////////////////////////////////
