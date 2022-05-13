@@ -18,6 +18,7 @@ class Store extends \App\Controllers\BaseController{
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
             'owner_id'=>$this->request->getVar('owner_id'),
+            'owner_ally_ids'=>$this->request->getVar('owner_ally_ids'),
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);
@@ -67,7 +68,6 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->respond($result);
     }
-    
     
     public function itemCreate(){
         $name=$this->request->getVar('name');
