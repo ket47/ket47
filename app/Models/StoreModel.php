@@ -222,9 +222,10 @@ class StoreModel extends Model{
             $this->join('store_group_member_list','member_id=store_id');
             $this->where('group_id',$filter['group_id']);
         }
-        if( $filter['owner_ally_ids']??0 ){
+        if( $filter['owner_id']??0 ){
             $owner_id=(int)$filter['owner_ally_ids'];
-            $this->where("FIND_IN_SET($owner_id,owner_ally_ids)");
+            $owner_ally_id=(int)$filter['owner_ally_ids'];
+            $this->where("store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids)");
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
