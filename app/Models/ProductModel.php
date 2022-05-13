@@ -31,7 +31,7 @@ class ProductModel extends Model{
         'store_id'         => 'required|numeric',
         'product_name'     => 'required|min_length[10]',
         'product_price'    => 'required|numeric',
-        'product_promo_price'    => 'numeric',
+        //'product_promo_price'    => 'numeric',
     ];
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
