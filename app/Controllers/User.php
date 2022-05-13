@@ -116,7 +116,7 @@ class User extends \App\Controllers\BaseController{
         $user_phone=$this->request->getVar('user_phone');
         $user_pass=$this->request->getVar('user_pass');
         if( !$user_phone || !$user_pass ){
-            return $this->failValidationErrors();
+            return $this->fail('empty_phone_or_pass');
         }
         $this->signOut();
         
