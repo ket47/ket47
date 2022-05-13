@@ -123,7 +123,7 @@ class StoreModel extends Model{
             $this->update($store_id,['owner_id'=>$user_id,'is_disabled'=>1]);
             return $store_id;
         }
-        return 'error';
+        return 0;
     }
     
     public function itemUpdate( $store ){
@@ -221,6 +221,10 @@ class StoreModel extends Model{
         if( $filter['group_id']??0 ){
             $this->join('store_group_member_list','member_id=store_id');
             $this->where('group_id',$filter['group_id']);
+        }
+        if( $filter['owner_ally_ids']??0 ){
+            $owner_id=(int)$filter['owner_ally_ids'];
+            $this->where("FIND_IN_SET($owner_id,owner_ally_ids)");
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
