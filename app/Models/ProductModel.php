@@ -29,7 +29,7 @@ class ProductModel extends Model{
     protected $useSoftDeletes = true;
     protected $validationRules    = [
         'store_id'         => 'required|numeric',
-        'product_name'     => 'required|min_length[10]',
+        'product_name'     => 'required|min_length[5]',
         'product_price'    => 'required|numeric',
         //'product_promo_price'    => 'numeric',
     ];
