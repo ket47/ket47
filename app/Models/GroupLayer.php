@@ -139,7 +139,7 @@ class GroupLayer extends Model{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function imageCreate( $data ){
-        $data['is_disabled']=1;
+        $data['is_disabled']=0;
         $data['is_main']=1;
         $data['owner_id']=session()->get('user_id');
         if( !sudo() ){
@@ -148,10 +148,10 @@ class GroupLayer extends Model{
         $ImageModel=model('ImageModel');
         $limit=1;
         $result=$ImageModel->itemCreate($data,$limit);
-        if( $result!='limit_exeeded' ){
-            $image_id=$this->db->insertID();
-            $ImageModel->itemDisable($image_id,0);
-        }
+        // if( $result!='limit_exeeded' ){
+        //     $image_id=$this->db->insertID();
+        //     $ImageModel->itemDisable($image_id,0);
+        // }
         return $result;
     }
     
