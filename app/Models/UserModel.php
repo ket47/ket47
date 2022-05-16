@@ -27,8 +27,24 @@ class UserModel extends Model{
     protected $beforeUpdate = ['hashPassword'];
     
     protected $validationRules    = [
-        'user_name'     => 'required|min_length[3]',
-        'user_phone'    => 'required|numeric|exact_length[11]|is_unique[user_list.user_phone]',
+        'user_name'     => [
+            'label' =>'user_name',
+            'rules' =>'required|min_length[3]',
+            'errors'=>[
+                'required'=>'user_name_empty',
+                'min_length'=>'user_name_short'
+            ]
+        ],
+        'user_phone'    => [
+            'label' =>'user_phone',
+            'rules' =>'required|numeric|exact_length[11]|is_unique[user_list.user_phone]',
+            'errors'=>[
+                'required'=>'user_phone_empty',
+                'numeric'=>'user_phone_invalid',
+                'exact_length'=>'user_phone_invalid',
+                'is_unique'=>'user_phone_notunique'
+            ]
+        ],
         'user_email'    => 'if_exist|valid_email|is_unique[user_list.user_email]',
         'user_pass'     => 'required|min_length[6]',
         'user_pass_confirm' => 'required_with[user_pass]|matches[user_pass]'
