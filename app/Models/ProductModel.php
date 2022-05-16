@@ -22,7 +22,7 @@ class ProductModel extends Model{
         'product_promo_price',
         'product_promo_start',
         'product_promo_finish',
-        'is_produced',
+        'is_counted',
         'deleted_at'
         ];
     protected $returnType     = 'array';

@@ -129,7 +129,7 @@ class ImporterModel extends Model{
         $has_pprice=false;
         foreach( $colconfig as $field=>$col ){
             $has_pname= $field=='product_name' ?true:$has_pname;
-            $has_pquantity= $field=='product_quantity' || $field=='is_produced' ?true:$has_pquantity;
+            $has_pquantity= $field=='product_quantity' || $field=='is_counted' ?true:$has_pquantity;
             $has_pprice= $field=='product_price' ?true:$has_pprice;
         }
         if( !$has_pname || !$has_pprice || !$has_pquantity ){
@@ -164,7 +164,7 @@ class ImporterModel extends Model{
                 product_list pl ON pl.$join_on_dst=il.$join_on_src AND pl.store_id='$store_id'
             SET
                 il.target_id=product_id,
-                il.action=IF(product_id,'update',IF(LENGTH(`$colconfig->product_name`)>10 AND (`$colconfig->product_quantity`>0 OR '".($colconfig->is_produced??0)."') AND `$colconfig->product_price`>0,'add','skip'))
+                il.action=IF(product_id,'update',IF(LENGTH(`$colconfig->product_name`)>10 AND (`$colconfig->product_quantity`>0 OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add','skip'))
             WHERE
                 il.owner_id='{$owner_id}'
                 AND il.holder_id='$store_id'

@@ -20,12 +20,12 @@
 
             <div>Количество</div>
             <div>
-                <input type="number" name="product_quantity.<?= $product->product_id ?>" value="<?= $product->product_quantity ?>" <?= $product->is_produced ? 'disabled' : '' ?>/>
+                <input type="number" name="product_quantity.<?= $product->product_id ?>" value="<?= $product->product_quantity ?>" <?= $product->is_counted ? 'disabled' : '' ?>/>
             </div>
 
             <div>Мин. заказ</div>
             <div>
-                <input type="number" name="product_quantity_min.<?= $product->product_id ?>" value="<?= $product->product_quantity_min ?>" <?= $product->is_produced ? 'disabled' : '' ?>/>
+                <input type="number" name="product_quantity_min.<?= $product->product_id ?>" value="<?= $product->product_quantity_min ?>" <?= $product->is_counted ? 'disabled' : '' ?>/>
             </div>
 
             <div>Единица</div>
@@ -62,7 +62,7 @@
 
             <div>Производится</div>
             <div>
-                <input type="checkbox" name="is_produced.<?= $product->product_id ?>" <?= $product->is_produced ? 'checked' : '' ?>/>
+                <input type="checkbox" name="is_counted.<?= $product->product_id ?>" <?= $product->is_counted ? 'checked' : '' ?>/>
             </div>
 
             <div>Отключен</div>

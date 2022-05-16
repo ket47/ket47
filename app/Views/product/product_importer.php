@@ -203,7 +203,7 @@
                 {field:"product_name",name:"Название",required:1},
                 {field:"product_price",name:"Цена",required:1},
                 {field:"product_quantity",name:"Остаток",required:1},
-                {field:"is_produced",name:"Товар производится",required:1},
+                {field:"is_counted",name:"Товар производится",required:1},
                 {field:"product_code",name:"Код товара"},
                 {field:"product_description",name:"Описание"},
                 {field:"product_weight",name:"Вес кг"},

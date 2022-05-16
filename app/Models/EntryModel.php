@@ -163,7 +163,7 @@ class EntryModel extends Model{
         product_unit,
         product_quantity,
         product_quantity_min,
-        is_produced,
+        is_counted,
         order_entry_list.deleted_at,
         entry_comment
     ";
