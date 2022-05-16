@@ -28,7 +28,7 @@ class UserModel extends Model{
     
     protected $validationRules    = [
         'user_name'     => [
-            'label' =>'user_name',
+            //'label' =>'user_name',
             'rules' =>'required|min_length[3]',
             'errors'=>[
                 'required'=>'required',
@@ -46,7 +46,7 @@ class UserModel extends Model{
             ]
         ],
         'user_email'    => [
-            'label' =>'user_email',
+            //'label' =>'user_email',
             'rules' =>'if_exist|valid_email|is_unique[user_list.user_email]',
             'errors'=>[
                 'valid_email'=>'invalid',
@@ -62,7 +62,7 @@ class UserModel extends Model{
             ]
         ],
         'user_pass_confirm'     => [
-            'label' =>'user_pass_confirm',
+            'label' =>'user_pass',
             'rules' =>'required_with[user_pass]|matches[user_pass]',
             'errors'=>[
                 'required_with'=>'required',
