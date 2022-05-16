@@ -36,7 +36,7 @@ class UserModel extends Model{
             ]
         ],
         'user_phone'    => [
-            'label' =>'user_phone',
+            //'label' =>'user_phone',
             'rules' =>'required|numeric|exact_length[11]|is_unique[user_list.user_phone]',
             'errors'=>[
                 'required'=>'required',
