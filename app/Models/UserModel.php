@@ -355,14 +355,9 @@ class UserModel extends Model{
     }
     
     public function getUnverifiedUserIdByPhone($user_phone_cleared){
-        $sql="SELECT 
-                `user_id` 
-            FROM 
-                `user_list` 
-            WHERE 
-                `user_phone` = '$user_phone_cleared' 
-                AND COALESCE(`user_phone_verified`,0) = 0";
-        $user_id = $this->query($sql)->getRow('user_id');
+        $this->where('user_phone',$user_phone_cleared);
+        $this->where('user_phone_verified IS NULL OR user_phone_verified=0');
+        $user_id = $this->get()->getRow('user_id');
         return $user_id;
     }
     

@@ -184,7 +184,7 @@ class User extends \App\Controllers\BaseController{
         
         $UserModel=model('UserModel');
         helper('hash_generate');
-        $new_password=generate_hash(6);
+        $new_password=generate_hash(4);
         
         $sms_send_ok=false;
         $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared,$user_name);
@@ -285,6 +285,10 @@ class User extends \App\Controllers\BaseController{
         $user_phone=$this->request->getVar('user_phone');
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
+
+
+
+
 
         $UserVerificationModel=model('UserVerificationModel');
         $result=$UserVerificationModel->phoneVerify($user_phone_cleared,$verification_code);
