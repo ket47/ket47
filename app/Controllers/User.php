@@ -9,6 +9,7 @@ class User extends \App\Controllers\BaseController{
     //USER OPERATIONS SECTION
     /////////////////////////////////////////////
     public function itemGet(){
+        $mode=$this->request->getVar('mode');
         $user_id=$this->request->getVar('user_id');
         if( !$user_id ){
             $user_id=session()->get('user_id');

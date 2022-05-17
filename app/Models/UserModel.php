@@ -123,6 +123,12 @@ class UserModel extends Model{
         if(!$user->location_main){
             $user->location_main=$LocationModel->itemMainGet('default_location','-1');
         }
+        if( $mode=='full' ){
+            $CourierModel=model('CourierModel');
+            $StoreModel=model('StoreModel');
+            $user->storeList=$StoreModel->listGet(['owner_id'=>$user_id,'owner_ally_ids'=>$user_id]);
+            $user->courier=$CourierModel->itemGet();
+        }
         $this->itemCache[$mode.$user_id]=$user;
         return $user;
     }
