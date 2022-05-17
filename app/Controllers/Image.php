@@ -91,6 +91,9 @@ class Image extends \App\Controllers\BaseController{
     public function listDelete(){
         return false;
     }
- 
 
+    public function listPurge(){
+        $ImageModel=model('ImageModel');
+        $ImageModel->listPurge();
+    }
 }
