@@ -43,7 +43,7 @@ class ImageModel extends Model{
         }
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
-        $data['image_order']=$inserted_count+1;
+        $data['image_order']=1;//in the start of list
         //$data['owner_id']=session()->get('user_id');
         $data['image_hash']=md5(microtime().rand(1,1000));
         if( $this->insert($data) ){
@@ -106,7 +106,7 @@ class ImageModel extends Model{
         $this->permitWhere('w');
         $this->itemUpdate([
             'image_id'=>$image_id,
-            'image_order'=>99
+            'image_order'=>9999
         ]);
         $ok=$this->delete($image_id);
         $this->itemUpdateMain( $image_id );

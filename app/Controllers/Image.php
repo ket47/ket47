@@ -93,7 +93,12 @@ class Image extends \App\Controllers\BaseController{
     }
 
     public function listPurge(){
+        $UserModel=model('UserModel');
         $ImageModel=model('ImageModel');
+        $UserModel->systemUserLogin();
+        \CodeIgniter\Events\Events::on('post_system', function() use($UserModel){
+            $UserModel->systemUserLogout();
+        },1);
         $ImageModel->listPurge();
     }
 }
