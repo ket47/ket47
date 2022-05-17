@@ -12,10 +12,10 @@ class User extends \App\Controllers\BaseController{
         $mode=$this->request->getVar('mode');
         $user_id=$this->request->getVar('user_id');
         if( !$user_id ){
-            $user_id=session()->get('user_id',$mode);
+            $user_id=session()->get('user_id');
         }
         $UserModel=model('UserModel');
-        $user=$UserModel->itemGet($user_id);
+        $user=$UserModel->itemGet($user_id,$mode);
         return $this->respond($user);
     }
     
