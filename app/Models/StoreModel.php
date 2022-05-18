@@ -263,6 +263,7 @@ class StoreModel extends Model{
             return 'location_required'; 
         }
         $weekday=date('N')-1;
+        $nextweekday=date('N')%7;
         $dayhour=date('H');
 
         $PrefModel=model('PrefModel');
@@ -271,8 +272,8 @@ class StoreModel extends Model{
 
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
-        $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,store_description");
-        $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
+        $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,store_description,is_working");
+        $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
         $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $LocationModel->join('store_list','store_id=location_holder_id');
         $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
@@ -281,6 +282,7 @@ class StoreModel extends Model{
         }
         $LocationModel->orderBy("is_opened",'DESC');
         $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
+        $LocationModel->where("(store_list.deleted_at IS NULL AND store_list.is_disabled=0)");
         $store_list=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
         if( !is_array($store_list) ){
             return 'not_found';
