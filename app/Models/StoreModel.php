@@ -33,6 +33,7 @@ class StoreModel extends Model{
         'store_time_closes_5',
         'store_time_closes_6',
         'is_working',
+        'validity',
         'owner_id',
         'owner_ally_id'
         ];
@@ -343,7 +344,6 @@ class StoreModel extends Model{
         } else {
             $owner_allys=[];
         }
-        
         return $owner_allys??[];
     }
     public function ownerSave($action, $store_id, $new_owner_id=null, $new_owner_phone=null){
