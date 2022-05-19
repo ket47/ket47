@@ -3,14 +3,19 @@
 namespace App\Controllers;
 
 class Task extends \App\Controllers\BaseController{
-    
+    private $workerLifeTime=1*60;//1min
+    private $workerLifeSpread=1*60;//1min
+    private $timedJobInterval=1*60*60;//1 hour
+
+
+
     public function jobDo(){
         require_once '../app/ThirdParty/Credis/Client.php';
         set_time_limit(3600);
         session_write_close();
         
-        $time_limit = 60 * 1;
-        $time_limit += rand(0, 60 * 1);
+        $time_limit = $this->workerLifeTime;
+        $time_limit += rand(0, $this->workerLifeSpread);
         $start_time = time();
         $worker_id = rand(100, 999);
         
@@ -45,10 +50,10 @@ class Task extends \App\Controllers\BaseController{
     private function timedJobCheck($predis){
         $timer=$predis->get('cronjobtimer');
         if($timer){//time not came
+            echo "timedJobCheck skipping: $timer";
             return false;
         }
-        $timeout=1*60*60;//1hour
-        $predis->setEx('cronjobtimer',$timeout,1);
+        $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
         echo "\nTimed Jobs will execute:";
         $this->timedJobDo();
         return true;

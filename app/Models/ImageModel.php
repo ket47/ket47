@@ -136,7 +136,9 @@ class ImageModel extends Model{
     }
     
     public function itemPurge( $image_id ){
-        $this->permitWhere('w');
+        /**
+         * Dont check ownership. checked it et deletion time
+         */
         $image=$this->itemGet($image_id);
         if( !$image ){
             return true;
