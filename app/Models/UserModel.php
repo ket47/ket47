@@ -275,7 +275,7 @@ class UserModel extends Model{
     }
     
     public function listPurge( $olderThan=7 ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }

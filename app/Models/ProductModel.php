@@ -323,7 +323,7 @@ class ProductModel extends Model{
     }
     
     public function listPurge( $olderThan=APP_TRASHED_DAYS ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }

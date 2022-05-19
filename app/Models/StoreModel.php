@@ -81,7 +81,7 @@ class StoreModel extends Model{
             'is_disabled'=>1,
             'is_deleted'=>0,
             'is_active'=>1,
-            'limit'=>30
+            'limit'=>5
         ];
         $store->images=$ImageModel->listGet($filter);
         
@@ -91,7 +91,7 @@ class StoreModel extends Model{
             'is_disabled'=>1,
             'is_deleted'=>0,
             'is_active'=>1,
-            'limit'=>30
+            'limit'=>5
         ];
         // if($distanceToUserInclude){
         //     $LocationModel->distanceToUserInclude();
@@ -253,7 +253,7 @@ class StoreModel extends Model{
     }
     
     public function listPurge( $olderThan=APP_TRASHED_DAYS ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }
