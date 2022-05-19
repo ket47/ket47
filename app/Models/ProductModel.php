@@ -23,6 +23,7 @@ class ProductModel extends Model{
         'product_promo_start',
         'product_promo_finish',
         'is_counted',
+        'validity',
         'deleted_at'
         ];
     protected $returnType     = 'array';
@@ -40,7 +41,7 @@ class ProductModel extends Model{
         $this->permitWhere('r');
         $this->where('product_id',$product_id);
         $this->select("*");
-        $this->select("IF(IFNULL(`product_promo_price`,0)>0 AND `product_promo_start` < NOW() AND `product_promo_finish` > NOW(),`product_promo_price`,`product_price`) product_final_price");
+        $this->select("IF(IFNULL(`product_promo_price`,0)>0 AND `product_price`>`product_promo_price` AND `product_promo_start` < NOW() AND `product_promo_finish` > NOW(),`product_promo_price`,`product_price`) product_final_price");
 
         $product = $this->get()->getRow();
         if( !$product ){
@@ -58,7 +59,7 @@ class ProductModel extends Model{
             'image_holder'=>'product',
             'image_holder_id'=>$product->product_id,
             'is_disabled'=>$product->is_writable,
-            'is_deleted'=>$product->is_writable,
+            'is_deleted'=>0,
             'is_active'=>1,
             'limit'=>5
         ];
@@ -157,7 +158,7 @@ class ProductModel extends Model{
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_hash,group_id");
-        $this->select("IF(IFNULL(product_promo_price,0)>0 AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price) product_final_price");
+        $this->select("IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price) product_final_price");
         $product_list= $this->get()->getResult();
         return $product_list;
     }
