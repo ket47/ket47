@@ -21,7 +21,11 @@ class Task extends \App\Controllers\BaseController{
         
         echo "Worker #$worker_id Starting.".date('H:i:s')."\n	Waiting for a Job";
         $predis = new \Credis_Client();
-        $this->timedJobCheck($predis);
+        $timedJobDone=$this->timedJobCheck($predis);
+        if($timedJobDone){
+            echo "Timed job is done. Worker will not started.";
+            return;
+        }
         while(time() < $start_time + $time_limit){
             $job = $predis->blPop('queue.priority.normal',4);
             if(!$job || !$job[1]){
