@@ -5,7 +5,7 @@ namespace App\Controllers;
 class Task extends \App\Controllers\BaseController{
     private $workerLifeTime=1*60;//1min
     private $workerLifeSpread=1*60;//1min
-    private $timedJobInterval=1*60;//1 hour *60
+    private $timedJobInterval=1*60*30;//1 hour 
 
 
 
