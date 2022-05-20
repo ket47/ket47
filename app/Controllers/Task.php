@@ -5,7 +5,7 @@ namespace App\Controllers;
 class Task extends \App\Controllers\BaseController{
     private $workerLifeTime=1*60;//1min
     private $workerLifeSpread=1*60;//1min
-    private $timedJobInterval=1*60*60;//1 hour
+    private $timedJobInterval=1*60;//1 hour *60
 
 
 
@@ -21,6 +21,7 @@ class Task extends \App\Controllers\BaseController{
         
         echo "Worker #$worker_id Starting.".date('H:i:s')."\n	Waiting for a Job";
         $predis = new \Credis_Client();
+        $this->timedJobCheck($predis);
         while(time() < $start_time + $time_limit){
             $job = $predis->blPop('queue.priority.normal',4);
             if(!$job || !$job[1]){
@@ -43,7 +44,6 @@ class Task extends \App\Controllers\BaseController{
             echo " Done!\n";
             $time_limit+=2;//adding 2 seconds if there is job
         }
-        $this->timedJobCheck($predis);
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
     }
 
@@ -53,9 +53,9 @@ class Task extends \App\Controllers\BaseController{
             echo "timedJobCheck skipping: $timer";
             return false;
         }
-        $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
         echo "\nTimed Jobs will execute:";
         $this->timedJobDo();
+        $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
         return true;
     }
 
@@ -72,6 +72,7 @@ class Task extends \App\Controllers\BaseController{
         model("OrderModel")->listPurge($trashed_days);
         model("UserModel")->listPurge($trashed_days);
         echo "\npurged";
+        log_message('error',"PURGED");
     }
 
 

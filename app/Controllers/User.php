@@ -119,7 +119,7 @@ class User extends \App\Controllers\BaseController{
         if( !$user_phone || !$user_pass ){
             return $this->fail('empty_phone_or_pass');
         }
-        $this->signOut();
+        $this->signOutUser();
         
         $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
         $UserModel=model('UserModel');
@@ -155,30 +155,15 @@ class User extends \App\Controllers\BaseController{
         session()->set('courier_id',$courier_id);
     }
     
-    public function signOut(){
+    private function signOutUser(){
         $user_id=session()->get('user_id');
-        $courier_signout_result=$this->signOutCourier($user_id);
-        if( $courier_signout_result!='ok' ){
-            return $this->fail('courier_not_idle',409);
-        }
-
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
-        $this->signOutSession();
-        //session_unset();//clear all session variables
-        return $this->respond('ok');
+        session_unset();//clear all session variables
     }
 
-    private function signOutSession(){
-        session_start();
-        session_unset();
-        session_destroy();
-        session_write_close();
-        setcookie(session_name(),'',0,'/');
-        session_regenerate_id(true);
-    }
-
-    private function signOutCourier($user_id){
+    private function signOutCourier(){
+        $user_id=session()->get('user_id');
         $CourierModel=model('CourierModel');
         if( $CourierModel->isIdle(null,$user_id) ){
             return 'ok';
@@ -186,6 +171,17 @@ class User extends \App\Controllers\BaseController{
         $courier_id=$CourierModel->where('owner_id',$user_id)->get()->getRow('courier_id');
         return $CourierModel->itemUpdateStatus($courier_id,'idle');
     }
+
+    public function signOut(){
+        $this->signOutUser();
+        $courier_signout_result=$this->signOutCourier();
+        if( $courier_signout_result!='ok' ){
+            return $this->fail('courier_not_idle',409);
+        }
+        session_destroy();
+        return $this->respond('ok');
+    }
+
     
     public function passwordReset(){
         $user_phone=$this->request->getVar('user_phone');
