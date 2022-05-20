@@ -164,8 +164,18 @@ class User extends \App\Controllers\BaseController{
 
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);
-        session_unset();//clear all session variables
+        $this->signOutSession();
+        //session_unset();//clear all session variables
         return $this->respond('ok');
+    }
+
+    private function signOutSession(){
+        session_start();
+        session_unset();
+        session_destroy();
+        session_write_close();
+        setcookie(session_name(),'',0,'/');
+        session_regenerate_id(true);
     }
 
     private function signOutCourier($user_id){
