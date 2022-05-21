@@ -60,6 +60,12 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'r') ){
             return 'forbidden';
         }
+        $weekday=date('N')-1;
+        $dayhour=date('H');
+        $this->select("*");
+        $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
+        $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
         if( !$store ){
@@ -88,14 +94,11 @@ class StoreModel extends Model{
         $filter_loc=[
             'location_holder'=>'store',
             'location_holder_id'=>$store->store_id,
-            'is_disabled'=>1,
-            'is_deleted'=>0,
-            'is_active'=>1,
-            'limit'=>5
+            'is_active'=>1
         ];
-        // if($distanceToUserInclude){
-        //     $LocationModel->distanceToUserInclude();
-        // }
+        if($distanceToUserInclude){
+            $LocationModel->distanceToUserInclude();
+        }
         $store->locations=$LocationModel->listGet($filter_loc);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
