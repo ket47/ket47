@@ -20,7 +20,7 @@ trait FilterTrait{
         }
         $this->filterStatus($filter);
         if( $filter[$this->primaryKey] ){
-            $this->whereIn($this->primaryKey,$filter[$this->primaryKey]);
+            $this->where($this->primaryKey,$filter[$this->primaryKey]);
         }
         
         if( !empty($filter['name_query']) && !empty($filter['name_query_fields']) ){

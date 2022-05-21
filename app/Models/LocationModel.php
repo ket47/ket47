@@ -229,7 +229,7 @@ class LocationModel extends Model{
     
     public function listDelete( $location_holder, $location_holder_id ){
         $this->where('location_holder',$location_holder);
-        $this->whereIn('location_holder_id',$location_holder_id);
+        $this->where('location_holder_id',$location_holder_id);
         $this->delete();    
         return $this->db->affectedRows()?'ok':'idle';
     }
