@@ -267,6 +267,10 @@ class CourierModel extends Model{
         $OrderModel=model("OrderModel");
         $LocationModel=model('LocationModel');
 
+        $OrderModel->join('courier_list','courier_id=order_courier_id','left');
+        $OrderModel->join('user_list','courier_list.owner_id=user_id','left');
+        $OrderModel->select("order_list.*");
+        $OrderModel->select("user_list.user_name as courier_name");
         $job=$OrderModel->where('order_id',$order_id)->get()->getRow();
         if( !$job ){
             return 'notfound';
