@@ -267,10 +267,6 @@ class CourierModel extends Model{
         $OrderModel=model("OrderModel");
         $LocationModel=model('LocationModel');
 
-        $OrderModel->join('courier_list','courier_id=order_courier_id','left');
-        $OrderModel->join('user_list','courier_list.owner_id=user_id','left');
-        $OrderModel->select("order_list.*");
-        $OrderModel->select("user_list.user_name as courier_name");
         $job=$OrderModel->where('order_id',$order_id)->get()->getRow();
         if( !$job ){
             return 'notfound';
@@ -299,6 +295,24 @@ class CourierModel extends Model{
             $this->transComplete();
         }
         return $result;
+    }
+
+    public function itemJobTrack($order_id){
+        $OrderModel=model("OrderModel");
+        $LocationModel=model('LocationModel');
+
+        $OrderModel->permitWhere('r');
+        $OrderModel->join('courier_list','courier_id=order_courier_id','left');
+        $OrderModel->join('user_list','courier_list.owner_id=user_id','left');
+        $OrderModel->join('location_list','courier_id=location_holder_id AND location_holder="courier" AND is_main=1','left');
+        $OrderModel->select("order_list.*");
+        $OrderModel->select("user_list.user_name as courier_name,location_id courier_location_id");
+        $job=$OrderModel->where('order_id',$order_id)->get()->getRow();
+        if( !$job ){
+            return 'notfound';
+        }
+        $job->courier_finish_distance=$LocationModel->distanceGet($job->courier_location_id??0,$job->order_finish_location_id??0);
+        return $job;
     }
 
     

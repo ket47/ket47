@@ -195,6 +195,19 @@ class Courier extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+
+    public function itemJobTrack(){
+        $order_id=$this->request->getVar('order_id');
+        $CourierModel=model('CourierModel');
+        $result=$CourierModel->itemJobTrack($order_id);
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        if( $result==='notready' ){
+            return $this->fail($result);
+        }
+        return $this->respond($result);
+    }
     
     public function listGet(){
         $filter=[
