@@ -25,7 +25,7 @@
     <?php if($active_count>0): ?>
     <div style="display: contents">
         <div style="grid-column: 1 / span 4;text-align: right">Доставка:</div>
-        <div style="text-align: right"><?=$order->order_sum_shipping?></div>
+        <div style="text-align: right"><?=$order->order_sum_delivery?></div>
         <div style=""></div>
         <div style=""></div>
     </div>

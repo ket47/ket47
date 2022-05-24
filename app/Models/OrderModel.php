@@ -15,7 +15,7 @@ class OrderModel extends Model{
         'order_courier_id',
         'order_start_location_id',
         'order_finish_location_id',
-        'order_sum_shipping',
+        'order_sum_delivery',
         'order_sum_total',
         'order_sum_tax',
         'order_description',
@@ -85,7 +85,7 @@ class OrderModel extends Model{
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
         //$StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
-        $order->stage_next=  $this->itemGetNextStages($order->stage_current,$order->user_role);
+        $order->stage_next= $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
         $order->entries=    $EntryModel->listGet($order_id);
@@ -119,7 +119,7 @@ class OrderModel extends Model{
         $this->allowedFields[]='owner_id';
         $new_order=[
             'order_store_id'=>$store_id,
-            'order_shipping_fee'=>$this->shippingFeeGet(),
+            'order_sum_delivery'=>$this->deliveryFeeGet(),
             'order_tax'=>0,
             'owner_id'=>$user_id,
         ];
@@ -130,9 +130,9 @@ class OrderModel extends Model{
         return $order_id;
     }
     
-    private function shippingFeeGet(){
+    private function deliveryFeeGet(){
         $PrefModel=model('PrefModel');
-        return $PrefModel->itemGet('shipping_fee');
+        return $PrefModel->itemGet('delivery_fee');
     }
     
     public function itemUpdate( $order ){
