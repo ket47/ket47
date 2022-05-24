@@ -306,10 +306,10 @@ class CourierModel extends Model{
         $OrderModel->join('user_list','courier_list.owner_id=user_id','left');
         $OrderModel->join('location_list','courier_id=location_holder_id AND location_holder="courier" AND is_main=1','left');
         $OrderModel->join('order_group_list ogl','group_id=order_group_id');
-        $OrderModel->select("order_start_location_id,order_finish_location_id");
+        $OrderModel->select("order_start_location_id,order_finish_location_id,group_type");
         $OrderModel->select("user_list.user_name as courier_name,location_id courier_location_id");
         $OrderModel->where('order_id',$order_id);
-        $OrderModel->where('group_type','delivery_start');
+        //$OrderModel->where('group_type','delivery_start');
         $job=$OrderModel->get()->getRow();
         if( !$job ){
             return 'notfound';
