@@ -8,11 +8,11 @@ trait OrderStageTrait{
             ],
         'customer_purged'=>                 [],
         'customer_deleted'=>[
-            'customer_purged'=>             ['Удалить окончательно'],
+            'customer_purged'=>             ['Удалить окончательно','negative'],
             'customer_cart'=>               ['Восстановить'],
             ],
         'customer_cart'=>[
-            'customer_purged'=>             ['Удалить','negative'],
+            'customer_purged'=>             ['Удалить окончательно','negative'],
             'customer_confirmed'=>          [],
             'customer_action_checkout'=>    ['Продолжить','positive'],
             ],
@@ -36,7 +36,7 @@ trait OrderStageTrait{
         
         
         'supplier_rejected'=>[
-            'customer_cart'=>               ['--reset'],
+            'customer_purged'=>             ['Удалить окончательно','negative'],
             'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
@@ -51,10 +51,10 @@ trait OrderStageTrait{
             'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
             ],
         'supplier_finish'=>[
+            'supplier_action_take_photo'=>  ['Сфотографировать'],
             'supplier_corrected'=>          ['Изменить'],
             'delivery_start'=>              ['Начать доставку','positive'],
             'delivery_no_courier'=>         [],
-            'supplier_action_take_photo'=>  ['Сфотографировать']
             ],
         
         
@@ -365,7 +365,7 @@ trait OrderStageTrait{
             'customer'=>$customer
         ];
         $store_email=(object)[
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
             'message_transport'=>'email',
             'message_subject'=>"Отмена Заказа №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_supplier_rejected_STORE_email.php',
