@@ -104,7 +104,8 @@ class EntryModel extends Model{
         $stock_check_sql="SELECT 
                 product_quantity,
                 entry_comment,
-                order_id
+                order_id,
+                is_counted
             FROM
                 order_entry_list
                     JOIN
@@ -118,7 +119,7 @@ class EntryModel extends Model{
         if( !$this->itemEditAllow( $order_basic ) ){
             return 'forbidden_at_this_stage';
         }
-        if( isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
+        if( $stock->is_counted && isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
             $entry->entry_comment= preg_replace('/\[.+\]/u', '', $stock->entry_comment);
             $entry->entry_comment.="[Количество уменьшено с {$entry->entry_quantity} до {$stock->product_quantity}]";
             $entry->entry_quantity=$stock->product_quantity;
