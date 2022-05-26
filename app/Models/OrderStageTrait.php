@@ -62,7 +62,7 @@ trait OrderStageTrait{
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','positive'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
-            'action_call_customer'=>        ['Позвонить клиенту'],
+            'delivery_action_call_customer'=>        ['Позвонить клиенту'],
             'delivery_rejected'=>           ['Отказаться от доставки!','negative']
             ],
         'delivery_rejected'=>[
@@ -70,7 +70,8 @@ trait OrderStageTrait{
             ],
         'delivery_finish'=>[
             'customer_finish'=>             [],
-            'customer_disputed'=>           ['Открыть спор','secondary']
+            'customer_disputed'=>           [],
+            'customer_action_objection'=>   ['Открыть спор'],
             ],
         
         
@@ -79,7 +80,6 @@ trait OrderStageTrait{
             'customer_refunded'=>           [],
             'customer_finish'=>             ['Завершить заказ','positive'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ'],
-            'customer_action_objection'=>   ['Написать возражение'],
             ],
         'customer_refunded'=>       [
             'customer_finish'=>             [],
@@ -404,14 +404,6 @@ trait OrderStageTrait{
          * Penalty to courier???
          * Penalty to customer???
          */
-        
-        
-        
-        
-        
-        
-        
-        
         return $this->itemStageCreate($order_id, 'customer_refunded');
     }
     

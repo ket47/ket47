@@ -44,6 +44,9 @@ class Order extends \App\Controllers\BaseController {
         if(!$data){
             return $this->fail('malformed_request');
         }
+        if( session()->get('user_id')<=0 ){
+            return $this->failUnauthorized('unauthorized');
+        }
         $OrderModel = model('OrderModel');
 
         $order_id_exists=false;
@@ -55,6 +58,9 @@ class Order extends \App\Controllers\BaseController {
                 return $this->fail('nostoreid');
             }
             $result=$OrderModel->itemCreate($data->order_store_id);
+            if ($result === 'forbidden') {
+                return $this->failForbidden($result);
+            }
             if (!is_numeric($result)) {
                 return $this->fail($result);
             }

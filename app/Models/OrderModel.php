@@ -19,6 +19,7 @@ class OrderModel extends Model{
         'order_sum_total',
         'order_sum_tax',
         'order_description',
+        'order_objection',
         'updated_by',
         'deleted_at'
     ];
