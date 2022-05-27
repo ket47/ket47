@@ -137,7 +137,7 @@
                 <td style="width:30px;text-align: center;color:red;vertical-align: top">
                     <i class="fa fa-trash" data-pref_name="<?=$pref_name?>" data-action="delete"></i>
                 </td>
-                <td style="vertical-align: top">
+                <td style="vertical-align: top" title="<?=$pref_name?>">
                     <b><?=$pref[1]?></b>
                 </td>
                 <td style="vertical-align: top">

@@ -3,9 +3,9 @@
 namespace App\Controllers;
 
 class Task extends \App\Controllers\BaseController{
-    private $workerLifeTime=1*60;//1min
+    private $workerLifeTime=2*60;//2min
     private $workerLifeSpread=1*60;//1min
-    private $timedJobInterval=1*60*30;//1 hour 
+    private $timedJobInterval=1*60*30;//30 min 
 
 
 
@@ -142,21 +142,21 @@ class Task extends \App\Controllers\BaseController{
         return $task_result;
     }
     
-    // private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
-    //     $OrderModel=model('OrderModel');
-    //     $UserModel=model('UserModel');
-    //     $UserModel->systemUserLogin();
-    //     if( $order_id ){
-    //         $OrderModel->where('order_id',$order_id);
-    //     }
-    //     $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
-    //     $OrderModel->where('ogl.group_type',$stage_from);
-    //     $orders=$OrderModel->get()->getResult();
-    //     $result='';
-    //     foreach($orders as $order){
-    //         $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
-    //     }
-    //     $UserModel->systemUserLogout();
-    //     return $result;
-    // }
+    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
+        $OrderModel=model('OrderModel');
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+        if( $order_id ){
+            $OrderModel->where('order_id',$order_id);
+        }
+        $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
+        $OrderModel->where('ogl.group_type',$stage_from);
+        $orders=$OrderModel->get()->getResult();
+        $result='';
+        foreach($orders as $order){
+            $result.=$OrderModel->itemStageCreate( $order->order_id, $stage_to );
+        }
+        $UserModel->systemUserLogout();
+        return $result;
+    }
 }
