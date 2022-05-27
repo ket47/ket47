@@ -84,14 +84,14 @@ class OrderModel extends Model{
         $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
-        //$StoreModel->select('store_id,store_name,store_phone');
+        $StoreModel->select('store_id,store_name,store_phone');
         $UserModel->select('user_id,user_name,user_phone');
         $order->stage_next= $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
         $order->entries=    $EntryModel->listGet($order_id);
         
-        $order->store=      $StoreModel->itemGet($order->order_store_id,'basic');
+        $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
         $order->customer=   $UserModel->itemGet($order->owner_id,'basic');
         $order->courier=    [];//$CourierModel->itemGet($order->order_courier_id,'basic');
         $order->is_writable=$this->permit($order_id,'w');

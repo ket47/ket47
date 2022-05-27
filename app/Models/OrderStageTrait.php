@@ -8,11 +8,11 @@ trait OrderStageTrait{
             ],
         'customer_purged'=>                 [],
         'customer_deleted'=>[
-            'customer_purged'=>             ['Удалить окончательно','negative'],
+            'customer_purged'=>             ['Удалить','negative'],
             'customer_cart'=>               ['Восстановить'],
             ],
         'customer_cart'=>[
-            'customer_purged'=>             ['Удалить окончательно','negative'],
+            'customer_purged'=>             ['Удалить','negative'],
             'customer_confirmed'=>          [],
             'customer_action_checkout'=>    ['Продолжить','positive'],
             ],

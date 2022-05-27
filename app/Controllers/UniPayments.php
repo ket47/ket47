@@ -125,7 +125,7 @@ class UniPayments extends \App\Controllers\BaseController{
         ];
         $OrderModel=model('OrderModel');
         $result='ok';
-        switch($status){
+        switch(strtolower($status)){
             case 'authorized':
             case 'paid':
                 if( $this->paymentIsDone($order_id) ){
