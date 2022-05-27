@@ -4,22 +4,30 @@
         <title>Заказ №<?= $order->order_id ?> от <?= getenv('app.title') ?></title>
     </head>
     <body>
-        <h2>Заказ №<?= $order->order_id ?> от <?= getenv('app.title') ?></h2>
+        <h2>Заказ №<?= $order->order_id ?> ВОЗВРАТ СРЕДСТВ</h2>
 
         <p>
-            Добрый день, <?= $reciever->user_name ?>.
+            Добрый день, Администратор.
+        </p>
+        <p >
+            <a href="https://tezkel.com/#/order-<?= $order->order_id ?>">
+                Клиент не получил Заказ №<?= $order->order_id ?>.
+            </a>
         </p>
         <p>
-            Вас приветствует служба доставки <?= getenv('app.title') ?>. 
-            Рады сообщить, что вам поступил заказ от клиента  для "<?= $store->store_name ?>". 
+            Необходимо произвести возврат средств клиента согласно протоколу возврата
         </p>
-        <p>
-            Курьер направляется за этим заказом. Просьба подготовить его.
-        </p>
+
         <?php if ($order->order_description): ?>
             <h3>Комментарий клиента</h3>
             <p>
                 <i><?= $order->order_description ?></i>
+            </p>
+        <?php endif; ?>
+        <?php if ($order->order_objection): ?>
+            <h3>Возражение клиента</h3>
+            <p>
+                <i><?= $order->order_objection ?></i>
             </p>
         <?php endif; ?>
         <h3>Состав заказа</h3>
@@ -63,7 +71,7 @@
             </tr>
         </table>
         <p>
-            С уважением, команда <?= getenv('app.title') ?>.
+            С уважением,  <?= getenv('app.title') ?>Bot.
         </p>
     </body>
 </html>

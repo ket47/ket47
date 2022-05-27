@@ -36,7 +36,7 @@ trait OrderStageTrait{
         
         
         'supplier_rejected'=>[
-            'customer_purged'=>             ['Удалить окончательно','negative'],
+            'customer_purged'=>             ['Удалить','negative'],
             'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
@@ -335,6 +335,52 @@ trait OrderStageTrait{
         ];
         $TransactionModel->itemCreate($trans);    
         $transaction_created=$this->db->affectedRows()?'ok':'idle';
+
+
+
+
+
+
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        helper('job');
+        
+        $StoreModel->itemCacheClear();
+        $order=$this->itemGet($order_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'email',
+            'message_subject'=>"ВОЗВРАТ СРЕДСТВ №{$order->order_id}",
+            'template'=>'messages/order/on_customer_refunded_ADMIN_email.php',
+            'context'=>$context
+        ];
+        $cust_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_customer_refunded_CUST_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"supplier_rejected Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+
+
+
+
+
+
         return $this->itemStageCreate($order_id, 'customer_finish');
     }
     
@@ -406,8 +452,22 @@ trait OrderStageTrait{
          */
         return $this->itemStageCreate($order_id, 'customer_refunded');
     }
-    
-    private function onSupplierFinish(){
+    private function onSupplierFinish( $order_id ){
+        $PrefModel=model('PrefModel');
+        ///////////////////////////////////////////////////
+        //CREATING STAGE RESET JOB
+        ///////////////////////////////////////////////////
+        $timeout_min=$PrefModel->itemGet('delivery_no_courier_timeout_min','pref_value',0);
+        $next_start_time=time()+$timeout_min*60;
+        $stage_reset_task=[
+            'task_name'=>"check if Courier was not found #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['supplier_finish','delivery_no_courier',$order_id]]
+                ],
+            'task_next_start_time'=>$next_start_time
+        ];
+        helper('job');
+        jobCreate($stage_reset_task);
         return 'ok';
     }
     

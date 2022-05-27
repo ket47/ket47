@@ -89,13 +89,16 @@
 <div style="padding: 20px;">
 <?php 
     $pref_map=[
+        'admin_email'=>                         ['Админ','email'],
+
         'delivery_fee'=>                        ['Доставка','Стоимость доставки'],
         'delivery_speed'=>                      ['Доставка','Скорость курьера км/ч'],
         'delivery_radius'=>                     ['Доставка','Дальность доставки м'],
         
-        'customer_confirmed_timeout_min'=>      ['Автосброс Статусов','Подтвержден мин.'],
-        'customer_start_timeout_min'=>          ['Автосброс Статусов','На обработке мин.'],
-        'delivery_finish_timeout_min'=>         ['Автосброс Статусов','Доставлен мин.']
+        'customer_confirmed_timeout_min'=>      ['Автосброс Статусов (минут)','Подтвержден-Корзина'],
+        'customer_start_timeout_min'=>          ['Автосброс Статусов (минут)','На обработке-Отказ поставщика'],
+        'delivery_no_courier_timeout_min'=>     ['Автосброс Статусов (минут)','Собран-Курьер не найден'],
+        'delivery_finish_timeout_min'=>         ['Автосброс Статусов (минут)','Доставлен-Завершен'],
     ];
     foreach( $pref_map as $pref_name=>$pref){
         $pref_map[$pref_name][2]='';

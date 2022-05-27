@@ -15,7 +15,7 @@ class Messenger{
             return true;
         }
         
-        log_message('error','Message to be send:'.json_encode($message));
+        //log_message('error','Message to be send:'.json_encode($message));
         
         
         switch( $message->message_transport ){
@@ -39,12 +39,25 @@ class Messenger{
         }
     }
     
-    private function itemSendMessage( $message ){
+    private function itemRecieverGet($user_id){
+        if( $user_id==-100 ){//system user==admin
+            return (object)[
+                'user_name'=>"Администратор",
+                'user_phone'=>"",
+                'user_email'=>getenv('email_admin'),
+                'user_data'=>(object)[]
+            ];
+        }
         $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
+        return $reciever;
+    }
+
+    private function itemSendMessage( $message ){
+        $reciever=$this->itemRecieverGet($message->message_reciever_id);
         if( $reciever->user_data->viberId??'' ){
             $ok=$this->itemSendViber($message);
             if( $ok ){
@@ -55,8 +68,7 @@ class Messenger{
     }
     
     private function itemSendEmail( $message ){
-        $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        $reciever=$this->itemRecieverGet($message->message_reciever_id);
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -89,8 +101,7 @@ class Messenger{
     }
     
     private function itemSendSms( $message ){
-        $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        $reciever=$this->itemRecieverGet($message->message_reciever_id);
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -118,8 +129,7 @@ class Messenger{
     }
     
     private function itemSendViber( $message ){
-        $UserModel=model('UserModel');
-        $reciever=$UserModel->select("user_name,user_phone,user_email,JSON_EXTRACT(user_data,'$.viberId') viberId")->where('user_id',$message->message_reciever_id)->get()->getRow();
+        $reciever=$this->itemRecieverGet($message->message_reciever_id);
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
