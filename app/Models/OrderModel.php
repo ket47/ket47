@@ -16,10 +16,12 @@ class OrderModel extends Model{
         'order_start_location_id',
         'order_finish_location_id',
         'order_sum_delivery',
-        'order_sum_total',
         'order_sum_tax',
+        'order_sum_promo',
+        'order_sum_total',
         'order_description',
         'order_objection',
+        'order_stock_status',
         'updated_by',
         'deleted_at'
     ];
@@ -133,27 +135,50 @@ class OrderModel extends Model{
     
     private function deliveryFeeGet(){
         $PrefModel=model('PrefModel');
-        return $PrefModel->itemGet('delivery_fee');
+        return $PrefModel->itemGet('delivery_fee','pref_value');
+    }
+    
+    public function itemCalculate( $order_id ){
+        $EntryModel=model('EntryModel');
+        $order_sum_product=$EntryModel->listSumGet($order_id);
+        $order=$this->itemGet($order_id,'basic');
+        $order_sum_total=
+              (float) $order_sum_product
+            + (float) $order->order_sum_tax
+            + (float) $order->order_sum_delivery
+            - (float) $order->order_sum_promo;
+        //$TransactionModel=model('TransactionModel');
+        return $order_sum_total;
     }
     
     public function itemUpdate( $order ){
         if( !$this->permit($order->order_id,'w') ){
             return 'forbidden';
         }
-        if( isset($order->entries) ){
+        if( $this->in_object($order,['entries']) ){
             $EntryModel=model('EntryModel');
             $EntryModel->listUpdate($order->order_id,$order->entries);
-            $order_calc=$EntryModel->listSumGet($order->order_id);
-            if( $order_calc ){
-                $order->order_sum_total=$order_calc->order_sum_total;
-            }
         }
-        //$TransactionModel=model('TransactionModel');
+        if( $this->in_object($order,['entries','order_sum_tax','order_sum_delivery','order_sum_promo']) ){
+            $order->order_sum_total=$this->itemCalculate($order->order_id);
+        }
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
+
         $update_result=$this->db->affectedRows()>0?'ok':'idle';
-        $this->itemUpdateOwners($order->order_id);
+        if( $this->in_object($order,['owner_id','owner_ally_ids','order_store_id','order_courier_id']) ){
+            $this->itemUpdateOwners($order->order_id);
+        }
         return $update_result;
+    }
+
+    private function in_object(object $obj,array $props){
+        foreach($props as $prop){
+            if( property_exists($obj,$prop) ){
+                return true;
+            }
+        }
+        return false;
     }
 
     public function itemUpdateOwners( $order_id ){
@@ -182,13 +207,6 @@ class OrderModel extends Model{
             WHERE
                 ol.order_id='$order_id'";
         $this->query($sql);
-    }
-    
-    public function itemCalculate( $order_id ){
-        $EntryModel=model('EntryModel');
-        $order=$EntryModel->listSumGet( $order_id );
-        $order->order_id=$order_id;
-        return $this->itemUpdate($order);
     }
     
     public function itemPurge( $order_id ){
@@ -295,9 +313,12 @@ class OrderModel extends Model{
         $data['is_disabled']=0;
         $data['owner_id']=session()->get('user_id');
         if( $this->permit($data['image_holder_id'], 'w') ){
+            $order_owners=$this->where('order_id',$data['image_holder_id'])->select('owner_id,owner_ally_ids')->get()->getRow();
+            $data['owner_id']=$order_owners->owner_id;
+            $data['owner_ally_ids']=$order_owners->owner_ally_ids;
+
             $ImageModel=model('ImageModel');
             $ok=$ImageModel->itemCreate($data);
-            $this->itemUpdateOwners($data['image_holder_id']);
             return $ok;
         }
         return 0;

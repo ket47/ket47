@@ -14,7 +14,7 @@ trait OrderStageTrait{
         'customer_cart'=>[
             'customer_purged'=>             ['Удалить','negative'],
             'customer_confirmed'=>          [],
-            'customer_action_checkout'=>    ['Продолжить','positive'],
+            'customer_action_confirm'=>     ['Продолжить','positive'],
             ],
         'customer_confirmed'=>[
             'customer_cart'=>               ['Изменить'],
@@ -97,6 +97,9 @@ trait OrderStageTrait{
         if( !is_object($order) ){
             return $order;
         }
+        if($order->stage_current==$stage){
+            return 'ok';
+        }
         $OrderGroupModel=model('OrderGroupModel');
         $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
         $result=$this->itemStageValidate($stage,$order,$group);
@@ -121,9 +124,6 @@ trait OrderStageTrait{
     
     private function itemStageValidate($stage,$order,$group){
         $next_stages=$this->stageMap[$order->stage_current??'']??[];
-        if($order->stage_current==$stage){
-            return 'ok';
-        }
         if( !isset($next_stages[$stage]) || empty($group->group_id) ){
             return 'invalid_next_stage';
         }
@@ -154,19 +154,26 @@ trait OrderStageTrait{
     
     private function onCustomerCart($order_id){
         $this->itemUnDelete($order_id);
+        $EntryModel=model('EntryModel');
+        $EntryModel->listStockMove($order_id,'free');
         return 'ok';
     }
     
     private function onCustomerConfirmed( $order_id ){
         $order=$this->itemGet( $order_id, 'basic' );
-        if( !$order->order_sum_total??0 ){
+
+        $this->db->transStart();
+        $EntryModel=model('EntryModel');
+        $EntryModel->listStockMove($order_id,'reserved');
+        $order_sum_product=$EntryModel->listSumGet($order_id);
+        if( !($order_sum_product>0) ){
             return 'order_is_empty';
         }
-
+        $this->db->transComplete();
         $LocationModel=model('LocationModel');
         $order_update=[
             'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
-            'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id,
+            'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
         ];
         $this->update($order_id,$order_update);
 
@@ -175,7 +182,7 @@ trait OrderStageTrait{
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
-            'task_name'=>"customer_confrimed Rollback #$order_id",
+            'task_name'=>"customer_confirmed Rollback #$order_id",
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                 ],
@@ -282,7 +289,7 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function readyCouriersNotify( $context ){
+    private function readyCouriersNotify( $context ){///SHOULD MOVE TO COURIER MODEL!!!!!
         $CourierModel=model('CourierModel');
         $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
         if( !$ready_courier_list ){
@@ -394,11 +401,11 @@ trait OrderStageTrait{
     }
     
     private function onSupplierRejected( $order_id ){
-        /*
-         * cancel product reserves
-         */
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
+        $EntryModel=model('EntryModel');
+
+        $EntryModel->listStockMove($order_id,'free');
         helper('job');
         
         $StoreModel->itemCacheClear();
@@ -454,6 +461,11 @@ trait OrderStageTrait{
     }
     private function onSupplierFinish( $order_id ){
         $PrefModel=model('PrefModel');
+
+
+        $EntryModel=model('EntryModel');
+        $stock_move_result=$EntryModel->listStockMove($order_id,'commited');
+
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////

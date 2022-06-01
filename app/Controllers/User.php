@@ -18,7 +18,26 @@ class User extends \App\Controllers\BaseController{
         $user=$UserModel->itemGet($user_id,$mode);
         return $this->respond($user);
     }
-    
+
+    public function itemSettingsGet(){
+        $settings=[
+            'app_title'=>getenv('app.title'),
+            'location'=>[
+                'mapBoundaries'=>[getenv('location.mapBoundaries')],
+                'mapCenter'=>getenv('location.mapCenter'),
+                'ymapApiKey'=>getenv('location.ymapApiKey'),
+                'addressErase'=>getenv('location.addressErase')
+            ],
+            'delivery'=>[
+                'speed'=>getenv('delivery.speed'),
+                'radius'=>getenv('delivery.radius'),
+                'fee'=>getenv('delivery.fee'),
+                'timeDelta'=>getenv('delivery.timeDelta'),
+                'timePreparationDefault'=>getenv('delivery.timePreparationDefault'),
+            ]
+        ];
+        return $this->respond($settings);
+    }
     
     public function itemCreate(){
         return $this->signUp();

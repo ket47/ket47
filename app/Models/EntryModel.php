@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use CodeIgniter\Model;
+use Exception;
 
 class EntryModel extends Model{
     use PermissionTrait;
@@ -180,10 +181,10 @@ class EntryModel extends Model{
     
     public function listSumGet( $order_id ){
         $this->permitWhere('r');
-        $this->select("SUM(ROUND(entry_quantity*entry_price,2)) order_sum_total");
+        $this->select("SUM(ROUND(entry_quantity*entry_price,2)) order_sum_product");
         $this->where('order_id',$order_id);
         $this->where('deleted_at IS NULL');
-        return $this->get()->getRow();
+        return $this->get()->getRow('order_sum_product');
     }
     
     public function listCreate(){
@@ -230,5 +231,93 @@ class EntryModel extends Model{
         $this->update();
     }
 
+    public $trimmedEntryCount=0;
+    public function listStockMove( $order_id, $new_stock_status, $order_store_id=null ){
+        $this->trimmedEntryCount=0;
+        $OrderModel=model('OrderModel');
+        if(!$order_store_id){
+            $order_store_id=$OrderModel->select('order_store_id')->where('order_id',$order_id)->get()->getRow('order_store_id');
+        }
+        $this->db->transStart();
+        if($new_stock_status=='free'){// reserved->free
+            $OrderModel->permitWhere('w')->update($order_id,['order_stock_status'=>null]);
+            $this->listStockReserve($order_store_id);
+        } else 
+        if($new_stock_status=='reserved'){// free->reserved
+            $OrderModel->permitWhere('w')->update($order_id,['order_stock_status'=>'reserved']);
+            $this->trimmedEntryCount=$this->listStockTrim($order_id);
+            $this->listStockReserve($order_store_id);
+        } else 
+        if($new_stock_status=='commited'){// reserved->commited
+            $OrderModel->permitWhere('w')->update($order_id,['order_stock_status'=>'commited']);
+            $this->listStockCommit($order_id);
+            $this->listStockReserve($order_store_id);
+        } else {
+            throw new Exception("Unknown stock status",500);
+        }
+        $this->db->transComplete();
+        return $this->db->transStatus()?'ok':'fail';
+    }
+
+    private function listStockTrim(int $order_id){
+        $sql="
+            UPDATE
+                product_list pl
+                    JOIN
+                order_entry_list oel USING(product_id)
+            SET
+                oel.entry_comment=CONCAT('[Количество уменьшено с ',oel.entry_quantity,' до ',(pl.product_quantity-pl.product_quantity_reserved),']'),
+                oel.entry_quantity=pl.product_quantity-pl.product_quantity_reserved
+            WHERE
+                order_id='$order_id'
+                AND oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved
+                AND pl.is_counted=1
+        ";
+        $this->query($sql);
+        return $this->db->affectedRows();
+    }
+
+    private function listStockReserve(int $store_id){
+        $sql="
+            UPDATE
+                product_list pl
+                    LEFT JOIN
+                (SELECT 
+                    product_id,
+                    SUM(oel.entry_quantity) sum_quantity
+                FROM
+                    order_entry_list oel
+                        JOIN
+                    order_list ol USING(order_id)
+                WHERE
+                    ol.order_stock_status='reserved'
+                    AND ol.order_store_id='$store_id'
+                GROUP BY product_id
+                ) rsv USING(product_id)
+            SET
+                pl.product_quantity_reserved=sum_quantity
+            WHERE
+                pl.is_counted=1
+                AND store_id='$store_id'
+        ";
+        $this->query($sql);
+        return $this->db->affectedRows();
+    }
+
+    private function listStockCommit(int $order_id){
+        $sql="
+            UPDATE
+                product_list pl
+                    JOIN
+                order_entry_list oel USING(product_id)
+            SET
+                pl.product_quantity=pl.product_quantity-oel.entry_quantity
+            WHERE
+                order_id='$order_id'
+                AND pl.is_counted=1
+        ";
+        $this->query($sql);
+        return $this->db->affectedRows();        
+    }
     
 }

@@ -43,6 +43,7 @@ class ImageModel extends Model{
         }
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
         $data['image_order']=1;//in the start of list
         //$data['owner_id']=session()->get('user_id');
         $data['image_hash']=md5(microtime().rand(1,1000));

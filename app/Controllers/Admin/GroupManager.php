@@ -157,6 +157,9 @@ class GroupManager extends \App\Controllers\BaseController {
     public function fileUpload(){
         $group_table=$this->request->getVar('group_table');
         $image_holder_id=$this->request->getVar('image_holder_id');
+        if ( !(int) $image_holder_id ) {
+            return $this->fail('no_holder_id');
+        }
         $items = $this->request->getFiles();
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');

@@ -15,6 +15,8 @@ class ProductModel extends Model{
         'product_name',
         'product_quantity',
         'product_quantity_min',
+        'product_quantity_expire_at',
+        'product_quantity_reserve',
         'product_description',
         'product_weight',
         'product_unit',
@@ -93,6 +95,10 @@ class ProductModel extends Model{
             return 'error_empty';
         }
         $this->permitWhere('w');
+        if( isset($product->product_quantity) ){
+            $expiration_timeout=8;//8 hours
+            $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
+        }
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -221,7 +227,7 @@ class ProductModel extends Model{
             return 'forbidden';
         }
         $ownerFilter=$this->permitWhereGet('w','item');
-        $set="pl.store_id=$store_id,pl.deleted_at=NULL";
+        $set="pl.store_id=$store_id,pl.deleted_at=NULL,pl.product_quantity_updated_at=NOW()";
         $delimeter=',';
 
         $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];

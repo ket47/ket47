@@ -58,6 +58,7 @@ trait PermissionTrait{
             //echo $permission_filter;
             $this->where($permission_filter);
         }
+        return $this;
     }
     
     public function permitWhereGet( $right, $method ){
