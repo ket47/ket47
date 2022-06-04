@@ -62,8 +62,9 @@ trait OrderStageTrait{
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','positive'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
-            'delivery_action_call_customer'=>        ['Позвонить клиенту'],
-            'delivery_rejected'=>           ['Отказаться от доставки!','negative']
+            'delivery_action_call_customer'=>['Позвонить клиенту'],
+            'delivery_action_rejected'=>    ['Отказаться от доставки','negative'],
+            'delivery_rejected'=>           [],
             ],
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа']
@@ -323,30 +324,26 @@ trait OrderStageTrait{
         if( !$data??0 || !$data->total??0 ){
             return 'forbidden';
         }
-        $TransactionModel=model('TransactionModel');
-        
-        $user_id=session()->get('user_id');
+
         $order=$this->itemGet($order_id,'basic');
         
-        $TransactionModel=model('TransactionModel');
-        $trans=[
-            'trans_amount'=>$order->order_sum_total,
-            'trans_data'=>json_encode($data),
-            'acc_debit_code'=>'account',
-            'acc_credit_code'=>'customer',
-            'owner_id'=>$order->owner_id,
-            'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_id,
-            'updated_by'=>$user_id,
-        ];
-        $TransactionModel->itemCreate($trans);    
-        $transaction_created=$this->db->affectedRows()?'ok':'idle';
-
-
-
-
-
+        //$TransactionModel=model('TransactionModel');
+        
+        //$user_id=session()->get('user_id');
+        // $TransactionModel=model('TransactionModel');
+        // $trans=[
+        //     'trans_amount'=>$order->order_sum_total,
+        //     'trans_data'=>json_encode($data),
+        //     'acc_debit_code'=>'account',
+        //     'acc_credit_code'=>'customer',
+        //     'owner_id'=>$order->owner_id,
+        //     'is_disabled'=>0,
+        //     'holder'=>'order',
+        //     'holder_id'=>$order_id,
+        //     'updated_by'=>$user_id,
+        // ];
+        // $TransactionModel->itemCreate($trans);    
+        //$transaction_created=$this->db->affectedRows()?'ok':'idle';
 
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -364,7 +361,7 @@ trait OrderStageTrait{
         $admin_email=(object)[
             'message_reciever_id'=>'-100',
             'message_transport'=>'email',
-            'message_subject'=>"ВОЗВРАТ СРЕДСТВ №{$order->order_id}",
+            'message_subject'=>"#{$order->order_id} ВОЗВРАТ СРЕДСТВ",
             'template'=>'messages/order/on_customer_refunded_ADMIN_email.php',
             'context'=>$context
         ];
@@ -381,25 +378,13 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
-
-
-
-
-
-
-
         return $this->itemStageCreate($order_id, 'customer_finish');
     }
     
     private function onCustomerFinish( $order_id ){
         return 'ok';
     }
-    
-    
-    private function onDeliverySearch( $order_id ){
-        return $this->itemStageCreate($order_id, 'customer_start');
-    }
-    
+        
     private function onSupplierRejected( $order_id ){
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -437,6 +422,7 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
+        return $this->itemStageCreate($order_id, 'customer_refunded');
         return 'ok';
     }
         
@@ -458,6 +444,7 @@ trait OrderStageTrait{
          * Penalty to customer???
          */
         return $this->itemStageCreate($order_id, 'customer_refunded');
+        return 'ok';
     }
     private function onSupplierFinish( $order_id ){
         $PrefModel=model('PrefModel');
@@ -484,8 +471,15 @@ trait OrderStageTrait{
     }
     
     
+    private function onDeliverySearch( $order_id ){
+        return $this->itemStageCreate($order_id, 'customer_start');
+    }
     
     private function onDeliveryStart( $order_id ){
+        $CourierModel=model('CourierModel');
+        if( !$CourierModel->isReadyCourier() ){
+            return 'wrong_courier_status';
+        }
         $order=$this->itemGet($order_id);
         if( !$order->images ){
             return 'photos_must_be_made';
@@ -493,6 +487,82 @@ trait OrderStageTrait{
         return 'ok';
     }
     private function onDeliveryRejected( $order_id ){
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $CourierModel=model('CourierModel');
+        helper('job');
+        
+        $StoreModel->itemCacheClear();
+        $order=$this->itemGet($order_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'courier'=>$courier,
+            'customer'=>$customer
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'email',
+            'message_subject'=>"#{$order->order_id} ДОСТАВКА НЕ УДАЛАСЬ",
+            'template'=>'messages/order/on_delivery_rejected_ADMIN_email.php',
+            'context'=>$context
+        ];
+        $admin_sms=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_delivery_rejected_ADMIN_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"supplier_rejected Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
         return 'ok';
     }
     private function onDeliveryFinish( $order_id ){

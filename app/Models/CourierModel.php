@@ -44,7 +44,8 @@ class CourierModel extends Model{
             $this->where('user_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
-        $this->select('courier_list.*,user_list.user_id,location_address,location_latitude,location_longitude');
+        $this->select('courier_list.*,location_address,location_latitude,location_longitude');
+        $this->select('user_id,user_name,user_phone');
         $this->join('user_list','user_id=courier_list.owner_id');
         $this->join('location_list','location_holder_id=courier_id AND is_main=1','left');
         $courier = $this->get()->getRow();
@@ -239,7 +240,7 @@ class CourierModel extends Model{
         if( !$isReadyCourier ){
             return 'notready';
         }
-        $point_distance=150000;//15km
+        $point_distance=getenv('delivery.radius');
 
         $LocationModel=model('LocationModel');
         $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
