@@ -89,14 +89,12 @@ class EntryModel extends Model{
             $this->set('entry_quantity',"$product_quantity",false);
             $this->update();
             
-            
             $this->where('order_id',$order_id);
             $this->where('product_id',$product_id);
             $entry_id=$this->get()->getRow('entry_id');
             
             if( $entry_id ){
-                $OrderModel=model('OrderModel');
-                $OrderModel->itemCalculate( $order_id );
+                $this->listSumUpdate( $order_id );
             }
             return $entry_id;
         }
@@ -133,8 +131,7 @@ class EntryModel extends Model{
         $this->update($entry->entry_id,$entry);
         $result=$this->db->affectedRows()>0?'ok':'idle';
         if( $result=='ok' && isset($entry->entry_quantity)){
-            $OrderModel=model('OrderModel');
-            $OrderModel->itemCalculate( $order_basic->order_id );
+            $this->listSumUpdate( $order_basic->order_id );
         }
         return $result;
     }
@@ -150,8 +147,7 @@ class EntryModel extends Model{
         $this->delete($entry_id);
         $result=$this->db->affectedRows()>0?'ok':'idle';
         if( $result=='ok' ){
-            $OrderModel=model('OrderModel');
-            $OrderModel->itemCalculate( $entry->order_id );
+            $this->listSumUpdate( $entry->order_id );
         }
         return $result;
     }
@@ -202,6 +198,15 @@ class EntryModel extends Model{
         $this->where('deleted_at IS NULL');
         return $this->get()->getRow('order_sum_product');
     }
+
+    public function listSumUpdate( $order_id ){
+        $OrderModel=model('OrderModel');
+        $order_sum_product=$this->listSumGet($order_id);
+        $OrderModel->itemUpdate((object)[
+            'order_id'=>$order_id,
+            'order_sum_product'=>$order_sum_product
+        ]);
+    }
     
     public function listCreate(){
         return false;
@@ -214,6 +219,7 @@ class EntryModel extends Model{
             }
             $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity);
         }
+        $this->listSumUpdate( $order_id );
         return 'ok';
     }
     

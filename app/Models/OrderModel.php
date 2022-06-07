@@ -15,6 +15,7 @@ class OrderModel extends Model{
         'order_courier_id',
         'order_start_location_id',
         'order_finish_location_id',
+        'order_sum_product',
         'order_sum_delivery',
         'order_sum_tax',
         'order_sum_promo',
@@ -138,19 +139,6 @@ class OrderModel extends Model{
         return $PrefModel->itemGet('delivery_fee','pref_value');
     }
     
-    public function itemCalculate( $order_id ){
-        $EntryModel=model('EntryModel');
-        $order_sum_product=$EntryModel->listSumGet($order_id);
-        $order=$this->itemGet($order_id,'basic');
-        $order_sum_total=
-              (float) $order_sum_product
-            + (float) $order->order_sum_tax
-            + (float) $order->order_sum_delivery
-            - (float) $order->order_sum_promo;
-        //$TransactionModel=model('TransactionModel');
-        return $order_sum_total;
-    }
-    
     public function itemUpdate( $order ){
         if( !$this->permit($order->order_id,'w') ){
             return 'forbidden';
@@ -158,9 +146,6 @@ class OrderModel extends Model{
         if( $this->in_object($order,['entries']) ){
             $EntryModel=model('EntryModel');
             $EntryModel->listUpdate($order->order_id,$order->entries);
-        }
-        if( $this->in_object($order,['entries','order_sum_tax','order_sum_delivery','order_sum_promo']) ){
-            $order->order_sum_total=$this->itemCalculate($order->order_id);
         }
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
