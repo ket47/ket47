@@ -22,7 +22,7 @@ class EntryModel extends Model{
         'owner_ally_ids'
         ];
 
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     protected $useTimestamps = false;
     
     protected $validationRules    = [
@@ -93,6 +93,11 @@ class EntryModel extends Model{
             $this->where('order_id',$order_id);
             $this->where('product_id',$product_id);
             $entry_id=$this->get()->getRow('entry_id');
+            
+            if( $entry_id ){
+                $OrderModel=model('OrderModel');
+                $OrderModel->itemCalculate( $order_id );
+            }
             return $entry_id;
         }
     }
@@ -126,7 +131,12 @@ class EntryModel extends Model{
             $entry->entry_quantity=$stock->product_quantity;
         }
         $this->update($entry->entry_id,$entry);
-        return $this->db->affectedRows()>0?'ok':'idle';
+        $result=$this->db->affectedRows()>0?'ok':'idle';
+        if( $result=='ok' && isset($entry->entry_quantity)){
+            $OrderModel=model('OrderModel');
+            $OrderModel->itemCalculate( $order_basic->order_id );
+        }
+        return $result;
     }
     
     public function itemDelete( $entry_id ){
@@ -138,7 +148,12 @@ class EntryModel extends Model{
         }
         $this->permitWhere('w');
         $this->delete($entry_id);
-        return $this->db->affectedRows()>0?'ok':'idle';
+        $result=$this->db->affectedRows()>0?'ok':'idle';
+        if( $result=='ok' ){
+            $OrderModel=model('OrderModel');
+            $OrderModel->itemCalculate( $entry->order_id );
+        }
+        return $result;
     }
     
     public function itemUnDelete( $entry_id ){
@@ -165,6 +180,7 @@ class EntryModel extends Model{
         product_unit,
         product_quantity,
         product_quantity_min,
+        product_quantity_reserved,
         is_counted,
         order_entry_list.deleted_at,
         entry_comment

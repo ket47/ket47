@@ -25,7 +25,7 @@ class Search extends \App\Controllers\BaseController{
             $filter=[
                 'name_query'=>$query,
                 'name_query_fields'=>'product_name',
-                'limit'=>3,
+                'limit'=>4,
                 'store_id'=>$store->store_id,
                 'order'=>'product_final_price'
             ];

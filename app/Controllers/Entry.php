@@ -26,8 +26,6 @@ class Entry extends \App\Controllers\BaseController{
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
-        $OrderModel=model('OrderModel');
-        $OrderModel->itemCalculate( $order_id );
         return $this->respond($result);
     }
     
@@ -47,11 +45,6 @@ class Entry extends \App\Controllers\BaseController{
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
-        if( $result=='ok' && isset($entry->entry_quantity) ){
-            $entry=$EntryModel->itemGet( $entry->entry_id );
-            $OrderModel=model('OrderModel');
-            $OrderModel->itemCalculate( $entry->order_id );
-        }
         return $this->respond($result);
     }
     
@@ -65,11 +58,6 @@ class Entry extends \App\Controllers\BaseController{
         if( $result==='forbidden_at_this_stage' ){
             return $this->failForbidden($result);
         }
-        if( $result=='ok' ){
-            $entry=$EntryModel->itemGet( $entry_id );
-            $OrderModel=model('OrderModel');
-            $OrderModel->itemCalculate( $entry->order_id );
-        }
         return $this->respond($result);
     }
     
@@ -82,11 +70,6 @@ class Entry extends \App\Controllers\BaseController{
         }
         if( $result==='forbidden_at_this_stage' ){
             return $this->failForbidden($result);
-        }
-        if( $result=='ok' ){
-            $entry=$EntryModel->itemGet( $entry_id );
-            $OrderModel=model('OrderModel');
-            $OrderModel->itemCalculate( $entry->order_id );
         }
         return $this->respond($result);
     }

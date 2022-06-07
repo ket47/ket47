@@ -48,11 +48,12 @@ trait OrderStageTrait{
             ],
         'supplier_corrected'=>[
             'supplier_finish'=>             ['Закончить подготовку','positive'],
+            'supplier_action_add'=>         ['Добавить товар'],
             'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
-            'supplier_corrected'=>          ['Изменить'],
+            //'supplier_corrected'=>          ['Изменить'],
             'delivery_start'=>              ['Начать доставку','positive'],
             'delivery_no_courier'=>         [],
             ],
