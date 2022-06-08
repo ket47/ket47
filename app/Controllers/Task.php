@@ -123,7 +123,7 @@ class Task extends \App\Controllers\BaseController{
             try{
                 $task_result=$Class->{$command->method}(...$arguments);
             } catch (\Exception $e){
-                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task)."\n".$e->getMessage() );
+                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task->task_name)."\n".$e->getMessage()."\n".$e->getTraceAsString() );
             }
         }
         if( isset($task->task_id) ){//task from task_list

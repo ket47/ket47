@@ -58,7 +58,7 @@ class Messenger{
 
     private function itemSendMessage( $message ){
         $reciever=$this->itemRecieverGet($message->message_reciever_id);
-        if( $reciever->user_data->viberId??'' ){
+        if( isset($reciever->user_data->viberId) ){
             $ok=$this->itemSendViber($message);
             if( $ok ){
                 return true;
