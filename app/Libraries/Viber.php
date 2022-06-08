@@ -30,11 +30,11 @@ class Viber{
     }
     
     public function onMessage($sender,$message){
-        $UserModel=model('UserModel');
-        $viberId=$sender->id;
         if( !isset($sender->id) ){
             return false;
         }
+        $UserModel=model('UserModel');
+        $viberId=$sender->id;
         $user_id=$UserModel->query("SELECT user_id FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow('user_id');
         if( $user_id ){
             $user=$UserModel->where('user_id',$user_id)->get()->getRow();
