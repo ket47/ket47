@@ -3,8 +3,8 @@
 namespace App\Controllers;
 
 class Task extends \App\Controllers\BaseController{
-    private $workerLifeTime=2*60;//2min
-    private $workerLifeSpread=1*60;//1min
+    private $workerLifeTime=1*60;//2min
+    private $workerLifeSpread=0;//1min
     private $timedJobInterval=1*60*30;//30 min 
 
 
@@ -76,7 +76,6 @@ class Task extends \App\Controllers\BaseController{
         model("OrderModel")->listPurge($trashed_days);
         model("UserModel")->listPurge($trashed_days);
         echo "\npurged";
-        log_message('error',"PURGED");
     }
 
 
