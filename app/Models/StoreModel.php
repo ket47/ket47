@@ -103,6 +103,19 @@ class StoreModel extends Model{
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
     }
+
+    public function itemIsReady($store_id){
+        $beforeCloseMargin=30*60;//30 min before closing
+        $weekday=date('N')-1;
+        $dayhour=date('H',time()+$beforeCloseMargin);
+        $this->select("IF(is_working AND is_disabled=0 AND deleted_at IS NULL AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_ready");
+        $this->where('store_id',$store_id);
+        $store = $this->get()->getRow();
+        if( !$store ){
+            return 'notfound';
+        }
+        return $store->is_ready?1:0;     
+    }
     
     public function itemCreate( $name ){
         if( !$this->permit(null,'w') ){

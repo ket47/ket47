@@ -3,23 +3,23 @@ namespace App\Models;
 trait OrderStageTrait{
     protected $stageMap=[
         ''=>[
-            'customer_deleted'=>            ['Удалить','negative'],
+            'customer_deleted'=>            ['Удалить','danger'],
             'customer_cart'=>               ['Создать'],
             ],
         'customer_purged'=>                 [],
         'customer_deleted'=>[
-            'customer_purged'=>             ['Удалить','negative'],
+            'customer_purged'=>             ['Удалить','danger'],
             'customer_cart'=>               ['Восстановить'],
             ],
         'customer_cart'=>[
-            'customer_purged'=>             ['Удалить','negative'],
+            'customer_purged'=>             ['Удалить','danger'],
             'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Продолжить','positive'],
+            'customer_action_confirm'=>     ['Продолжить','success'],
             ],
         'customer_confirmed'=>[
             'customer_cart'=>               ['Изменить'],
             'customer_payed_card'=>         [],
-            'customer_action_checkout'=>    ['Продолжить','positive'],
+            'customer_action_checkout'=>    ['Продолжить','success'],
             ],
         'customer_payed_card'=>[
             'delivery_search'=>             [],
@@ -29,42 +29,42 @@ trait OrderStageTrait{
         ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
             'customer_refunded'=>           []//payment can be canceled by uniteller...
             ],
         
         
         
         'supplier_rejected'=>[
-            'customer_purged'=>             ['Удалить','negative'],
+            'customer_purged'=>             ['Удалить','danger'],
             'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
             'customer_refunded'=>           [],
             ],
         'supplier_start'=>[
-            'supplier_finish'=>             ['Закончить подготовку','positive'],
+            'supplier_finish'=>             ['Закончить подготовку','success'],
             'supplier_corrected'=>          ['Изменить заказ'],
             ],
         'supplier_corrected'=>[
-            'supplier_finish'=>             ['Закончить подготовку','positive'],
-            'supplier_action_add'=>         ['Добавить товар'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','negative'],
+            'supplier_finish'=>             ['Закончить подготовку','success'],
+            //'supplier_action_add'=>         ['Добавить товар'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
             //'supplier_corrected'=>          ['Изменить'],
-            'delivery_start'=>              ['Начать доставку','positive'],
+            'delivery_start'=>              ['Начать доставку','success'],
             'delivery_no_courier'=>         [],
             ],
         
         
         
         'delivery_start'=>[
-            'delivery_finish'=>             ['Завершить доставку','positive'],
+            'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
             'delivery_action_call_customer'=>['Позвонить клиенту'],
-            'delivery_action_rejected'=>    ['Отказаться от доставки','negative'],
+            'delivery_action_rejected'=>    ['Отказаться от доставки','danger'],
             'delivery_rejected'=>           [],
             ],
         'delivery_rejected'=>[
@@ -73,21 +73,21 @@ trait OrderStageTrait{
         'delivery_finish'=>[
             'customer_finish'=>             [],
             'customer_disputed'=>           [],
-            'customer_action_objection'=>   ['Открыть спор'],
+            'customer_action_objection'=>   ['Открыть спор','light'],
             ],
         
         
         
         'customer_disputed'=>[
             'customer_refunded'=>           [],
-            'customer_finish'=>             ['Завершить заказ','positive'],
+            'customer_finish'=>             ['Завершить заказ','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ'],
             ],
         'customer_refunded'=>       [
             'customer_finish'=>             [],
             ],
         'customer_finish'=>[
-            //'customer_deleted'=>    ['Удалить','negative'],
+            //'customer_deleted'=>    ['Удалить','danger'],
             ]
     ];
     
@@ -322,9 +322,9 @@ trait OrderStageTrait{
     }
     
     private function onCustomerRefunded( $order_id, $data ){
-        if( !$data??0 || !$data->total??0 ){
-            return 'forbidden';
-        }
+        // if( !$data??0 || !$data->total??0 ){
+        //     return 'forbidden';
+        // }
 
         $order=$this->itemGet($order_id,'basic');
         
@@ -445,7 +445,6 @@ trait OrderStageTrait{
          * Penalty to customer???
          */
         return $this->itemStageCreate($order_id, 'customer_refunded');
-        return 'ok';
     }
     private function onSupplierFinish( $order_id ){
         $PrefModel=model('PrefModel');

@@ -68,6 +68,16 @@ class Store extends \App\Controllers\BaseController{
         }
         return $this->respond($result);
     }
+
+    public function itemIsReady(){
+        $store_id=$this->request->getVar('store_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemIsReady($store_id);
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
+    }
     
     public function itemCreate(){
         $name=$this->request->getVar('name');

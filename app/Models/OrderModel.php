@@ -87,7 +87,7 @@ class OrderModel extends Model{
         $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
-        $StoreModel->select('store_id,store_name,store_phone');
+        $StoreModel->select('store_id,store_name,store_phone,store_minimal_order');
         $UserModel->select('user_id,user_name,user_phone');
         $order->stage_next= $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
@@ -269,6 +269,7 @@ class OrderModel extends Model{
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);
         }
+        $this->orderBy('updated_at','DESC');
         return $this->get()->getResult();
     }
     
