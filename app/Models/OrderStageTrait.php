@@ -173,12 +173,16 @@ trait OrderStageTrait{
         }
         $this->db->transComplete();
         $LocationModel=model('LocationModel');
-        $order_update=[
-            'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
-            'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
-        ];
-        $this->update($order_id,$order_update);
-
+        
+        try{
+            $order_update=[
+                'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
+                'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
+            ];
+            $this->update($order_id,$order_update);
+        } catch (\Exception $e){
+            return 'address_not_set';
+        }
 
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout_min','pref_value',0);

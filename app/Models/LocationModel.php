@@ -105,8 +105,8 @@ class LocationModel extends Model{
         $this->join('location_group_member_list','member_id=location_id','left');
         $this->join('location_group_list','group_id','left');
         $this->join('image_list type_icon',"type_icon.image_holder='location_group_list' AND type_icon.image_holder_id=group_id AND type_icon.is_main=1",'left');
-        
-        return $this->get()->getRow();        
+
+        return $this->get()->getRow();
     }
 
     public function itemMainSet($location_id){
