@@ -250,11 +250,15 @@ class OrderModel extends Model{
             $this->where('order_store_id',$filter['order_store_id']);
         }
         if($filter['order_group_type']??0){
-            $firstChar=substr($filter['order_group_type'],0,1);
-            if( $firstChar=='!' ){
-                $this->where('ogl.group_type <>',substr($filter['order_group_type'],1));
+            if($filter['order_group_type']=='active_only'){
+                $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);
             } else {
-                $this->where('ogl.group_type',$filter['order_group_type']);
+                $firstChar=substr($filter['order_group_type'],0,1);
+                if( $firstChar=='!' ){
+                    $this->where('ogl.group_type <>',substr($filter['order_group_type'],1));
+                } else {
+                    $this->where('ogl.group_type',$filter['order_group_type']);
+                }
             }
         }
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
