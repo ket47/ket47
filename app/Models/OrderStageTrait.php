@@ -67,14 +67,19 @@ trait OrderStageTrait{
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger'],
             'delivery_rejected'=>           [],
             ],
+        
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа']
             ],
+        'delivery_no_courier'=>[
+            'customer_refunded'=>           []  
+        ],
         'delivery_finish'=>[
             'customer_finish'=>             [],
             'customer_disputed'=>           [],
             'customer_action_objection'=>   ['Открыть спор','light'],
             ],
+
         
         
         
@@ -521,54 +526,53 @@ trait OrderStageTrait{
             'context'=>$context
         ];
         $notification_task=[
-            'task_name'=>"supplier_rejected Notify #$order_id",
+            'task_name'=>"delivery_rejected Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
                 ]
         ];
         jobCreate($notification_task);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
         return 'ok';
     }
+
+    private function onDeliveryNoCourier( $order_id ){
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        helper('job');
+        
+        $StoreModel->itemCacheClear();
+        $order=$this->itemGet($order_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'email',
+            'message_subject'=>"#{$order->order_id} Курьер не найден",
+            'template'=>'messages/order/on_delivery_nocourier_ADMIN_email.php',
+            'context'=>$context
+        ];
+        $admin_sms=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_delivery_nocourier_ADMIN_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"delivery_notfound Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+        $this->itemStageCreate($order_id, 'customer_refunded');
+        return 'ok';
+    }
+
     private function onDeliveryFinish( $order_id ){
         //make transaction for commission of courier
         $PrefModel=model('PrefModel');

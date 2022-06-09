@@ -138,6 +138,9 @@ class EntryModel extends Model{
     
     public function itemDelete( $entry_id ){
         $entry=$this->itemGet($entry_id);
+        if( !$entry ){
+            return 'ok';
+        }
         $OrderModel=model('OrderModel');
         $order_basic=$OrderModel->itemGet($entry->order_id,'basic');
         if( !$this->itemEditAllow( $order_basic ) ){

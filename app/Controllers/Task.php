@@ -1,19 +1,21 @@
 <?php
-
 namespace App\Controllers;
+require_once '../app/ThirdParty/Credis/Client.php';
 
 class Task extends \App\Controllers\BaseController{
-    private $workerLifeTime=1*60;//2min
-    private $workerLifeSpread=0;//1min
+    private $workerLifeTime=2*60;//2min
+    private $workerLifeSpread=60;//1min
     private $timedJobInterval=1*60*30;//30 min 
 
-
-
-    public function jobDo(){
-        require_once '../app/ThirdParty/Credis/Client.php';
+    private function jobTimeoutsSet(){
+        $db = \Config\Database::connect();
+        $db->query("set session wait_timeout=300");
         set_time_limit(3600);
         session_write_close();
-        
+    }
+
+    public function jobDo(){
+        $this->jobTimeoutsSet();
         $time_limit = $this->workerLifeTime;
         $time_limit += rand(0, $this->workerLifeSpread);
         $start_time = time();
@@ -113,6 +115,10 @@ class Task extends \App\Controllers\BaseController{
             }
             if( $command->model??0 ){
                 $Class=model($command->model);
+                /**
+                 * since we are in worker mysql can go away so we need to reconnect
+                 * $Class->db->reconnect();
+                 */
             } else if( $command->controller??0 ){
                 $Class=new $command->controller($this->request, $this->response, $this->logger);
             } else if( $command->library??0 ){

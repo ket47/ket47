@@ -43,7 +43,7 @@ class Messenger{
         if( $user_id==-100 ){//system user==admin
             return (object)[
                 'user_name'=>"Администратор",
-                'user_phone'=>"",
+                'user_phone'=>getenv('phone_admin'),
                 'user_email'=>getenv('email_admin'),
                 'user_data'=>(object)[]
             ];
