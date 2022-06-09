@@ -53,6 +53,7 @@ class Order extends \App\Controllers\BaseController {
         if( ($data->order_id??-1)>0 ){
             $order_id_exists=$OrderModel->where($data->order_id)->get()->getRow('order_id');
         }
+        $OrderModel->transStart();
         if( !$order_id_exists ){
             if( !isset($data->order_store_id) ){
                 return $this->fail('nostoreid');
@@ -67,6 +68,7 @@ class Order extends \App\Controllers\BaseController {
             $data->order_id=$result;
         }
         $result = $OrderModel->itemUpdate($data);
+        $OrderModel->transComplete();
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }

@@ -55,7 +55,7 @@ class Store extends \App\Controllers\BaseController{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet(){
-        $store_id=$this->request->getVar('store_id');
+        $store_id=(int) $this->request->getVar('store_id');
         $mode=$this->request->getVar('mode');
         $distance_include=$this->request->getVar('distance_include');
         $StoreModel=model('StoreModel');

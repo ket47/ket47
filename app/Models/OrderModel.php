@@ -264,11 +264,9 @@ class OrderModel extends Model{
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
-        $this->join('location_list ll',"location_holder='store' AND location_holder_id=order_store_id AND ll.is_main=1",'left');
         $this->join('store_list sl',"store_id=order_store_id",'left');
 
-        $this->select("ll.location_address,store_name");
-        $this->select("{$this->table}.*,group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash");
+        $this->select("{$this->table}.*,group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);

@@ -275,7 +275,8 @@ trait OrderStageTrait{
         ];
         $store_email=(object)[
             'message_transport'=>'email',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_reciever_email'=>$store->store_email,
             'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_start_STORE_email.php',
             'context'=>$context
@@ -360,7 +361,7 @@ trait OrderStageTrait{
         helper('job');
         
         $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'basic');
+        $order=$this->itemGet($order_id,'all');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $customer=$UserModel->itemGet($order->owner_id,'basic');
         $context=[

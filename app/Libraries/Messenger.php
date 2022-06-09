@@ -3,16 +3,18 @@ namespace App\Libraries;
 class Messenger{
    
     public function itemSend( $message ){
-        $multiple_recievers=explode(',',$message->message_reciever_id);
-        if( count($multiple_recievers)>1 ){
-            foreach($multiple_recievers as $current_reciever_id){
-                if( !$current_reciever_id ){
-                    continue;
+        if( isset($message->message_reciever_id) ){
+            $multiple_recievers=explode(',',$message->message_reciever_id);
+            if( count($multiple_recievers)>1 ){
+                foreach($multiple_recievers as $current_reciever_id){
+                    if( !$current_reciever_id ){
+                        continue;
+                    }
+                    $message->message_reciever_id=$current_reciever_id;
+                    $this->itemSend($message);
                 }
-                $message->message_reciever_id=$current_reciever_id;
-                $this->itemSend($message);
+                return true;
             }
-            return true;
         }
         
         //log_message('error','Message to be send:'.json_encode($message));
@@ -68,7 +70,17 @@ class Messenger{
     }
     
     private function itemSendEmail( $message ){
-        $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( isset($message->message_reciever_id) ){
+            $reciever=$this->itemRecieverGet($message->message_reciever_id);
+            $email_to=$reciever->user_email;
+        } else {
+            $reciever=(object)[];
+            $email_to=$message->message_reciever_email;
+        }
+        if( !$email_to ){
+            return false;
+        }
+        
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -79,6 +91,7 @@ class Messenger{
         if( !$message->message_text ){
             return false;
         }
+
         $email = \Config\Services::email();
         $config=[
             'SMTPHost'=>getenv('email_server'),
@@ -88,7 +101,7 @@ class Messenger{
         ];
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
-        $email->setTo($reciever->user_email);
+        $email->setTo($email_to);
         $email->setSubject($message->message_subject??getenv('email_sendername'));
         $email->setMessage($message->message_text);
         $email_send_ok=$email->send();
@@ -118,7 +131,7 @@ class Messenger{
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
         $sms_send_ok=$Sms->send($reciever->user_phone,$message->message_text);        
         if( !$sms_send_ok ){
-            log_message('error', 'Cant send sms:'. json_encode($message).$sms_send_ok );
+            log_message('error', "Cant send sms to {$reciever->user_phone}:". json_encode($message).$sms_send_ok );
             return false;
         }
         return true;
@@ -137,12 +150,12 @@ class Messenger{
             $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
-        if( !$message->message_text || !$reciever->viberId ){
+        if( !$message->message_text || !$reciever->user_data->viberId ){
             log_message('error', 'No text or viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
         $Viber = new \App\Libraries\Viber();
-        $result=$Viber->send_message($reciever->viberId,$message->message_text);
+        $result=$Viber->send_message($reciever->user_data->viberId,$message->message_text);
         if( $result && ($result->status??null)==0 ){
             return true;
         }
