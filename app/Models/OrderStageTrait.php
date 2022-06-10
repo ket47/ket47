@@ -337,7 +337,7 @@ trait OrderStageTrait{
         helper('job');
         
         $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'basic');
+        $order=$this->itemGet($order_id,'all');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $customer=$UserModel->itemGet($order->owner_id,'basic');
         $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
