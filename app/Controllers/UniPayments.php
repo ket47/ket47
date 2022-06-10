@@ -182,7 +182,7 @@ class UniPayments extends \App\Controllers\BaseController{
             return $this->respond('NEW');//Заказ не оплачен
         }
         if( $this->paymentIsDone($order_id) ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS PAID");
+            //$this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS PAID");
             return $this->respond('PAID');//Заказ оплачен
         }
         $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
