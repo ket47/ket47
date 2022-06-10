@@ -301,7 +301,7 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function readyCouriersNotify( $context ){///SHOULD MOVE TO COURIER MODEL!!!!!
+    private function readyCouriersNotify( $context ){//SHOULD MOVE TO COURIER MODEL!!!!!
         $CourierModel=model('CourierModel');
         $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
         if( !$ready_courier_list ){
@@ -328,6 +328,51 @@ trait OrderStageTrait{
     }
     
     private function onCustomerDisputed( $order_id ){
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $EntryModel=model('EntryModel');
+        $CourierModel=model('CourierModel');
+
+        $EntryModel->listStockMove($order_id,'free');
+        helper('job');
+        
+        $StoreModel->itemCacheClear();
+        $order=$this->itemGet($order_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            'message_transport'=>'email',
+            'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_disputed_ADMIN_email.php',
+            'context'=>$context
+        ];
+        $store_email=(object)[
+            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            'message_transport'=>'email',
+            'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_disputed_STORE_email.php',
+            'context'=>$context
+        ];
+        $cust_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_customer_disputed_CUST_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"customer_disputed Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$store_email,$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
         return 'ok';
     }
     

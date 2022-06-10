@@ -292,6 +292,7 @@ class CourierModel extends Model{
             return 'notsearching';
         }
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id]);
+        $OrderModel->itemUpdateOwners($order_id);
         $this->transComplete();
         return 'ok';
     }
