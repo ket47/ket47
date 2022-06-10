@@ -37,8 +37,13 @@ class PromoModel extends Model{
         return false;
     }
     
-    public function listGet(){
-        return false;
+    public function listGet( $user_id=null ){
+        $this->permitWhere('w');
+        if( $user_id ){
+            $this->where('owner_id',$user_id);
+        }
+        $this->join('order_list','promo_order_id=order_id','left');
+        return $this->get()->getResult();
     }
     
     public function listCreate(){
