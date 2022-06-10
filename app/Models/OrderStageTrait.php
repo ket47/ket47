@@ -344,7 +344,8 @@ trait OrderStageTrait{
         $context=[
             'order'=>$order,
             'store'=>$store,
-            'customer'=>$customer
+            'customer'=>$customer,
+            'courier'=>$courier
         ];
         $admin_email=(object)[
             'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
@@ -373,6 +374,20 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
+        ///////////////////////////////////////////////////
+        //CREATING STAGE RESET JOB
+        ///////////////////////////////////////////////////
+        $PrefModel=model('PrefModel');
+        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
+        $next_start_time=time()+$timeout_min*60;
+        $stage_reset_task=[
+            'task_name'=>"customer_finish Fastforward #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['customer_disputed','customer_finish',$order_id]]
+                ],
+            'task_next_start_time'=>$next_start_time
+        ];
+        jobCreate($stage_reset_task);
         return 'ok';
     }
     
