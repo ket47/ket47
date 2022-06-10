@@ -18,13 +18,13 @@
             По заказу №<?= $order->order_id ?> поступило возражение от клиента. 
         </p>
         <p>
-            Свяжитель с Клиентом <?=$customer->user_name?> <?=$customer->user_phone?>
+            Свяжитель с Клиентом <?=$customer->user_name??'-'?> <?=$customer->user_phone??'-'?>
         </p>
         <p>
-            Свяжитель с Курьером <?=$courier->user_name?>  <?=$courier->user_phone?>
+            Свяжитель с Курьером <?=$courier->user_name??'-'?>  <?=$courier->user_phone??'-'?>
         </p>
         <p>
-            Свяжитель с Поставщиком <?=$supplier->store_name?> <?=$supplier->store_phone?>
+            Свяжитель с Поставщиком <?=$supplier->store_name??'-'?> <?=$supplier->store_phone??'-'?>
         </p>
         <p>
             Больше действий с заказом <a href="https://tezkel.com/#/order-<?= $order->order_id ?>">в приложении</a>
