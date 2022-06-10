@@ -291,11 +291,9 @@ class CourierModel extends Model{
         if( !$was_searching ){
             return 'notsearching';
         }
-        $result=$OrderModel->itemUpdate( (object)['order_id'=>$order_id,'order_courier_id'=>$courier_id] );
-        if($result=='ok'){
-            $this->transComplete();
-        }
-        return $result;
+        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id]);
+        $this->transComplete();
+        return 'ok';
     }
 
     public function itemJobTrack($order_id){
