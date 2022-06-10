@@ -348,14 +348,15 @@ trait OrderStageTrait{
             'courier'=>$courier
         ];
         $admin_email=(object)[
-            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            'message_reciever_id'=>'-100',
             'message_transport'=>'email',
             'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_disputed_ADMIN_email.php',
             'context'=>$context
         ];
         $store_email=(object)[
-            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            //'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            'message_reciever_email'=>$store->store_email,
             'message_transport'=>'email',
             'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_disputed_STORE_email.php',
