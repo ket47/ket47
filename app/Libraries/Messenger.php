@@ -41,6 +41,7 @@ class Messenger{
         }
     }
     
+    private $reciever_cache=null;
     private function itemRecieverGet($user_id){
         if( $user_id==-100 ){//system user==admin
             return (object)[
@@ -50,21 +51,24 @@ class Messenger{
                 'user_data'=>(object)[]
             ];
         }
+        if(!empty($this->reciever_cache[$user_id])){
+            return $this->reciever_cache[$user_id];
+        }
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
+        $this->reciever_cache[$user_id]=$reciever;
         return $reciever;
     }
 
     private function itemSendMessage( $message ){
-        $reciever=$this->itemRecieverGet($message->message_reciever_id);
-        if( isset($reciever->user_data->viberId) ){
-            $ok=$this->itemSendViber($message);
-            if( $ok ){
-                return true;
-            }
+        if( $this->itemSendPush($message) ){
+            return true;
+        }
+        if( $this->itemSendViber($message) ){
+            return true;
         }
         return $this->itemSendSms($message);
     }
@@ -138,6 +142,102 @@ class Messenger{
     }
     
     private function itemSendPush( $message ){
+        $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( isset($message->template) ){
+            if(is_object($message->context)){
+                $message->context=(array)$message->context;
+            }
+            $message->context['reciever']=$reciever;
+            $message->message_text=view($message->template,$message->context);
+        }
+        if( !$message->message_text ){
+            return false;
+        }
+
+        $MessageSubModel=model('MessageSubModel');
+        $sub_registration_ids=$MessageSubModel->listGet($message->message_reciever_id);
+
+        $to=[];
+        foreach($sub_registration_ids as $id){
+            $to[]=$id->sub_registration_id;
+        }
+
+        $notification=[
+            "title"=>"Your Title",
+            "text"=>$message->message_text,
+            "click_action"=>"OPEN_ACTIVITY_1"
+        ];
+        $data=[
+            'ohoho'=>35
+        ];
+
+
+
+
+
+
+        $notification=[
+            'token'=>$to,
+            'notification' => [
+                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#notification
+                'title' => 'Notification title',
+                'body' => $message->message_text,
+                'image' => 'http://lorempixel.com/400/200/',
+            ],
+            'data' => [
+                'key_1' => 'Value 1',
+                'key_2' => 'Value 2',
+            ],
+            'android' => [
+                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#androidconfig
+                'ttl' => '3600s',
+                'priority' => 'normal',
+                'notification' => [
+                    'title' => '$GOOG up 1.43% on the day',
+                    'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
+                    'icon' => 'stock_ticker_update',
+                    'color' => '#f45342',
+                ],
+            ],
+            'apns' => [
+                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#apnsconfig
+                'headers' => [
+                    'apns-priority' => '10',
+                ],
+                'payload' => [
+                    'aps' => [
+                        'alert' => [
+                            'title' => '$GOOG up 1.43% on the day',
+                            'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
+                        ],
+                        'badge' => 42,
+                    ],
+                ],
+            ],
+            'webpush' => [
+                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#webpushconfig
+                'headers' => [
+                    'Urgency' => 'normal',
+                ],
+                'notification' => [
+                    'title' => '$GOOG up 1.43% on the day',
+                    'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
+                    'icon' => 'https://my-server/icon.png',
+                ],
+            ],
+            'fcm_options' => [
+                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#fcmoptions
+                //'analytics_label' => 'some-analytics-label'
+            ]
+        ];
+    
+
+        $Firebase = new \App\Libraries\Firebase();
+        $result=$Firebase->send_message($to,$notification);
+        if( $result && ($result->status??null)==0 ){
+            return true;
+        }
+        log_message('error', 'Firebase message failed: '.json_encode([$result,$message]));
         return false;
     }
     
