@@ -33,7 +33,6 @@ class MessageSubModel extends Model{
     }
 
     public function listGet($user_id){
-        $this->select('sub_registration_id');
         return $this->where('sub_user_id',$user_id)->get()->getResult();
     }
     

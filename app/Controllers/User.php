@@ -34,6 +34,15 @@ class User extends \App\Controllers\BaseController{
                 'fee'=>getenv('delivery.fee'),
                 'timeDelta'=>getenv('delivery.timeDelta'),
                 'timePreparationDefault'=>getenv('delivery.timePreparationDefault'),
+            ],
+            'firebase'=>[
+                'apiKey'=>getenv('firebase.apiKey'),
+                'authDomain'=>getenv('firebase.authDomain'),
+                'projectId'=>getenv('firebase.projectId'),
+                'storageBucket'=>getenv('firebase.storageBucket'),
+                'messagingSenderId'=>getenv('firebase.messagingSenderId'),
+                'appId'=>getenv('firebase.appId'),
+                'vapidKey'=>getenv('firebase.vapidKey'),
             ]
         ];
         return $this->respond($settings);

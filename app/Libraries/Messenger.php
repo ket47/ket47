@@ -59,6 +59,7 @@ class Messenger{
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
+        $reciever->subscriptions=model('MessageSubModel')->listGet($user_id);
         $this->reciever_cache[$user_id]=$reciever;
         return $reciever;
     }
@@ -126,7 +127,7 @@ class Messenger{
             $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
-        if( !$message->message_text ){
+        if( !isset($message->message_text) ){
             return false;
         }
         $devinoSenderName=getenv('devinoSenderName');
@@ -143,102 +144,31 @@ class Messenger{
     
     private function itemSendPush( $message ){
         $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( !count($reciever->subscriptions??[]) ){
+            return false;
+        }
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
             }
             $message->context['reciever']=$reciever;
-            $message->message_text=view($message->template,$message->context);
+            $message->message_data['body']=view($message->template,$message->context);
         }
-        if( !$message->message_text ){
-            return false;
+        $pushsent=false;
+        $FirePush = new \App\Libraries\FirePush();
+        foreach($reciever->subscriptions as $sub){
+            $result=$FirePush->sendPush((object)[
+                'token'=>$sub->sub_registration_id,
+                'data'=>$message->message_data,
+                //'title'=>$message->message_subject??'',
+                //'body'=>$message->message_text??'',
+                //'link'=>$message->message_link,
+            ]);
+            if($result){
+                $pushsent=true;
+            }
         }
-
-        $MessageSubModel=model('MessageSubModel');
-        $sub_registration_ids=$MessageSubModel->listGet($message->message_reciever_id);
-
-        $to=[];
-        foreach($sub_registration_ids as $id){
-            $to[]=$id->sub_registration_id;
-        }
-
-        $notification=[
-            "title"=>"Your Title",
-            "text"=>$message->message_text,
-            "click_action"=>"OPEN_ACTIVITY_1"
-        ];
-        $data=[
-            'ohoho'=>35
-        ];
-
-
-
-
-
-
-        $notification=[
-            'token'=>$to,
-            'notification' => [
-                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#notification
-                'title' => 'Notification title',
-                'body' => $message->message_text,
-                'image' => 'http://lorempixel.com/400/200/',
-            ],
-            'data' => [
-                'key_1' => 'Value 1',
-                'key_2' => 'Value 2',
-            ],
-            'android' => [
-                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#androidconfig
-                'ttl' => '3600s',
-                'priority' => 'normal',
-                'notification' => [
-                    'title' => '$GOOG up 1.43% on the day',
-                    'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
-                    'icon' => 'stock_ticker_update',
-                    'color' => '#f45342',
-                ],
-            ],
-            'apns' => [
-                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#apnsconfig
-                'headers' => [
-                    'apns-priority' => '10',
-                ],
-                'payload' => [
-                    'aps' => [
-                        'alert' => [
-                            'title' => '$GOOG up 1.43% on the day',
-                            'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
-                        ],
-                        'badge' => 42,
-                    ],
-                ],
-            ],
-            'webpush' => [
-                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#webpushconfig
-                'headers' => [
-                    'Urgency' => 'normal',
-                ],
-                'notification' => [
-                    'title' => '$GOOG up 1.43% on the day',
-                    'body' => '$GOOG gained 11.80 points to close at 835.67, up 1.43% on the day.',
-                    'icon' => 'https://my-server/icon.png',
-                ],
-            ],
-            'fcm_options' => [
-                // https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#fcmoptions
-                //'analytics_label' => 'some-analytics-label'
-            ]
-        ];
-    
-
-        $Firebase = new \App\Libraries\Firebase();
-        $result=$Firebase->send_message($to,$notification);
-        if( $result && ($result->status??null)==0 ){
-            return true;
-        }
-        log_message('error', 'Firebase message failed: '.json_encode([$result,$message]));
-        return false;
+        return $pushsent;
     }
     
     private function itemSendViber( $message ){
@@ -250,7 +180,10 @@ class Messenger{
             $message->context['reciever']=$reciever;
             $message->message_text=view($message->template,$message->context);
         }
-        if( !$message->message_text || !$reciever->user_data->viberId ){
+        if( !isset($message->message_text) ){
+            return false;
+        }
+        if( !isset($reciever->user_data->viberId) ){
             log_message('error', 'No text or viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
