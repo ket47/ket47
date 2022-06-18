@@ -12,7 +12,7 @@ use Plokko\Firebase\ServiceAccount;
 class FirePush{
     private $serviceAccount;
     function __construct(){
-        $serviceCredentials = dirname(__DIR__ ).'../../firebase.conf';
+        $serviceCredentials = dirname(__DIR__ ).'/../../firebase.conf';
         $this->serviceAccount = new ServiceAccount($serviceCredentials);
     }
     public function sendPush( $push ){
