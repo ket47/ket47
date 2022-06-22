@@ -184,7 +184,7 @@ class Messenger{
             return false;
         }
         if( !isset($reciever->user_data->viberId) ){
-            log_message('error', 'No text or viberId for user_id:'.$message->message_reciever_id);
+            //log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
         $Viber = new \App\Libraries\Viber();

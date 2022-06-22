@@ -5,7 +5,7 @@ require_once '../app/ThirdParty/Credis/Client.php';
 class Task extends \App\Controllers\BaseController{
     private $workerLifeTime=2*60;//2min
     private $workerLifeSpread=60;//1min
-    private $timedJobInterval=1*60*30;//30 min 
+    private $timedJobInterval=1*60*30;//30 min
 
     private function jobTimeoutsSet(){
         $db = \Config\Database::connect();
@@ -15,19 +15,21 @@ class Task extends \App\Controllers\BaseController{
     }
 
     public function jobDo(){
+        if( getenv('app.logworkers') ){
+            ob_start();
+        }
+
         $this->jobTimeoutsSet();
         $time_limit = $this->workerLifeTime;
         $time_limit += rand(0, $this->workerLifeSpread);
         $start_time = time();
         $worker_id = rand(100, 999);
         
-        echo "Worker #$worker_id Starting.".date('H:i:s')."\n	Waiting for a Job";
+        echo "\nWorker #$worker_id Starting.".date('H:i:s');
+        echo "\nWaiting for a Job";
         $predis = new \Credis_Client();
-        $timedJobDone=$this->timedJobCheck($predis);
-        if($timedJobDone){
-            echo "Timed job is done. Worker will not started.";
-            return;
-        }
+        $this->timedJobCheck($predis);
+
         while(time() < $start_time + $time_limit){
             $job = $predis->blPop('queue.priority.normal',4);
             if(!$job || !$job[1]){
@@ -36,7 +38,7 @@ class Task extends \App\Controllers\BaseController{
             }
             $task= json_decode($job[1]);
             if( !$task ){
-                echo "Invalid job syntax: ".json_last_error_msg();
+                echo "\nInvalid job syntax: ".json_last_error_msg();
             }
             if( isset($task->task_next_start_time) && $task->task_next_start_time>time() ){
                 $final_count=$predis->rPush('queue.priority.normal', $job[1]);
@@ -45,18 +47,21 @@ class Task extends \App\Controllers\BaseController{
                 }
                 continue;
             }
-            echo "\nJob {$task->task_name} Started at ".date('H:i:s')."";
-            $result=$this->itemExecute( $task );
-            echo " Done!\n";
+            echo "\nJob {$task->task_name} Started at ".date('H:i:s');
+            $this->itemExecute( $task );
+            echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is job
         }
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
+        if( getenv('app.logworkers') ){
+            log_message('error',ob_get_flush());
+        }
     }
 
     private function timedJobCheck($predis){
         $timer=$predis->get('cronjobtimer');
         if($timer){//time not came
-            echo "timedJobCheck skipping: $timer";
+            echo "\ntimedJobCheck skipping: $timer";
             return false;
         }
         echo "\nTimed Jobs will execute:";
@@ -92,7 +97,7 @@ class Task extends \App\Controllers\BaseController{
         $pending_tasks=$TaskModel->listGet($filter);
         foreach($pending_tasks as $task){
             $result=$this->itemExecute($task);
-            echo date('H:i:s')." $task->task_name: $result\n";
+            echo "\n".date('H:i:s')." $task->task_name: $result\n";
         }
         return true;
     }
