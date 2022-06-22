@@ -23,11 +23,33 @@ class Promo extends \App\Controllers\BaseController{
     public function itemDelete(){
         return false;
     }
+
+    public function itemLink(){
+        $promo_id=$this->request->getVar('promo_id');
+        $order_id=$this->request->getVar('order_id');
+        $PromoModel=model('PromoModel');
+        $result=$PromoModel->itemLink($promo_id,$order_id);
+        if($result=='forbidden'){
+            return $this->failForbidden('forbidden');
+        }
+        return $this->respond($result);
+    }
+
+    public function itemLinkGet(){
+        $order_id=$this->request->getVar('order_id');
+        $PromoModel=model('PromoModel');
+        $result=$PromoModel->itemLinkGet($order_id);
+        return $this->respond($result);
+    }
+
+
     
     public function listGet(){
         $user_id=$this->request->getVar('user_id');
+        $type=$this->request->getVar('type');
+        $mode=$this->request->getVar('mode');
         $PromoModel=model('PromoModel');
-        $result=$PromoModel->listGet($user_id);
+        $result=$PromoModel->listGet($user_id,$type,$mode);
         if($result=='notfound'){
             return $this->failNotFound('notfound');
         }
@@ -44,6 +66,11 @@ class Promo extends \App\Controllers\BaseController{
     
     public function listDelete(){
         return false;
+    }
+
+    public function test(){
+        $PromoModel=model('PromoModel');
+        $PromoModel->listCreate(66,41);
     }
  
 }

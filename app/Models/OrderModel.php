@@ -182,13 +182,10 @@ class OrderModel extends Model{
                 order_entry_list el USING(order_id)
                     LEFT JOIN
                 transaction_list tl ON holder_id=order_id AND holder='order'
-                    LEFT JOIN
-                image_list il ON image_holder_id=order_id AND image_holder='order'
             SET
                 ol.owner_ally_ids='$owner_list',
                 el.owner_ally_ids='$owner_list',
-                tl.owner_ally_ids='$owner_list',
-                il.owner_ally_ids='$owner_list'
+                tl.owner_ally_ids='$owner_list'
             WHERE
                 ol.order_id='$order_id'";
         $this->query($sql);
@@ -273,6 +270,14 @@ class OrderModel extends Model{
         }
         $this->orderBy('updated_at','DESC');
         return $this->get()->getResult();
+    }
+
+    public function listCountGet(){
+        $this->permitWhere('r');
+        $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);
+        $this->join('order_group_list ogl',"order_group_id=group_id",'left');
+        $this->select('COUNT(*) count');
+        return $this->get()->getRow('count');
     }
     
     public function listCreate(){

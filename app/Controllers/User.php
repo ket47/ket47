@@ -22,6 +22,10 @@ class User extends \App\Controllers\BaseController{
     public function itemSettingsGet(){
         $settings=[
             'app_title'=>getenv('app.title'),
+            'app'=>[
+                'frontendUrl'=>getenv('app.frontendUrl'),
+                'backendUrl'=>getenv('app.backendUrl'),
+            ],
             'location'=>[
                 'mapBoundaries'=>[getenv('location.mapBoundaries')],
                 'mapCenter'=>getenv('location.mapCenter'),
@@ -129,15 +133,23 @@ class User extends \App\Controllers\BaseController{
         $user_name=$this->request->getVar('user_name');
         $user_pass=$this->request->getVar('user_pass');
         $user_pass_confirm=$this->request->getVar('user_pass_confirm');
+        $inviter_user_id=$this->request->getVar('inviter_user_id');
         $this->signOut();
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
+
+        $UserModel->transStart();
         $user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
-        
         if( $UserModel->errors() ){
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
+        if( $user_id ){
+            $PromoModel=model('PromoModel');
+            $PromoModel->listCreate($user_id,$inviter_user_id??0);
+        }
+        $UserModel->transComplete();
+
         return $this->respondCreated($user_id);
     }
     

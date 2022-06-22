@@ -158,6 +158,12 @@ class Order extends \App\Controllers\BaseController {
         $order_list=$OrderModel->listGet($filter);
         return $this->respond($order_list);
     }
+
+    public function listCountGet(){
+        $OrderModel=model('OrderModel');
+        $count=$OrderModel->listCountGet();
+        return $this->respond($count);
+    }
     
 
     // public function listCartGet(){
