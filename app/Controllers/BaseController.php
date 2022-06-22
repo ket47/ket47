@@ -100,7 +100,7 @@ class BaseController extends Controller
             header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
             header("Access-Control-Allow-Credentials: true");
             header("Access-Control-Expose-Headers: x-sid");
-            $method = $_SERVER['REQUEST_METHOD'];
+            $method = isset($_SERVER['REQUEST_METHOD'])?$_SERVER['REQUEST_METHOD']:'';
             if( $method == "OPTIONS" ) {
                 die();
             }
