@@ -248,7 +248,8 @@ class OrderModel extends Model{
         }
         if($filter['order_group_type']??0){
             if($filter['order_group_type']=='active_only'){
-                $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);
+                $this->where('ogl.group_type<>','customer_finish');
+                $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer'OR `ogl`.`group_type`<>'customer_cart'");
             } else {
                 $firstChar=substr($filter['order_group_type'],0,1);
                 if( $firstChar=='!' ){

@@ -125,6 +125,8 @@ trait OrderStageTrait{
         $handled=$this->itemStageHandle( $order_id, $stage, $data );
         if( $updated && $joined && $handled==='ok' ){
             $this->transComplete();
+            
+            $this->itemStageChangeNotify($order, $stage, $data);
         }
         return $handled;
     }
@@ -147,6 +149,25 @@ trait OrderStageTrait{
         return $this->{$stageHandlerName}($order_id, $data);
     }
     
+    private function itemStageChangeNotify($order, $stage, $data){
+        $recievers_id=$order->owner_id.','.$order->owner_ally_ids;
+        $push=(object)[
+            'message_transport'=>'push',
+            'message_reciever_id'=>$recievers_id,
+            'message_data'=>[
+                'event'=>'onStageChanged',
+                'order_id'=>$order->order_id,
+                'stage'=>$stage
+            ]
+        ];
+        $notification_task=[
+            'task_name'=>"onStageChanged background push Notify #$order->order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$push]]]
+                ]
+        ];
+        jobCreate($notification_task);
+    }
     ////////////////////////////////////////////////
     //ORDER STAGE HANDLING LISTENERS
     ////////////////////////////////////////////////
