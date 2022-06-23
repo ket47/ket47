@@ -147,6 +147,13 @@ class Messenger{
         if( !count($reciever->subscriptions??[]) ){
             return false;
         }
+        if( !$message->message_data ){
+            $message->message_data=[
+                'title'=>$message->message_subject??'',
+                'body'=>$message->message_text??'',
+                'link'=>$message->message_link??''
+            ];
+        }
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
