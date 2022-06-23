@@ -307,10 +307,6 @@ class OrderModel extends Model{
         $data['is_disabled']=0;
         $data['owner_id']=session()->get('user_id');
         if( $this->permit($data['image_holder_id'], 'w') ){
-            $order_owners=$this->where('order_id',$data['image_holder_id'])->select('owner_id,owner_ally_ids')->get()->getRow();
-            $data['owner_id']=$order_owners->owner_id;
-            $data['owner_ally_ids']=$order_owners->owner_ally_ids;
-
             $ImageModel=model('ImageModel');
             $ok=$ImageModel->itemCreate($data);
             return $ok;

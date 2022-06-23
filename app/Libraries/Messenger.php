@@ -147,7 +147,7 @@ class Messenger{
         if( !count($reciever->subscriptions??[]) ){
             return false;
         }
-        if( !$message->message_data ){
+        if( !isset($message->message_data) ){
             $message->message_data=[
                 'title'=>$message->message_subject??'',
                 'body'=>$message->message_text??'',

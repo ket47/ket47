@@ -332,11 +332,6 @@ class User extends \App\Controllers\BaseController{
         $user_phone=$this->request->getVar('user_phone');
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
-
-
-
-
-
         $UserVerificationModel=model('UserVerificationModel');
         $result=$UserVerificationModel->phoneVerify($user_phone_cleared,$verification_code);
         if( $result==='verification_completed' ){
