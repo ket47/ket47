@@ -1,6 +1,6 @@
 <script type="text/javascript">
     App._Location_pickerModal={
-        require:["https://api-maps.yandex.ru/2.1/?apikey=<?= getenv('yandex.mapkey') ?>&lang=ru_RU"],
+        require:["https://api-maps.yandex.ru/2.1/?apikey=<?= getenv('location.ymapApiKey') ?>&lang=ru_RU"],
         init:function(){
             ymaps.ready(App._Location_pickerModal.ymapsInit);
             this.node.find('.action_buttons').on('click',function(e){

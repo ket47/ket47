@@ -158,6 +158,8 @@ trait OrderStageTrait{
                 'topic'=>'pushStageChanged',
                 'order_id'=>$order->order_id,
                 'stage'=>$stage,
+                'title'=>"Order #$order->order_id",
+                'body'=>"Status changed to $stage",
             ]
         ];
         $notification_task=[
