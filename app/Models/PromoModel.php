@@ -145,12 +145,16 @@ class PromoModel extends Model{
         $this->transStart();
         for($i=0;$i<$promo_voucher_count;$i++){
             $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
-            $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id);
+            if($inviter_user_id>0){
+                $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id);
+            }
         }
         $this->transComplete();
 
         $this->userNotify($user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$parent_value]);
-        $this->userNotify($inviter_user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$child_value]);
+        if($inviter_user_id>0){
+            $this->userNotify($inviter_user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$child_value]);
+        }
         return true;
     }
     

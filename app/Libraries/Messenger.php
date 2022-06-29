@@ -51,11 +51,17 @@ class Messenger{
                 'user_data'=>(object)[]
             ];
         }
+        if( !$user_id || $user_id<1){
+            return null;
+        }
         if(!empty($this->reciever_cache[$user_id])){
             return $this->reciever_cache[$user_id];
         }
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
+        if( !$reciever ){
+            return null;
+        }
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
@@ -66,7 +72,7 @@ class Messenger{
 
     private function itemSendMessage( $message ){
         if( $this->itemSendPush($message) ){
-            return true;
+            //return true;//try to send viber even if push is successfull
         }
         if( $this->itemSendViber($message) ){
             return true;
@@ -77,6 +83,9 @@ class Messenger{
     private function itemSendEmail( $message ){
         if( isset($message->message_reciever_id) ){
             $reciever=$this->itemRecieverGet($message->message_reciever_id);
+            if( !$reciever ){
+                return false;
+            }
             $email_to=$reciever->user_email;
         } else {
             $reciever=(object)[];
@@ -120,6 +129,9 @@ class Messenger{
     
     private function itemSendSms( $message ){
         $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( !$reciever ){
+            return false;
+        }
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -144,6 +156,9 @@ class Messenger{
     
     private function itemSendPush( $message ){
         $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( !$reciever ){
+            return false;
+        }
         if( !count($reciever->subscriptions??[]) ){
             return false;
         }
@@ -180,6 +195,9 @@ class Messenger{
     
     private function itemSendViber( $message ){
         $reciever=$this->itemRecieverGet($message->message_reciever_id);
+        if( !$reciever ){
+            return false;
+        }
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
