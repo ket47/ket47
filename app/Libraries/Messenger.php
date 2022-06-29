@@ -128,10 +128,20 @@ class Messenger{
     }
     
     private function itemSendSms( $message ){
-        $reciever=$this->itemRecieverGet($message->message_reciever_id);
-        if( !$reciever ){
+        if( isset($message->message_reciever_id) ){
+            $reciever=$this->itemRecieverGet($message->message_reciever_id);
+            if( !$reciever ){
+                return false;
+            }
+            $phone_to=$reciever->user_phone;
+        } else {
+            $reciever=(object)[];
+            $phone_to=$message->message_reciever_phone;
+        }
+        if( !$phone_to ){
             return false;
         }
+        
         if( isset($message->template) ){
             if(is_object($message->context)){
                 $message->context=(array)$message->context;
@@ -146,9 +156,9 @@ class Messenger{
         $devinoUserName=getenv('devinoUserName');
         $devinoPassword=getenv('devinoPassword');
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
-        $sms_send_ok=$Sms->send($reciever->user_phone,$message->message_text);        
+        $sms_send_ok=$Sms->send($phone_to,$message->message_text);        
         if( !$sms_send_ok ){
-            log_message('error', "Cant send sms to {$reciever->user_phone}:". json_encode($message).$sms_send_ok );
+            log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$sms_send_ok );
             return false;
         }
         return true;
@@ -222,8 +232,12 @@ class Messenger{
     }
     
     public function listSend( array $message_list, $lazy_send=false ){
-        foreach( $message_list as $message){
-            $this->itemSend($message,$lazy_send);
+        try{
+            foreach( $message_list as $message){
+                $this->itemSend($message,$lazy_send);
+            }
+        } catch(\Exception $e){
+            log_message('error', 'Messenger:listSend Failed '.$e->getMessage());
         }
     }
 }

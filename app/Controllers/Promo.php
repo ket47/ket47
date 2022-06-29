@@ -67,10 +67,4 @@ class Promo extends \App\Controllers\BaseController{
     public function listDelete(){
         return false;
     }
-
-    public function test(){
-        $PromoModel=model('PromoModel');
-        $PromoModel->listCreate(66,41);
-    }
- 
 }

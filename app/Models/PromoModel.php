@@ -168,23 +168,25 @@ class PromoModel extends Model{
 
     private function userNotify($user_id,$template,$promo_context){
         $UserModel=model('UserModel');
-        $customer=$UserModel->itemGet($user_id,'basic');
+        $customer=$UserModel->where('user_id',$user_id)->get()->getRow();
+        unset($customer->user_pass);
+
         $context=[
             'customer'=>$customer,
             'promo'=>$promo_context
         ];
         helper('job');
         if( $template=='activated' ){
-            $template_file="promo/activated.php";
+            $template_file="messages/promo/activated.php";
         } else 
         if( $template=='created' ){
-            $template_file="promo/created.php";
+            $template_file="messages/promo/created.php";
         } else {
             return;
         }
         $cust_sms=(object)[
-            'message_reciever_id'=>$user_id,
-            'message_transport'=>'message',
+            'message_reciever_phone'=>$customer->user_phone,
+            'message_transport'=>'sms',
             'template'=>$template_file,
             'context'=>$context
         ];
