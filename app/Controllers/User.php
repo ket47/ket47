@@ -139,18 +139,15 @@ class User extends \App\Controllers\BaseController{
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
 
-        $UserModel->transStart();
-        $user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
+        $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
         if( $UserModel->errors() ){
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
-        if( $user_id ){
+        if( $new_user_id ){
             $PromoModel=model('PromoModel');
-            $PromoModel->listCreate($user_id,$inviter_user_id??0);
+            $PromoModel->listCreate($new_user_id,$inviter_user_id??0);
         }
-        $UserModel->transComplete();
-
-        return $this->respondCreated($user_id);
+        return $this->respondCreated($new_user_id);
     }
     
     public function signIn(){

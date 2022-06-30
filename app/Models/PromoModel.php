@@ -132,6 +132,9 @@ class PromoModel extends Model{
         if($cnt){
             return 'already_have_promos';
         }
+        if($user_id==$inviter_user_id){
+            return 'cant_invite_yourself';
+        }
         $UserModel=model('UserModel');
         $new_user_name=$UserModel->select('user_name')->where('user_id',$user_id)->get()->getRow('user_name');
 
@@ -151,11 +154,11 @@ class PromoModel extends Model{
         }
         $this->transComplete();
 
-        $this->userNotify($user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$parent_value]);
+        $this->userNotify($user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$parent_value,'promo_name'=>$parent_name]);
         if($inviter_user_id>0){
-            $this->userNotify($inviter_user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$child_value]);
+            $this->userNotify($inviter_user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$child_value,'promo_name'=>$child_name]);
         }
-        return true;
+        return 'ok';
     }
     
     public function listUpdate(){
@@ -166,13 +169,40 @@ class PromoModel extends Model{
         return false;
     }
 
-    private function userNotify($user_id,$template,$promo_context){
+     function userNotify($user_id,$template,$promo_context){
+        $context=[
+            'promo'=>$promo_context
+        ];
+        helper('job');
+        if( $template=='activated' ){
+            $template_file="messages/promo/activated.php";
+        } else 
+        if( $template=='created' ){
+            $template_file="messages/promo/created.php";
+        } else {
+            return;
+        }
+        $cust_sms=(object)[
+            'message_reciever_id'=>$user_id,
+            'message_transport'=>'message',
+            'template'=>$template_file,
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"customer Promo Notify #$user_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+    }
+
+    private function userNotify111($user_id,$template,$promo_context){
         $UserModel=model('UserModel');
         $customer=$UserModel->where('user_id',$user_id)->get()->getRow();
         unset($customer->user_pass);
 
         $context=[
-            'customer'=>$customer,
             'promo'=>$promo_context
         ];
         helper('job');

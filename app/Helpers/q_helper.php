@@ -1,5 +1,7 @@
 <?php
 
-function q( $self ){
-    echo $self->getLastQuery();die();
+function q( $self, $die=true ){
+    echo $self->getLastQuery();
+    if($die)
+        die();
 }

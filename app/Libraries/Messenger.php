@@ -1,8 +1,18 @@
 <?php
 namespace App\Libraries;
 class Messenger{
+    
+    public function listSend( array $message_list, $lazy_send=false ){
+        foreach( $message_list as $message){
+            try{
+                $this->itemSendMulticast($message,$lazy_send);
+            } catch(\Exception $e){
+                log_message('error', 'Messenger->listSend Error '.$e->getMessage()."\n".$e->getTraceAsString());
+            }
+        }
+    }
    
-    public function itemSend( $message ){
+    public function itemSendMulticast( $message ){
         if( isset($message->message_reciever_id) ){
             $multiple_recievers=explode(',',$message->message_reciever_id);
             if( count($multiple_recievers)>1 ){
@@ -16,10 +26,20 @@ class Messenger{
                 return true;
             }
         }
-        
-        //log_message('error','Message to be send:'.json_encode($message));
-        
-        
+        $this->itemSend($message);
+    }
+
+    public function itemSend( $message ){
+        $message->reciever=$this->itemRecieverGet($message->message_reciever_id??0);
+        if( !isset($message->message_text) ){
+            if(  $message->template ){
+                $message->message_text=$this->itemRender($message);
+            } else {
+                log_message('error','Message could not be send Empty text:'.json_encode($message,JSON_PRETTY_PRINT));
+                return false;
+            }
+        }
+        log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
         switch( $message->message_transport ){
             case 'email':
                 $this->itemSendEmail($message);
@@ -52,7 +72,7 @@ class Messenger{
             ];
         }
         if( !$user_id || $user_id<1){
-            return null;
+            return (object)[];
         }
         if(!empty($this->reciever_cache[$user_id])){
             return $this->reciever_cache[$user_id];
@@ -60,7 +80,7 @@ class Messenger{
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
         if( !$reciever ){
-            return null;
+            return (object)[];
         }
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
@@ -70,42 +90,20 @@ class Messenger{
         return $reciever;
     }
 
-    private function itemSendMessage( $message ){
-        if( $this->itemSendPush($message) ){
-            //return true;//try to send viber even if push is successfull
+    private function itemRender($message){
+        if( is_object($message->context) ){
+            $message->context=(array)$message->context;
         }
-        if( $this->itemSendViber($message) ){
-            return true;
-        }
-        return $this->itemSendSms($message);
+        $message->context['reciever']=$message->reciever;
+        return view($message->template,$message->context);
     }
     
     private function itemSendEmail( $message ){
-        if( isset($message->message_reciever_id) ){
-            $reciever=$this->itemRecieverGet($message->message_reciever_id);
-            if( !$reciever ){
-                return false;
-            }
-            $email_to=$reciever->user_email;
-        } else {
-            $reciever=(object)[];
-            $email_to=$message->message_reciever_email;
-        }
-        if( !$email_to ){
+        $email_to=$message->message_reciever_email??$message->reciever->user_email??'';
+        if(!$email_to){
+            log_message('error','Email cant be send: no email address');
             return false;
         }
-        
-        if( isset($message->template) ){
-            if(is_object($message->context)){
-                $message->context=(array)$message->context;
-            }
-            $message->context['reciever']=$reciever;
-            $message->message_text=view($message->template,$message->context);
-        }
-        if( !$message->message_text ){
-            return false;
-        }
-
         $email = \Config\Services::email();
         $config=[
             'SMTPHost'=>getenv('email_server'),
@@ -126,37 +124,28 @@ class Messenger{
         }
         return true;
     }
+
+    private function itemSendMessage( $message ){
+        if( $this->itemSendPush($message) ){
+            //return true;//try to send viber even if push is successfull
+        }
+        if( $this->itemSendViber($message) ){
+            return true;
+        }
+        return $this->itemSendSms($message);
+    }
     
     private function itemSendSms( $message ){
-        if( isset($message->message_reciever_id) ){
-            $reciever=$this->itemRecieverGet($message->message_reciever_id);
-            if( !$reciever ){
-                return false;
-            }
-            $phone_to=$reciever->user_phone;
-        } else {
-            $reciever=(object)[];
-            $phone_to=$message->message_reciever_phone;
-        }
-        if( !$phone_to ){
-            return false;
-        }
-        
-        if( isset($message->template) ){
-            if(is_object($message->context)){
-                $message->context=(array)$message->context;
-            }
-            $message->context['reciever']=$reciever;
-            $message->message_text=view($message->template,$message->context);
-        }
-        if( !isset($message->message_text) ){
+        $phone_to=$message->message_reciever_phone??$message->reciever->user_phone??'';
+        if(!$phone_to){
+            log_message('error','Sms cant be send: no phone number');
             return false;
         }
         $devinoSenderName=getenv('devinoSenderName');
         $devinoUserName=getenv('devinoUserName');
         $devinoPassword=getenv('devinoPassword');
         $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
-        $sms_send_ok=$Sms->send($phone_to,$message->message_text);        
+        $sms_send_ok=$Sms->send($phone_to,$message->message_text);
         if( !$sms_send_ok ){
             log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$sms_send_ok );
             return false;
@@ -165,11 +154,7 @@ class Messenger{
     }
     
     private function itemSendPush( $message ){
-        $reciever=$this->itemRecieverGet($message->message_reciever_id);
-        if( !$reciever ){
-            return false;
-        }
-        if( !count($reciever->subscriptions??[]) ){
+        if( !count($message->reciever->subscriptions??[]) ){
             return false;
         }
         if( !isset($message->message_data) ){
@@ -179,16 +164,9 @@ class Messenger{
                 'link'=>$message->message_link??''
             ];
         }
-        if( isset($message->template) ){
-            if(is_object($message->context)){
-                $message->context=(array)$message->context;
-            }
-            $message->context['reciever']=$reciever;
-            $message->message_data['body']=view($message->template,$message->context);
-        }
         $pushsent=false;
         $FirePush = new \App\Libraries\FirePush();
-        foreach($reciever->subscriptions as $sub){
+        foreach($message->reciever->subscriptions as $sub){
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
                 'data'=>$message->message_data,
@@ -204,40 +182,16 @@ class Messenger{
     }
     
     private function itemSendViber( $message ){
-        $reciever=$this->itemRecieverGet($message->message_reciever_id);
-        if( !$reciever ){
-            return false;
-        }
-        if( isset($message->template) ){
-            if(is_object($message->context)){
-                $message->context=(array)$message->context;
-            }
-            $message->context['reciever']=$reciever;
-            $message->message_text=view($message->template,$message->context);
-        }
-        if( !isset($message->message_text) ){
-            return false;
-        }
-        if( !isset($reciever->user_data->viberId) ){
-            //log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
+        if( !isset($message->reciever->user_data->viberId) ){
+            log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
         $Viber = new \App\Libraries\Viber();
-        $result=$Viber->send_message($reciever->user_data->viberId,$message->message_text);
+        $result=$Viber->send_message($message->reciever->user_data->viberId,$message->message_text);
         if( $result && ($result->status??null)==0 ){
             return true;
         }
         log_message('error', 'Viber message failed: '.json_encode([$result,$message]));
         return false;
-    }
-    
-    public function listSend( array $message_list, $lazy_send=false ){
-        try{
-            foreach( $message_list as $message){
-                $this->itemSend($message,$lazy_send);
-            }
-        } catch(\Exception $e){
-            log_message('error', 'Messenger:listSend Failed '.$e->getMessage());
-        }
     }
 }
