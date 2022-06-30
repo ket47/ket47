@@ -169,7 +169,7 @@ class PromoModel extends Model{
         return false;
     }
 
-     function userNotify($user_id,$template,$promo_context){
+    function userNotify($user_id,$template,$promo_context){
         $context=[
             'promo'=>$promo_context
         ];
