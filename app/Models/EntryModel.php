@@ -209,6 +209,7 @@ class EntryModel extends Model{
             'order_id'=>$order_id,
             'order_sum_product'=>$order_sum_product
         ]);
+        return $order_sum_product;
     }
     
     public function listCreate(){
@@ -281,6 +282,7 @@ class EntryModel extends Model{
             throw new Exception("Unknown stock status",500);
         }
         $this->db->transComplete();
+        $this->listSumUpdate( $order_id );
         return $this->db->transStatus()?'ok':'fail';
     }
 
