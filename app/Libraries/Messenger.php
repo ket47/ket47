@@ -175,6 +175,12 @@ class Messenger{
                 //'body'=>$message->message_text??'',
                 //'link'=>$message->message_link,
             ]);
+
+
+            log_message('error',"Push sent RESULT:$result ->".json_encode((object)[
+                'token'=>$sub->sub_registration_id,
+                'data'=>$message->message_data,
+            ]));
             if($result){
                 $pushsent=true;
             }
