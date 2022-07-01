@@ -293,11 +293,16 @@ class EntryModel extends Model{
                     JOIN
                 order_entry_list oel USING(product_id)
             SET
-                oel.entry_comment=CONCAT('[Количество уменьшено с ',oel.entry_quantity,' до ',(pl.product_quantity-pl.product_quantity_reserved),']'),
-                oel.entry_quantity=pl.product_quantity-pl.product_quantity_reserved
+                oel.entry_comment=IF(
+                    oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved,
+                    CONCAT('[Количество уменьшено с ',oel.entry_quantity,' до ',(pl.product_quantity-pl.product_quantity_reserved),']'),
+                    ''),
+                oel.entry_quantity=IF(
+                    oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved,
+                    pl.product_quantity-pl.product_quantity_reserved,
+                    oel.entry_quantity)
             WHERE
                 order_id='$order_id'
-                AND oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved
                 AND pl.is_counted=1
         ";
         $this->query($sql);
