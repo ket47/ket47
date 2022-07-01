@@ -32,12 +32,13 @@ class Messenger{
     public function itemSend( $message ){
         $message->reciever=$this->itemRecieverGet($message->message_reciever_id??0);
         if( !isset($message->message_text) ){
-            if(  $message->template ){
+            if( isset($message->template) ){
                 $message->message_text=$this->itemRender($message);
-            } else {
-                log_message('error','Message could not be send Empty text:'.json_encode($message,JSON_PRETTY_PRINT));
-                return false;
             }
+            //  else {
+            //     log_message('error','Message could not be send Empty text:'.json_encode($message,JSON_PRETTY_PRINT));
+            //     return false;
+            // }
         }
         log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
         switch( $message->message_transport ){
