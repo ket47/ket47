@@ -275,7 +275,7 @@ class OrderModel extends Model{
 
     public function listCountGet(){
         $this->permitWhere('r');
-        $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);
+        $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);//
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->select('COUNT(*) count');
         return $this->get()->getRow('count');

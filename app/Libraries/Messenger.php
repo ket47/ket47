@@ -162,7 +162,8 @@ class Messenger{
             $message->message_data=[
                 'title'=>$message->message_subject??'',
                 'body'=>$message->message_text??'',
-                'link'=>$message->message_link??''
+                'link'=>$message->message_link??'',
+                'icon'=>'/img/icons/monochrome.png'
             ];
         }
         $pushsent=false;
@@ -171,6 +172,7 @@ class Messenger{
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
                 'data'=>$message->message_data,
+
                 //'title'=>$message->message_subject??'',
                 //'body'=>$message->message_text??'',
                 //'link'=>$message->message_link,
