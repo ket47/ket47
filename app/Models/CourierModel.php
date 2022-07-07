@@ -26,6 +26,7 @@ class CourierModel extends Model{
             user_name,
             user_phone,
             user_avatar_name,
+            courier_list.updated_at,
             courier_list.is_disabled,
             courier_list.deleted_at,
             group_name,
@@ -324,7 +325,7 @@ class CourierModel extends Model{
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
     public function listGet( $filter ){
-        $this->filterMake( $filter );
+        $this->filterMake( $filter,false );
         if( $filter['status']??0 ){
             $this->where('group_type',$filter['status']);
         }

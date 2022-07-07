@@ -74,6 +74,8 @@ class Image extends \App\Controllers\BaseController{
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
+            'offset'=>$this->request->getVar('offset'),
+            'order'=>$this->request->getVar('order'),
         ];
         $ImageModel=model('ImageModel');
         $image_list=$ImageModel->listGet($filter);

@@ -12,6 +12,7 @@ trait FilterTrait{
         $filter['offset']??=0;
         $filter['limit']??=30;
         $filter['order']??=0;
+        $filter['reverse']??=0;
         
         if( $use_model_table ){
             $table="{$this->table}.";
@@ -47,6 +48,9 @@ trait FilterTrait{
         }
         if( $filter['order'] ){
             $this->orderBy($filter['order'],'ASC');
+        }
+        if( $filter['reverse'] ){
+            $this->orderBy($filter['reverse'],'DESC');
         }
     }
     

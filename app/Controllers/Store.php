@@ -19,6 +19,8 @@ class Store extends \App\Controllers\BaseController{
             'limit'=>$this->request->getVar('limit'),
             'owner_id'=>$this->request->getVar('owner_id'),
             'owner_ally_ids'=>$this->request->getVar('owner_ally_ids'),
+            'order'=>$this->request->getVar('order'),
+            'reverse'=>$this->request->getVar('reverse'),
         ];
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listGet($filter);

@@ -217,6 +217,8 @@ class Courier extends \App\Controllers\BaseController{
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
+            'offset'=>$this->request->getVar('offset'),
+            'order'=>$this->request->getVar('order'),
         ];
         $CourierModel=model('CourierModel');
         $courier_list=$CourierModel->listGet($filter);

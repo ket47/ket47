@@ -1,0 +1,2 @@
+ALTER TABLE `courier_list` 
+ADD COLUMN `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP AFTER `deleted_at`;
