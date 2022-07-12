@@ -158,8 +158,8 @@ trait OrderStageTrait{
                 'topic'=>'pushStageChanged',
                 'order_id'=>$order->order_id,
                 'stage'=>$stage,
-                'title'=>view('messages/order/stage_changed_title.php',(array)$order),
-                'body'=>view('messages/order/stage_changed_body.php',(array)$order),
+                'title'=>view('messages/order/stage_changed_title',(array)$order),
+                'body'=>view('messages/order/stage_changed_body',(array)$order),
             ]
         ];
         $notification_task=[
@@ -333,7 +333,7 @@ trait OrderStageTrait{
         $messages=[];
         foreach($ready_courier_list as $courier){
             $context['courier']=$courier;
-            $message_text=view('messages/order/on_customer_start_COUR_sms.php',$context);
+            $message_text=view('messages/order/on_customer_start_COUR_sms',$context);
             $messages[]=(object)[
                         'message_reciever_id'=>$courier->user_id,
                         'message_transport'=>'message',
