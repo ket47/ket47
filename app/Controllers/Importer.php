@@ -24,7 +24,7 @@ class Importer extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $ImporterModel->errors() ){
-            return $this->failValidationError(json_encode($ImporterModel->errors()));
+            return $this->failValidationErrors(json_encode($ImporterModel->errors()));
         }
         return $this->respondUpdated($result);
     }
@@ -73,7 +73,7 @@ class Importer extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $ImporterModel->errors() ){
-            return $this->failValidationError(json_encode($ImporterModel->errors()));
+            return $this->failValidationErrors(json_encode($ImporterModel->errors()));
         }
         return $this->respond($result);
     }
@@ -107,7 +107,7 @@ class Importer extends \App\Controllers\BaseController{
         $file->move($tmp_dir, $tmp_name);
         $xlsx = \App\Libraries\SimpleXLSX::parse("$tmp_dir/$tmp_name");
         if ( !$xlsx ) {
-             SimpleXLSX::parseError();
+            \App\Libraries\SimpleXLSX::parseError();
         }
         $rows=$xlsx->rows();
         $ImporterModel=model('ImporterModel');
@@ -132,7 +132,7 @@ class Importer extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $ImporterModel->errors() ){
-            return $this->failValidationError(json_encode($ImporterModel->errors()));
+            return $this->failValidationErrors(json_encode($ImporterModel->errors()));
         }
         return $this->respondCreated($result);
     }
@@ -149,7 +149,7 @@ class Importer extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         if( $ImporterModel->errors() ){
-            return $this->failValidationError(json_encode($ImporterModel->errors()));
+            return $this->failValidationErrors(json_encode($ImporterModel->errors()));
         }
         return $this->respondUpdated($result);
     }

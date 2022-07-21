@@ -167,7 +167,7 @@ class EntryModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    private $listGetSelectedFields="
+    public $listGetSelectedFields="
         entry_id,
         order_id,
         product_id,

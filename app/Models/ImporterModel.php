@@ -14,7 +14,9 @@ class ImporterModel extends Model{
         'owner_id',
         'holder',
         'holder_id',
-        'target'];
+        'target',
+        'external_id'
+    ];
 
     protected $useSoftDeletes = false;
     protected $user_id=-1;
@@ -35,11 +37,14 @@ class ImporterModel extends Model{
         return false;
     }
     
-    public function itemCreate( $item, $holder, $holder_id, $target ){
+    public function itemCreate( $item, $holder, $holder_id, $target, $external_id=null ){
         $set=[];
         foreach($item as $i=>$value){
             $num=$i+1;
             if( $num>16 ){
+                continue;
+            }
+            if($value=='-skip-'){
                 continue;
             }
             $set['C'.$num]=$value;
@@ -48,7 +53,15 @@ class ImporterModel extends Model{
         $set['holder_id']=$holder_id;
         $set['target']=$target;
         $set['owner_id']=$this->user_id;
-        $this->insert($set);
+        if( $external_id ){
+            $set['external_id']=$external_id;
+        }
+        try{
+            $this->insert($set);
+        } catch( \Exception $e ){
+            $this->where('external_id',$external_id);
+            $this->update(null,$set);
+        }
         return $this->db->affectedRows()?'ok':'idle';
     }
     
@@ -106,6 +119,7 @@ class ImporterModel extends Model{
             return $ProductModel->listCreate($holder_id,$colconfig);
         }
     }
+    
     public function importUpdate($holder,$holder_id,$target,$colconfig){
         if($target=='product'){
             $ProductModel=model('ProductModel');

@@ -36,7 +36,7 @@ trait OrderStageTrait{
         
         
         'supplier_rejected'=>[
-            'customer_purged'=>             ['Удалить','danger'],
+            //'customer_purged'=>             ['Удалить','danger'],
             'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
@@ -45,6 +45,7 @@ trait OrderStageTrait{
         'supplier_start'=>[
             'supplier_finish'=>             ['Закончить подготовку','success'],
             'supplier_corrected'=>          ['Изменить заказ'],
+            'supplier_rejected'=>           [],
             ],
         'supplier_corrected'=>[
             'supplier_finish'=>             ['Закончить подготовку','success'],
@@ -53,7 +54,7 @@ trait OrderStageTrait{
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
-            //'supplier_corrected'=>          ['Изменить'],
+            'supplier_corrected'=>          ['Изменить'],
             'delivery_start'=>              ['Начать доставку','success'],
             'delivery_no_courier'=>         [],
             ],
@@ -158,7 +159,7 @@ trait OrderStageTrait{
                 'topic'=>'pushStageChanged',
                 'order_id'=>$order->order_id,
                 'stage'=>$stage,
-                'title'=>'Order'.$order->order_id,
+                'title'=>'#'.$order->order_id,
                 'body'=>''.$order->stage_current_name,
                 
                 //'title'=>view('messages/order/stage_changed_title',(array)$order),

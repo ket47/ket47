@@ -11,6 +11,7 @@ class ProductModel extends Model{
     protected $primaryKey = 'product_id';
     protected $allowedFields = [
         'store_id',
+        'product_external_id',
         'product_code',
         'product_name',
         'product_quantity',
@@ -73,7 +74,10 @@ class ProductModel extends Model{
         if( !$product ){
             return 'error_empty';
         }
-        $store_id=$product['store_id'];
+        if( is_array($product) ){
+            $product=(object)$product;
+        }
+        $store_id=$product->store_id;
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($store_id,'basic');
         if( $store=='notfound' ){
@@ -83,8 +87,9 @@ class ProductModel extends Model{
         if( !$permission_granted ){
             return 'forbidden';
         }
-        $product['owner_id']=session()->get('user_id');
-        $product['owner_ally_ids']=$store->owner_ally_ids;
+        $product->owner_id=session()->get('user_id');
+        $product->owner_ally_ids=$store->owner_ally_ids;
+        $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';
         return $this->insert($product);
@@ -95,7 +100,7 @@ class ProductModel extends Model{
             return 'error_empty';
         }
         $this->permitWhere('w');
-        if( isset($product->product_quantity) ){
+        if( isset($product->product_quantity) && !isset($product->product_quantity_expire_at) ){
             $expiration_timeout=8;//8 hours
             $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
         }

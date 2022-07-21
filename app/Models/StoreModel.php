@@ -34,7 +34,6 @@ class StoreModel extends Model{
         'store_time_closes_6',
         'is_working',
         'validity',
-        'owner_id',
         'owner_ally_id'
         ];
     protected $returnType     = 'array';
@@ -150,13 +149,14 @@ class StoreModel extends Model{
         if( !$this->permit($store->store_id,'w') ){
             return 'forbidden';
         }
-        if( isset($store->is_primary) ){
-            if( !sudo() ){
-                return 'forbidden';
-            }
-            $this->allowedFields[]='is_primary';
+        if( isset($store->is_primary) && !sudo() ){
+            return 'forbidden';
         }
-        
+        if( sudo() ){
+            $this->allowedFields[]='is_primary';
+            $this->allowedFields[]='store_commission';
+            $this->allowedFields[]='owner_id';
+        }
         $this->update($store->store_id,$store);
         return $this->db->affectedRows()?'ok':'idle';
     }

@@ -1,5 +1,5 @@
 <?=view('home/header')?>
-<?=view('common/store_selector',['use_all_stores'=>0,'owned_stores_only'=>1, 'store_click_handler'=>'
+<?=view('common/store_selector',['use_all_stores'=>0,'owned_stores_only'=>0, 'store_click_handler'=>'
         ImportList.table.loadrequest.holder="store";
         ImportList.table.loadrequest.holder_id=store_id;
         ImportList.listAnalyse();
@@ -203,14 +203,15 @@
                 {field:"product_name",name:"Название",required:1},
                 {field:"product_price",name:"Цена",required:1},
                 {field:"product_quantity",name:"Остаток",required:1},
-                {field:"is_counted",name:"Товар производится",required:1},
                 {field:"product_code",name:"Код товара"},
                 {field:"product_description",name:"Описание"},
                 {field:"product_weight",name:"Вес кг"},
+                {field:"product_unit",name:"Единица"},
                 {field:"product_categories",name:"Категории"},
                 {field:"product_action_price",name:"Акция Цена"},
                 {field:"product_action_start",name:"Акция Начало"},
                 {field:"product_action_finish",name:"Акция Конец"},
+                {field:"is_counted",name:"Учет остатков?"},
             ],
             init:function(){
                 ImportList.table.theadInit();

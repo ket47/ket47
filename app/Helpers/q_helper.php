@@ -5,3 +5,6 @@ function q( $self, $die=true ){
     if($die)
         die();
 }
+function ql($self){
+    log_message('error',$self->getLastQuery());
+}
