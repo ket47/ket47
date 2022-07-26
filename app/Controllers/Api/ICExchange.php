@@ -37,7 +37,7 @@ class ICExchange extends \App\Controllers\BaseController
         $filename_prefix=$token_data->token_holder.'-'.$token_data->token_holder_id;
         $this->filename_subfolder=$this->dir.'ic_exchange/'.$filename_prefix.'/';
         if( !is_dir($this->filename_subfolder) ){
-            mkdir($this->filename_subfolder,0644,true);
+            mkdir($this->filename_subfolder,0750,true);
         }
     }
 
@@ -91,7 +91,7 @@ class ICExchange extends \App\Controllers\BaseController
             die('illegal_filename');
         }
         if( !is_dir($this->filename_subfolder.$dirname) ){
-            mkdir($this->filename_subfolder.$dirname,0644,true);
+            mkdir($this->filename_subfolder.$dirname,0750,true);
         }
         file_put_contents($filename,file_get_contents('php://input'));
 
