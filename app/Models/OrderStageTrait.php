@@ -86,7 +86,7 @@ trait OrderStageTrait{
         
         'customer_disputed'=>[
             'customer_refunded'=>           [],
-            'customer_finish'=>             ['Завершить заказ','success'],
+            'customer_finish'=>             ['Отказаться от претензии','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ'],
             ],
         'customer_refunded'=>       [
@@ -178,6 +178,9 @@ trait OrderStageTrait{
     //ORDER STAGE HANDLING LISTENERS
     ////////////////////////////////////////////////
     
+    //////////////////////////////////////////////////////////////////////////
+    //CUSTOMER HANDLERS
+    //////////////////////////////////////////////////////////////////////////
     private function onCustomerPurged($order_id){
         return $this->itemPurge($order_id);
     }
@@ -231,32 +234,14 @@ trait OrderStageTrait{
         return 'ok';
     }
     
-    private function onCustomerPayedCard( $order_id, $data ){
-        if( !$data??0 || !$data->total??0 ){
+    private function onCustomerPayedCard( $order_id, $acquirer_data ){
+        if( !$acquirer_data??0 || !$acquirer_data->total??0 ){
             return 'forbidden';
         }
-        $TransactionModel=model('TransactionModel');
-        
-        $user_id=session()->get('user_id');
         $order=$this->itemGet($order_id,'basic');
+        $TransactionModel=model('TransactionModel');
+        $transaction_created=$TransactionModel->orderCardPreauthCreate($order,$acquirer_data);
         
-        $trans=[
-            'trans_amount'=>$order->order_sum_total,
-            'trans_data'=>json_encode($data),
-            'acc_debit_code'=>'account',
-            'acc_credit_code'=>'customer',
-            'owner_id'=>$order->owner_id,
-            'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_id,
-            'updated_by'=>$user_id,
-        ];
-
-        $TransactionModel->itemCreate($trans);    
-        $transaction_created=$this->db->affectedRows()?'ok':'idle';
-        if($order->order_sum_total!=$data->total){//would be wrong to deny or not???????
-            //return 'wrong_amount';
-        }
         $order_started=$this->itemStageCreate($order_id, 'delivery_search');
         if( $transaction_created=='ok' && $order_started=='ok' ){
             return 'ok';
@@ -426,15 +411,15 @@ trait OrderStageTrait{
 
         $order=$this->itemGet($order_id,'basic');
         
-        //$TransactionModel=model('TransactionModel');
+        // $TransactionModel=model('TransactionModel');
         
-        //$user_id=session()->get('user_id');
+        //  $user_id=session()->get('user_id');
         // $TransactionModel=model('TransactionModel');
         // $trans=[
         //     'trans_amount'=>$order->order_sum_total,
         //     'trans_data'=>json_encode($data),
-        //     'acc_debit_code'=>'account',
-        //     'acc_credit_code'=>'customer',
+        //     'acc_debit_code'=>'customer',
+        //     'acc_credit_code'=>'account.acquirer',
         //     'owner_id'=>$order->owner_id,
         //     'is_disabled'=>0,
         //     'holder'=>'order',
@@ -442,7 +427,7 @@ trait OrderStageTrait{
         //     'updated_by'=>$user_id,
         // ];
         // $TransactionModel->itemCreate($trans);    
-        //$transaction_created=$this->db->affectedRows()?'ok':'idle';
+        // $transaction_created=$this->db->affectedRows()?'ok':'idle';
 
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -479,11 +464,18 @@ trait OrderStageTrait{
         jobCreate($notification_task);
         return $this->itemStageCreate($order_id, 'customer_finish');
     }
+
+    private function onCustomerSettled( $order_id ){
+        return 'ok';
+    }
     
     private function onCustomerFinish( $order_id ){
         return 'ok';
     }
-        
+
+    //////////////////////////////////////////////////////////////////////////
+    //SUPPLIER HANDLERS
+    //////////////////////////////////////////////////////////////////////////
     private function onSupplierRejected( $order_id ){
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -569,6 +561,9 @@ trait OrderStageTrait{
     }
     
     
+    //////////////////////////////////////////////////////////////////////////
+    //DELIVERY HANDLERS
+    //////////////////////////////////////////////////////////////////////////
     private function onDeliverySearch( $order_id ){
         return $this->itemStageCreate($order_id, 'customer_start');
     }

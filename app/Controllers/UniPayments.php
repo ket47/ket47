@@ -34,9 +34,10 @@ class UniPayments extends \App\Controllers\BaseController{
             'MiddleName'=>$user->user_middlename,
             'URL_RETURN_OK'=>getenv('app.baseURL').'UniPayments/paymentOk',
             'URL_RETURN_NO'=>getenv('app.baseURL').'UniPayments/paymentNo',
+            'Preauth'=>1,
             'IsRecurrentStart'=>0,
             'Lifetime' => 5*60*60,// 5 min
-            'CallbackFields'=>'Total Balance ApprovalCode'
+            'CallbackFields'=>'Total Balance ApprovalCode BillNumber'
             //'MeanType' => '','EMoneyType' => '','OrderLifetime' => 15*60*60,'Card_IDP' => '','IData' => '','PT_Code' => '',
         ];
         $p->Signature = strtoupper(
@@ -80,7 +81,7 @@ class UniPayments extends \App\Controllers\BaseController{
             'Password'=>getenv('uniteller.password'),
             'Format'=>'1',
             'ShopOrderNumber'=>$order_id,
-            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode'
+            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
         ];
         $context  = stream_context_create([
             'http' => [
@@ -94,7 +95,7 @@ class UniPayments extends \App\Controllers\BaseController{
             return 'noresponse';
         }
         $response=explode(';',$result);
-        return $this->paymentStatusSetApply($response[0],$response[1],$response[2],$response[2],$response[3]);
+        return $this->paymentStatusSetApply($response[0],$response[1],$response[2],$response[2],$response[3],$response[4]);
     }
 
     public function paymentStatusSet(){
@@ -104,16 +105,17 @@ class UniPayments extends \App\Controllers\BaseController{
         $total=$this->request->getVar('Total');
         $balance=$this->request->getVar('Balance');
         $approvalCode=$this->request->getVar('ApprovalCode');
+        $billNumber=$this->request->getVar('ApprovalCode');
 
-        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.getenv('uniteller.password')));
+        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('uniteller.password')));
         if($signature!=$signature_check){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
             return $this->failUnauthorized();
         }
-        return $this->paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode);
+        return $this->paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode,$billNumber);
     }
 
-    private function paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode){
+    private function paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode,$billNumber){
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->respond('CANT AUTORIZE AS SYSTEM');
@@ -121,7 +123,8 @@ class UniPayments extends \App\Controllers\BaseController{
         $data=(object)[
             'total'=>$total,
             'balance'=>$balance,
-            'approvalCode'=>$approvalCode
+            'approvalCode'=>$approvalCode,
+            'billNumber'=>$billNumber
         ];
         $OrderModel=model('OrderModel');
         $result='ok';
@@ -134,12 +137,12 @@ class UniPayments extends \App\Controllers\BaseController{
                 $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
                 break;
             case 'canceled':
-            case 'partly canceled':
                 if( $this->paymentIsRefunded($order_id) ){
                     return $this->respond('OK');
                 }
                 $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
                 break;
+            case 'partly canceled':
             case 'waiting':
                 break;
             default:
@@ -188,6 +191,156 @@ class UniPayments extends \App\Controllers\BaseController{
         $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
         return $this->respond('CANCELLED');
     }
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////
+    //ORDER BALANCE FINAL SETTLEMENT SECTION
+    /////////////////////////////////////////////////////////////////////////////////
+    // public function paymentBalanceSettle( $order_id ){
+    //     if( !$this->authorizeAsSystem($order_id) ){
+    //         $this->log_message('error', "paymentBalanceSettle order_id:$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
+    //         return $this->fail('CANT AUTORIZE AS SYSTEM');
+    //     }
+    //     $TransactionModel=model('TransactionModel');
+    //     $orderSettlement=$TransactionModel->orderSettlementGet($order_id);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //     $orderSumToClaim=$order->order_sum_total;
+    //     $orderSumToRefund=$moneyReserveTrans->trans_amount-$order->order_sum_total;
+
+    //     if( $this->paymentIsRefunded($order_id) ){
+    //         $orderSumToClaim=0;
+    //         $orderSumToRefund=$order->order_sum_total;
+    //     }
+
+    //     if($orderSumToClaim){
+    //         $result_claim=$this->paymentBalanceClaim($moneyReserveTransData->billNumber,$orderSumToClaim);
+    //         if(!$result_claim){
+    //             return false;
+    //         }
+    //         $trans=[
+    //             'trans_amount'=>$order_id,
+    //             'trans_data'=>json_encode($result_claim),
+    //             'trans_role'=>'money.acquirer.blocked->money.acquirer.claimed',
+    //             'trans_tags'=>"#order-$order_id,#customer-{$order->owner_id},#uniteller",
+    //             'owner_id'=>$order->owner_id,
+    //             'is_disabled'=>0,
+    //             'holder'=>'order',
+    //             'holder_id'=>$order_id
+    //         ];
+    //         $TransactionModel->itemCreate($trans);
+    //     }
+    //     if($orderSumToRefund){
+    //         $result_refund=$this->paymentBalanceRefund($moneyReserveTransData->billNumber,$orderSumToRefund);
+    //         if(!$result_refund){
+    //             return false;
+    //         }
+    //         $trans=[
+    //             'trans_amount'=>$order_id,
+    //             'trans_data'=>json_encode($result_refund),
+    //             'trans_role'=>'money.acquirer.blocked->customer.card',
+    //             'trans_tags'=>"#order-$order_id,#customer-{$order->owner_id},#uniteller",
+    //             'owner_id'=>$order->owner_id,
+    //             'is_disabled'=>0,
+    //             'holder'=>'order',
+    //             'holder_id'=>$order_id
+    //         ];
+    //         $TransactionModel->itemCreate($trans);
+    //     }
+    //     return true;
+    // }
+
+
+
+    // private function paymentBalanceClaim($billNumber,$orderSumToClaim){
+    //     $request=[
+    //         'Billnumber'=>$billNumber,
+    //         'Shop_ID'=>getenv('uniteller.Shop_IDP'),
+    //         'Login'=>getenv('uniteller.login'),
+    //         'Password'=>getenv('uniteller.password'),
+    //         'Format'=>'1',
+    //         'Subtotal_P'=>$orderSumToClaim,
+    //         'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
+    //     ];
+    //     $context  = stream_context_create([
+    //         'http' => [
+    //             'header'  => "Content-type: application/x-www-form-urlencoded",
+    //             'method'  => 'POST',
+    //             'content' => http_build_query($request)
+    //             ]
+    //     ]);
+    //     $result = file_get_contents(getenv('uniteller.gateway').'confirm/', false, $context);
+    //     if(!$result){
+    //         return null;
+    //     }
+    //     $response=explode(';',$result);
+    //     return [
+    //         'order_id'=>$response[0],
+    //         'status'=>$response[1],
+    //         'total'=>$response[2],
+    //         'approvalCode'=>$response[3],
+    //         'billNumber'=>$response[4]
+    //     ];
+    // }
+
+    // private function paymentBalanceRefund($billNumber,$orderSumToRefund){
+    //     $request=[
+    //         'Billnumber'=>$billNumber,
+    //         'Shop_ID'=>getenv('uniteller.Shop_IDP'),
+    //         'Login'=>getenv('uniteller.login'),
+    //         'Password'=>getenv('uniteller.password'),
+    //         'Format'=>'1',
+    //         'Subtotal_P'=>$orderSumToRefund,
+    //         'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
+    //     ];
+    //     $context  = stream_context_create([
+    //         'http' => [
+    //             'header'  => "Content-type: application/x-www-form-urlencoded",
+    //             'method'  => 'POST',
+    //             'content' => http_build_query($request)
+    //             ]
+    //     ]);
+    //     $result = file_get_contents(getenv('uniteller.gateway').'unblock/', false, $context);
+    //     if(!$result){
+    //         return null;
+    //     }
+    //     $response=explode(';',$result);
+    //     return [
+    //         'order_id'=>$response[0],
+    //         'status'=>$response[1],
+    //         'total'=>$response[2],
+    //         'approvalCode'=>$response[3],
+    //         'billNumber'=>$response[4]
+    //     ];
+    // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private function log_message($severity,$message){
         log_message($severity, $message);

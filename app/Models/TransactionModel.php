@@ -37,14 +37,119 @@ class TransactionModel extends Model{
         $this->where('trans_id',$trans_id);
         return $this->get()->getRow();
     }
+
+    public function itemFind( object $filter ){
+        $this->permitWhere('r');
+        if( $filter->trans_role??null ){
+            $this->where('trans_role',$filter->trans_role);
+        }
+        if( $filter->trans_tags??null ){
+            $this->where("MATCH (trans_tags) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
+        }
+        if( $filter->trans_holder??null ){
+            $this->where('trans_holder',$filter->trans_holder);
+        }
+        if( $filter->trans_holder_id??null ){
+            $this->where('trans_holder',$filter->trans_holder_id);
+        }
+        return $this->get()->getRow();
+    }
     
+
+    private function itemCreateTags($trans){
+        $tags=$trans['trans_tags'];
+        if($trans['trans_role']){
+            list($debits,$credits)=explode('->',$trans['trans_role']);
+            $tags.=str_replace('.',' #debit-','.'.$debits);
+            $tags.=str_replace('.',' #credit-','.'.$credits);
+        }
+        if($trans['trans_holder']){
+            $tags.=" #{$trans['trans_holder']}-{$trans['trans_holder_id']}";
+        }
+        return $tags;
+    }
+
     public function itemCreate( $trans ){
         if( !$this->permit(null, 'w') ){
             return 'forbidden';
         }
+        $trans['trans_tags']=$this->itemCreateTags($trans);
         $trans_id=$this->insert($trans,true);
         return $trans_id;
     }
+
+    public function orderCardPreauthCreate($order,$acquirer_data){
+        $user_id=session()->get('user_id');
+        $trans=[
+            'trans_amount'=>$order->order_sum_total,
+            'trans_data'=>json_encode($acquirer_data),
+            'trans_role'=>'customer.card->money.acquirer.blocked',
+            'trans_tags'=>'#orderPrepayment',
+            'owner_id'=>$order->owner_id,
+            'is_disabled'=>0,
+            'holder'=>'order',
+            'holder_id'=>$order->order_id,
+            'updated_by'=>$user_id,
+        ];
+        $this->itemCreate($trans);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function orderSettlementGet($order_id){
+        $OrderModel=model('OrderModel');
+        $order=$OrderModel->where('order_id',$order_id)->get()->getRow();
+
+        $filter=(object)[
+            'trans_tags'=>'#orderPrepayment',
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_id
+        ];
+        $orderPrepaymentTrans=$this->itemFind($filter);
+        $orderSumToClaim=$order->order_sum_total;
+        $orderSumToRefund=$orderPrepaymentTrans->trans_amount-$order->order_sum_total;
+
+        if($orderSumToRefund<0){
+            return 'trans_amount_is_unsufficient';
+        }
+
+        $settlement=[];
+        if($orderSumToRefund>0){
+            $settlement['refund_sum']=$orderSumToRefund;
+            $filter=(object)[
+                'trans_tags'=>'#orderRefund',
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_id
+            ];
+            $orderRefundTrans=$this->itemFind($filter);
+
+
+
+            $settlement['refund_commited']=true;
+
+        } else {
+            $settlement['refund_sum']=0;
+            $settlement['refund_commited']=true;
+        }
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     public function itemUpdate( $trans ){
         $this->permitWhere('w');
