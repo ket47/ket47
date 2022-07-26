@@ -46,7 +46,7 @@ class ICExchange extends \App\Controllers\BaseController
         $mode = $this->request->getVar('mode');
         $methodName = $type . ucfirst($mode);
         if (method_exists($this, $methodName)) {
-            log_message('alert', '1C EXECUTION FUNCTION ' . $methodName);
+            //log_message('alert', '1C EXECUTION FUNCTION ' . $methodName);
             //log_message('critical','input '.file_get_contents('php://input'));
             $this->{$methodName}();
         } else {
