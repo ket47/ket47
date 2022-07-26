@@ -2,7 +2,7 @@
 namespace App\Models;
 use CodeIgniter\Model;
 
-class SampleModel extends Model{
+class TokenModel extends Model{
     
     use PermissionTrait;
     use FilterTrait;
@@ -34,11 +34,12 @@ class SampleModel extends Model{
         return $this->get()->getRow();
     }
 
-    public function itemActiveGet($owner_id,$token_holder){
+    public function itemActiveGet($owner_id,$token_holder,$token_holder_id){
         $expired_at=date('Y-m-d H:i:s',time());
         $this->where('expired_at>',$expired_at);
         $this->where('is_disabled',0);
         $this->where('token_holder',$token_holder);
+        $this->where('token_holder_id',$token_holder_id);
         $this->where('owner_id',$owner_id);
         $this->permitWhere('r');
         return $this->limit(1)->get()->getRow();
@@ -59,14 +60,20 @@ class SampleModel extends Model{
         if( !($owner_id>0) ){
             return 'forbidden';
         }
+        if($token_holder=='store'){
+            $StoreModel=model('StoreModel');
+            if( !$StoreModel->permit($token_holder_id,'w') ){
+                return 'forbidden';
+            }
+        }
         $validity_time=1*365*24*60*60;//1year
         $expired_at=date('Y-m-d H:i:s',time()+$validity_time);
         $token_hash = bin2hex(random_bytes(16));
 
         $this->allowedFields[]='owner_id';
         $token=[
-            'token_holder'=>$token_holder,
             'token_hash'=>$token_hash,
+            'token_holder'=>$token_holder,
             'token_holder_id'=>$token_holder_id,
             'expired_at'=>$expired_at,
             'owner_id'=>$owner_id,

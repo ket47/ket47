@@ -25,9 +25,10 @@ class Token extends \App\Controllers\BaseController{
     public function itemActiveGet(){
         $owner_id=$this->request->getVar('owner_id');
         $token_holder=$this->request->getVar('token_holder');
+        $token_holder_id=$this->request->getVar('token_holder_id');
 
         $TokenModel=model('TokenModel');
-        $result = $TokenModel->itemActiveGet($owner_id,$token_holder);
+        $result = $TokenModel->itemActiveGet($owner_id,$token_holder,$token_holder_id);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
@@ -35,8 +36,8 @@ class Token extends \App\Controllers\BaseController{
             return $this->failNotFound($result);
         }
         if(!$result){
-            $TokenModel->itemCreate($owner_id,$token_holder);
-            $result=$TokenModel->itemActiveGet($owner_id,$token_holder);
+            $TokenModel->itemCreate($owner_id,$token_holder,$token_holder_id);
+            $result=$TokenModel->itemActiveGet($owner_id,$token_holder,$token_holder_id);
         }
         return $this->respond($result);
     }
@@ -44,12 +45,13 @@ class Token extends \App\Controllers\BaseController{
     public function itemCreate(){
         $owner_id=$this->request->getVar('owner_id');
         $token_holder=$this->request->getVar('token_holder');
+        $token_holder_id=$this->request->getVar('token_holder_id');
 
         if(!$owner_id){
             $owner_id=session()->get('user_id');
         }
         $TokenModel=model('TokenModel');
-        $result = $TokenModel->itemCreate($owner_id,$token_holder);
+        $result = $TokenModel->itemCreate($owner_id,$token_holder,$token_holder_id);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
