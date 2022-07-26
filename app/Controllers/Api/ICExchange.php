@@ -82,12 +82,16 @@ class ICExchange extends \App\Controllers\BaseController
     private function catalogFile(){
         $filename_ic = $this->request->getVar('filename');
         $dirname=dirname($filename_ic);
+        if($dirname=='.'){
+            $dirname='';
+        }
         $filename=$this->filename_subfolder.$filename_ic;
 
         if( str_contains('..',$filename_ic) ){
             die('illegal_filename');
         }
         if( !is_dir($this->filename_subfolder.$dirname) ){
+
             mkdir($this->filename_subfolder.$dirname,0666,true);
         }
         file_put_contents($filename,file_get_contents('php://input'));
