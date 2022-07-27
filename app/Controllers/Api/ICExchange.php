@@ -23,6 +23,31 @@ class ICExchange extends \App\Controllers\BaseController
 		$token_hash = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : "";
         $TokenModel=model('TokenModel');
         $token_data=$TokenModel->itemAuth($token_hash,$token_holder);
+        log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
+
+
+
+
+
+        $messages[]=(object)[
+                    'message_reciever_id'=>41,
+                    'message_transport'=>'push',
+                    'message_text'=>'1C auth '.$token_holder.$token_hash.json_encode($token_data)
+                ];
+
+        $sms_job=[
+            'task_name'=>"Courier Notify Order",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+                ],
+        ];
+        jobCreate($sms_job);
+
+
+
+
+
+
         if(!$token_data){
             http_response_code(401);
             die('fail');
