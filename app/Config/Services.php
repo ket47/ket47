@@ -28,4 +28,13 @@ class Services extends BaseService
 	//
 	//     return new \CodeIgniter\Example();
 	// }
+
+	public static function acquirer($getShared = true){
+	    if ($getShared)
+	    {
+	        return static::getSharedInstance('acquirer');
+	    }
+	
+	    return new \App\Libraries\Uniteller();
+	}
 }

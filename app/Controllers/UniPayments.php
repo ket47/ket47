@@ -2,10 +2,15 @@
 
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
+use \CodeIgniter\Config\Services;
 
 class UniPayments extends \App\Controllers\BaseController{
 
     use ResponseTrait;
+
+    public function __construct(){
+        $this->acquirer=Services::acquirer();
+    }
     
     public function paymentLinkGet(){
         $order_id=$this->request->getVar('order_id');
@@ -15,6 +20,25 @@ class UniPayments extends \App\Controllers\BaseController{
         if( !$order_id??0 || !$order_sum_total??0 || !$user_id??0 ){
             return $this->fail('missing_required_fields');
         }
+        
+
+
+
+
+
+
+        $result=$this->acquirer->linkGet($order_id);
+
+
+
+
+
+
+
+
+
+
+
         $UserModel=model('UserModel');
         $user=$UserModel->itemGet($user_id);
 

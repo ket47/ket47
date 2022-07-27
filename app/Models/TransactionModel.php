@@ -52,7 +52,7 @@ class TransactionModel extends Model{
         if( $filter->trans_holder_id??null ){
             $this->where('trans_holder',$filter->trans_holder_id);
         }
-        return $this->get()->getRow();
+        return $this->get()->limit(1)->getRow();
     }
     
 
@@ -121,19 +121,49 @@ class TransactionModel extends Model{
                 'trans_holder_id'=>$order_id
             ];
             $orderRefundTrans=$this->itemFind($filter);
-
-
-
-            $settlement['refund_commited']=true;
-
+            if($orderRefundTrans){
+                $settlement['refund_commited']=true;
+            }
+            $settlement['refund_commited']=false;
         } else {
             $settlement['refund_sum']=0;
             $settlement['refund_commited']=true;
         }
 
+        if($orderSumToClaim>0){
+            $settlement['claim_sum']=$orderSumToClaim;
+            $filter=(object)[
+                'trans_tags'=>'#orderClaim',
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_id
+            ];
+            $orderClaimTrans=$this->itemFind($filter);
+            if($orderClaimTrans){
+                $settlement['claim_commited']=true;
+            }
+            $settlement['claim_commited']=false;
+        } else {
+            $settlement['claim_sum']=0;
+            $settlement['claim_commited']=true;
+        }
 
-
-
+        if($orderSumToClaim>0){
+            $settlement['bill_sum']=$orderSumToClaim;
+            $filter=(object)[
+                'trans_tags'=>'#orderBill',
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_id
+            ];
+            $orderBillTrans=$this->itemFind($filter);
+            if($orderBillTrans){
+                $settlement['bill_commited']=true;
+            }
+            $settlement['bill_commited']=false;
+        } else {
+            $settlement['bill_sum']=0;
+            $settlement['bill_commited']=true;
+        }
+        return $settlement;
     }
 
 

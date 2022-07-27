@@ -101,7 +101,7 @@ class ICExchange extends \App\Controllers\BaseController
         unset($_SESSION['categories_mapping']);
         unset($_SESSION['brand_id_option']);
         print "zip=yes\n";
-        print "file_limit=1000000\n";
+        print "file_limit=10000000\n";
     }
 
     private function catalogFile(){
