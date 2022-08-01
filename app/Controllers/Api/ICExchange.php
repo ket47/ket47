@@ -142,27 +142,6 @@ class ICExchange extends \App\Controllers\BaseController
         $holder_id=session()->get('auth_token_data')?->token_holder_id;
         $ICExchangeProductModel=new ICExchangeProductModel();
 
-
-
-
-        $messages[]=(object)[
-            'message_reciever_id'=>41,
-            'message_transport'=>'push',
-            'message_text'=>'1C catalogImport store'.$holder_id
-        ];
-
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        jobCreate($sms_job);
-
-
-
-
-
         if (str_contains($filename,'import')) {
             // Товары 			
             $z = new \XMLReader;
@@ -198,7 +177,7 @@ class ICExchange extends \App\Controllers\BaseController
             $ICExchangeProductModel->transComplete();
             $z->close();
             print "success";
-            //unlink($filename);
+            unlink($filename);
             unset($_SESSION['last_1c_imported_product_num']);
         }
         elseif (str_contains($filename,'offers')) {
