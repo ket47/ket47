@@ -18,36 +18,30 @@ class ICExchange extends \App\Controllers\BaseController
         $this->methodExecute();
     }
 
+
+    // private function test(){
+    //     $token_data=(object)[
+    //         'owner_id'=>71,
+    //         'token_holder_id'=>31,
+    //         'token_holder'=>'store'
+    //     ];
+    //     session()->set('auth_token_data',$token_data);
+    //     session()->set('user_id',$token_data->owner_id);
+    //     $this->prepareSubfolder();
+
+    //     $filename=$this->filename_subfolder.'import0_1.xml';
+
+    //     $this->catalogImport($filename);
+    // }
+
+
+
     private function authenticateByToken(){
         $token_holder = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : "";
 		$token_hash = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : "";
         $TokenModel=model('TokenModel');
         $token_data=$TokenModel->itemAuth($token_hash,$token_holder);
         log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
-
-
-
-
-
-        $messages[]=(object)[
-                    'message_reciever_id'=>41,
-                    'message_transport'=>'push',
-                    'message_text'=>'1C auth '.$token_holder.$token_hash.json_encode($token_data)
-                ];
-
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        jobCreate($sms_job);
-
-
-
-
-
-
         if(!$token_data){
             http_response_code(401);
             die('fail');
@@ -140,11 +134,34 @@ class ICExchange extends \App\Controllers\BaseController
     }
 
     private function catalogImport($filename=null){
-        $filename_ic = $this->request->getVar('filename');
-        $filename=$this->filename_subfolder.$filename_ic;
+        if(!$filename){
+            $filename_ic = $this->request->getVar('filename');
+            $filename=$this->filename_subfolder.$filename_ic;
+        }
 
         $holder_id=session()->get('auth_token_data')?->token_holder_id;
         $ICExchangeProductModel=new ICExchangeProductModel();
+
+
+
+
+        $messages[]=(object)[
+            'message_reciever_id'=>41,
+            'message_transport'=>'push',
+            'message_text'=>'1C catalogImport store'.$holder_id
+        ];
+
+        $sms_job=[
+            'task_name'=>"Courier Notify Order",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+                ],
+        ];
+        jobCreate($sms_job);
+
+
+
+
 
         if (str_contains($filename,'import')) {
             // Товары 			
@@ -181,7 +198,7 @@ class ICExchange extends \App\Controllers\BaseController
             $ICExchangeProductModel->transComplete();
             $z->close();
             print "success";
-            unlink($filename);
+            //unlink($filename);
             unset($_SESSION['last_1c_imported_product_num']);
         }
         elseif (str_contains($filename,'offers')) {
