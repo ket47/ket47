@@ -52,37 +52,30 @@ class ICExchangeProductModel extends Model{
             }
             return $ProductModel->itemDelete($existing_product->product_id);
         }
+
+        if($existing_product){
+            $product_quantity=isset($xml_product->Количество)?(float)$xml_product->Количество:0;
+            $product_price=isset($xml_product->Цены->Цена->ЦенаЗаЕдиницу)?(float)$xml_product->Цены->Цена->ЦенаЗаЕдиницу:0;
+            $updated_product=(object)[
+                'product_id'=>$existing_product->product_id,
+                'product_quantity'=>$product_quantity,
+                'product_price'=>$product_price,
+            ];
+            return $ProductModel->itemUpdate($updated_product);
+        }
+
         $attributes=$this->productAttributesParse($xml_product);
-        $updated_product=(object)[
+        $created_product=(object)[
+            'store_id'=>$holder_id,
+            'is_disabled'=>1,
+            'product_external_id'=>$product_1c_id,
             'product_code'=>(string) $xml_product->Артикул?$xml_product->Артикул:$attributes->product_code??'',
             'product_name'=>(string)$xml_product->Наименование,
             'product_description'=>(string)$xml_product->Описание,
             'product_barcode'=>(string)$xml_product->Штрихкод,
             'product_unit'=>$this->productUnitGet($xml_product)
         ];
-
-        if( !empty($xml_product->Цены->Цена->ЦенаЗаЕдиницу) ){
-            $updated_product->product_price=(float)$xml_product?->Цены?->Цена?->ЦенаЗаЕдиницу;
-        } else {
-            $updated_product->product_price=0;
-        }
-
-        if( isset($xml_product->Количество) ){
-            $updated_product->product_quantity=(float)$xml_product->Количество;
-            $updated_product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$this->product_quantity_expiration_timeout);
-        }
-        
-        if($existing_product){
-            $updated_product=$this->productFilterUnchanged($existing_product,$updated_product);
-            $updated_product->product_id=$existing_product->product_id;
-            $result= $ProductModel->itemUpdate($updated_product);
-            return $result;
-        }
-        $updated_product->product_external_id=$product_1c_id;
-        $updated_product->store_id=$holder_id;
-        $updated_product->is_disabled=1;
-        $result= $ProductModel->itemCreate($updated_product);
-        return $result;
+        return $ProductModel->itemCreate($created_product);
     }
 
     private function productAttributesParse($xml_product){
