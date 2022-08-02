@@ -54,7 +54,7 @@ class ICExchangeProductModel extends Model{
         }
         $attributes=$this->productAttributesParse($xml_product);
         $updated_product=(object)[
-            'product_code'=>(string) $xml_product->Артикул?$xml_product->Артикул:$attributes->product_code,
+            'product_code'=>(string) $xml_product->Артикул?$xml_product->Артикул:$attributes->product_code??'',
             'product_name_new'=>(string)$xml_product->Наименование,
             'product_description_new'=>(string)$xml_product->Описание,
             'product_barcode'=>(string)$xml_product->Штрихкод,
