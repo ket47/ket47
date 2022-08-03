@@ -13,26 +13,26 @@ class ICExchange extends \App\Controllers\BaseController
     }
 
     public function index(){
+        //$this->test();die;
         $this->authenticateByToken();
         $this->prepareSubfolder();
         $this->methodExecute();
     }
 
 
-    // private function test(){
-    //     $token_data=(object)[
-    //         'owner_id'=>71,
-    //         'token_holder_id'=>31,
-    //         'token_holder'=>'store'
-    //     ];
-    //     session()->set('auth_token_data',$token_data);
-    //     session()->set('user_id',$token_data->owner_id);
-    //     $this->prepareSubfolder();
+    private function test(){
+        $token_data=(object)[
+            'owner_id'=>71,
+            'token_holder_id'=>31,
+            'token_holder'=>'store'
+        ];
+        session()->set('auth_token_data',$token_data);
+        session()->set('user_id',$token_data->owner_id);
+        $this->prepareSubfolder();
 
-    //     $filename=$this->filename_subfolder.'import0_1.xml';
-
-    //     $this->catalogImport($filename);
-    // }
+        $filename=$this->filename_subfolder.'offers0_1.xml';
+        $this->catalogImport($filename);
+    }
 
 
 
@@ -86,7 +86,7 @@ class ICExchange extends \App\Controllers\BaseController
                 if($v=='..'||$v=='.'){
                     continue;
                 }
-                //is_dir($v)?rmdir($v):unlink($v);
+                is_dir($v)?rmdir($v):unlink($v);
             }
         }
         unset($_SESSION['last_1c_imported_variant_num']);
@@ -95,7 +95,7 @@ class ICExchange extends \App\Controllers\BaseController
         unset($_SESSION['categories_mapping']);
         unset($_SESSION['brand_id_option']);
         print "zip=yes\n";
-        print "file_limit=10000000\n";
+        print "file_limit=".(1*1024*1024)."\n";//1MB
     }
 
     private function catalogFile(){
@@ -147,15 +147,13 @@ class ICExchange extends \App\Controllers\BaseController
             $z = new \XMLReader;
             $z->open($filename);
             while ($z->read() && $z->name !== 'Товар');
-
-
             $current_product_num = 0;// Номер текущего товара
             $last_product_num = 0;// Последний товар, на котором остановились
             if (isset($_SESSION['last_1c_imported_product_num'])){
                 $last_product_num = $_SESSION['last_1c_imported_product_num'];
             }
-            $ICExchangeProductModel->transStart();
-            while ($z->name === 'Товар' && $current_product_num<$this->max_product_count) {
+            $ICExchangeProductModel->productTransStart();
+            while ($z->name === 'Товар' && $current_product_num<=$this->max_product_count) {
                 if ($current_product_num >= $last_product_num) {
                     $xml = new \SimpleXMLElement($z->readOuterXML());
                     $ICExchangeProductModel->productSave($xml,$holder_id);
@@ -167,17 +165,16 @@ class ICExchange extends \App\Controllers\BaseController
                         print "progress\r\n";
                         print "Выгружено товаров: $current_product_num\r\n";
                         $_SESSION['last_1c_imported_product_num'] = $current_product_num;
-                        $ICExchangeProductModel->transComplete();
+                        $ICExchangeProductModel->productTransComplete();
                         exit();
                     }
                 }
                 $z->next('Товар');
                 $current_product_num++;
             }
-            $ICExchangeProductModel->transComplete();
+            $ICExchangeProductModel->productTransComplete();
             $z->close();
             print "success";
-            unlink($filename);
             unset($_SESSION['last_1c_imported_product_num']);
         }
         elseif (str_contains($filename,'offers')) {
@@ -192,8 +189,8 @@ class ICExchange extends \App\Controllers\BaseController
                 $last_variant_num = $_SESSION['last_1c_imported_variant_num'];
             }
 
-            $ICExchangeProductModel->transStart();
-            while ($z->name === 'Предложение' && $current_variant_num<$this->max_product_count) {
+            $ICExchangeProductModel->productTransStart();
+            while ($z->name === 'Предложение' && $current_variant_num<=$this->max_product_count) {
                 if ($current_variant_num >= $last_variant_num) {
                     $xml = new \SimpleXMLElement($z->readOuterXML());
                     // Варианты
@@ -205,19 +202,19 @@ class ICExchange extends \App\Controllers\BaseController
                         print "progress\r\n";
                         print "Выгружено ценовых предложений: $current_variant_num\r\n";
                         $_SESSION['last_1c_imported_variant_num'] = $current_variant_num;
-                        $ICExchangeProductModel->transComplete();
+                        $ICExchangeProductModel->productTransComplete();
                         exit();
                     }
                 }
                 $z->next('Предложение');
                 $current_variant_num++;
             }
-            $ICExchangeProductModel->transComplete();
+            $ICExchangeProductModel->productTransComplete();
             $z->close();
             print "success";
-            unlink($filename);
             unset($_SESSION['last_1c_imported_variant_num']);
         }
+        unlink($filename);
     }
 
 
@@ -237,11 +234,11 @@ class ICExchange extends \App\Controllers\BaseController
                 if($v=='..'||$v=='.'){
                     continue;
                 }
-                //is_dir($v)?rmdir($v):unlink($v);
+                is_dir($v)?rmdir($v):unlink($v);
             }
         }
         print "zip=no\n";
-        print "file_limit=1000000\n";
+        print "file_limit=".(1*1024*1024)."\n";//1MB
     }
 
 

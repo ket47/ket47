@@ -4,6 +4,17 @@ namespace App\Controllers\Api;
 use CodeIgniter\Model;
 
 class ICExchangeProductModel extends Model{
+
+    private $ProductModel;
+    public function productTransStart(){
+        $this->ProductModel=model('ProductModel');
+        $this->ProductModel->transStart();
+    }
+    public function productTransComplete(){
+        $this->ProductModel->transComplete();
+    }
+
+
     private $unit_dict=[
         'Штука'=>'шт',
         'Штук'=>'шт',
@@ -43,14 +54,13 @@ class ICExchangeProductModel extends Model{
     }
     public function productSave($xml_product,$holder_id){
         @list($product_1c_id, $variant_1c_id) = explode('#', $xml_product->Ид);
-        $ProductModel=model('ProductModel');
-        $existing_product=$ProductModel->where('product_external_id',$product_1c_id)->get()->getRow();
+        $existing_product=$this->ProductModel->where('product_external_id',$product_1c_id)->where('store_id',$holder_id)->get()->getRow();
         $product_status=$this->productStatusParse($xml_product);
         if($product_status == 'Удален'){
             if(!$existing_product){
                 return true;
             }
-            return $ProductModel->itemDelete($existing_product->product_id);
+            return $this->ProductModel->itemDelete($existing_product->product_id);
         }
 
         if($existing_product){
@@ -61,7 +71,7 @@ class ICExchangeProductModel extends Model{
                 'product_quantity'=>$product_quantity,
                 'product_price'=>$product_price,
             ];
-            return $ProductModel->itemUpdate($updated_product);
+            return $this->ProductModel->itemUpdate($updated_product);
         }
 
         $attributes=$this->productAttributesParse($xml_product);
@@ -73,9 +83,10 @@ class ICExchangeProductModel extends Model{
             'product_name'=>(string)$xml_product->Наименование,
             'product_description'=>(string)$xml_product->Описание,
             'product_barcode'=>(string)$xml_product->Штрихкод,
-            'product_unit'=>$this->productUnitGet($xml_product)
+            'product_unit'=>$this->productUnitGet($xml_product),
+            'product_price'=>0
         ];
-        return $ProductModel->itemCreate($created_product);
+        return $this->ProductModel->itemCreate($created_product);
     }
 
     private function productAttributesParse($xml_product){

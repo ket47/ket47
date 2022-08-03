@@ -18,6 +18,7 @@ class ProductModel extends Model{
         'product_quantity_min',
         'product_quantity_expire_at',
         'product_quantity_reserve',
+        'product_barcode',
         'product_description',
         'product_weight',
         'product_unit',
