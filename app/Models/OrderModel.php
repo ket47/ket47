@@ -181,7 +181,7 @@ class OrderModel extends Model{
                     LEFT JOIN
                 order_entry_list el USING(order_id)
                     LEFT JOIN
-                transaction_list tl ON holder_id=order_id AND holder='order'
+                transaction_list tl ON trans_holder_id=order_id AND trans_holder='order'
             SET
                 ol.owner_ally_ids='$owner_list',
                 el.owner_ally_ids='$owner_list',
