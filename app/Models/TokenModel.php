@@ -53,7 +53,11 @@ class TokenModel extends Model{
         $expired_at=date('Y-m-d H:i:s',time());
         $this->where('expired_at>',$expired_at);
         $this->where('is_disabled',0);
-        return $this->get()->getRow();
+        $token=$this->get()->getRow();
+        if( $token ){
+            $this->update($token->token_id,['accessed_at'=>date('Y-m-d H:i:s')]);
+        }
+        return $token;
     }
     
     public function itemCreate($owner_id,$token_holder,$token_holder_id){
