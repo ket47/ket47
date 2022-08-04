@@ -10,10 +10,10 @@ class ICExchangeProductModel extends Model{
         $this->ProductModel=model('ProductModel');
         $this->ProductModel->transStart();
     }
+
     public function productTransComplete(){
         $this->ProductModel->transComplete();
     }
-
 
     private $unit_dict=[
         'Штука'=>'шт',
@@ -23,35 +23,27 @@ class ICExchangeProductModel extends Model{
         'Метр'=>'м',
     ];
     private $product_quantity_expiration_timeout=1;
-    private function productUnitGet($xml_product){
-        $unit='';
-        if( isset(((array)$xml_product->БазоваяЕдиница)['@attributes']['НаименованиеПолное']) ){
-            $unit_full_name=((array)$xml_product->БазоваяЕдиница)['@attributes']['НаименованиеПолное'];
-            $unit=$this->unit_dict[$unit_full_name]??'шт';
-        }
-        return $unit;
-    }
-    private function productFilterUnchanged($existing_product,$updated_product){
-        if( isset($updated_product->product_code) && $existing_product->product_code==$updated_product->product_code ){
-            unset($updated_product->product_code);
-        }
-        if( isset($updated_product->product_name_new) && $existing_product->product_name==$updated_product->product_name_new ){
-            unset($updated_product->product_name_new);
-        }
-        if( isset($updated_product->product_description_new) && $existing_product->product_description==$updated_product->product_description_new ){
-            unset($updated_product->product_description_new);
-        }
-        if( isset($updated_product->product_quantity) && $existing_product->product_quantity==$updated_product->product_quantity ){
-            unset($updated_product->product_quantity);
-        }
-        if( isset($updated_product->product_price) && $existing_product->product_price==$updated_product->product_price ){
-            unset($updated_product->product_price);
-        }
-        if( isset($updated_product->product_barcode) && $existing_product->product_barcode==$updated_product->product_barcode ){
-            unset($updated_product->product_barcode);
-        }
-        return $updated_product;
-    }
+    // private function productFilterUnchanged($existing_product,$updated_product){
+    //     if( isset($updated_product->product_code) && $existing_product->product_code==$updated_product->product_code ){
+    //         unset($updated_product->product_code);
+    //     }
+    //     if( isset($updated_product->product_name_new) && $existing_product->product_name==$updated_product->product_name_new ){
+    //         unset($updated_product->product_name_new);
+    //     }
+    //     if( isset($updated_product->product_description_new) && $existing_product->product_description==$updated_product->product_description_new ){
+    //         unset($updated_product->product_description_new);
+    //     }
+    //     if( isset($updated_product->product_quantity) && $existing_product->product_quantity==$updated_product->product_quantity ){
+    //         unset($updated_product->product_quantity);
+    //     }
+    //     if( isset($updated_product->product_price) && $existing_product->product_price==$updated_product->product_price ){
+    //         unset($updated_product->product_price);
+    //     }
+    //     if( isset($updated_product->product_barcode) && $existing_product->product_barcode==$updated_product->product_barcode ){
+    //         unset($updated_product->product_barcode);
+    //     }
+    //     return $updated_product;
+    // }
     public function productSave($xml_product,$holder_id){
         @list($product_1c_id, $variant_1c_id) = explode('#', $xml_product->Ид);
         $existing_product=$this->ProductModel->where('product_external_id',$product_1c_id)->where('store_id',$holder_id)->get()->getRow();
@@ -89,6 +81,10 @@ class ICExchangeProductModel extends Model{
         return $this->ProductModel->itemCreate($created_product);
     }
 
+    public function productListValidate($store_id){
+        $this->ProductModel->listUpdateValidity($store_id);
+    }
+
     private function productAttributesParse($xml_product){
         $attributes=(object)[];
         if (isset($xml_product->ЗначенияРеквизитов->ЗначениеРеквизита)){
@@ -106,12 +102,19 @@ class ICExchangeProductModel extends Model{
         }
         return $attributes;
     }
-
     private function productStatusParse($xml_product){
         if( isset($xml_product->Статус) ){
             return $xml_product->Статус;
         }
         $attrs=((array)$xml_product)['@attributes']??[];
         return $attrs['Статус']??'';
+    }
+    private function productUnitGet($xml_product){
+        $unit='';
+        if( isset(((array)$xml_product->БазоваяЕдиница)['@attributes']['НаименованиеПолное']) ){
+            $unit_full_name=((array)$xml_product->БазоваяЕдиница)['@attributes']['НаименованиеПолное'];
+            $unit=$this->unit_dict[$unit_full_name]??'шт';
+        }
+        return $unit;
     }
 }

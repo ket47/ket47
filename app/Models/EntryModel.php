@@ -26,7 +26,7 @@ class EntryModel extends Model{
     protected $useTimestamps = false;
     
     protected $validationRules    = [
-        'entry_text'        => 'min_length[10]',
+        'entry_text'  => 'min_length[5]',
         'entry_price' => 'greater_than_equal_to[1]',
         //'entry_quantity' => 'greater_than_equal_to[1]'
     ];
@@ -54,17 +54,16 @@ class EntryModel extends Model{
         return false;
     }
     
-    public function itemCreate($order_id,$product_id,$product_quantity){
+    public function itemCreate($order_id,$product_id,$product_quantity){//item on duplicate key update
         $OrderModel=model('OrderModel');
         $ProductModel=model('ProductModel');
         $OrderModel->permitWhere('w');
+        $product_basic=$ProductModel->itemGet($product_id,'basic');
         $order_basic=$OrderModel->itemGet($order_id,'basic');
         if( !$this->itemEditAllow( $order_basic ) ){
             return 'forbidden_at_this_stage';
         }
-        $product_basic=$ProductModel->itemGet($product_id,'basic');
         if( !is_object($order_basic) || !is_object($product_basic) ){
-            echo "order, product notfound or ";
             return 'forbidden';
         }
         if( !$product_quantity || $product_quantity<1 ){
@@ -80,8 +79,7 @@ class EntryModel extends Model{
             'owner_ally_ids'=>$order_basic->owner_ally_ids
             ];
         try{
-            $this->insert($new_entry);
-            $entry_id=$this->db->insertID();
+            $entry_id=$this->insert($new_entry,true);
             return $entry_id;
         } catch( \Exception $e ){
             $this->where('order_id',$order_id);
@@ -92,10 +90,6 @@ class EntryModel extends Model{
             $this->where('order_id',$order_id);
             $this->where('product_id',$product_id);
             $entry_id=$this->get()->getRow('entry_id');
-            
-            if( $entry_id ){
-                $this->listSumUpdate( $order_id );
-            }
             return $entry_id;
         }
     }
@@ -130,9 +124,6 @@ class EntryModel extends Model{
         }
         $this->update($entry->entry_id,$entry);
         $result=$this->db->affectedRows()>0?'ok':'idle';
-        if( $result=='ok' && isset($entry->entry_quantity)){
-            $this->listSumUpdate( $order_basic->order_id );
-        }
         return $result;
     }
     
@@ -221,9 +212,11 @@ class EntryModel extends Model{
             if(!$entry->product_id??0 || !$entry->entry_quantity??0){
                 continue;
             }
-            $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity);
-        }
-        $this->listSumUpdate( $order_id );
+            $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity);//item on duplicate key update
+            if( $this->errors() ){
+                return 'validation_error';
+            }
+        }      
         return 'ok';
     }
     
@@ -282,7 +275,6 @@ class EntryModel extends Model{
             throw new Exception("Unknown stock status",500);
         }
         $this->db->transComplete();
-        $this->listSumUpdate( $order_id );
         return $this->db->transStatus()?'ok':'fail';
     }
 

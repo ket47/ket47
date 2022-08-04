@@ -48,7 +48,6 @@ class Order extends \App\Controllers\BaseController {
             return $this->failUnauthorized('unauthorized');
         }
         $OrderModel = model('OrderModel');
-
         $order_id_exists=false;
         if( ($data->order_id??-1)>0 ){
             $order_id_exists=$OrderModel->where($data->order_id)->get()->getRow('order_id');
@@ -56,25 +55,34 @@ class Order extends \App\Controllers\BaseController {
         $OrderModel->transStart();
         if( !$order_id_exists ){
             if( !isset($data->order_store_id) ){
+                $OrderModel->transRollback();
                 return $this->fail('nostoreid');
             }
             $result=$OrderModel->itemCreate($data->order_store_id);
             if ($result === 'forbidden') {
+                $OrderModel->transRollback();
                 return $this->failForbidden($result);
             }
             if (!is_numeric($result)) {
+                $OrderModel->transRollback();
                 return $this->fail($result);
             }
             $data->order_id=$result;
         }
         $result = $OrderModel->itemUpdate($data);
-        $OrderModel->transComplete();
         if ($result === 'forbidden') {
+            $OrderModel->transRollback();
             return $this->failForbidden($result);
         }
+        if ($result === 'validation_error') {
+            $OrderModel->transRollback();
+            return $this->fail($result);
+        }
         if ($OrderModel->errors()) {
+            $OrderModel->transRollback();
             return $this->failValidationErrors($OrderModel->errors());
         }
+        $OrderModel->transComplete();
         return $this->itemGet($data->order_id);
     }
 

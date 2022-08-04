@@ -193,6 +193,7 @@ trait OrderStageTrait{
         $this->itemUnDelete($order_id);
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
+        $this->update($order_id,['order_sum_product'=>0]);
         return 'ok';
     }
     

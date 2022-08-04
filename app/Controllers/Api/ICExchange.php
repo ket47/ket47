@@ -19,7 +19,6 @@ class ICExchange extends \App\Controllers\BaseController
         $this->methodExecute();
     }
 
-
     private function test(){
         $token_data=(object)[
             'owner_id'=>71,
@@ -34,14 +33,12 @@ class ICExchange extends \App\Controllers\BaseController
         $this->catalogImport($filename);
     }
 
-
-
     private function authenticateByToken(){
         $token_holder = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : "";
 		$token_hash = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : "";
         $TokenModel=model('TokenModel');
         $token_data=$TokenModel->itemAuth($token_hash,$token_holder);
-        log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
+        //log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
         if(!$token_data){
             http_response_code(401);
             die('fail');
@@ -165,6 +162,7 @@ class ICExchange extends \App\Controllers\BaseController
                         print "progress\r\n";
                         print "Выгружено товаров: $current_product_num\r\n";
                         $_SESSION['last_1c_imported_product_num'] = $current_product_num;
+                        $ICExchangeProductModel->productListValidate($holder_id);
                         $ICExchangeProductModel->productTransComplete();
                         exit();
                     }
@@ -172,6 +170,7 @@ class ICExchange extends \App\Controllers\BaseController
                 $z->next('Товар');
                 $current_product_num++;
             }
+            $ICExchangeProductModel->productListValidate($holder_id);
             $ICExchangeProductModel->productTransComplete();
             $z->close();
             print "success";
@@ -202,6 +201,7 @@ class ICExchange extends \App\Controllers\BaseController
                         print "progress\r\n";
                         print "Выгружено ценовых предложений: $current_variant_num\r\n";
                         $_SESSION['last_1c_imported_variant_num'] = $current_variant_num;
+                        $ICExchangeProductModel->productListValidate($holder_id);
                         $ICExchangeProductModel->productTransComplete();
                         exit();
                     }
@@ -209,6 +209,7 @@ class ICExchange extends \App\Controllers\BaseController
                 $z->next('Предложение');
                 $current_variant_num++;
             }
+            $ICExchangeProductModel->productListValidate($holder_id);
             $ICExchangeProductModel->productTransComplete();
             $z->close();
             print "success";

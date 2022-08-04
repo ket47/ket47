@@ -124,7 +124,7 @@ class OrderModel extends Model{
         $new_order=[
             'order_store_id'=>$store_id,
             'order_sum_delivery'=>$this->deliveryFeeGet(),
-            'order_tax'=>0,
+            'order_sum_tax'=>0,
             'owner_id'=>$user_id,
         ];
         $this->insert($new_order);
@@ -145,11 +145,14 @@ class OrderModel extends Model{
         }
         if( $this->in_object($order,['entries']) ){
             $EntryModel=model('EntryModel');
-            $EntryModel->listUpdate($order->order_id,$order->entries);
+            $result=$EntryModel->listUpdate($order->order_id,$order->entries);
+            if( $result!='ok' ){
+                return $result;
+            }
+            $order->order_sum_product=$EntryModel->listSumGet( $order->order_id );
         }
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
-
         $update_result=$this->db->affectedRows()>0?'ok':'idle';
         if( $this->in_object($order,['owner_id','owner_ally_ids','order_store_id','order_courier_id']) ){
             $this->itemUpdateOwners($order->order_id);

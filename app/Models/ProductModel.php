@@ -34,7 +34,7 @@ class ProductModel extends Model{
     protected $useSoftDeletes = true;
     protected $validationRules    = [
         'store_id'         => 'required|numeric',
-        //'product_name'     => 'min_length[5]',
+        'product_name'     => 'min_length[5]',
         'product_price'    => 'numeric',
         //'product_promo_price'    => 'numeric',
     ];
@@ -274,6 +274,35 @@ class ProductModel extends Model{
             return 'ok';
         }
         return 'idle';
+    }
+
+    public function listUpdateValidity(int $store_id,$product_id=null){
+        $sql="
+            UPDATE
+                product_list pl
+                    LEFT JOIN
+                image_list ON image_holder='product' AND image_holder_id=pl.product_id
+            SET
+                validity=
+                1
+                *IF(CHAR_LENGTH(product_name)>=5,1,0)
+                *IF(product_quantity_expire_at IS NOT NULL AND product_quantity_expire_at<NOW() OR is_counted!=1,1,0)
+                *IF(image_id IS NOT NULL,1,0)
+                *(
+                0.4
+                +IF(CHAR_LENGTH(product_description)>=30,0.2,0)
+                +IF(CHAR_LENGTH(product_code)>=3,0.1,0)
+                +IF(CHAR_LENGTH(product_unit)>=1,0.1,0)
+                +IF(CHAR_LENGTH(product_barcode)=13,0.1,0)
+                +IF(product_weight>0,0.1,0)
+                )
+            WHERE
+                store_id='$store_id'
+            ";
+        if($product_id){
+            $sql.=" product_id='$product_id'";
+        }
+        $this->query($sql);
     }
     
     public function listDelete( array $product_ids ){

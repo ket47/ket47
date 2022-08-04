@@ -26,6 +26,7 @@ class Entry extends \App\Controllers\BaseController{
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
+        $EntryModel->listSumUpdate($order_id);
         return $this->respond($result);
     }
     
@@ -44,6 +45,9 @@ class Entry extends \App\Controllers\BaseController{
         }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
+        }
+        if( $result=='ok' && isset($entry->entry_quantity)){
+            $EntryModel->listSumUpdate( $entry->order_id );
         }
         return $this->respond($result);
     }
