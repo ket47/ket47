@@ -12,11 +12,13 @@ class TransactionModel extends Model{
     protected $allowedFields = [
         'trans_amount',
         'trans_data',
-        'acc_debit_code',
-        'acc_credit_code',
+        'trans_tags',
+        'trans_role',
+        'trans_debit',
+        'trans_credit',
+        'trans_holder',
+        'trans_holder_id',
         'owner_id',
-        'holder',
-        'holder_id'
         ];
 
     protected $useSoftDeletes = true;
@@ -26,16 +28,19 @@ class TransactionModel extends Model{
     protected $deletedField  = 'deleted_at';    
     protected $validationRules    = [
         'trans_amount'    => 'required|greater_than[0]',
-        'acc_debit_code'  => 'required',
-        'acc_credit_code' => 'required',
-        'holder'          => 'required',
-        'holder_id'       => 'required'
+        'trans_role'      => 'required',
+        'trans_holder'    => 'required',
+        'trans_holder_id' => 'required'
     ];
     
     public function itemGet( $trans_id ){
         $this->permitWhere('r');
         $this->where('trans_id',$trans_id);
-        return $this->get()->getRow();
+        $trans=$this->get(1)->getRow();
+        if( $trans->trans_data ){
+            $trans->trans_data=json_decode($trans->trans_data);
+        }
+        return $trans;
     }
 
     public function itemFind( object $filter ){
@@ -50,121 +55,127 @@ class TransactionModel extends Model{
             $this->where('trans_holder',$filter->trans_holder);
         }
         if( $filter->trans_holder_id??null ){
-            $this->where('trans_holder',$filter->trans_holder_id);
+            $this->where('trans_holder_id',$filter->trans_holder_id);
         }
-        return $this->get()->limit(1)->getRow();
+        $trans=$this->get(1)->getRow();
+        if( $trans?->trans_data ){
+            $trans->trans_data=json_decode($trans->trans_data);
+        }
+        return $trans;
     }
-    
 
     private function itemCreateTags($trans){
-        $tags=$trans['trans_tags'];
-        if($trans['trans_role']){
+        $tags=$trans['trans_tags']??'';
+        if($trans['trans_role']??''){
             list($debits,$credits)=explode('->',$trans['trans_role']);
+            $trans['trans_debit']=$debits;
+            $trans['trans_credit']=$credits;
             $tags.=str_replace('.',' #debit-','.'.$debits);
             $tags.=str_replace('.',' #credit-','.'.$credits);
         }
-        if($trans['trans_holder']){
+        if($trans['trans_holder']??''){
             $tags.=" #{$trans['trans_holder']}-{$trans['trans_holder_id']}";
         }
-        return $tags;
+        $trans['trans_tags']=$tags;
+        return $trans;
     }
 
     public function itemCreate( $trans ){
         if( !$this->permit(null, 'w') ){
             return 'forbidden';
         }
-        $trans['trans_tags']=$this->itemCreateTags($trans);
+        $trans=$this->itemCreateTags($trans);
         $trans_id=$this->insert($trans,true);
         return $trans_id;
     }
 
-    public function orderCardPreauthCreate($order,$acquirer_data){
-        $user_id=session()->get('user_id');
-        $trans=[
-            'trans_amount'=>$order->order_sum_total,
-            'trans_data'=>json_encode($acquirer_data),
-            'trans_role'=>'customer.card->money.acquirer.blocked',
-            'trans_tags'=>'#orderPrepayment',
-            'owner_id'=>$order->owner_id,
-            'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order->order_id,
-            'updated_by'=>$user_id,
-        ];
-        $this->itemCreate($trans);
-        return $this->db->affectedRows()?'ok':'idle';
-    }
+    // public function orderCardPreauthCreate($order,$acquirer_data){
+    //     $user_id=session()->get('user_id');
+    //     $trans=[
+    //         'trans_amount'=>$order->order_sum_total,
+    //         'trans_data'=>json_encode($acquirer_data),
+    //         'trans_role'=>'customer.card->money.acquirer.blocked',
+    //         'trans_tags'=>'#orderPrepayment',
+    //         'owner_id'=>$order->owner_id,
+    //         'is_disabled'=>0,
+    //         'holder'=>'order',
+    //         'holder_id'=>$order->order_id,
+    //         'updated_by'=>$user_id,
+    //     ];
+    //     $this->itemCreate($trans);
+    //     return $this->db->affectedRows()?'ok':'idle';
+    // }
 
-    public function orderSettlementGet($order_id){
-        $OrderModel=model('OrderModel');
-        $order=$OrderModel->where('order_id',$order_id)->get()->getRow();
+    // public function orderSettlementGet($order_id){
+    //     $OrderModel=model('OrderModel');
+    //     $order=$OrderModel->where('order_id',$order_id)->get()->getRow();
 
-        $filter=(object)[
-            'trans_tags'=>'#orderPrepayment',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_id
-        ];
-        $orderPrepaymentTrans=$this->itemFind($filter);
-        $orderSumToClaim=$order->order_sum_total;
-        $orderSumToRefund=$orderPrepaymentTrans->trans_amount-$order->order_sum_total;
+    //     $filter=(object)[
+    //         'trans_tags'=>'#orderPrepayment',
+    //         'trans_holder'=>'order',
+    //         'trans_holder_id'=>$order_id
+    //     ];
+    //     $orderPrepaymentTrans=$this->itemFind($filter);
+    //     $orderSumToClaim=$order->order_sum_total;
+    //     $orderSumToRefund=$orderPrepaymentTrans->trans_amount-$order->order_sum_total;
 
-        if($orderSumToRefund<0){
-            return 'trans_amount_is_unsufficient';
-        }
+    //     if($orderSumToRefund<0){
+    //         return 'trans_amount_is_unsufficient';
+    //     }
 
-        $settlement=[];
-        if($orderSumToRefund>0){
-            $settlement['refund_sum']=$orderSumToRefund;
-            $filter=(object)[
-                'trans_tags'=>'#orderRefund',
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_id
-            ];
-            $orderRefundTrans=$this->itemFind($filter);
-            if($orderRefundTrans){
-                $settlement['refund_commited']=true;
-            }
-            $settlement['refund_commited']=false;
-        } else {
-            $settlement['refund_sum']=0;
-            $settlement['refund_commited']=true;
-        }
+    //     $settlement=[];
+    //     if($orderSumToRefund>0){
+    //         $settlement['refund_sum']=$orderSumToRefund;
+    //         $filter=(object)[
+    //             'trans_tags'=>'#orderRefund',
+    //             'trans_holder'=>'order',
+    //             'trans_holder_id'=>$order_id
+    //         ];
+    //         $orderRefundTrans=$this->itemFind($filter);
+    //         if($orderRefundTrans){
+    //             $settlement['refund_commited']=true;
+    //         }
+    //         $settlement['refund_commited']=false;
+    //     } else {
+    //         $settlement['refund_sum']=0;
+    //         $settlement['refund_commited']=true;
+    //     }
 
-        if($orderSumToClaim>0){
-            $settlement['claim_sum']=$orderSumToClaim;
-            $filter=(object)[
-                'trans_tags'=>'#orderClaim',
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_id
-            ];
-            $orderClaimTrans=$this->itemFind($filter);
-            if($orderClaimTrans){
-                $settlement['claim_commited']=true;
-            }
-            $settlement['claim_commited']=false;
-        } else {
-            $settlement['claim_sum']=0;
-            $settlement['claim_commited']=true;
-        }
+    //     if($orderSumToClaim>0){
+    //         $settlement['claim_sum']=$orderSumToClaim;
+    //         $filter=(object)[
+    //             'trans_tags'=>'#orderClaim',
+    //             'trans_holder'=>'order',
+    //             'trans_holder_id'=>$order_id
+    //         ];
+    //         $orderClaimTrans=$this->itemFind($filter);
+    //         if($orderClaimTrans){
+    //             $settlement['claim_commited']=true;
+    //         }
+    //         $settlement['claim_commited']=false;
+    //     } else {
+    //         $settlement['claim_sum']=0;
+    //         $settlement['claim_commited']=true;
+    //     }
 
-        if($orderSumToClaim>0){
-            $settlement['bill_sum']=$orderSumToClaim;
-            $filter=(object)[
-                'trans_tags'=>'#orderBill',
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_id
-            ];
-            $orderBillTrans=$this->itemFind($filter);
-            if($orderBillTrans){
-                $settlement['bill_commited']=true;
-            }
-            $settlement['bill_commited']=false;
-        } else {
-            $settlement['bill_sum']=0;
-            $settlement['bill_commited']=true;
-        }
-        return $settlement;
-    }
+    //     if($orderSumToClaim>0){
+    //         $settlement['bill_sum']=$orderSumToClaim;
+    //         $filter=(object)[
+    //             'trans_tags'=>'#orderBill',
+    //             'trans_holder'=>'order',
+    //             'trans_holder_id'=>$order_id
+    //         ];
+    //         $orderBillTrans=$this->itemFind($filter);
+    //         if($orderBillTrans){
+    //             $settlement['bill_commited']=true;
+    //         }
+    //         $settlement['bill_commited']=false;
+    //     } else {
+    //         $settlement['bill_sum']=0;
+    //         $settlement['bill_commited']=true;
+    //     }
+    //     return $settlement;
+    // }
 
 
 

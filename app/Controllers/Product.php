@@ -68,6 +68,7 @@ class Product extends \App\Controllers\BaseController{
             return $this->failValidationErrors(json_encode($ProductModel->errors()));
         }
         if( is_numeric($result) ){
+            $ProductModel->listUpdateValidity(null,$result);
             return $this->respondCreated($result);
         }
         return $this->fail($result);
@@ -78,6 +79,7 @@ class Product extends \App\Controllers\BaseController{
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdate($data);
         if( $result==='ok' ){
+            $ProductModel->listUpdateValidity(null,$data->product_id);
             return $this->respondUpdated('ok');
         }
         if( $ProductModel->errors() ){

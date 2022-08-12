@@ -240,11 +240,15 @@ trait OrderStageTrait{
             return 'forbidden';
         }
         $order=$this->itemGet($order_id,'basic');
-        $TransactionModel=model('TransactionModel');
-        $transaction_created=$TransactionModel->orderCardPreauthCreate($order,$acquirer_data);
+        $OrderTransactionModel=model('OrderTransactionModel');
+        $transaction_created=$OrderTransactionModel->orderPaymentFixateCard($order,$acquirer_data);
         
         $order_started=$this->itemStageCreate($order_id, 'delivery_search');
         if( $transaction_created=='ok' && $order_started=='ok' ){
+            $this->itemUpdate((object)[
+                'order_id'=>$order_id,
+                'order_sum_fixed'=>$acquirer_data->total
+            ]);
             return 'ok';
         }
         return 'error';
@@ -538,6 +542,21 @@ trait OrderStageTrait{
         return $this->itemStageCreate($order_id, 'customer_refunded');
     }
     private function onSupplierFinish( $order_id ){
+        $filter=(object)[
+            'trans_tags'=>'#orderPaymentFixation',
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_id
+        ];
+        $OrderTransactionModel=model('OrderTransactionModel');
+        $orderPaymentFixationTrans=$OrderTransactionModel->itemFind($filter);
+        $order=$this->itemGet($order_id);
+
+        if( !$orderPaymentFixationTrans?->trans_amount || !$order?->order_sum_total ){
+            return 'order_sum_undefined';
+        }
+        if( $orderPaymentFixationTrans->trans_amount < $order->order_sum_total ){
+            return 'order_sum_exceeded';
+        }
         $PrefModel=model('PrefModel');
 
 

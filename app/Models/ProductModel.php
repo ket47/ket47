@@ -27,7 +27,6 @@ class ProductModel extends Model{
         'product_promo_start',
         'product_promo_finish',
         'is_counted',
-        'validity',
         'deleted_at'
         ];
     protected $returnType     = 'array';
@@ -276,7 +275,10 @@ class ProductModel extends Model{
         return 'idle';
     }
 
-    public function listUpdateValidity(int $store_id,$product_id=null){
+    public function listUpdateValidity(int $store_id=null,int $product_id=null){
+        if( !$store_id && !$product_id ){
+            return false;
+        }
         $sql="
             UPDATE
                 product_list pl
@@ -285,6 +287,7 @@ class ProductModel extends Model{
             SET
                 validity=
                 1
+                *IF(product_price>0,1,0)
                 *IF(CHAR_LENGTH(product_name)>=5,1,0)
                 *IF(product_quantity_expire_at IS NOT NULL AND product_quantity_expire_at<NOW() OR is_counted!=1,1,0)
                 *IF(image_id IS NOT NULL,1,0)
@@ -297,8 +300,10 @@ class ProductModel extends Model{
                 +IF(product_weight>0,0.1,0)
                 )
             WHERE
-                store_id='$store_id'
             ";
+        if($store_id){
+            $sql.=" store_id='$store_id'";
+        }
         if($product_id){
             $sql.=" product_id='$product_id'";
         }

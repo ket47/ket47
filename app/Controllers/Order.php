@@ -23,6 +23,24 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($result);
     }
 
+    public function itemDetailsPrepaymentGet(){
+        $order_id = $this->request->getVar('order_id');
+        $TransactionModel = model('TransactionModel');
+        $filter=(object)[
+            'trans_tags'=>'#orderPaymentFixation',
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_id
+        ];
+        $trans=$TransactionModel->itemFind($filter);
+        if(!$trans){
+            return $this->failNotFound('notfound');
+        }
+        return $this->respond([
+            'trans_id'=>$trans->trans_id,
+            'trans_amount'=>$trans->trans_amount
+        ]);
+    }
+
     public function itemCreate($order_store_id=null) {
         $order_store_id = $this->request->getVar('order_store_id');
         $OrderModel = model('OrderModel');

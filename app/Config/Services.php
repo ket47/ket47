@@ -35,6 +35,15 @@ class Services extends BaseService
 	        return static::getSharedInstance('acquirer');
 	    }
 	
-	    return new \App\Libraries\Uniteller();
+	    return new \App\Libraries\AcquirerUniteller();
+	}
+
+	public static function cashier($getShared = true){
+	    if ($getShared)
+	    {
+	        return static::getSharedInstance('cashier');
+	    }
+	
+	    return new \App\Libraries\CashierKitOnline();
 	}
 }
