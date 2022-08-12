@@ -37,7 +37,7 @@
             $('.found_store_list').on('click',function(e){
                 var $store=$(e.target);
                 var store_id=$store.data('store_id');
-                if(!store_id){
+                if( !(store_id>=0) ){
                     return;
                 }
                 $('.selected_store').removeClass('selected_store');
@@ -57,10 +57,12 @@
             }
             var name_query=$('.store_search_bar input').val();
             var name_query_fields='store_name';
-            var limit=5;
+            var limit=20;
             var filter={
                 name_query,
                 name_query_fields,
+                is_active:1,
+                is_disabled:1,
                 limit
             };
             
