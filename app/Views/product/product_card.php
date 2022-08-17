@@ -12,6 +12,10 @@
                 <input type="text" name="product_code.<?= $product->product_id ?>" value="<?= $product->product_code ?>"/>
             </div>
 
+            <div>Штрихкод</div>
+            <div>
+                <input type="text" name="product_barcode.<?= $product->product_id ?>" value="<?= $product->product_barcode ?>"/>
+            </div>
 
             <div>Цена</div>
             <div>
