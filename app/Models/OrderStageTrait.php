@@ -76,7 +76,7 @@ trait OrderStageTrait{
             'customer_refunded'=>           []  
         ],
         'delivery_finish'=>[
-            'customer_finish'=>             [],
+            'customer_finishing'=>          [],
             'customer_disputed'=>           [],
             'customer_action_objection'=>   ['Открыть спор','light'],
             ],
@@ -86,14 +86,14 @@ trait OrderStageTrait{
         
         'customer_disputed'=>[
             'customer_refunded'=>           [],
-            'customer_finish'=>             ['Отказаться от претензии','success'],
+            'customer_finishing'=>          ['Отказаться от претензии','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ'],
             ],
-        'customer_refunded'=>       [
-            'customer_finish'=>             [],
+        'customer_refunded'=>[
+            'customer_finishing'=>          [],
             ],
-        'customer_finish'=>[
-            //'customer_deleted'=>    ['Удалить','danger'],
+        'customer_finishing'=>[
+            'customer_finish'=>             [],
             ]
     ];
     
@@ -399,9 +399,9 @@ trait OrderStageTrait{
         $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
-            'task_name'=>"customer_finish Fastforward #$order_id",
+            'task_name'=>"customer_finishing Fastforward #$order_id",
             'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_disputed','customer_finish',$order_id]]
+                    ['method'=>'orderResetStage','arguments'=>['customer_disputed','customer_finishing',$order_id]]
                 ],
             'task_next_start_time'=>$next_start_time
         ];
@@ -467,15 +467,33 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
-        return $this->itemStageCreate($order_id, 'customer_finish');
+        return $this->itemStageCreate($order_id, 'customer_finishing');
     }
 
-    private function onCustomerSettled( $order_id ){
+    private function onCustomerFinishing( $order_id ){
+        $finishing_task=[
+            'task_name'=>"Order finishing #$order_id",
+            'task_programm'=>[
+                    ['model'=>'\App\Models\OrderTransactionModel','method'=>'orderFinalize','arguments'=>[$order_id]]
+                ]
+        ];
+        jobCreate($finishing_task);
+
+        //SECOND TRY AFTER 5 MIN
+        // $timeout_min=5;
+        // $next_start_time=time()+$timeout_min*60;
+        // $finishing_task['task_next_start_time']=$next_start_time;
+        // jobCreate($finishing_task);
         return 'ok';
     }
     
     private function onCustomerFinish( $order_id ){
-        return 'ok';
+        $OrderTransactionModel=model('OrderTransactionModel');
+        if( $OrderTransactionModel->orderPaymentFinalizeCheck($order_id) ){
+            log_message('error','orderPaymentFinalizeCheck '.$OrderTransactionModel->orderPaymentFinalizeCheck($order_id));
+            return 'ok';
+        }
+        return $OrderTransactionModel->orderFinalize($order_id);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -686,9 +704,9 @@ trait OrderStageTrait{
         $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
-            'task_name'=>"customer_finish Fastforward #$order_id",
+            'task_name'=>"customer_finishing Fastforward #$order_id",
             'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finish',$order_id]]
+                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finishing',$order_id]]
                 ],
             'task_next_start_time'=>$next_start_time
         ];

@@ -112,9 +112,15 @@ var Order={
                 if( !new_stage ){
                     return;
                 }
-                $.post('/Order/itemStageCreate',{order_id,new_stage}).done(function(){
-                    ItemList.reloadItem();
-                });
+                ItemList.itemStageCreate(new_stage)
+            });
+        },
+        itemStageCreate(new_stage){
+            if(!new_stage){
+                return
+            }
+            $.post('/Order/itemStageCreate',{order_id,new_stage}).done(function(){
+                ItemList.reloadItem();
             });
         },
         actions:{
@@ -311,4 +317,22 @@ $(Order.init);
             <?php endforeach;?>
         </div>
     </div>
+
+    <div>
+        <h3>Установить стадию в ручную</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;">
+            <div>
+                <select id="order_stage_select">
+                    <option value="">---</option>
+                    <?php foreach($stage_list as $stage):?>
+                        <option value="<?=$stage->group_type?>"><?=$stage->group_name?></option>
+                    <?php endforeach;?>
+                </select>
+            </div>
+            <div>
+                <button onclick="Order.stage.itemStageCreate($('#order_stage_select').val())">Установить стадию</button>
+            </div>
+        </div>
+    </div>
+
 </div>

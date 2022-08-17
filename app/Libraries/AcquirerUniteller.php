@@ -121,7 +121,7 @@ class AcquirerUniteller{
 
     public function confirm($billNumber,$sum){
         $request=[
-            'BillNumber'=>$billNumber,
+            'Billnumber'=>$billNumber,
             'Subtotal_P'=>$sum,
             'Shop_ID'=>getenv('uniteller.Shop_IDP'),
             'Login'=>getenv('uniteller.login'),
@@ -137,7 +137,8 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'confirm/', false, $context);
-        if(!$result){
+        if(!$result || str_contains($result,'ErrorCode')){
+            log_message('error','Uniteller confirm error billNumber:'.$billNumber.$result);
             return null;
         }
         $response=explode(';',$result);

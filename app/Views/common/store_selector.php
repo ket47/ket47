@@ -66,7 +66,6 @@
                 limit
             };
             
-            
             if(<?=$owned_stores_only??0?>){
                 filter.owner_id='<?=session()->get('user_id') ?>';
             }

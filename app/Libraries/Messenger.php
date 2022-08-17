@@ -40,7 +40,7 @@ class Messenger{
             //     return false;
             // }
         }
-        log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
+        //log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
         switch( $message->message_transport ){
             case 'email':
                 $this->itemSendEmail($message);
@@ -179,10 +179,10 @@ class Messenger{
             ]);
 
 
-            log_message('error',"Push sent RESULT:$result ->".json_encode((object)[
-                'token'=>$sub->sub_registration_id,
-                'data'=>$message->message_data,
-            ]));
+            // log_message('error',"Push sent RESULT:$result ->".json_encode((object)[
+            //     'token'=>$sub->sub_registration_id,
+            //     'data'=>$message->message_data,
+            // ]));
             if($result){
                 $pushsent=true;
             }

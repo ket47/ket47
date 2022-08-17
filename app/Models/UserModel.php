@@ -302,8 +302,10 @@ class UserModel extends Model{
         session_unset();
         session()->set('user_id',$user->user_id);
         session()->set('user_data',$user);
-        $PermissionModel=model('PermissionModel');
-        $PermissionModel->listFillSession();
+        if($user){
+            $PermissionModel=model('PermissionModel');
+            $PermissionModel->listFillSession();
+        }
     }
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION

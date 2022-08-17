@@ -66,22 +66,49 @@ class OrderTransactionModel extends TransactionModel{
     ///////////////////////////////////////////////////////////////////////
     //FINALIZATION OF ORDER TRANSACTIONS AND ACTIONS 
     ///////////////////////////////////////////////////////////////////////
+    public function orderFinalize($order_id){
+        $UserModel=model('UserModel');
+        $OrderModel=model('OrderModel');
+        $UserModel->systemUserLogin();
+        $order_basic=$OrderModel->itemGet($order_id,'basic');
+        $finalized=$this->orderPaymentFinalize($order_basic);
+        if($finalized){
+            return $OrderModel->itemStageCreate($order_id,'customer_finish');
+        }
+        $UserModel->systemUserLogout();
+        return 'failed';
+    }
+
+    public function orderPaymentFinalizeCheck($order_id){
+        return 
+           $this->orderPaymentCheck($order_id,'#orderPaymentConfirm')
+        && $this->orderPaymentCheck($order_id,'#orderPaymentRefund')
+        && $this->orderPaymentCheck($order_id,'#orderInvoice');
+    }
+
     public function orderPaymentFinalize($order_basic){
         return 
            $this->orderPaymentFinalizeConfirm($order_basic)
         && $this->orderPaymentFinalizeRefund($order_basic)
-        && $this->orderPaymentFinalizeInvoice($order_basic);
-        //&& $this->orderPaymentFinalizeSettle($order_basic);
+        && $this->orderPaymentFinalizeInvoice($order_basic)
+        && $this->orderPaymentFinalizeSettle($order_basic);
+    }
+
+    private $orderPaymentCheckCache=[];
+    private function orderPaymentCheck($order_id,$trans_tag){
+        if( !isset($this->orderPaymentCheckCache[$trans_tag]) ){
+            $filter=(object)[
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_id,
+                'trans_tags'=>$trans_tag,
+            ];
+            $this->orderPaymentCheckCache[$trans_tag]=$this->itemFind($filter)?true:false;
+        }
+        return $this->orderPaymentCheckCache[$trans_tag];
     }
 
     private function orderPaymentFinalizeConfirm($order_basic){//Claim payment for order
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentConfirm',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderPaymentConfirmTrans=$this->itemFind($filter);
-        if($orderPaymentConfirmTrans){
+        if( $this->orderPaymentCheck($order_basic->order_id,'#orderPaymentConfirm') ){
             return true;
         }
         $filter=(object)[
@@ -101,7 +128,6 @@ class OrderTransactionModel extends TransactionModel{
         }
         $Acquirer=\Config\Services::acquirer();
         $acquirer_data=$Acquirer->confirm($billNumber,$order_basic->order_sum_total);
-
         if( !$acquirer_data ){
             //connection error need to repeat
             return false;
@@ -120,13 +146,7 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderPaymentFinalizeRefund($order_basic){//Made refund of excess money
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentRefund',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderPaymentRefundTrans=$this->itemFind($filter);
-        if($orderPaymentRefundTrans){
+        if( $this->orderPaymentCheck($order_basic->order_id,'#orderPaymentRefund') ){
             return true;
         }
         $filter=(object)[
@@ -135,9 +155,6 @@ class OrderTransactionModel extends TransactionModel{
             'trans_holder_id'=>$order_basic->order_id
         ];
         $orderPaymentFixationTrans=$this->itemFind($filter);
-        if($orderPaymentFixationTrans){
-            return true;
-        }
         $sumPreviuslyBlocked=$orderPaymentFixationTrans->trans_sum;
         $sumToRefund=$sumPreviuslyBlocked-$order_basic->order_sum_total;
         if( $sumToRefund<=0 ){
@@ -162,13 +179,7 @@ class OrderTransactionModel extends TransactionModel{
         return $this->itemCreate($trans);    }
 
     private function orderPaymentFinalizeInvoice($order_basic){//Create tax invoice
-        $filter=(object)[
-            'trans_tags'=>'#orderInvoice',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderInvoiceTrans=$this->itemFind($filter);
-        if($orderInvoiceTrans){
+        if( $this->orderPaymentCheck($order_basic->order_id,'#orderInvoice') ){
             return true;
         }
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
@@ -193,19 +204,14 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderPaymentFinalizeSettle($order_basic){//Calculate profits, interests etc
+        return true;
         // return 
         //    $this->orderPaymentFinalizeSettleCommission($order_basic)
         // && $this->orderPaymentFinalizeSettleDelivery($order_basic);
     }
 
     private function orderPaymentFinalizeSettleCommission($order_basic){
-        $filter=(object)[
-            'trans_tags'=>'#orderCommission',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderCommissionTrans=$this->itemFind($filter);
-        if($orderCommissionTrans){
+        if( $this->orderPaymentCheck($order_basic->order_id,'#orderCommission') ){
             return true;
         }
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
@@ -224,15 +230,9 @@ class OrderTransactionModel extends TransactionModel{
         return $this->itemCreate($trans);
     }
     private function orderPaymentFinalizeSettleDelivery($order_basic){
-        $filter=(object)[
-            'trans_tags'=>'#orderDelivery',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderDeliveryTrans=$this->itemFind($filter);
-        if($orderDeliveryTrans){
+        if( $this->orderPaymentCheck($order_basic->order_id,'#orderDelivery') ){
             return true;
-        }
+        }        
         $courier=model('CourierModel')->itemGet($order_basic->order_courier_id,'basic');
         $delivery_fixed=50;
         $delivery_bonus=10;
