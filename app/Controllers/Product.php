@@ -238,7 +238,7 @@ class Product extends \App\Controllers\BaseController{
 //            'is_disabled'=>$this->request->getVar('is_disabled'),
 //            'is_deleted'=>$this->request->getVar('is_deleted'),
 //            'is_active'=>$this->request->getVar('is_active'),
-//            'limit'=>$this->request->getVar('limit'),
+            'limit'=>'100',
             'store_id'=>$this->request->getVar('store_id'),
         ];
         $ProductModel=model('ProductModel');
