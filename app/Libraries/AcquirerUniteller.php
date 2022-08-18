@@ -56,7 +56,7 @@ class AcquirerUniteller{
             'Password'=>getenv('uniteller.password'),
             'Format'=>'1',
             'ShopOrderNumber'=>$order_id,
-            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
+            'S_FIELDS'=>'OrderNumber;Status;Total;BillNumber;ApprovalCode'
         ];
         $context  = stream_context_create([
             'http' => [
@@ -74,8 +74,8 @@ class AcquirerUniteller{
             'order_id'=>$response[0],
             'status'=>$response[1],
             'total'=>$response[2],
-            'approvalCode'=>$response[3],
-            'billNumber'=>$response[4]
+            'billNumber'=>$response[3],
+            'approvalCode'=>$response[4],
         ];
     }
 

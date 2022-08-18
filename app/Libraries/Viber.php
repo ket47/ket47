@@ -53,11 +53,11 @@ class Viber{
     }
     
     public function onConversation_started($sender,$message){
-        $UserModel=model('UserModel');
-        $viberId=$sender->id;
         if( !isset($sender->id) ){
             return false;
         }
+        $UserModel=model('UserModel');
+        $viberId=$sender->id;
         $user=$UserModel->query("SELECT user_id,user_name FROM user_list WHERE JSON_EXTRACT(user_data,'$.viberId')='$viberId'")->getRow();
         if( $user->user_id ){
             $text=view('messages/viber/hello',['user'=>$user]);

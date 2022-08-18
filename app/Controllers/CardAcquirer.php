@@ -11,7 +11,10 @@ class CardAcquirer extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
         $result=$Acquirer->statusGet($order_id);
-        return $this->statusApply($result);
+        if($result && isset($result->order_id)){
+            return $this->statusApply($result);
+        }
+        return $this->fail('acquirer_rejected');
     }
 
 

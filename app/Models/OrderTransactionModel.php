@@ -81,9 +81,9 @@ class OrderTransactionModel extends TransactionModel{
 
     public function orderPaymentFinalizeCheck($order_id){
         return 
-           $this->orderPaymentCheck($order_id,'#orderPaymentConfirm')
-        && $this->orderPaymentCheck($order_id,'#orderPaymentRefund')
-        && $this->orderPaymentCheck($order_id,'#orderInvoice');
+           $this->orderPaymentFind($order_id,'#orderPaymentConfirm')
+        && $this->orderPaymentFind($order_id,'#orderPaymentRefund')
+        && $this->orderPaymentFind($order_id,'#orderInvoice');
     }
 
     public function orderPaymentFinalize($order_basic){
@@ -94,29 +94,24 @@ class OrderTransactionModel extends TransactionModel{
         && $this->orderPaymentFinalizeSettle($order_basic);
     }
 
-    private $orderPaymentCheckCache=[];
-    private function orderPaymentCheck($order_id,$trans_tag){
-        if( !isset($this->orderPaymentCheckCache[$trans_tag]) ){
+    private $orderPaymentFindCache=[];
+    private function orderPaymentFind($order_id,$trans_tag){
+        if( !isset($this->orderPaymentFindCache[$trans_tag]) ){
             $filter=(object)[
                 'trans_holder'=>'order',
                 'trans_holder_id'=>$order_id,
                 'trans_tags'=>$trans_tag,
             ];
-            $this->orderPaymentCheckCache[$trans_tag]=$this->itemFind($filter)?true:false;
+            $this->orderPaymentFindCache[$trans_tag]=$this->itemFind($filter);
         }
-        return $this->orderPaymentCheckCache[$trans_tag];
+        return $this->orderPaymentFindCache[$trans_tag];
     }
 
     private function orderPaymentFinalizeConfirm($order_basic){//Claim payment for order
-        if( $this->orderPaymentCheck($order_basic->order_id,'#orderPaymentConfirm') ){
+        if( $this->orderPaymentFind($order_basic->order_id,'#orderPaymentConfirm') ){
             return true;
         }
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentFixation',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderPaymentFixationTrans=$this->itemFind($filter);
+        $orderPaymentFixationTrans=$this->orderPaymentFind($order_basic->order_id,'#orderPaymentFixation');
         $billNumber=$orderPaymentFixationTrans?->trans_data?->billNumber;
         if( !$orderPaymentFixationTrans || !$billNumber ){
             log_message('error',"Payment confirmation failed for order #{$order_basic->order_id}. Fixation trans is not found");
@@ -146,15 +141,10 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderPaymentFinalizeRefund($order_basic){//Made refund of excess money
-        if( $this->orderPaymentCheck($order_basic->order_id,'#orderPaymentRefund') ){
+        if( $this->orderPaymentFind($order_basic->order_id,'#orderPaymentRefund') ){
             return true;
         }
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentFixation',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        $orderPaymentFixationTrans=$this->itemFind($filter);
+        $orderPaymentFixationTrans=$this->orderPaymentFind($order_basic->order_id,'#orderPaymentFixation');
         $sumPreviuslyBlocked=$orderPaymentFixationTrans->trans_sum;
         $sumToRefund=$sumPreviuslyBlocked-$order_basic->order_sum_total;
         if( $sumToRefund<=0 ){
@@ -179,7 +169,7 @@ class OrderTransactionModel extends TransactionModel{
         return $this->itemCreate($trans);    }
 
     private function orderPaymentFinalizeInvoice($order_basic){//Create tax invoice
-        if( $this->orderPaymentCheck($order_basic->order_id,'#orderInvoice') ){
+        if( $this->orderPaymentFind($order_basic->order_id,'#orderInvoice') ){
             return true;
         }
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
@@ -211,7 +201,7 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderPaymentFinalizeSettleCommission($order_basic){
-        if( $this->orderPaymentCheck($order_basic->order_id,'#orderCommission') ){
+        if( $this->orderPaymentFind($order_basic->order_id,'#orderCommission') ){
             return true;
         }
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
@@ -230,7 +220,7 @@ class OrderTransactionModel extends TransactionModel{
         return $this->itemCreate($trans);
     }
     private function orderPaymentFinalizeSettleDelivery($order_basic){
-        if( $this->orderPaymentCheck($order_basic->order_id,'#orderDelivery') ){
+        if( $this->orderPaymentFind($order_basic->order_id,'#orderDelivery') ){
             return true;
         }        
         $courier=model('CourierModel')->itemGet($order_basic->order_courier_id,'basic');
