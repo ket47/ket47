@@ -52,63 +52,84 @@ class BaseController extends Controller
 	 * @param LoggerInterface   $logger
 	 */
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
-            $this->handleCors();
-            $this->handleSession($request,$response);
-            \CodeIgniter\Events\Events::on('post_system', function(){
-                if (is_callable('fastcgi_finish_request')) {
-                    fastcgi_finish_request();
-                }
-                session_write_close();
-                header('Content-Length: '.ob_get_length());
-                ob_end_flush();
-                @ob_flush();
-                flush();
-                \CodeIgniter\Events\Events::trigger('post_response');
-            });
-            // Do Not Edit This Line
-            parent::initController($request, $response, $logger);
-            //--------------------------------------------------------------------
-            // Preload any models, libraries, etc, here.
-            //--------------------------------------------------------------------
+        //$this->handleCors();
+        $this->handleSession($request,$response);
+        // \CodeIgniter\Events\Events::on('post_system', function(){
+        //     if (is_callable('fastcgi_finish_request')) {
+        //         fastcgi_finish_request();
+        //     }
+        //     session_write_close();
+        //     header('Content-Length: '.ob_get_length());
+        //     ob_end_flush();
+        //     @ob_flush();
+        //     flush();
+        //     \CodeIgniter\Events\Events::trigger('post_response');
+        // });
+        // Do Not Edit This Line
+        parent::initController($request, $response, $logger);
+        //--------------------------------------------------------------------
+        // Preload any models, libraries, etc, here.
+        //--------------------------------------------------------------------
 
-            if( session()->get('user_id')==null ){
-                $this->guestUserInit();
-            }
-	}
-        
-        private function handleSession($request,$response){
-            $session_id=$request->getHeaderLine('x-sid');
-            if( $session_id && strlen($session_id)>30 ){
-                //session_id must be valid string not 'null'
-                session_id($session_id);
-            }
-            session();
-            $response->setHeader('x-sid',session_id());
+        if( session()->get('user_id')==null ){
+            $this->guestUserInit();
         }
-        
-        private function handleCors(){
-            if( !function_exists('getallheaders') ){
-                return 'fromCli';
-            }
-            foreach (getallheaders() as $name => $value) {
-                if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
-                    header("Access-Control-Allow-Origin: $value");
-                    break;
+        //log_message('critical',json_encode(\Config\Services::timer()->getTimers()) );
+    }
+
+    public function batch(){
+        $responses=[];
+        $methods=$this->request->getJSON();
+        if(!$methods){
+            die('batch_is_empty');
+        }
+        foreach($methods as $method=>$arguments){
+            if($arguments){
+                foreach($arguments as $argname=>$argval){
+                    $_REQUEST[$argname]=$argval;
                 }
             }
-            header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x-sid");
-            header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-            header("Access-Control-Allow-Credentials: true");
-            header("Access-Control-Expose-Headers: x-sid");
-            $method = isset($_SERVER['REQUEST_METHOD'])?$_SERVER['REQUEST_METHOD']:'';
-            if( $method == "OPTIONS" ) {
-                die();
+            $responses[$method]=$this->{$method}();
+        }
+        echo json_encode($responses);
+        die;
+    }
+        
+    private function handleSession($request,$response){
+        $session_id=$request->getHeaderLine('x-sid');
+        if( $session_id && strlen($session_id)>30 ){
+            //session_id must be valid string not 'null'
+            session_id($session_id);
+        }
+        session();
+        $response->setHeader('x-sid',session_id());
+    }
+    
+    private function handleCors(){
+        if( !function_exists('getallheaders') ){
+            return 'fromCli';
+        }
+        foreach (getallheaders() as $name => $value) {
+            if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
+                header("Access-Control-Allow-Origin: $value");
+                break;
             }
         }
-        
-        private function guestUserInit(){
-            $PermissionModel=model('PermissionModel');
-            $PermissionModel->listFillSession();
-            session()->set('user_id',-1);            
+        header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x-sid");
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+        header("Access-Control-Allow-Credentials: true");
+        header("Access-Control-Expose-Headers: x-sid");
+        $method = isset($_SERVER['REQUEST_METHOD'])?$_SERVER['REQUEST_METHOD']:'';
+        if( $method == "OPTIONS" ) {
+            die();
         }
+    }
+    
+    private function guestUserInit(){
+        $PermissionModel=model('PermissionModel');
+        $PermissionModel->listFillSession();
+        session()->set('user_id',-1);            
+    }
+
+
 }
