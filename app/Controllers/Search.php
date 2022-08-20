@@ -29,6 +29,7 @@ class Search extends \App\Controllers\BaseController{
                 'store_id'=>$store->store_id,
                 'order'=>'product_final_price'
             ];
+            $ProductModel->where('validity>',0);
             $store->matches=$ProductModel->listGet($filter);
             if($store->matches){
                 $matched_stores[]=$store;
