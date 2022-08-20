@@ -289,9 +289,9 @@ class ProductModel extends Model{
                 1
                 *IF(product_price>0,1,0)
                 *IF(CHAR_LENGTH(product_name)>=5,1,0)
-                *IF(product_quantity_expire_at IS NOT NULL AND product_quantity_expire_at<NOW() OR is_counted!=1,1,0)
+                *IF(is_counted=0 OR product_quantity_expire_at>NOW(),1,0)
                 *IF(image_id IS NOT NULL,1,0)
-                *(
+                +(
                 0.4
                 +IF(CHAR_LENGTH(product_description)>=30,0.2,0)
                 +IF(CHAR_LENGTH(product_code)>=3,0.1,0)
