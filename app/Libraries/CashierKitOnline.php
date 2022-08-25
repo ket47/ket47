@@ -71,7 +71,11 @@ class CashierKitOnline{
             ],
             'Check'=>$Check
         ];
-        return $this->apiExecute($order_all->order_id,'SendCheck',$data);
+        $response=$this->apiExecute($order_all->order_id,'SendCheck',$data);
+        if(is_object($response)){
+            $response->Check=$Check;
+        }
+        return $response;
     }
 
     private function correcterEntryCreate($Check,$order_sum_error){

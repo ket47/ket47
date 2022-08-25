@@ -230,45 +230,30 @@ class User extends \App\Controllers\BaseController{
         helper('hash_generate');
         $new_password=generate_hash(4);
         
-        $sms_send_ok=false;
+        $Messenger=new \App\Libraries\Messenger();
         $phone_user_id=$UserModel->passRecoveryCheckPhone($user_phone_cleared,$user_name);
-        if( $user_phone_cleared && $phone_user_id ){
-            $msg_data=[
-                'new_pass'=>$new_password
-            ];
-            $devinoSenderName=getenv('devinoSenderName');
-            $devinoUserName=getenv('devinoUserName');
-            $devinoPassword=getenv('devinoPassword');
-            $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
-            $sms_send_ok=$Sms->send($user_phone_cleared,view('messages/password_reset_sms.php',$msg_data));
-        }
-        
-        $email_send_ok=false;
         $email_user_id=$UserModel->passRecoveryCheckEmail($user_email,$user_name);
-        if( !$phone_user_id && !$email_user_id ){
-            return $this->failNotFound('user_not_found');
+        $user_id=$phone_user_id??$email_user_id;
+
+        if(!$user_id){
+            return $this->failNotFound('user_notfound');
         }
-        if( $user_email && $email_user_id ){
-            $msg_data=[
-                'new_pass'=>$new_password
-            ];
-            
-            $email = \Config\Services::email();
-            $config=[
-                'SMTPHost'=>getenv('email_server'),
-                'SMTPUser'=>getenv('email_username'),
-                'SMTPPass'=>getenv('email_password')
-            ];
-            $email->initialize($config);
-            $email->setFrom(getenv('email_from'), getenv('email_sendername'));
-            $email->setTo($user_email);
-            $email->setSubject('Сброс пароля сервиса TEZ');
-            $email->setMessage(view('messages/password_reset_email.php',$msg_data));
-            $email_send_ok=$email->send();
-            if( !$email_send_ok ){
-                return $this->fail($email->printDebugger(['headers']));
-            }
-        }
+
+        $context=[
+            'new_pass'=>$new_password
+        ];
+        $sms_send_ok=$Messenger->itemSend((object)[
+            'message_transport'=>'sms',
+            'message_reciever_id'=>$user_id,
+            'template'=>'messages/password_reset_sms.php',
+            'context'=>$context
+        ]);
+        $email_send_ok=$Messenger->itemSend((object)[
+            'message_transport'=>'email',
+            'message_reciever_id'=>$user_id,
+            'template'=>'messages/password_reset_email.php',
+            'context'=>$context
+        ]);
         
         if( $sms_send_ok || $email_send_ok ){
             $update_ok=$UserModel->update($phone_user_id,['user_pass'=>$new_password,'user_pass_confirm'=>$new_password]);

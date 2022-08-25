@@ -43,19 +43,19 @@ class Messenger{
         //log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
         switch( $message->message_transport ){
             case 'email':
-                $this->itemSendEmail($message);
+                return $this->itemSendEmail($message);
                 break;
             case 'message':
-                $this->itemSendMessage($message);
+                return $this->itemSendMessage($message);
                 break;
             case 'sms':
-                $this->itemSendSms($message);
+                return $this->itemSendSms($message);
                 break;
             case 'viber':
-                $this->itemSendViber($message);
+                return $this->itemSendViber($message);
                 break;
             case 'push':
-                $this->itemSendPush($message);
+                return $this->itemSendPush($message);
                 break;
             default:
                 log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));

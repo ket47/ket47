@@ -8,7 +8,7 @@ class AcquirerUnitellerMock{
     public function statusGet($order_id){
         $order=model('OrderModel')->itemGet($order_id);
         $status='authorized';
-        if(getenv('uniteller.mockFailAuth')){
+        if(getenv('test.acquirerMockFailAuth')){
             $status='waiting';
         }
         return (object)[
@@ -29,7 +29,7 @@ class AcquirerUnitellerMock{
         $authTrans=$TransactionModel->where("JSON_EXTRACT(trans_data,\"$.billNumber\")=$billNumber")->itemFind($filter);
 
         $status='authorized';
-        if(getenv('uniteller.mockFailConfirm')){
+        if(getenv('test.acquirerMockFailConfirm')){
             $status='waiting';
         }
         //'OrderNumber;Status;Total;ApprovalCode;BillNumber'
@@ -50,7 +50,7 @@ class AcquirerUnitellerMock{
         $TransactionModel=model('TransactionModel');
         $authTrans=$TransactionModel->where("JSON_EXTRACT(trans_data,\"$.billNumber\")=$billNumber")->itemFind($filter);
         $status='authorized';
-        if(getenv('uniteller.mockFailRefund')){
+        if(getenv('test.acquirerMockFailRefund')){
             $status='waiting';
         }
         //'OrderNumber;Status;Total;ApprovalCode;BillNumber'
