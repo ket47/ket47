@@ -62,7 +62,7 @@ class Order extends \App\Controllers\BaseController {
         if(!$data){
             return $this->fail('malformed_request');
         }
-        if( session()->get('user_id')<=0 ){
+        if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
             return $this->failUnauthorized('unauthorized');
         }
         $OrderModel = model('OrderModel');

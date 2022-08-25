@@ -40,11 +40,11 @@ trait OrderStageTrait{
             'customer_refunded'=>           [],
             ],
         'supplier_reclaimed'=>[
-            'customer_refunded'=>           [],
+            'customer_finishing'=>          [],
             ],
         'supplier_start'=>[
             'supplier_finish'=>             ['Закончить подготовку','success'],
-            'supplier_corrected'=>          ['Изменить заказ'],
+            'supplier_corrected'=>          ['Изменить'],
             'supplier_rejected'=>           [],
             ],
         'supplier_corrected'=>[
@@ -480,10 +480,10 @@ trait OrderStageTrait{
         jobCreate($finishing_task);
 
         //SECOND TRY AFTER 5 MIN
-        // $timeout_min=5;
-        // $next_start_time=time()+$timeout_min*60;
-        // $finishing_task['task_next_start_time']=$next_start_time;
-        // jobCreate($finishing_task);
+        $timeout_min=1;
+        $next_start_time=time()+$timeout_min*60;
+        $finishing_task['task_next_start_time']=$next_start_time;
+        jobCreate($finishing_task);
         return 'ok';
     }
     
@@ -493,7 +493,7 @@ trait OrderStageTrait{
             log_message('error','orderPaymentFinalizeCheck '.$OrderTransactionModel->orderPaymentFinalizeCheck($order_id));
             return 'ok';
         }
-        return $OrderTransactionModel->orderFinalize($order_id);
+        return $OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -557,7 +557,7 @@ trait OrderStageTrait{
          * Penalty to courier???
          * Penalty to customer???
          */
-        return $this->itemStageCreate($order_id, 'customer_refunded');
+        return $this->itemStageCreate($order_id, 'customer_finishing');
     }
     private function onSupplierFinish( $order_id ){
         $filter=(object)[

@@ -29,12 +29,14 @@ trait FilterTrait{
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){
+                $words=[];
                 foreach($clues as $clue){
                     if( !$clue || $clue==' ' ){
                         continue;
                     }
-                    $cases[]="{$table}$field LIKE '%".$this->escapeLikeString($clue)."%' ESCAPE '!'";
+                    $words[]="{$table}$field LIKE '%".$this->escapeLikeString(trim($clue))."%' ESCAPE '!'";
                 }
+                $cases[]=implode(' AND ',$words);
             }
             if( $cases ){
                 $this->where('('.implode(' OR ', $cases).')');

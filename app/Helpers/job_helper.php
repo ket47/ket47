@@ -5,7 +5,7 @@ function jobCreate($job){
         $job=json_encode($job);
     }
     //log_message('error', 'jobCreate '.$job);
-    require_once '../app/ThirdParty/Credis/Client.php';
+    require_once APPPATH.'/ThirdParty/Credis/Client.php';
     $predis = new \Credis_Client();
     $predis->rpush('queue.priority.normal', $job);
 }

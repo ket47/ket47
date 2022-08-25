@@ -35,8 +35,7 @@ class OrderTransactionModel extends TransactionModel{
         }
         // $Acquirer=\Config\Services::acquirer();
         // $acquirer_data=$Acquirer->statusGet($order_basic->order_id);
-        if( !$acquirer_data ){
-            //connection error need to repeat
+        if( !$acquirer_data ){//connection error need to repeat
             return 'connection_error';
         }
         if( $acquirer_data->status=='canceled' || $acquirer_data->status=='partly canceled' ){
@@ -80,6 +79,10 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     public function orderPaymentFinalizeCheck($order_id){
+        $this->isCustomerFullyRefunded=model('OrderGroupMemberModel')->isMemberOf($order_id,'customer_refunded');
+        if($this->isCustomerFullyRefunded){
+            return $this->orderPaymentFind($order_id,'#orderPaymentRefund');
+        }
         return 
            $this->orderPaymentFind($order_id,'#orderPaymentConfirm')
         && $this->orderPaymentFind($order_id,'#orderPaymentRefund')
@@ -87,6 +90,7 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     public function orderPaymentFinalize($order_basic){
+        $this->isCustomerFullyRefunded=model('OrderGroupMemberModel')->isMemberOf($order_basic->order_id,'customer_refunded');
         return 
            $this->orderPaymentFinalizeConfirm($order_basic)
         && $this->orderPaymentFinalizeRefund($order_basic)
@@ -111,31 +115,35 @@ class OrderTransactionModel extends TransactionModel{
         if( $this->orderPaymentFind($order_basic->order_id,'#orderPaymentConfirm') ){
             return true;
         }
+        if( $this->isCustomerFullyRefunded ){
+            return true;
+        }
         $orderPaymentFixationTrans=$this->orderPaymentFind($order_basic->order_id,'#orderPaymentFixation');
         $billNumber=$orderPaymentFixationTrans?->trans_data?->billNumber;
         if( !$orderPaymentFixationTrans || !$billNumber ){
             log_message('error',"Payment confirmation failed for order #{$order_basic->order_id}. Fixation trans is not found");
             return false;
         }
-        if( $orderPaymentFixationTrans->trans_amount<$order_basic->order_sum_total ){
+        $sumPreviuslyBlocked=$orderPaymentFixationTrans->trans_amount;
+        $sumToConfirm=$order_basic->order_sum_total;
+        if( $sumPreviuslyBlocked<$sumToConfirm ){
             log_message('error',"Payment confirmation failed for order #{$order_basic->order_id}. Fixation amount is smaller");
             return false;
         }
         $Acquirer=\Config\Services::acquirer();
         $acquirer_data=$Acquirer->confirm($billNumber,$order_basic->order_sum_total);
-        if( !$acquirer_data ){
-            //connection error need to repeat
+        if( !$acquirer_data ){//connection error need to repeat
             return false;
         }
         $trans=[
-            'trans_amount'=>$order_basic->order_sum_total,
+            'trans_amount'=>$sumToConfirm,
             'trans_data'=>json_encode($acquirer_data),
             'trans_role'=>'money.acquirer.blocked->money.acquirer.confirmed',
             'trans_tags'=>'#orderPaymentConfirm',
             'owner_id'=>$order_basic->owner_id,
             'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_basic->order_id
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_basic->order_id
         ];
         return $this->itemCreate($trans);
     }
@@ -145,77 +153,90 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
         $orderPaymentFixationTrans=$this->orderPaymentFind($order_basic->order_id,'#orderPaymentFixation');
-        $sumPreviuslyBlocked=$orderPaymentFixationTrans->trans_sum;
-        $sumToRefund=$sumPreviuslyBlocked-$order_basic->order_sum_total;
+        $billNumber=$orderPaymentFixationTrans?->trans_data?->billNumber;
+        if( !$orderPaymentFixationTrans || !$billNumber ){
+            log_message('error',"Payment Refunding failed for order #{$order_basic->order_id}. Fixation trans is not found");
+            return false;
+        }
+        $sumPreviuslyBlocked=$orderPaymentFixationTrans->trans_amount;
+        if( $this->isCustomerFullyRefunded ){
+            $sumToRefund=$sumPreviuslyBlocked;
+        } else {
+            $sumToRefund=$sumPreviuslyBlocked-$order_basic->order_sum_total;
+        }
         if( $sumToRefund<=0 ){
             return true;
         }
+
         $Acquirer=\Config\Services::acquirer();
-        $acquirer_data=$Acquirer->refund($order_basic->order_id,$sumToRefund);
-        if( !$acquirer_data ){
-            //connection error need to repeat
+        $acquirer_data=$Acquirer->refund($billNumber,$sumToRefund);
+        if( !$acquirer_data ){//connection error need to repeat
             return false;
         }
         $trans=[
             'trans_amount'=>$sumToRefund,
             'trans_data'=>json_encode($acquirer_data),
             'trans_role'=>'money.acquirer.blocked->customer.card',
-            'trans_tags'=>'#orderPaymentConfirm',
+            'trans_tags'=>'#orderPaymentRefund',
             'owner_id'=>$order_basic->owner_id,
             'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_basic->order_id
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_basic->order_id
         ];
-        return $this->itemCreate($trans);    }
+        return $this->itemCreate($trans);    
+    }
 
     private function orderPaymentFinalizeInvoice($order_basic){//Create tax invoice
+        if( $this->isCustomerFullyRefunded ){
+            return true;
+        }
         if( $this->orderPaymentFind($order_basic->order_id,'#orderInvoice') ){
             return true;
         }
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
+        $sumInInvoice=$order_all->order_sum_product;
         $Cashier=\Config\Services::cashier();
-        $cashier_data=$Cashier->print($order_all);
-        if( !$cashier_data ){
-            //connection error need to repeat
+        $cashier_data=$Cashier->printAndGet($order_all);
+
+        if( !$cashier_data ){//connection error need to repeat
             return false;
         }
         $trans=[
-            'trans_amount'=>$order_all->order_sum_product,
+            'trans_amount'=>$sumInInvoice,
             'trans_data'=>json_encode($cashier_data),
             'trans_role'=>'supplier->customer',
             'trans_tags'=>'#orderInvoice',
             'owner_id'=>$order_all->owner_id,
             'owner_ally_ids'=>$order_all->owner_ally_ids,
             'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_all->order_id
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_all->order_id
         ];
         return $this->itemCreate($trans);
     }
 
     private function orderPaymentFinalizeSettle($order_basic){//Calculate profits, interests etc
-        return true;
-        // return 
-        //    $this->orderPaymentFinalizeSettleCommission($order_basic)
-        // && $this->orderPaymentFinalizeSettleDelivery($order_basic);
+        return 
+           $this->orderPaymentFinalizeSettleCommission($order_basic)
+        && $this->orderPaymentFinalizeSettleDelivery($order_basic);
     }
 
     private function orderPaymentFinalizeSettleCommission($order_basic){
         if( $this->orderPaymentFind($order_basic->order_id,'#orderCommission') ){
             return true;
         }
-        $order_all=model('OrderModel')->itemGet($order_basic->order_id);
-        $store_commission=$order_all->store->store_commission??25;
-        $sum_commission=$order_all->order_sum_product*($store_commission/100);
+        $store=model('StoreModel')->itemGet($order_basic->order_store_id,'basic');
+        $storeCommissionPercent=$store->store_commission??25;
+        $sumCommission=$order_basic->order_sum_product*($storeCommissionPercent/100);
         $trans=[
-            'trans_amount'=>$sum_commission,
+            'trans_amount'=>$sumCommission,
             'trans_role'=>'capital.profit->supplier',
             'trans_tags'=>'#orderCommission',
             'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>$order_all->store->owner_id.','.$order_all->store->owner_ally_ids,
+            'owner_ally_ids'=>$store->owner_id.','.$store->owner_ally_ids,
             'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_all->order_id
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_basic->order_id
         ];
         return $this->itemCreate($trans);
     }
@@ -224,17 +245,20 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }        
         $courier=model('CourierModel')->itemGet($order_basic->order_courier_id,'basic');
-        $delivery_fixed=50;
-        $delivery_bonus=10;
-        $sum_delivery=$delivery_fixed+$order_basic->order_sum_product*($delivery_bonus/100);
+        if( !is_object($courier) ){
+            return true;
+        }
+        $deliveryFixedSum=50;
+        $deliveryBonusPercent=10;
+        $sumDelivery=$deliveryFixedSum+$order_basic->order_sum_product*($deliveryBonusPercent/100);
         $trans=[
-            'trans_amount'=>$sum_delivery,
+            'trans_amount'=>$sumDelivery,
             'trans_role'=>'capital.profit->supplier',
-            'trans_tags'=>'#orderCommission',
+            'trans_tags'=>'#orderDelivery',
             'owner_id'=>$courier->owner_id,
             'is_disabled'=>0,
-            'holder'=>'order',
-            'holder_id'=>$order_basic->order_id
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_basic->order_id
         ];
         return $this->itemCreate($trans);
     }

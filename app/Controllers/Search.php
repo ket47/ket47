@@ -12,11 +12,14 @@ class Search extends \App\Controllers\BaseController{
         $query=$this->request->getVar('query');
 
         $StoreModel=model('StoreModel');
-        $nearStoreList=$StoreModel->listNearGet(['location_id'=>$location_id]);
-        $result=[
-            'product_matches'=>$this->listStoreProductsGet($query,$nearStoreList)
+        $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
+        if( !is_array($result) ){
+            return $this->fail($result);
+        }
+        $response=[
+            'product_matches'=>$this->listStoreProductsGet($query,$result)
         ];
-        return $this->respond($result);
+        return $this->respond($response);
     }
     private function listStoreProductsGet( $query,$store_list ){
         $matched_stores=[];
@@ -24,12 +27,12 @@ class Search extends \App\Controllers\BaseController{
         foreach($store_list as $store){
             $filter=[
                 'name_query'=>$query,
-                'name_query_fields'=>'product_name',
+                'name_query_fields'=>'product_name,product_code',
                 'limit'=>4,
                 'store_id'=>$store->store_id,
                 'order'=>'product_final_price'
             ];
-            $ProductModel->where('validity>',0);
+            $ProductModel->where('(validity<>0 OR validity IS NULL)');
             $store->matches=$ProductModel->listGet($filter);
             if($store->matches){
                 $matched_stores[]=$store;

@@ -20,7 +20,7 @@ class GroupMemberLayer extends Model{
     
     /**
      * 
-     * @param type $table_name
+     * @param string $table_name
      * @throws \ErrorException
      * @deprecated use specialized models instead
      */

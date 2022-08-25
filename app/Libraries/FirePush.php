@@ -15,7 +15,7 @@ class FirePush{
         $serviceCredentials = dirname(__DIR__ ).'/../../firebase.conf';
         $this->serviceAccount = new ServiceAccount($serviceCredentials);
     }
-    public function sendPush( $push ){
+    public function sendPush( $push, $atempt=1 ){
         $message = new Message();
         $message->setTarget(new Token($push->token));
         if($push->title??null){
@@ -47,8 +47,13 @@ class FirePush{
                 case 'UNAVAILABLE':
                 case 'INTERNAL':
                 default:
+                  if( $atempt<3 ){
+                    sleep(1);
+                    $this->sendPush($push,++$atempt);
+                  } else {
+                    log_message('error','FCM error ['.$e->getErrorCode().']: '.$e->getMessage());
+                  }
             }
-            log_message('error','FCM error ['.$e->getErrorCode().']: '.$e->getMessage());
         }
         catch(RequestException $e){
             //HTTP response error

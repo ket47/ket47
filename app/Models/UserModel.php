@@ -98,7 +98,8 @@ class UserModel extends Model{
                 'user_phone'=>'-',
                 'member_of_groups'=>(object)[
                     'group_types'=>'admin'
-                ]
+                ],
+                'location_main'=>model('LocationModel')->itemMainGet('default_location','-1')
             ];
         }
         if( $this->itemCache[$mode.$user_id]??0 ){
@@ -295,6 +296,10 @@ class UserModel extends Model{
         session_unset();
         session()->set('user_id',$user->user_id);
         session()->set('user_data',$user);
+        if($user){
+            $PermissionModel=model('PermissionModel');
+            $PermissionModel->listFillSession();
+        }
         return true;
     }
     public function systemUserLogout(){

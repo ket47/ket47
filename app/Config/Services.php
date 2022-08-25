@@ -34,7 +34,9 @@ class Services extends BaseService
 	    {
 	        return static::getSharedInstance('acquirer');
 	    }
-	
+		if( getenv('uniteller.mock')==1 ){
+			return new \App\Libraries\AcquirerUnitellerMock();
+		}
 	    return new \App\Libraries\AcquirerUniteller();
 	}
 
