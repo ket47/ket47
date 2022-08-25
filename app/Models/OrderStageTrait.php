@@ -480,7 +480,7 @@ trait OrderStageTrait{
         jobCreate($finishing_task);
 
         //SECOND TRY AFTER 5 MIN
-        $timeout_min=1;
+        $timeout_min=2;
         $next_start_time=time()+$timeout_min*60;
         $finishing_task['task_next_start_time']=$next_start_time;
         jobCreate($finishing_task);

@@ -16,13 +16,13 @@ class Transaction extends \App\Controllers\BaseController{
             $filter->trans_holder=$trans_holder;
         }
         if($trans_holder_id){
-            $filter->trans_holder=$trans_holder_id;
+            $filter->trans_holder_id=$trans_holder_id;
         }
         if($trans_tags){
-            $filter->trans_holder=$trans_tags;
+            $filter->trans_tags=$trans_tags;
         }
         $TransactionModel=model('TransactionModel');
-        $result=$TransactionModel->itemFind($filter);
+        $result=$TransactionModel->listFind($filter);
         return $this->respond($result);
     }
     

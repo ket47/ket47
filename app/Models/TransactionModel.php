@@ -208,6 +208,31 @@ class TransactionModel extends Model{
         $this->allowedFields[]='is_disabled';
     }
     
+    public function listFind( object $filter ){
+        $this->permitWhere('r');
+        if( $filter->trans_role??null ){
+            $this->where('trans_role',$filter->trans_role);
+        }
+        if( $filter->trans_tags??null ){
+            $this->where("MATCH (trans_tags) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
+        }
+        if( $filter->trans_holder??null ){
+            $this->where('trans_holder',$filter->trans_holder);
+        }
+        if( $filter->trans_holder_id??null ){
+            $this->where('trans_holder_id',$filter->trans_holder_id);
+        }
+        $tranList=$this->orderBy('updated_at DESC')->get()->getResult();
+        if($tranList){
+            foreach($tranList as $trans){
+                if( $trans?->trans_data ){
+                    $trans->trans_data=json_decode($trans->trans_data);
+                }
+            }
+        }
+        return $tranList;
+    }
+
     public function listGet( $filter ){
         $ledger=[
             'ibal'=>$this->listIbalGet($filter),

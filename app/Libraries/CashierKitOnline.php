@@ -72,7 +72,7 @@ class CashierKitOnline{
             'Check'=>$Check
         ];
         $response=$this->apiExecute($order_all->order_id,'SendCheck',$data);
-        if(is_object($response)){
+        if($response){
             $response->Check=$Check;
         }
         return $response;
@@ -114,11 +114,11 @@ class CashierKitOnline{
         while($atempt_count>0){
             $atempt_count--;
             sleep(2);
-            $response=$this->statusGet($order_all->order_id);
-            if($response->ResultCode!=0){
+            $response->Registration=$this->statusGet($order_all->order_id);
+            if($response->Registration->ResultCode!=0){
                 continue;
             }
-            if($response->CheckState->State<1000){
+            if($response->Registration->CheckState->State<1000){
                 continue;
             }
             return $response;
@@ -140,7 +140,7 @@ class CashierKitOnline{
         $context  = stream_context_create($options);
         $response_text = file_get_contents($url, false, $context);
         $response=json_decode($response_text);
-        if($response->ResultCode!=0){
+        if($response?->ResultCode!=0){
             log_message('critical',"CashierKitOnline on Order #{$CheckNumber} api ResultCode is:".$response->ResultCode);
         }
         return $response;
