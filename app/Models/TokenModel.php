@@ -40,7 +40,6 @@ class TokenModel extends Model{
         $this->where('is_disabled',0);
         $this->where('token_holder',$token_holder);
         $this->where('token_holder_id',$token_holder_id);
-        $this->where('owner_id',$owner_id);
         $this->permitWhere('r');
         return $this->limit(1)->get()->getRow();
     }
@@ -69,6 +68,8 @@ class TokenModel extends Model{
             if( !$StoreModel->permit($token_holder_id,'w') ){
                 return 'forbidden';
             }
+        } else {
+            return 'forbidden';
         }
         $validity_time=1*365*24*60*60;//1year
         $expired_at=date('Y-m-d H:i:s',time()+$validity_time);

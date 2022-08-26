@@ -219,29 +219,33 @@ class Order extends \App\Controllers\BaseController {
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function fileUpload() {
-        $image_holder_id = $this->request->getVar('image_holder_id');
+    public function fileUpload(){
+        $image_holder_id=$this->request->getVar('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
         $items = $this->request->getFiles();
-        if (!$items) {
+        if(!$items){
             return $this->failResourceGone('no_files_uploaded');
         }
-        foreach ($items['files'] as $file) {
+        $result=false;
+        foreach($items['files'] as $file){
             $type = $file->getClientMimeType();
-            if (!str_contains($type, 'image')) {
+            if(!str_contains($type, 'image')){
                 continue;
             }
-            if ($file->isValid() && !$file->hasMoved()) {
-                $result = $this->fileSaveImage($image_holder_id, $file);
-                if ($result !== true) {
-                    return $result;
+            if ($file->isValid() && ! $file->hasMoved()) {
+                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                    return $this->fail($result);
                 }
             }
         }
-        return $this->respondCreated('ok');
+        if($result===true){
+            return $this->respondCreated('ok');
+        }
+        return $this->fail('no_valid_images');
     }
+
 
     private function fileSaveImage($image_holder_id, $file) {
         $image_data = [

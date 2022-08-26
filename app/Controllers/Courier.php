@@ -251,20 +251,24 @@ class Courier extends \App\Controllers\BaseController{
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
         }
+        $result=false;
         foreach($items['files'] as $file){
             $type = $file->getClientMimeType();
             if(!str_contains($type, 'image')){
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);
-                if( $result!==true ){
-                    return $result;
+                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                    return $this->fail($result);
                 }
             }
         }
-        return $this->respondCreated('ok');
+        if($result===true){
+            return $this->respondCreated('ok');
+        }
+        return $this->fail('no_valid_images');
     }
+
     
 
     private function imagePurgeCurrent($courier_id){

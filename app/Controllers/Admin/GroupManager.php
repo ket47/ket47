@@ -155,7 +155,6 @@ class GroupManager extends \App\Controllers\BaseController {
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
-        $group_table=$this->request->getVar('group_table');
         $image_holder_id=$this->request->getVar('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
@@ -164,20 +163,24 @@ class GroupManager extends \App\Controllers\BaseController {
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
         }
+        $result=false;
         foreach($items['files'] as $file){
             $type = $file->getClientMimeType();
             if(!str_contains($type, 'image')){
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($group_table,$image_holder_id,$file);
-                if( $result!==true ){
-                    return $result;
+                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                    return $this->fail($result);
                 }
             }
         }
-        return $this->respondCreated('ok');
+        if($result===true){
+            return $this->respondCreated('ok');
+        }
+        return $this->fail('no_valid_images');
     }
+
     
     private function fileSaveImage( $group_table, $image_holder_id, $file ){
         $image_data=[

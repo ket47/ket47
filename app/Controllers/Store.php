@@ -235,19 +235,22 @@ class Store extends \App\Controllers\BaseController{
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');
         }
+        $result=false;
         foreach($items['files'] as $file){
             $type = $file->getClientMimeType();
             if(!str_contains($type, 'image')){
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);
-                if( $result!==true ){
-                    return $result;
+                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                    return $this->fail($result);
                 }
             }
         }
-        return $this->respondCreated('ok');
+        if($result===true){
+            return $this->respondCreated('ok');
+        }
+        return $this->fail('no_valid_images');
     }
     
     private function fileSaveImage( $image_holder_id, $file ){
@@ -265,11 +268,15 @@ class Store extends \App\Controllers\BaseController{
         }
         $file->move(WRITEPATH.'images/', $image_hash.'.webp');
         
-        return \Config\Services::image()
-        ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
-        ->resize(1024, 1024, true, 'height')
-        ->convert(IMAGETYPE_WEBP)
-        ->save();
+        try{
+            return \Config\Services::image()
+            ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
+            ->resize(1024, 1024, true, 'height')
+            ->convert(IMAGETYPE_WEBP)
+            ->save();
+        }catch(\Exception $e){
+            return $e->getMessage();
+        }
     }
     
     public function imageDisable(){

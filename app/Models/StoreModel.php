@@ -350,13 +350,10 @@ class StoreModel extends Model{
         if( !($user_id>0) ){
             return 'unauthorized';
         }
-        if(!$store_id ){
+        if( !$store_id ){
             return 'nostore';
         }
-        $this->where('store_id',$store_id);
-        if( !sudo() ){
-            $this->where('store_list.owner_id',$user_id);
-        }
+        $this->permitWhere('w');//have read access only store administrators
         $owner_ally_ids=$this->get()->getRow('owner_ally_ids');
         if($owner_ally_ids){
             $UserModel=model('UserModel');
@@ -393,6 +390,9 @@ class StoreModel extends Model{
         $this->select('owner_id,owner_ally_ids');
         $store_owners=$this->get()->getRow();
 
+        if(!$store_owners){
+            return 'forbidden';
+        }
         $owner_ally_ids=explode(',',"0,$store_owners->owner_ally_ids,$store_owners->owner_id");
 
         if( $action=='add' ){

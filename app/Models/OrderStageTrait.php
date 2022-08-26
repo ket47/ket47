@@ -490,7 +490,6 @@ trait OrderStageTrait{
     private function onCustomerFinish( $order_id ){
         $OrderTransactionModel=model('OrderTransactionModel');
         if( $OrderTransactionModel->orderPaymentFinalizeCheck($order_id) ){
-            log_message('error','orderPaymentFinalizeCheck '.$OrderTransactionModel->orderPaymentFinalizeCheck($order_id));
             return 'ok';
         }
         return $OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
