@@ -92,8 +92,8 @@ class OrderTransactionModel extends TransactionModel{
     public function orderPaymentFinalize($order_basic){
         $this->isCustomerFullyRefunded=model('OrderGroupMemberModel')->isMemberOf($order_basic->order_id,'customer_refunded');
         return 
-           $this->orderPaymentFinalizeConfirm($order_basic)
-        && $this->orderPaymentFinalizeRefund($order_basic)
+           $this->orderPaymentFinalizeRefund($order_basic)
+        && $this->orderPaymentFinalizeConfirm($order_basic)
         && $this->orderPaymentFinalizeInvoice($order_basic)
         && $this->orderPaymentFinalizeSettle($order_basic);
     }

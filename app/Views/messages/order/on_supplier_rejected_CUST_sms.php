@@ -1,1 +1,1 @@
-<?=getenv('app.title')?>: <?=$reciever->user_name?>, ваш заказ №<?=$order->order_id?> был отменен "<?= $store->store_name ?>"
+<?=getenv('app.title')?>: <?=$reciever->user_name?>, ваш заказ №<?=$order->order_id?> был отменен продавцом "<?= $store->store_name ?>"

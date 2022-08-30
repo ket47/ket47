@@ -190,6 +190,14 @@ trait OrderStageTrait{
     }
     
     private function onCustomerCart($order_id){
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
+            $Acquirer=\Config\Services::acquirer();
+            $incomingStatus=$Acquirer->statusGet($order_id);
+            if( in_array(strtolower($incomingStatus->status),['authorized','paid']) ){
+                return 'already_payed';//already payed so refuse to reset to cart
+            }
+        }
         $this->itemUnDelete($order_id);
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
@@ -200,16 +208,20 @@ trait OrderStageTrait{
     private function onCustomerConfirmed( $order_id ){
         $order=$this->itemGet( $order_id, 'basic' );
 
-        $this->db->transStart();
+        //STOCK RESERVE SECTION
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'reserved');
         $order_sum_product=$EntryModel->listSumGet($order_id);
         if( !($order_sum_product>0) ){
             return 'order_is_empty';
         }
-        $this->db->transComplete();
+        $this->itemUpdate((object)[
+            'order_id'=>$order_id,
+            'order_sum_product'=>$order_sum_product
+        ]);
+
+        //LOCATION FIXATION SECTION
         $LocationModel=model('LocationModel');
-        
         try{
             $order_update=[
                 'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,

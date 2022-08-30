@@ -153,7 +153,7 @@ class AcquirerUniteller{
 
     public function refund($billNumber,$sum){
         $request=[
-            'BillNumber'=>$billNumber,
+            'Billnumber'=>$billNumber,
             'Subtotal_P'=>$sum,
             'Shop_ID'=>getenv('uniteller.Shop_IDP'),
             'Login'=>getenv('uniteller.login'),
@@ -169,7 +169,9 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'unblock/', false, $context);
-        if(!$result){
+        if(!$result || str_contains($result,'ErrorCode')){
+            log_message('error','RESPONSE refund UNITELLER'.json_encode($request).$result);
+            log_message('error','Uniteller refund error billNumber:'.$billNumber.$result);
             return null;
         }
         $response=explode(';',$result);
