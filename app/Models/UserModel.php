@@ -129,10 +129,7 @@ class UserModel extends Model{
             $StoreModel=model('StoreModel');
             $user->storeList=$StoreModel->listGet([
                 'owner_id'=>$user_id,
-                'owner_ally_ids'=>$user_id,
-                'is_active'=>1,
-                'is_disabled'=>1,
-                'is_deleted'=>1
+                'owner_ally_ids'=>$user_id
             ]);
             $user->courier=$CourierModel->itemGet();
         }

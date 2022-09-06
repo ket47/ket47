@@ -234,16 +234,20 @@ class StoreModel extends Model{
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
-        $this->filterMake( $filter );
         if( $filter['group_id']??0 ){
             $this->join('store_group_member_list','member_id=store_id');
             $this->where('group_id',$filter['group_id']);
         }
-        if( $filter['owner_id']??0 ){
+        if( $filter['owner_id']??0 ){//owner sees all owned stores
+            $filter['is_active']=1;
+            $filter['is_disabled']=1;
+            $filter['is_deleted']=1;
+
             $owner_id=(int)$filter['owner_ally_ids'];
             $owner_ally_id=(int)$filter['owner_ally_ids'];
             $this->where("store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids)");
         }
+        $this->filterMake( $filter );
         $weekday=date('N')-1;
         $dayhour=date('H');
         $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
