@@ -6,6 +6,9 @@ class AcquirerUniteller{
         if( !is_object($order_basic) ){
             return 'order_notfound';
         }
+        if( !($order_basic->order_sum_product>0) || $order_basic->stage_current!='customer_confirmed' ){
+            return 'order_notvalid';
+        }
         $customer=model('UserModel')->itemGet($order_basic->owner_id);
         if( !is_object($customer) ){
             return 'user_notfound';

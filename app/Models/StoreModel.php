@@ -357,18 +357,22 @@ class StoreModel extends Model{
         if( !$store_id ){
             return 'nostore';
         }
+        $this->where('store_id',$store_id);
         $this->permitWhere('w');//have read access only store administrators
-        $owner_ally_ids=$this->get()->getRow('owner_ally_ids');
-        if($owner_ally_ids){
+        $store=$this->get()->getRow();
+
+        $owners=$store->owner_id.($store->owner_ally_ids?','.$store->owner_ally_ids:'');
+        if($owners){ 
             $UserModel=model('UserModel');
             $UserModel->select('user_id,user_phone');
-            $UserModel->where("user_id IN($owner_ally_ids)");
+            $UserModel->where("user_id IN($owners)");
             $owner_allys=$UserModel->get()->getResult();
         } else {
             $owner_allys=[];
         }
         return $owner_allys??[];
     }
+
     public function ownerSave($action, $store_id, $new_owner_id=null, $new_owner_phone=null){
         if(!$store_id ){
             return 'notfound';
