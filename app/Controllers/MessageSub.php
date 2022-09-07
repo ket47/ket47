@@ -30,29 +30,4 @@ class MessageSub extends \App\Controllers\BaseController{
         $result=$MessageSubModel->listGet($user_id);
         return $this->respond($result);
     }
-
-    // public function test(){
-    //     $message=(object)[
-    //         'template'=>'messages/order/on_customer_refunded_CUST_push',
-    //         'context'=>[
-    //             'order'=>(object)[
-    //                 'order_id'=>999
-    //             ]
-    //         ],
-    //         //'message_subject'=>'Заказ №999',
-    //         //'message_link'=>'http://localhost:8100/#/order-999',
-    //         'message_transport'=>'message',
-    //         'message_reciever_id'=>41,
-    //         'message_data'=>[
-    //             'type'=>'event',
-    //             'title'=>'Заказ №999',
-    //             'body'=>'Refund will be initiated',
-    //             'link'=>'http://localhost:8100/#/order-999',
-    //             'order_id'=>999,
-    //             'stageNew'=>'customer_refunded'
-    //         ]
-    //     ];
-    //     $transport=new \App\Libraries\Messenger();
-    //     echo $transport->itemSend($message);
-    // }
 }

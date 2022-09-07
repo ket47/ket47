@@ -32,7 +32,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
     private function statusApply($incomingStatus){
         if( !$this->authorizeAsSystem($incomingStatus->order_id) ){
             $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$incomingStatus->order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
-            return $this->respond('CANT AUTHORIZE AS SYSTEM');
+            return $this->fail('CAN\'T AUTHORIZE AS SYSTEM');
         }
         $OrderModel=model('OrderModel');
         $result='ok';
@@ -297,7 +297,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo(getenv('email_admin'));
-        $email->setSubject(getenv('app.baseURL').' Uniteller Payment Error');
+        $email->setSubject(getenv('app.baseURL').' TEZKELAPP Uniteller Payment Error');
         $email->setMessage($data);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){

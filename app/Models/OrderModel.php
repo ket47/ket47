@@ -88,7 +88,7 @@ class OrderModel extends Model{
         $UserModel=model('UserModel');
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
         $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num');
-        $UserModel->select('user_id,user_name,user_phone');
+        $UserModel->select('user_id,user_name,user_phone,user_email');
         $order->stage_next= $this->itemGetNextStages($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);

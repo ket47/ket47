@@ -9,8 +9,8 @@ class CashierKitOnline{
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
             'CalculationType'=>'1',
             'Sum'=>$order_all->order_sum_total*100,
-            'Email'=>'',
-            'Phone'=>'',
+            'Email'=>$order_all->customer?->user_email,
+            'Phone'=>$order_all->customer->user_phone,
             'Pay'=>[
                 'CashSum'=>0,
                 'EMoneySum'=>$order_all->order_sum_total*100,
@@ -130,6 +130,7 @@ class CashierKitOnline{
         $data['Request']['CompanyId']=getenv('kitonline.CompanyId');
         $data['Request']['UserLogin']=getenv('kitonline.UserLogin');
         $data['Request']['Sign']=md5(getenv('kitonline.CompanyId').getenv('kitonline.Password').$CheckNumber);
+        echo json_encode($data);
         $options = array(
             'http' => array(
                 'header'  => "Content-type: application/json",

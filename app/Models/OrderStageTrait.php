@@ -43,12 +43,12 @@ trait OrderStageTrait{
             'customer_finishing'=>          [],
             ],
         'supplier_start'=>[
-            'supplier_finish'=>             ['Закончить подготовку','success'],
+            'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_corrected'=>          ['Изменить'],
             'supplier_rejected'=>           [],
             ],
         'supplier_corrected'=>[
-            'supplier_finish'=>             ['Закончить подготовку','success'],
+            'supplier_finish'=>             ['Завершить подготовку','success'],
             //'supplier_action_add'=>         ['Добавить товар'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
             ],
@@ -194,7 +194,7 @@ trait OrderStageTrait{
         if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
             $Acquirer=\Config\Services::acquirer();
             $incomingStatus=$Acquirer->statusGet($order_id);
-            if( in_array(strtolower($incomingStatus->status),['authorized','paid']) ){
+            if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) ){
                 return 'already_payed';//already payed so refuse to reset to cart
             }
         }
@@ -586,6 +586,9 @@ trait OrderStageTrait{
         if( $orderPaymentFixationTrans->trans_amount < $order->order_sum_total ){
             return 'order_sum_exceeded';
         }
+        if( ! ($order?->order_sum_product>0) ){
+            return 'order_sum_zero';
+        }
         $PrefModel=model('PrefModel');
 
 
@@ -695,10 +698,22 @@ trait OrderStageTrait{
             'template'=>'messages/order/on_delivery_nocourier_ADMIN_sms.php',
             'context'=>$context
         ];
+        $cust_sms=(object)[
+            'message_transport'=>'push',
+            'message_reciever_id'=>$order->owner_id,
+            'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
+            'context'=>$context
+        ];
+        $store_sms=(object)[
+            'message_transport'=>'push',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'template'=>'messages/order/on_customer_start_STORE_sms.php',
+            'context'=>$context
+        ];
         $notification_task=[
             'task_name'=>"delivery_notfound Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms,$cust_sms,$store_sms]]]
                 ]
         ];
         jobCreate($notification_task);
