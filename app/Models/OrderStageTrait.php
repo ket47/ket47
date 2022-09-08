@@ -46,11 +46,13 @@ trait OrderStageTrait{
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_corrected'=>          ['Изменить'],
             'supplier_rejected'=>           [],
+            'delivery_no_courier'=>         [],
             ],
         'supplier_corrected'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
             //'supplier_action_add'=>         ['Добавить товар'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
+            'delivery_no_courier'=>         [],
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
@@ -323,39 +325,9 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
-        ///////////////////////////////////////////////////
-        //CREATING READY COURIERS NOTIFICATIONS
-        ///////////////////////////////////////////////////
-        $this->readyCouriersNotify( $context );
         return 'ok';
     }
-    
-    private function readyCouriersNotify( $context ){//SHOULD MOVE TO COURIER MODEL!!!!!
-        $CourierModel=model('CourierModel');
-        $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
-        if( !$ready_courier_list ){
-            return false;
-        }
-        $messages=[];
-        foreach($ready_courier_list as $courier){
-            $context['courier']=$courier;
-            $message_text=view('messages/order/on_customer_start_COUR_sms',$context);
-            $messages[]=(object)[
-                        'message_reciever_id'=>$courier->user_id,
-                        'message_transport'=>'message',
-                        'message_text'=>$message_text
-                    ];
-        }
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        jobCreate($sms_job);
-        return true;
-    }
-    
+        
     private function onCustomerDisputed( $order_id ){
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
@@ -547,8 +519,9 @@ trait OrderStageTrait{
                 ]
         ];
         jobCreate($notification_task);
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         return $this->itemStageCreate($order_id, 'customer_refunded');
-        return 'ok';
     }
         
     private function onSupplierStart(){
@@ -617,7 +590,44 @@ trait OrderStageTrait{
     //DELIVERY HANDLERS
     //////////////////////////////////////////////////////////////////////////
     private function onDeliverySearch( $order_id ){
+        $order=$this->itemGet($order_id);
+        $StoreModel=model('StoreModel');
+        $StoreModel->itemCacheClear();
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $context=[
+            'store'=>$store,
+        ];
+        $this->readyCouriersNotify( $context );
         return $this->itemStageCreate($order_id, 'customer_start');
+    }
+
+    private function readyCouriersNotify( $context ){
+        ///////////////////////////////////////////////////
+        //CREATING READY COURIERS NOTIFICATIONS
+        ///////////////////////////////////////////////////
+        $CourierModel=model('CourierModel');
+        $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
+        if( !$ready_courier_list ){
+            return false;
+        }
+        $messages=[];
+        foreach($ready_courier_list as $courier){
+            $context['courier']=$courier;
+            $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
+            $messages[]=(object)[
+                        'message_reciever_id'=>$courier->user_id,
+                        'message_transport'=>'message',
+                        'message_text'=>$message_text
+                    ];
+        }
+        $sms_job=[
+            'task_name'=>"Courier Notify Order",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+                ],
+        ];
+        jobCreate($sms_job);
+        return true;
     }
     
     private function onDeliveryStart( $order_id ){
@@ -629,6 +639,8 @@ trait OrderStageTrait{
         if( !$order->images ){
             return 'photos_must_be_made';
         }
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         return 'ok';
     }
     private function onDeliveryRejected( $order_id ){

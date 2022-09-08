@@ -295,11 +295,7 @@ class User extends \App\Controllers\BaseController{
         $msg_data=[
             'verification_code'=>$verification_code
         ];
-        
-        $devinoSenderName=getenv('devinoSenderName');
-        $devinoUserName=getenv('devinoUserName');
-        $devinoPassword=getenv('devinoPassword');
-        $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
+        $Sms=\Config\Services::sms();
         $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
         if( $ok ){
             return $this->respond('sms_sent_ok');
@@ -404,5 +400,22 @@ class User extends \App\Controllers\BaseController{
             return $this->respondDeleted('ok');
         }
         return $this->fail('idle');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function test(){
+        $Sms=\Config\Services::sms();
+        $ok=$Sms->send('79186414455','TEST');
     }
 }

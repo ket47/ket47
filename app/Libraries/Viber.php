@@ -123,10 +123,7 @@ class Viber{
             'verification_code'=>$verification_code
         ];
         
-        $devinoSenderName=getenv('devinoSenderName');
-        $devinoUserName=getenv('devinoUserName');
-        $devinoPassword=getenv('devinoPassword');
-        $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
+        $Sms=\Config\Services::sms();
         $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
         if( $ok ){
             $this->send_message($viberId, view('messages/viber/verification_code_sent',['user_phone'=>$user_phone_cleared]));

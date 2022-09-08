@@ -166,7 +166,7 @@ class Courier extends \App\Controllers\BaseController{
         if( $result==='notfound' ){
             return $this->failNotFound($result);
         }
-        if( $result==='notready' ){
+        if( $result==='notready' || $result==='courier_location_required' ){
             return $this->fail($result);
         }
         return $this->respond($result);

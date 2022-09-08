@@ -142,10 +142,7 @@ class Messenger{
             log_message('error','Sms cant be send: no phone number');
             return false;
         }
-        $devinoSenderName=getenv('devinoSenderName');
-        $devinoUserName=getenv('devinoUserName');
-        $devinoPassword=getenv('devinoPassword');
-        $Sms=new \App\Libraries\DevinoSms($devinoUserName,$devinoPassword,$devinoSenderName);
+        $Sms=\Config\Services::sms();
         $sms_send_ok=$Sms->send($phone_to,$message->message_text);
         if( !$sms_send_ok ){
             log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$sms_send_ok );

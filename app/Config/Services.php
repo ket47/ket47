@@ -48,4 +48,13 @@ class Services extends BaseService
 	
 	    return new \App\Libraries\CashierKitOnline();
 	}
+
+	public static function sms($getShared = true){
+	    if ($getShared)
+	    {
+	        return static::getSharedInstance('sms');
+	    }
+	
+	    return new \App\Libraries\SmsP1();
+	}
 }

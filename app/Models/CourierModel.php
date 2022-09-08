@@ -245,6 +245,9 @@ class CourierModel extends Model{
 
         $LocationModel=model('LocationModel');
         $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
+        if(!$courier_location){
+            return 'courier_location_required';
+        }
 
         $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
         $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
@@ -256,7 +259,7 @@ class CourierModel extends Model{
 
         $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
         if( !is_array($job_list) ){
-            return 'not_found';
+            return 'notfound';
         }
         return $job_list;
     }
