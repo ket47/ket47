@@ -28,32 +28,12 @@ class SmsP1{
         curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'accept: application/json'));
         curl_setopt($curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $out = curl_exec($curl);
+        $response=json_decode($out);
 
-
-        echo json_encode($data,JSON_UNESCAPED_UNICODE);
-        p(json_decode($out));
-
-
-
-
-
-
-
-        $options = array(
-            'http' => array(
-                'header'  => "Content-type: application/json\r\naccept: application/json\r\n",
-                'method'  => 'POST',
-                'content' => json_encode($data)//, JSON_UNESCAPED_UNICODE
-            )
-        );
-        $context  = stream_context_create($options);
-        try{
-            $response_text = file_get_contents($url, false, $context);
-        } catch( \Exception $e){
-            log_message('critical',"SmsP1 on phone #{$data['sms'][0]['phone']} api FAILED error".$e->getMessage());
-            return null;
+        if($response?->status=='success'){
+            return 'ok';
         }
-        return 'ok';
+        return $response?->status;
     }
 
 }
