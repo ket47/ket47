@@ -18,8 +18,8 @@ class AcquirerUniteller{
             'Order_IDP' => getenv('uniteller.orderPreffix').$order_id,
             'Subtotal_P' => $order_basic->order_sum_total,
             'Customer_IDP' => $customer->user_id,
-            'Email' => $customer->user_email??'',
-            'Phone' => $customer->user_phone,
+            'Email' => $customer?->user_email??'',
+            'Phone' => $customer?->user_phone,
             'PhoneVerified' => $customer->user_phone,
             'FirstName'=>$customer->user_name,
             'LastName'=>$customer->user_surname,
@@ -28,9 +28,10 @@ class AcquirerUniteller{
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
             'Preauth'=>1,
             'IsRecurrentStart'=>0,
-            'Lifetime' => 3*60*60,// 5 min
-            'CallbackFields'=>'Total Balance ApprovalCode BillNumber'
-            //'MeanType' => '','EMoneyType' => '','OrderLifetime' => 15*60*60,'Card_IDP' => '','IData' => '','PT_Code' => '',
+            'Lifetime' => 5*60,// 5 min
+            //'OrderLifetime' => 5*60,// 5 min
+            'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
+            //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
         ];
         $p->Signature = strtoupper(
             md5(

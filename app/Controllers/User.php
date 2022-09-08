@@ -401,21 +401,4 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->fail('idle');
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public function test(){
-        $Sms=\Config\Services::sms();
-        $ok=$Sms->send('79186414455','TEST');
-    }
 }

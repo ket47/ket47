@@ -38,13 +38,16 @@ class CourierModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $courier_id=null ){
+    public function itemGet( $courier_id=null, $mode='all' ){
         if( $courier_id ){
             $this->where('courier_id',$courier_id);
         } else {
             $this->where('user_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
+        if($mode=='basic'){
+            return $this->get()->getRow();
+        }
         $this->select('courier_list.*,location_address,location_latitude,location_longitude');
         $this->select('user_id,user_name,user_phone');
         $this->join('user_list','user_id=courier_list.owner_id');

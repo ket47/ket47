@@ -31,14 +31,14 @@ class OrderModel extends Model{
     
     private function itemUserRoleCalc(){
         $user_id=session()->get('user_id');
-        $courier_id=session()->get('courier_id');//must be inited at login
+        $courier=model("CourierModel")->itemGet();
         if( sudo() ){
             $this->select("'admin' user_role");
         }
         else {
             $this->select("
                 IF(order_list.owner_id=$user_id,'customer',
-                IF(order_list.order_courier_id='$courier_id','delivery',
+                IF(order_list.order_courier_id='{$courier?->courier_id}','delivery',
                 IF(COALESCE(FIND_IN_SET('$user_id',order_list.owner_ally_ids),0),'supplier',
                 'other'))) user_role
                 ");
