@@ -1,5 +1,4 @@
 ALTER TABLE `transaction_list` 
-ADD COLUMN `trans_debit` VARCHAR(45) NULL AFTER `trans_role`,
 ADD COLUMN `trans_credit` VARCHAR(45) NULL AFTER `trans_debit`;
 
 ALTER TABLE `transaction_list` 
