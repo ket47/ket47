@@ -364,7 +364,7 @@ class StoreModel extends Model{
         $owners=$store->owner_id.($store->owner_ally_ids?','.$store->owner_ally_ids:'');
         if($owners){ 
             $UserModel=model('UserModel');
-            $UserModel->select('user_id,user_phone');
+            $UserModel->select('user_id,user_phone,user_name');
             $UserModel->where("user_id IN($owners)");
             $owner_allys=$UserModel->get()->getResult();
         } else {
