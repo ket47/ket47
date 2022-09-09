@@ -42,7 +42,7 @@ class CourierModel extends Model{
         if( $courier_id ){
             $this->where('courier_id',$courier_id);
         } else {
-            $this->where('owner_id',session()->get('user_id'));
+            $this->where('courier_list.owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
         if($mode=='basic'){
