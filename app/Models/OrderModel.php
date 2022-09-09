@@ -12,7 +12,9 @@ class OrderModel extends Model{
     protected $primaryKey = 'order_id';
     protected $allowedFields = [
         'order_store_id',
+        'order_store_admins',
         'order_courier_id',
+        'order_courier_admins',
         'order_start_location_id',
         'order_finish_location_id',
         'order_sum_product',
@@ -31,15 +33,14 @@ class OrderModel extends Model{
     
     private function itemUserRoleCalc(){
         $user_id=session()->get('user_id');
-        $courier=model("CourierModel")->itemGet();
         if( sudo() ){
             $this->select("'admin' user_role");
         }
         else {
             $this->select("
                 IF(order_list.owner_id=$user_id,'customer',
-                IF($user_id=(SELECT owner_id FROM courier_list WHERE courier_id=order_courier_id),'delivery',
-                IF(COALESCE(FIND_IN_SET('$user_id',order_list.owner_ally_ids),0),'supplier',
+                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_courier_admins),0),'delivery',
+                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_store_admins),0),'supplier',
                 'other'))) user_role
                 ");
         }
@@ -121,10 +122,12 @@ class OrderModel extends Model{
             return 'nostore';
         }
         $this->allowedFields[]='owner_id';
+        $store_owners_all=ownersAll($store);
         $new_order=[
             'order_store_id'=>$store_id,
             'order_sum_delivery'=>$this->deliveryFeeGet(),
             'order_sum_tax'=>0,
+            'order_store_admins'=>$store_owners_all,
             'owner_id'=>$user_id,
         ];
         $this->insert($new_order);

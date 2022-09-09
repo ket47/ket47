@@ -111,6 +111,9 @@ class EntryModel extends Model{
             WHERE
                 entry_id = '{$entry->entry_id}'";
         $stock=$this->query($stock_check_sql)->getRow();
+        if( !$stock ){
+            return 'noentryid';
+        }
         
         $OrderModel=model('OrderModel');
         $order_basic=$OrderModel->itemGet($stock->order_id,'basic');

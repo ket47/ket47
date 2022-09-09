@@ -42,7 +42,7 @@ class CourierModel extends Model{
         if( $courier_id ){
             $this->where('courier_id',$courier_id);
         } else {
-            $this->where('user_id',session()->get('user_id'));
+            $this->where('owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
         if($mode=='basic'){
@@ -298,7 +298,8 @@ class CourierModel extends Model{
         if( !$was_searching ){
             return 'notsearching';
         }
-        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id]);
+        $courier=$this->itemGet($courier_id,'basic');
+        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
         $this->transComplete();
         return 'ok';

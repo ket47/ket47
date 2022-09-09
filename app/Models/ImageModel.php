@@ -181,7 +181,7 @@ class ImageModel extends Model{
     
     public function listDelete( $image_holder, $image_holder_id ){
         $this->where('image_holder',$image_holder);
-        $this->where('image_holder_id',$image_holder_id);
+        $this->whereIn('image_holder_id',$image_holder_id);
         $this->delete();
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -195,9 +195,9 @@ class ImageModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function listDeleteDirectly( $image_holder, $image_holder_id ){
+    public function listDeleteDirectly( string $image_holder, array $image_holder_id ){
         $this->where('image_holder',$image_holder);
-        $this->where('image_holder_id',$image_holder_id);
+        $this->whereIn('image_holder_id',$image_holder_id);
         $this->update(null,['deleted_at'=>'2000-01-01 00:00:00']);
         return $this->db->affectedRows()?'ok':'error';
     }

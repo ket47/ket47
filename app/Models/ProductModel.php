@@ -326,7 +326,6 @@ class ProductModel extends Model{
         if( !$StoreModel->permit($store_id,'w') ){
             return 'forbidden';
         }
-        $this->listDeleteChildrenDirectly($store_id);
         
         $this->where('deleted_at IS NULL AND is_disabled=0');
         $this->where('store_id',$store_id);
@@ -355,16 +354,23 @@ class ProductModel extends Model{
         $this->update($product_ids,['deleted_at'=>NULL]);
     }
     
-    private function listDeleteChildrenDirectly($store_id){
+     function listDeleteChildrenDirectly($store_id){
         /*
          * marking to purge directly items that are already deleted or disabled
          */
         $this->where('deleted_at IS NOT NULL OR is_disabled=1');
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
-        $trashed_product_ids=$this->get()->getRow('product_ids');
+        $trashed_product_ids_string=$this->get()->getRow('product_ids');
+        $trashed_product_ids=explode(',',$trashed_product_ids_string);
+
+        if(!$trashed_product_ids){
+            return;
+        }
+        $this->where('store_id',$store_id);
+        $this->permitWhere('w');
         $this->update($trashed_product_ids,['deleted_at'=>'2000-01-01 00:00:00']);
-        
+
         $ImageModel=model('ImageModel');
         $ImageModel->listDeleteDirectly('product', $trashed_product_ids);
     }
