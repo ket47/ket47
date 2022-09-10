@@ -366,9 +366,6 @@ class CourierModel extends Model{
         return false;
     }
     
-    public function listDelete(){
-        return false;
-    }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////

@@ -266,18 +266,6 @@ class UserModel extends Model{
         return $user_list;        
     }
     
-    public function listCreate( $user_list_data ){
-        return false;
-    }
-    
-    public function listUpdate( $user_list_data ){
-        return false;
-    }
-    
-    public function listDelete( $user_ids ){
-        return false;
-    }
-    
     public function listPurge( $olderThan=7 ){
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
         $this->where('deleted_at<',$olderStamp);

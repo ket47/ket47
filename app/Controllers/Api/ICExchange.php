@@ -9,7 +9,7 @@ class ICExchange extends \App\Controllers\BaseController
         $this->dir = WRITEPATH . 'uploads/';
 
         $this->start_time = microtime(true);
-        $this->max_exec_time = min(30, @ini_get("max_execution_time"));
+        $this->max_exec_time = 300;
     }
 
     public function index(){
@@ -17,20 +17,6 @@ class ICExchange extends \App\Controllers\BaseController
         $this->authenticateByToken();
         $this->prepareSubfolder();
         $this->methodExecute();
-    }
-
-    private function test(){
-        $token_data=(object)[
-            'owner_id'=>71,
-            'token_holder_id'=>31,
-            'token_holder'=>'store'
-        ];
-        session()->set('auth_token_data',$token_data);
-        session()->set('user_id',$token_data->owner_id);
-        $this->prepareSubfolder();
-
-        $filename=$this->filename_subfolder.'offers0_1.xml';
-        $this->catalogImport($filename);
     }
 
     private function authenticateByToken(){
@@ -187,7 +173,6 @@ class ICExchange extends \App\Controllers\BaseController
             if (isset($_SESSION['last_1c_imported_variant_num'])){
                 $last_variant_num = $_SESSION['last_1c_imported_variant_num'];
             }
-
             $ICExchangeProductModel->productTransStart();
             while ($z->name === 'Предложение' && $current_variant_num<=$this->max_product_count) {
                 if ($current_variant_num >= $last_variant_num) {

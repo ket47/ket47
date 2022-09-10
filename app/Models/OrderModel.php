@@ -214,7 +214,7 @@ class OrderModel extends Model{
         $EntryModel->listDeleteChildren( $order_id );
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listDelete('order', $order_id);
+        $ImageModel->listDelete('order', [$order_id]);
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->where('member_id',$order_id)->delete();

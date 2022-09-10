@@ -77,16 +77,5 @@ class TaskModel extends Model{
         return $tasks;
     }
     
-    public function listCreate(){
-        return false;
-    }
-    
-    public function listUpdate(){
-        return false;
-    }
-    
-    public function listDelete(){
-        return false;
-    }
     
 }

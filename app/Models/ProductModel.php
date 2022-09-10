@@ -130,7 +130,7 @@ class ProductModel extends Model{
     public function itemDelete( $product_id ){
         $ImageModel=model('ImageModel');
         $ImageModel->permitWhere('w');
-        $ImageModel->listDelete('product',$product_id);
+        $ImageModel->listDelete('product',[$product_id]);
         $this->delete($product_id);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -289,15 +289,14 @@ class ProductModel extends Model{
                 1
                 *IF(product_price>0,1,0)
                 *IF(CHAR_LENGTH(product_name)>=5,1,0)
-                *IF(is_counted=0 OR product_quantity_expire_at>NOW(),1,0)
                 *IF(image_id IS NOT NULL,1,0)
-                +(
-                0.4
-                +IF(CHAR_LENGTH(product_description)>=30,0.2,0)
-                +IF(CHAR_LENGTH(product_code)>=3,0.1,0)
-                +IF(CHAR_LENGTH(product_unit)>=1,0.1,0)
-                +IF(CHAR_LENGTH(product_barcode)=13,0.1,0)
-                +IF(product_weight>0,0.1,0)
+                *(
+                50
+                +IF(CHAR_LENGTH(product_description)>=30,10,0)
+                +IF(CHAR_LENGTH(product_code)>=3,10,0)
+                +IF(CHAR_LENGTH(product_unit)>=1,10,0)
+                +IF(CHAR_LENGTH(product_barcode)=13,10,0)
+                +IF(product_weight>0,10,0)
                 )
             WHERE
             ";
@@ -322,57 +321,37 @@ class ProductModel extends Model{
     }
     
     public function listDeleteChildren( $store_id ){
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($store_id,'w') ){
+        if( !sudo() ){
             return 'forbidden';
         }
-        
         $this->where('deleted_at IS NULL AND is_disabled=0');
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
-        $product_ids=$this->get()->getRow('product_ids');
+        $trashed_product_ids_string=$this->get()->getRow('product_ids');
+        $trashed_product_ids=explode(',',$trashed_product_ids_string);
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listDelete('product', $product_ids);
-        $this->delete($product_ids);
+        $ImageModel->listDelete('product', $trashed_product_ids);
+
+        $this->whereIn('product_id',$trashed_product_ids);
+        $this->delete();
     }
     
     public function listUnDeleteChildren( $store_id ){
-        $StoreModel=model('StoreModel');
-        if( !$StoreModel->permit($store_id,'w') ){
+        if( !sudo() ){
             return 'forbidden';
         }
         $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
         $this->where('deleted_at>',$olderStamp);
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
-        $product_ids=$this->get()->getRow('product_ids');
+        $untrashed_product_ids_string=$this->get()->getRow('product_ids');
+        $untrashed_product_ids=explode(',',$untrashed_product_ids_string);
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listUnDelete('product', $product_ids);
+        $ImageModel->listUnDelete('product', $untrashed_product_ids);
         
-        $this->update($product_ids,['deleted_at'=>NULL]);
-    }
-    
-     function listDeleteChildrenDirectly($store_id){
-        /*
-         * marking to purge directly items that are already deleted or disabled
-         */
-        $this->where('deleted_at IS NOT NULL OR is_disabled=1');
-        $this->where('store_id',$store_id);
-        $this->select('GROUP_CONCAT(product_id) product_ids');
-        $trashed_product_ids_string=$this->get()->getRow('product_ids');
-        $trashed_product_ids=explode(',',$trashed_product_ids_string);
-
-        if(!$trashed_product_ids){
-            return;
-        }
-        $this->where('store_id',$store_id);
-        $this->permitWhere('w');
-        $this->update($trashed_product_ids,['deleted_at'=>'2000-01-01 00:00:00']);
-
-        $ImageModel=model('ImageModel');
-        $ImageModel->listDeleteDirectly('product', $trashed_product_ids);
+        $this->update($untrashed_product_ids,['deleted_at'=>NULL]);
     }
     
     public function listPurge( $olderThan=APP_TRASHED_DAYS ){

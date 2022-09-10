@@ -160,14 +160,6 @@ class PromoModel extends Model{
         }
         return 'ok';
     }
-    
-    public function listUpdate(){
-        return false;
-    }
-    
-    public function listDelete(){
-        return false;
-    }
 
     function userNotify($user_id,$template,$promo_context){
         $context=[

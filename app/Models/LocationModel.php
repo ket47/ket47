@@ -228,6 +228,7 @@ class LocationModel extends Model{
     }
     
     public function listDelete( $location_holder, $location_holder_id ){
+        $this->permitWhere('w');
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->delete();    

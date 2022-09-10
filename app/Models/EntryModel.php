@@ -232,11 +232,7 @@ class EntryModel extends Model{
         if( !$OrderModel->permit($order_id,'w') ){
             return 'forbidden';
         }
-        $this->where('deleted_at IS NOT NULL OR is_disabled=1');
-        $this->where('order_id',$order_id);
-        $this->delete(null,true);
-        
-        $this->where('deleted_at IS NULL AND is_disabled=0');
+        $this->permitWhere('w');
         $this->where('order_id',$order_id);
         $this->delete();
     }
@@ -246,8 +242,7 @@ class EntryModel extends Model{
         if( !$OrderModel->permit($order_id,'w') ){
             return 'forbidden';
         }
-        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
-        $this->where('deleted_at>',$olderStamp);
+        $this->permitWhere('w');
         $this->where('order_id',$order_id);
         $this->set('deleted_at',NULL);
         $this->update();

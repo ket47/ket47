@@ -63,7 +63,8 @@ class ICExchangeProductModel extends Model{
                 'product_quantity'=>$product_quantity,
                 'product_price'=>$product_price,
             ];
-            return $this->ProductModel->itemUpdate($updated_product);
+            $result=$this->ProductModel->itemUpdate($updated_product);
+            return $result;
         }
 
         $attributes=$this->productAttributesParse($xml_product);
@@ -78,7 +79,8 @@ class ICExchangeProductModel extends Model{
             'product_unit'=>$this->productUnitGet($xml_product),
             'product_price'=>0
         ];
-        return $this->ProductModel->itemCreate($created_product);
+        $result=$this->ProductModel->itemCreate($created_product);
+        return $result;
     }
 
     public function productListValidate($store_id){

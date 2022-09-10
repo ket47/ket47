@@ -180,28 +180,28 @@ class StoreModel extends Model{
     }
     
     public function itemDelete( $store_id ){
-        if( !$this->permit($store_id,'w') ){
+        if( !sudo() ){
             return 'forbidden';
         }
         $ProductModel=model('ProductModel');
         $ProductModel->listDeleteChildren( $store_id );
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listDelete('store', $store_id);
+        $ImageModel->listDelete('store', [$store_id]);
         
         $this->delete($store_id);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemUnDelete( $store_id ){
-        if( !$this->permit($store_id,'w') ){
+        if( !sudo() ){
             return 'forbidden';
         }
         $ProductModel=model('ProductModel');
         $ProductModel->listUnDeleteChildren( $store_id );
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listUnDelete('store', $store_id);
+        $ImageModel->listUnDelete('store', [$store_id]);
         
         $this->allowedFields[]='deleted_at';
         $this->update($store_id,['deleted_at'=>NULL]);

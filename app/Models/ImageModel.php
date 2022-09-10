@@ -179,23 +179,26 @@ class ImageModel extends Model{
         return false;
     }
     
-    public function listDelete( $image_holder, $image_holder_id ){
+    public function listDelete( string $image_holder, array $image_holder_ids ){
+        $this->permitWhere('w');
         $this->where('image_holder',$image_holder);
-        $this->whereIn('image_holder_id',$image_holder_id);
+        $this->whereIn('image_holder_id',$image_holder_ids);
         $this->delete();
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function listUnDelete( $image_holder, $image_holder_id ){
+    public function listUnDelete( string $image_holder, array $image_holder_ids ){
         $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $this->permitWhere('w');
         $this->where('image_holder',$image_holder);
-        $this->where('image_holder_id',$image_holder_id);
+        $this->whereIn('image_holder_id',$image_holder_ids);
         $this->where('deleted_at>',$olderStamp);
         $this->update(null,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function listDeleteDirectly( string $image_holder, array $image_holder_id ){
+        $this->permitWhere('w');
         $this->where('image_holder',$image_holder);
         $this->whereIn('image_holder_id',$image_holder_id);
         $this->update(null,['deleted_at'=>'2000-01-01 00:00:00']);
