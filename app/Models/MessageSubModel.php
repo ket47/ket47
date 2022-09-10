@@ -16,7 +16,7 @@ class MessageSubModel extends Model{
     public function itemCreate($registration_id,$type,$user_agent){
         $user_id=session()->get('user_id');
         if(!$user_id || $user_id<1){
-            return 'notauthorized';
+            return 'forbidden';//if notauthorized then login form kicks on
         }
         $sub=[
             'sub_user_id'=>$user_id,

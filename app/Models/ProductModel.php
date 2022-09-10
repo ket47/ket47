@@ -157,13 +157,21 @@ class ProductModel extends Model{
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
-        $this->filterMake( $filter );
         if( $filter['group_id']??0 ){
             $this->where('group_id',$filter['group_id']);
         }
         if( $filter['store_id']??0 ){
             $this->where('store_id',$filter['store_id']);
+            if( model('StoreModel')->permit($filter['store_id'],'w') ){
+                $filter['is_disabled']=1;
+                $filter['is_deleted']=1;
+            } else {
+                $filter['is_disabled']=0;
+                $filter['is_deleted']=0;
+                $this->where('validity>','50');
+            }
         }
+        $this->filterMake( $filter );
         $this->permitWhere('r');
         $this->orderBy("{$this->table}.updated_at",'DESC');
         $this->join('product_group_member_list','member_id=product_id','left');
