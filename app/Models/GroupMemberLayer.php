@@ -98,10 +98,9 @@ class GroupMemberLayer extends Model{
     }
     
     public function leaveGroup($member_id,$group_id){
-        //$this->permitWhere('w');
         return $this
-                ->where('member_id',$member_id)
-                ->where('group_id',$group_id)
-                ->delete(true);
+                ->where('member_id',(int)$member_id)
+                ->where('group_id',(int)$group_id)
+                ->delete(null,true);
     }
 }

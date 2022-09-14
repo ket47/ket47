@@ -202,11 +202,11 @@
             .secondary{
                 background-color: #ccc;
             }
-            .negative{
+            .danger{
                 color:white;
                 background-color: #f66;
             }
-            .positive{
+            .success{
                 background-color: #6d9;
             }
             h2,h3{

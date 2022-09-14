@@ -215,7 +215,9 @@ class User extends \App\Controllers\BaseController{
         if( $courier_signout_result!='ok' ){
             return $this->fail('courier_not_idle',409);
         }
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE){
+            session_destroy();
+        }
         return $this->respond('ok');
     }
 

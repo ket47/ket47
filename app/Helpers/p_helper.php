@@ -5,6 +5,11 @@ function p( $object ){
     print '<pre>';
     print_r($object);die;
 }
+function pl( $object, $die=true ){
+    log_message('error','PL HELPER '.json_encode($object));
+    if($die)
+        die();
+}
 function e( $model ){
     $err=$model->errors();
     if(!$err){

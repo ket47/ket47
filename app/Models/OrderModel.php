@@ -96,7 +96,7 @@ class OrderModel extends Model{
         $order->entries=    $EntryModel->listGet($order_id);
         
         $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
-        $order->customer=   $UserModel->itemGet($order->owner_id,'basic');
+        $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//$UserModel->itemGet($order->owner_id,'basic');permission issue for other parties
         $order->courier=    [];//$CourierModel->itemGet($order->order_courier_id,'basic');
         $order->is_writable=$this->permit($order_id,'w');
         
@@ -231,7 +231,7 @@ class OrderModel extends Model{
         $EntryModel->listUnDeleteChildren( $order_id );
         
         $ImageModel=model('ImageModel');
-        $ImageModel->listUnDelete('order', $order_id);
+        $ImageModel->listUnDelete('order', [$order_id]);
         
         $this->update($order_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';

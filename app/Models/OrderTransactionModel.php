@@ -45,12 +45,14 @@ class OrderTransactionModel extends TransactionModel{
         if( $acquirer_data->status=='waiting' ){
             return 'waiting';
         }
+        $this->allowedFields[]='owner_ally_ids';
         $trans=[
             'trans_amount'=>$order_basic->order_sum_total,
             'trans_data'=>json_encode($acquirer_data),
             'trans_role'=>'customer.card->money.acquirer.blocked',
             'trans_tags'=>'#orderPaymentFixation',
             'owner_id'=>$order_basic->owner_id,
+            'owner_ally_ids'=>$order_basic->owner_ally_ids,
             'is_disabled'=>0,
             'trans_holder'=>'order',
             'trans_holder_id'=>$order_basic->order_id

@@ -112,7 +112,7 @@ var Order={
                 if( !new_stage ){
                     return;
                 }
-                ItemList.itemStageCreate(new_stage)
+                Order.stage.itemStageCreate(new_stage)
             });
         },
         itemStageCreate(new_stage){
@@ -131,7 +131,7 @@ var Order={
                 Order.stage.payment_modal();
             },
             action_call_customer:function(){
-                var customer_phone="<?=$order->customer->user_phone ?>";
+                var customer_phone="<?=$order?->customer?->user_phone ?>";
                 document.location.href = `tel:${customer_phone}`;
             }
         },

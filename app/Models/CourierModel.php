@@ -349,8 +349,38 @@ class CourierModel extends Model{
         return $courier_list;  
     }
     
-    public function listNotify( $courier_status ){
-        
+    public function listNotify( $context ){
+        ///////////////////////////////////////////////////
+        //CREATING READY COURIERS NOTIFICATIONS
+        ///////////////////////////////////////////////////
+        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5,'order']);
+        if( !$ready_courier_list ){
+            return false;
+        }
+        $messages=[];
+        foreach($ready_courier_list as $courier){
+            $context['courier']=$courier;
+            $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
+            $messages[]=(object)[
+                        'message_reciever_id'=>$courier->user_id,
+                        'message_transport'=>'message',
+                        'message_text'=>$message_text,
+                        'message_data'=>[
+                            'type'=>'flash',
+                            'title'=>'Новое задание',
+                            'body'=>$message_text,
+                            'link'=>getenv('app.frontendUrl').'order/order-list/'
+                        ]
+                    ];
+        }
+        $sms_job=[
+            'task_name'=>"Courier Notify Order",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
+                ],
+        ];
+        jobCreate($sms_job);
+        return true;
     }
     
     

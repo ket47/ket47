@@ -294,6 +294,10 @@ class UserModel extends Model{
         return true;
     }
     public function systemUserLogout(){
+        $current_user_id=session()->get('user_id');
+        if( $current_user_id!=-100 ){
+            return true;
+        }
         $user=$this->itemGet( $this->systemUserPrecededId );
         session_unset();
         session()->set('user_id',$user->user_id);

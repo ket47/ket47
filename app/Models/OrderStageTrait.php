@@ -140,7 +140,9 @@ trait OrderStageTrait{
             return 'invalid_next_stage';
         }
         if( $order->user_role!='admin' && strpos($stage, $order->user_role)!==0 ){
-            echo "$stage, $order->user_role";
+            pl($_SESSION,0);
+
+
             return 'invalid_stage_role';
         }
         return 'ok';
@@ -200,7 +202,7 @@ trait OrderStageTrait{
                 return 'already_payed';//already payed so refuse to reset to cart
             }
         }
-        $this->itemUnDelete($order_id);
+        //$this->itemUnDelete($order_id); seems to be unnecessary
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
         //$this->update($order_id,['order_sum_product'=>0]);in this case serious bug
@@ -259,10 +261,10 @@ trait OrderStageTrait{
         
         $order_started=$this->itemStageCreate($order_id, 'delivery_search');
         if( $transaction_created=='ok' && $order_started=='ok' ){
-            $this->itemUpdate((object)[
-                'order_id'=>$order_id,
-                'order_sum_fixed'=>$acquirer_data->total
-            ]);
+            // $this->itemUpdate((object)[
+            //     'order_id'=>$order_id,
+            //     'order_sum_fixed'=>$acquirer_data->total
+            // ]);
             return 'ok';
         }
         return 'error';
@@ -592,42 +594,14 @@ trait OrderStageTrait{
     private function onDeliverySearch( $order_id ){
         $order=$this->itemGet($order_id);
         $StoreModel=model('StoreModel');
+        $CourierModel=model('CourierModel');
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $context=[
             'store'=>$store,
         ];
-        $this->readyCouriersNotify( $context );
+        $CourierModel->listNotify($context);
         return $this->itemStageCreate($order_id, 'customer_start');
-    }
-
-    private function readyCouriersNotify( $context ){
-        ///////////////////////////////////////////////////
-        //CREATING READY COURIERS NOTIFICATIONS
-        ///////////////////////////////////////////////////
-        $CourierModel=model('CourierModel');
-        $ready_courier_list=$CourierModel->listGet(['status'=>'ready','limit'=>5,'order']);
-        if( !$ready_courier_list ){
-            return false;
-        }
-        $messages=[];
-        foreach($ready_courier_list as $courier){
-            $context['courier']=$courier;
-            $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
-            $messages[]=(object)[
-                        'message_reciever_id'=>$courier->user_id,
-                        'message_transport'=>'message',
-                        'message_text'=>$message_text
-                    ];
-        }
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        jobCreate($sms_job);
-        return true;
     }
     
     private function onDeliveryStart( $order_id ){

@@ -47,7 +47,7 @@ class Entry extends \App\Controllers\BaseController{
             return $this->failValidationErrors( $EntryModel->errors() );
         }
         if( $result=='ok' && isset($entry->entry_quantity) ){
-            if(!$entry?->order_id){
+            if(!isset($entry->order_id)){
                 $entry->order_id=$EntryModel->where('entry_id',$entry->entry_id)->get()->getRow('order_id');
             }
             $EntryModel->listSumUpdate( $entry->order_id );
