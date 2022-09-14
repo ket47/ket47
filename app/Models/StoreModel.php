@@ -152,6 +152,7 @@ class StoreModel extends Model{
         if( isset($store->is_primary) && !sudo() ){
             return 'forbidden';
         }
+        model('ProductModel')->listUpdateValidity($store->store_id);
         if( sudo() ){
             $this->allowedFields[]='is_primary';
             $this->allowedFields[]='store_commission';

@@ -169,6 +169,7 @@ class Product extends \App\Controllers\BaseController{
             }
         }
         if($result===true){
+            model('ProductModel')->listUpdateValidity(null,$image_holder_id);
             return $this->respondCreated('ok');
         }
         return $this->fail('no_valid_images');
