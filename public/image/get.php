@@ -17,6 +17,9 @@ $uri_parts=explode('/',$uri);
 $uri_filename=array_pop($uri_parts);
 list($hash,$width,$height,$extension)=explode('.',$uri_filename);
 
+if( $extension=='webp' && strpos( $_SERVER['HTTP_ACCEPT'], 'image/webp' ) === false ){
+    $extension='jpg';
+}
 $images_path='../../writable/images/';
 
 $content_type='';
