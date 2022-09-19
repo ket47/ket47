@@ -23,7 +23,7 @@ if( $extension=='webp' && strpos( $_SERVER['HTTP_ACCEPT'], 'image/webp' ) === fa
 $images_path='../../writable/images/';
 
 $content_type='';
-$file_optimised=$images_path.'optimised/'.$uri_filename;
+$file_optimised=$images_path.'optimised/'."$hash.$width.$height.$extension";
 if ( !file_exists($file_optimised) ) {
     $file_source=$images_path.$hash.'.webp';
     if(!file_exists($file_source)){
