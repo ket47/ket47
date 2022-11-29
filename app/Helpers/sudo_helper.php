@@ -9,7 +9,7 @@ function sudo(){
 }
 
 function ownersAll($item){
-    $owner_all=explode(',',"0,$item->owner_ally_ids,$item->owner_id");
+    $owner_all=explode(',',"0,".($item->owner_ally_ids??0).",".($item->owner_id??0) );
     $owner_all_filtered=array_unique($owner_all,SORT_NUMERIC);
     array_shift($owner_all_filtered);
     //return $owner_all_filtered;

@@ -152,16 +152,16 @@ class UserModel extends Model{
     }
     
     public function itemCreate( $user_data ){
-        $this->transStart();
-        $user_id=$this->insert($user_data,true);
-        if( $user_id ){
-            $UserGroupMemberModel=model('UserGroupMemberModel');
-            $UserGroupMemberModel->tableSet('user_group_member_list');
-            $UserGroupMemberModel->joinGroupByType($user_id,'customer');
-            $this->allowedFields[]='owner_id';
-            $this->update($user_id,['owner_id'=>$user_id]);
-        }
-        $this->transComplete();
+        $this->transBegin();
+            $user_id=$this->insert($user_data,true);
+            if( $user_id ){
+                $UserGroupMemberModel=model('UserGroupMemberModel');
+                $UserGroupMemberModel->tableSet('user_group_member_list');
+                $UserGroupMemberModel->joinGroupByType($user_id,'customer');
+                $this->allowedFields[]='owner_id';
+                $this->update($user_id,['owner_id'=>$user_id]);
+            }
+        $this->transCommit();
         return $user_id;        
     }
     
@@ -223,7 +223,7 @@ class UserModel extends Model{
     
     public function itemDelete( $id ){
         $this->permitWhere('w');
-        return $this->delete([$this->primaryKey=>$id]);
+        return $this->delete(['user_id'=>$id]);
     }
     
     public function itemUnDelete( $user_id ){
@@ -267,7 +267,7 @@ class UserModel extends Model{
     }
     
     public function listPurge( $olderThan=7 ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
+        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }
@@ -300,7 +300,7 @@ class UserModel extends Model{
         }
         $user=$this->itemGet( $this->systemUserPrecededId );
         session_unset();
-        session()->set('user_id',$user->user_id);
+        session()->set('user_id',$user->user_id??0);
         session()->set('user_data',$user);
         if($user){
             $PermissionModel=model('PermissionModel');
@@ -310,7 +310,7 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm){
+    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email){
         $user_data=[
             'user_phone'=>$user_phone_cleared,
             'user_name'=>$user_name,
@@ -318,6 +318,9 @@ class UserModel extends Model{
             'user_pass_confirm'=>$user_pass_confirm,
             'is_disabled'=>0
             ];
+        if( $user_email && strlen($user_email)>5 ){
+            $user_data['user_email']=$user_email;
+        }
         return $this->itemCreate($user_data);
     }
     

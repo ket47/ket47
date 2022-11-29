@@ -18,6 +18,10 @@ class MessageSubModel extends Model{
         if(!$user_id || $user_id<1){
             return 'forbidden';//if notauthorized then login form kicks on
         }
+        $is_registered=$this->where('sub_registration_id',$registration_id)->get()->getRow('sub_registration_id');
+        if($is_registered){
+            return 'ok';
+        }
         $sub=[
             'sub_user_id'=>$user_id,
             'sub_registration_id'=>$registration_id,

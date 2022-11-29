@@ -80,6 +80,8 @@ class Messenger{
         }
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
+
+        //log_message('error',json_encode($reciever));
         if( !$reciever ){
             return (object)[];
         }
@@ -102,7 +104,7 @@ class Messenger{
     private function itemSendEmail( $message ){
         $email_to=$message->message_reciever_email??$message->reciever->user_email??'';
         if(!$email_to){
-            log_message('error','Email cant be send: no email address');
+            //log_message('error','Email cant be send: no email address');
             return false;
         }
         $email = \Config\Services::email();
@@ -189,7 +191,7 @@ class Messenger{
     
     private function itemSendViber( $message ){
         if( !isset($message->reciever->user_data->viberId) ){
-            log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
+            //log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
             return false;
         }
         $Viber = new \App\Libraries\Viber();

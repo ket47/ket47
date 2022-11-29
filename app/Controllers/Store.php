@@ -199,6 +199,9 @@ class Store extends \App\Controllers\BaseController{
         if( $result==='nostore' ){
             return $this->fail($result);
         }
+        if( $result==='notfound' ){
+            return $this->failNotFound($result);
+        }
         return $this->respond($result);
     }
     public function ownerSave(){
@@ -271,7 +274,7 @@ class Store extends \App\Controllers\BaseController{
         try{
             return \Config\Services::image()
             ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
-            ->resize(1024, 1024, true, 'height')
+            ->resize(1600, 1600, true, 'height')
             ->convert(IMAGETYPE_WEBP)
             ->save();
         }catch(\Exception $e){

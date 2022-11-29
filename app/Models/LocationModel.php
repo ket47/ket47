@@ -252,7 +252,7 @@ class LocationModel extends Model{
     }
     
     public function listPurge( $olderThan=45 ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
+        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
         $this->where('created_at<',$olderStamp);
         $this->delete(null,true);
         return 'ok';

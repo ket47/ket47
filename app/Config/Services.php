@@ -45,7 +45,9 @@ class Services extends BaseService
 	    {
 	        return static::getSharedInstance('cashier');
 	    }
-	
+		if( getenv('test.cashierMock')==1 ){
+			return new \App\Libraries\CashierKitOnlineMock();
+		}
 	    return new \App\Libraries\CashierKitOnline();
 	}
 

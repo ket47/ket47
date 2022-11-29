@@ -93,11 +93,11 @@ class CourierModel extends Model{
             'owner_id'=>$user_id
         ];
         
-        $this->transStart();
+        $this->transBegin();
             $UserGroupMemberModel->joinGroupByType($user_id,'courier');
             $courier_id=$this->insert($courier,true);
             $this->itemUpdateStatus($courier_id,'idle');
-        $this->transComplete();
+        $this->transCommit();
         return $courier_id;
     }
     
@@ -177,12 +177,12 @@ class CourierModel extends Model{
             $this->where('owner_id',$user_id);
         }
 
-        $this->transStart();
+        $this->transBegin();
         $UserGroupMemberModel=model('UserGroupMemberModel');
         $UserGroupMemberModel->leaveGroupByType($user_id,'courier');
         $this->delete();
         $result=$this->db->affectedRows()?'ok':'idle';
-        $this->transComplete();
+        $this->transCommit();
         return $result;
     }
     
@@ -259,6 +259,7 @@ class CourierModel extends Model{
         $LocationModel->join('order_group_member_list ogml','member_id=order_id');
         $LocationModel->join('order_group_list ogl','group_id');
         $LocationModel->where('group_type','delivery_search');
+        $LocationModel->where('TIMESTAMPDIFF(HOUR,order_list.created_at,NOW())<4');//only 3 hours
 
         $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
         if( !is_array($job_list) ){
@@ -292,16 +293,17 @@ class CourierModel extends Model{
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderModel=model("OrderModel");
 
-        $this->transStart();
+        $this->transBegin();
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         $was_searching=$this->db->affectedRows()?true:false;
         if( !$was_searching ){
+            $this->transRollback();
             return 'notsearching';
         }
         $courier=$this->itemGet($courier_id,'basic');
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
-        $this->transComplete();
+        $this->transCommit();
         return 'ok';
     }
 
@@ -369,7 +371,7 @@ class CourierModel extends Model{
                             'type'=>'flash',
                             'title'=>'Новое задание',
                             'body'=>$message_text,
-                            'link'=>getenv('app.frontendUrl').'order/order-list/'
+                            'link'=>getenv('app.frontendUrl').'order/order-list'
                         ]
                     ];
         }

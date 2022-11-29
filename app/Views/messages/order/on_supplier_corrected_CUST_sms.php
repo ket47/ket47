@@ -1,0 +1,1 @@
+Tezkel: <?=$reciever->user_name?>, ваш заказ №<?=$order->order_id?> был изменен продавцом

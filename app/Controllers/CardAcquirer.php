@@ -42,7 +42,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
                 if( $this->paymentIsDone($incomingStatus->order_id) ){
                     return $this->respond('OK');
                 }
-                $result=$OrderModel->itemStageCreate( $incomingStatus->order_id, 'customer_payed_card', $incomingStatus, false );
+                $result=$OrderModel->itemStageAdd( $incomingStatus->order_id, 'customer_payed_card', $incomingStatus, false );
                 break;
             case 'canceled':
                 if( $this->paymentIsRefunded($incomingStatus->order_id) ){
@@ -96,7 +96,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
         $result=$Acquirer->linkGet($order_id);
-        if( $result=='order_notfound' ||$result=='user_notfound' ){
+        if( in_array($result,['order_notfound','order_notvalid','user_notfound','store_notready','card_payment_notallowed']) ){
             return $this->fail($result);
         }
         return $result;

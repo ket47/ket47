@@ -28,8 +28,8 @@ class OrderModel extends Model{
         'updated_by',
         'deleted_at'
     ];
-
     protected $useSoftDeletes = true;
+    protected $order_tariff=null;
     
     private function itemUserRoleCalc(){
         $user_id=session()->get('user_id');
@@ -44,17 +44,6 @@ class OrderModel extends Model{
                 'other'))) user_role
                 ");
         }
-    }
-    
-    private function itemGetNextStages($current_stage,$user_role){
-        $unfilterd_stage_next= $this->stageMap[$current_stage??'']??[];
-        $stage_next=[];
-        foreach($unfilterd_stage_next as $stage=>$config){
-            if( $user_role=='admin' || strpos($stage, $user_role)===0 || strpos($stage, 'action')===0 ){
-                $stage_next[$stage]=$config;
-            }
-        }
-        return $stage_next;
     }
     
     public function itemCacheClear(){
@@ -77,6 +66,9 @@ class OrderModel extends Model{
         if( !$order ){
             return 'notfound';
         }
+        $this->order_data=json_decode($order->order_data);
+        unset($order->order_data);
+
         if($mode=='basic'){
             $this->itemCache[$mode.$order_id]=$order;
             return $order;
@@ -90,7 +82,7 @@ class OrderModel extends Model{
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
         $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num');
         $UserModel->select('user_id,user_name,user_phone,user_email');
-        $order->stage_next= $this->itemGetNextStages($order->stage_current,$order->user_role);
+        $order->stage_next= $this->itemStageNextGet($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
         $order->entries=    $EntryModel->listGet($order_id);
@@ -109,13 +101,43 @@ class OrderModel extends Model{
         $this->itemCache[$mode.$order_id]=$order;
         return $order;
     }
-    
+
+    // public function itemTariffGet( int $order_id ){
+    //     if( !$this->order_tariff ){
+    //         $this->itemGet($order_id,'basic');
+    //     }
+    //     return $this->order_tariff;
+    // }
+
+
+
+    /**
+     * ????????????????????????????????????????????????
+     */
+    // public function itemTariffRuleGet( int $order_id ){
+    //     $order_tariff=$this->itemTariffGet($order_id);
+    //     return (object)[
+    //         'card_allow'=>$order_tariff->card_allow,
+    //         'cash_allow'=>$order_tariff->cash_allow,
+    //         'delivery_allow'=>$order_tariff->delivery_allow,
+    //         'delivery_cost'=>$order_tariff->delivery_cost
+    //     ];
+    // }
+
+    public function itemDataGet( int $order_id, bool $use_cache=true ){
+        if( !$this->order_data || !$use_cache ){
+            $this->permitWhere('r');
+            $this->where('order_id',$order_id);
+            $this->select('order_data');
+            $this->order_data=json_decode($this->get()->getRow('order_data'));
+        }
+        return $this->order_data;
+    }
+
     public function itemCreate( int $store_id ){
         if( !$this->permit(null,'w') ){
             return 'forbidden';
         }
-        $user_id=session()->get('user_id');
-        
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($store_id,'basic');
         if( !$store ){
@@ -123,23 +145,20 @@ class OrderModel extends Model{
         }
         $this->allowedFields[]='owner_id';
         $store_owners_all=ownersAll($store);
+        $order_sum_delivery=$StoreModel->tariffRuleDeliveryCostGet( $store_id );//Possible delivery cost
+        $user_id=session()->get('user_id');
         $new_order=[
-            'order_store_id'=>$store_id,
-            'order_sum_delivery'=>$this->deliveryFeeGet(),
-            'order_sum_tax'=>0,
-            'order_store_admins'=>$store_owners_all,
             'owner_id'=>$user_id,
+            'order_store_id'=>$store_id,
+            'order_store_admins'=>$store_owners_all,
+            'order_sum_delivery'=>$order_sum_delivery,
+            'order_data'=>'{}',
         ];
-        $this->insert($new_order);
-        $order_id=$this->db->insertID();
+        $this->allowedFields[]='order_data';
+        $order_id=$this->insert($new_order,true);
         $this->itemUpdateOwners($order_id);
         $this->itemStageCreate( $order_id, 'customer_cart' );
         return $order_id;
-    }
-    
-    private function deliveryFeeGet(){
-        $PrefModel=model('PrefModel');
-        return $PrefModel->itemGet('delivery_fee','pref_value');
     }
     
     public function itemUpdate( $order ){
@@ -162,6 +181,41 @@ class OrderModel extends Model{
         }
         return $update_result;
     }
+
+    public function itemDataUpdate( int $order_id, object $data_update ){
+        $permit_where=$this->permitWhereGet('w','item');
+        $path_value='';
+        foreach($data_update as $path=>$value){
+            $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
+        }
+        $this->order_data=null;//cache is unvalidated
+        $sql="UPDATE order_list SET order_data=JSON_SET(`order_data`{$path_value}) WHERE order_id=$order_id AND $permit_where";
+        $this->query($sql);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemDataDelete( int $order_id ){
+        $this->permitWhere('w');
+        $this->allowedFields[]='order_data';
+        $this->update($order_id,['order_data'=>'{}']);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function deliverySumUpdate( int $order_id ){
+        $sql="
+            UPDATE
+                order_list
+            SET
+                `order_sum_delivery` =
+                `order_sum_product` 
+                * COALESCE(CAST(`order_data`->'$.delivery_fee' AS FLOAT),0) 
+                + COALESCE(CAST(`order_data`->'$.delivery_cost' AS FLOAT),0)
+            WHERE
+                order_id=$order_id";
+        $this->query($sql);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
 
     private function in_object(object $obj,array $props){
         foreach($props as $prop){
@@ -216,10 +270,13 @@ class OrderModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('order', [$order_id]);
         
+        $TransactionModel=model('TransactionModel');
+        $TransactionModel->listDeleteChildren('order', $order_id);
+        
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->where('member_id',$order_id)->delete();
         
-        $this->delete($order_id);
+        $this->delete(['order_id'=>$order_id]);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
@@ -252,10 +309,15 @@ class OrderModel extends Model{
         if($filter['order_store_id']??0){
             $this->where('order_store_id',$filter['order_store_id']);
         }
+        if($filter['has_invoice']??0){
+            $this->select("`order_data`->'$.invoice_link' invoice_link,`order_data`->'$.invoice_date' invoice_date,");
+            $this->where('JSON_CONTAINS_PATH(order_data,"one","$.invoice_link")=1');
+        }
         if($filter['order_group_type']??0){
             if($filter['order_group_type']=='active_only'){
-                $this->where('ogl.group_type<>','customer_finish');
+                $this->where('ogl.group_type<>','system_finish');
                 $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer'OR `ogl`.`group_type`<>'customer_cart'");
+                $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
             } else {
                 $firstChar=substr($filter['order_group_type'],0,1);
                 if( $firstChar=='!' ){
@@ -265,23 +327,25 @@ class OrderModel extends Model{
                 }
             }
         }
+
         $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->join('store_list sl',"store_id=order_store_id",'left');
 
-        $this->select("{$this->table}.*,group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
+        $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total");
+        $this->select("group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);
         }
-        $this->orderBy('updated_at','DESC');
+        $this->orderBy('order_list.updated_at','DESC');
         return $this->get()->getResult();
     }
 
     public function listCountGet(){
         $this->permitWhere('r');
-        $this->whereNotIn('ogl.group_type',['customer_cart','customer_finish']);//
+        $this->whereNotIn('ogl.group_type',['customer_cart','system_finish']);//
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->select('COUNT(*) count');
         return $this->get()->getRow('count');
@@ -300,7 +364,7 @@ class OrderModel extends Model{
     }
     
     public function listPurge( $olderThan=APP_TRASHED_DAYS ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
+        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }

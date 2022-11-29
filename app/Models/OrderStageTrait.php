@@ -1,108 +1,57 @@
 <?php
 namespace App\Models;
-trait OrderStageTrait{
-    protected $stageMap=[
-        ''=>[
-            'customer_deleted'=>            ['Удалить','danger'],
-            'customer_cart'=>               ['Создать'],
-            ],
-        'customer_purged'=>                 [],
-        'customer_deleted'=>[
-            'customer_purged'=>             ['Удалить','danger'],
-            'customer_cart'=>               ['Восстановить'],
-            ],
-        'customer_cart'=>[
-            'customer_purged'=>             ['Удалить','danger'],
-            'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Продолжить','success'],
-            ],
-        'customer_confirmed'=>[
-            'customer_cart'=>               ['Изменить'],
-            'customer_payed_card'=>         [],
-            'customer_action_checkout'=>    ['Продолжить','success'],
-            ],
-        'customer_payed_card'=>[
-            'delivery_search'=>             [],
-            ],
-        'delivery_search'=>[
-            'customer_start'=>              [],
-        ],
-        'customer_start'=>[
-            'supplier_start'=>              ['Начать подготовку'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
-            'customer_refunded'=>           []//payment can be canceled by uniteller...
-            ],
-        
-        
-        
-        'supplier_rejected'=>[
-            //'customer_purged'=>             ['Удалить','danger'],
-            'customer_refunded'=>           [],
-            ],
-        'supplier_reclaimed'=>[
-            'customer_finishing'=>          [],
-            ],
-        'supplier_start'=>[
-            'supplier_finish'=>             ['Завершить подготовку','success'],
-            'supplier_corrected'=>          ['Изменить'],
-            'supplier_rejected'=>           [],
-            'delivery_no_courier'=>         [],
-            ],
-        'supplier_corrected'=>[
-            'supplier_finish'=>             ['Завершить подготовку','success'],
-            //'supplier_action_add'=>         ['Добавить товар'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
-            'delivery_no_courier'=>         [],
-            ],
-        'supplier_finish'=>[
-            'supplier_action_take_photo'=>  ['Сфотографировать'],
-            'supplier_corrected'=>          ['Изменить'],
-            'delivery_start'=>              ['Начать доставку','success'],
-            'delivery_no_courier'=>         [],
-            ],
-        
-        
-        
-        'delivery_start'=>[
-            'delivery_finish'=>             ['Завершить доставку','success'],
-            'delivery_action_take_photo'=>  ['Сфотографировать'],
-            'delivery_action_call_customer'=>['Позвонить клиенту'],
-            'delivery_action_rejected'=>    ['Отказаться от доставки','danger'],
-            'delivery_rejected'=>           [],
-            ],
-        
-        'delivery_rejected'=>[
-            'supplier_reclaimed'=>          ['Принять возврат заказа']
-            ],
-        'delivery_no_courier'=>[
-            'customer_refunded'=>           []  
-        ],
-        'delivery_finish'=>[
-            'customer_finishing'=>          [],
-            'customer_disputed'=>           [],
-            'customer_action_objection'=>   ['Открыть спор','light'],
-            ],
 
-        
-        
-        
-        'customer_disputed'=>[
-            'customer_refunded'=>           [],
-            'customer_finishing'=>          ['Отказаться от претензии','success'],
-            'customer_action_take_photo'=>  ['Сфотографировать заказ'],
-            ],
-        'customer_refunded'=>[
-            'customer_finishing'=>          [],
-            ],
-        'customer_finishing'=>[
-            'customer_finish'=>             [],
-            ]
-    ];
-    
-    public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
+
+trait OrderStageTrait{
+
+    private $StageScript=null;
+    private function itemStageScriptLoad(){
+        if( !$this->StageScript ){
+            $ScriptLibraryName="App\\Models\\OrderStageScript";
+            $this->StageScript=new $ScriptLibraryName();
+            $this->StageScript->OrderModel=$this;
+        }
+        return $this->StageScript;
+    }
+
+    private function itemStageNextGet($current_stage,$user_role){
+        $this->itemStageScriptLoad();
+        $filtered_stage_next=[];
+        $unfiltered_stage_next=$this->StageScript->stageMap[$current_stage??'']??[];
+        foreach($unfiltered_stage_next as $stage=>$config){
+            $valid=$user_role=='admin' 
+            || strpos($stage, $user_role)===0 
+            || strpos($stage, 'action')===0 
+            || strpos($stage, 'system')===0;
+            if($valid){
+                $filtered_stage_next[$stage]=$config;
+            }
+        }
+        return $filtered_stage_next;
+    }
+
+    private function itemStageValidate($stage,$order,$next_stage_group_id){
+        $next_stages=$this->itemStageNextGet($order->stage_current,$order->user_role);
+        if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
+            return 'ok';
+        }
+        return 'invalid_next_stage';
+    }
+
+    public function itemStageAdd( $order_id, $stage, $data=null, $check_permission=true ){
+        //only adds member group to order and executes handler
         if( $check_permission ){
             $this->permitWhere('w');
         }
+        $OrderGroupModel=model('OrderGroupModel');
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+
+        $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
+        $OrderGroupMemberModel->joinGroup($order_id,$group->group_id);
+        return $this->itemStageHandle( $order_id, $stage, $data );
+    }
+
+    public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
             return $order;
@@ -111,50 +60,40 @@ trait OrderStageTrait{
             return 'ok';
         }
         $OrderGroupModel=model('OrderGroupModel');
-        $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
-        $result=$this->itemStageValidate($stage,$order,$group);
+        $next_stage_group_id=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
+        $result=$this->itemStageValidate($stage,$order,$next_stage_group_id);
         if( $result!=='ok' ){
             return $result;
         }
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $this->transStart();
-        
         $this->allowedFields[]='order_group_id';
-        $updated=$this->update($order_id,['order_group_id'=>$group->group_id]);
-        $joined=$OrderGroupMemberModel->joinGroup($order_id,$group->group_id);
-        $this->itemCacheClear();
-        
-        $handled=$this->itemStageHandle( $order_id, $stage, $data );
-        if( $updated && $joined && $handled==='ok' ){
-            $this->transComplete();
-            
-            $this->itemStageChangeNotify($order, $stage, $data);
+        if( $check_permission ){
+            $this->permitWhere('w');
         }
-        return $handled;
-    }
-    
-    private function itemStageValidate($stage,$order,$group){
-        $next_stages=$this->stageMap[$order->stage_current??'']??[];
-        if( !isset($next_stages[$stage]) || empty($group->group_id) ){
-            return 'invalid_next_stage';
-        }
-        if( $order->user_role!='admin' && strpos($stage, $order->user_role)!==0 ){
-            pl($_SESSION,0);
 
-
-            return 'invalid_stage_role';
-        }
+        $this->transBegin();
+            $updated=$this->update($order_id,['order_group_id'=>$next_stage_group_id]);
+            $joined=$OrderGroupMemberModel->joinGroup($order_id,$next_stage_group_id);
+            $this->itemCacheClear();//because order properties have changed
+            $handled=$this->itemStageHandle( $order_id, $stage, $data );
+            if( !$updated || !$joined || $handled!=='ok' ){//failed
+                $this->transRollback();
+                return $handled;
+            }
+        $this->transCommit();
+        $this->itemStageChangeNotify($order, $stage);
         return 'ok';
     }
     
     private function itemStageHandle( $order_id, $stage, $data ){
+        $this->itemStageScriptLoad();
         helper('job');
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
-        return $this->{$stageHandlerName}($order_id, $data);
+        return $this->StageScript->{$stageHandlerName}($order_id, $data);
     }
     
-    private function itemStageChangeNotify($order, $stage, $data){
+    private function itemStageChangeNotify($order, $stage){
         $recievers_id=$order->owner_id.','.$order->owner_ally_ids;
         $push=(object)[
             'message_transport'=>'push',
@@ -162,12 +101,10 @@ trait OrderStageTrait{
             'message_data'=>[
                 'topic'=>'pushStageChanged',
                 'order_id'=>$order->order_id,
+                'orderActiveCount'=>$this->listCountGet(),
                 'stage'=>$stage,
-                'title'=>'#'.$order->order_id,
-                'body'=>''.$order->stage_current_name,
-                
-                //'title'=>view('messages/order/stage_changed_title',(array)$order),
-                //'body'=>view('messages/order/stage_changed_body',(array)$order),
+                'title'=>view('messages/order/stage_changed_title',(array)$order),
+                'body' =>view('messages/order/stage_changed_body',(array)$order),
             ]
         ];
         $notification_task=[
@@ -178,553 +115,4 @@ trait OrderStageTrait{
         ];
         jobCreate($notification_task);
     }
-    ////////////////////////////////////////////////
-    //ORDER STAGE HANDLING LISTENERS
-    ////////////////////////////////////////////////
-    
-    //////////////////////////////////////////////////////////////////////////
-    //CUSTOMER HANDLERS
-    //////////////////////////////////////////////////////////////////////////
-    private function onCustomerPurged($order_id){
-        return $this->itemPurge($order_id);
-    }
-
-    private function onCustomerDeleted($order_id){
-        return $this->itemDelete($order_id);
-    }
-    
-    private function onCustomerCart($order_id){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
-            $Acquirer=\Config\Services::acquirer();
-            $incomingStatus=$Acquirer->statusGet($order_id);
-            if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) ){
-                return 'already_payed';//already payed so refuse to reset to cart
-            }
-        }
-        //$this->itemUnDelete($order_id); seems to be unnecessary
-        $EntryModel=model('EntryModel');
-        $EntryModel->listStockMove($order_id,'free');
-        //$this->update($order_id,['order_sum_product'=>0]);in this case serious bug
-        return 'ok';
-    }
-    
-    private function onCustomerConfirmed( $order_id ){
-        $order=$this->itemGet( $order_id, 'basic' );
-
-        //STOCK RESERVE SECTION
-        $EntryModel=model('EntryModel');
-        $EntryModel->listStockMove($order_id,'reserved');
-        $order_sum_product=$EntryModel->listSumGet($order_id);
-        if( !($order_sum_product>0) ){
-            return 'order_is_empty';
-        }
-        $this->itemUpdate((object)[
-            'order_id'=>$order_id,
-            'order_sum_product'=>$order_sum_product
-        ]);
-
-        //LOCATION FIXATION SECTION
-        $LocationModel=model('LocationModel');
-        try{
-            $order_update=[
-                'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
-                'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
-            ];
-            $this->update($order_id,$order_update);
-        } catch (\Exception $e){
-            return 'address_not_set';
-        }
-
-        $PrefModel=model('PrefModel');
-        $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"customer_confirmed Rollback #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
-                ],
-            'is_singlerun'=>1,
-            'task_next_start_time'=>$next_start_time
-        ];
-        jobCreate($stage_reset_task);
-        return 'ok';
-    }
-    
-    private function onCustomerPayedCard( $order_id, $acquirer_data ){
-        if( !$acquirer_data??0 || !$acquirer_data->total??0 ){
-            return 'forbidden';
-        }
-        $order=$this->itemGet($order_id,'basic');
-        $OrderTransactionModel=model('OrderTransactionModel');
-        $transaction_created=$OrderTransactionModel->orderPaymentFixateCard($order,$acquirer_data);
-        
-        $order_started=$this->itemStageCreate($order_id, 'delivery_search');
-        if( $transaction_created=='ok' && $order_started=='ok' ){
-            // $this->itemUpdate((object)[
-            //     'order_id'=>$order_id,
-            //     'order_sum_fixed'=>$acquirer_data->total
-            // ]);
-            return 'ok';
-        }
-        return 'error';
-    }
-    
-    private function onCustomerStart( $order_id, $data ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $PrefModel=model('PrefModel');
-
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('customer_start_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"customer_start Rollback #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        jobCreate($stage_reset_task);
-        ///////////////////////////////////////////////////
-        //CREATING STAGE NOTIFICATIONS
-        ///////////////////////////////////////////////////
-        $order=$this->itemGet($order_id);
-        $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id);
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $store_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'template'=>'messages/order/on_customer_start_STORE_sms.php',
-            'context'=>$context
-        ];
-        $store_email=(object)[
-            'message_transport'=>'email',
-            //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'message_reciever_email'=>$store->store_email,
-            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_start_STORE_email.php',
-            'context'=>$context
-        ];
-        $cust_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$order->owner_id,
-            'template'=>'messages/order/on_customer_start_CUST_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"customer_start Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        return 'ok';
-    }
-        
-    private function onCustomerDisputed( $order_id ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $EntryModel=model('EntryModel');
-        $CourierModel=model('CourierModel');
-
-        $EntryModel->listStockMove($order_id,'free');
-        helper('job');
-        
-        $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'all');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
-        $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer,
-            'courier'=>$courier
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
-            'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_disputed_ADMIN_email.php',
-            'context'=>$context
-        ];
-        $store_email=(object)[
-            //'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
-            'message_reciever_email'=>$store->store_email,
-            'message_transport'=>'email',
-            'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_disputed_STORE_email.php',
-            'context'=>$context
-        ];
-        $cust_sms=(object)[
-            'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'message',
-            'template'=>'messages/order/on_customer_disputed_CUST_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"customer_disputed Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$store_email,$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        $PrefModel=model('PrefModel');
-        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"customer_finishing Fastforward #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_disputed','customer_finishing',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        jobCreate($stage_reset_task);
-        return 'ok';
-    }
-    
-    private function onCustomerRefunded( $order_id, $data ){
-        // if( !$data??0 || !$data->total??0 ){
-        //     return 'forbidden';
-        // }
-
-        $order=$this->itemGet($order_id,'basic');
-        
-        // $TransactionModel=model('TransactionModel');
-        
-        //  $user_id=session()->get('user_id');
-        // $TransactionModel=model('TransactionModel');
-        // $trans=[
-        //     'trans_amount'=>$order->order_sum_total,
-        //     'trans_data'=>json_encode($data),
-        //     'acc_debit_code'=>'customer',
-        //     'acc_credit_code'=>'account.acquirer',
-        //     'owner_id'=>$order->owner_id,
-        //     'is_disabled'=>0,
-        //     'holder'=>'order',
-        //     'holder_id'=>$order_id,
-        //     'updated_by'=>$user_id,
-        // ];
-        // $TransactionModel->itemCreate($trans);    
-        // $transaction_created=$this->db->affectedRows()?'ok':'idle';
-
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        helper('job');
-        
-        $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'all');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
-            'message_subject'=>"#{$order->order_id} ВОЗВРАТ СРЕДСТВ",
-            'template'=>'messages/order/on_customer_refunded_ADMIN_email.php',
-            'context'=>$context
-        ];
-        $cust_sms=(object)[
-            'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'message',
-            'template'=>'messages/order/on_customer_refunded_CUST_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"supplier_rejected Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        return $this->itemStageCreate($order_id, 'customer_finishing');
-    }
-
-    private function onCustomerFinishing( $order_id ){
-        $finishing_task=[
-            'task_name'=>"Order finishing #$order_id",
-            'task_programm'=>[
-                    ['model'=>'\App\Models\OrderTransactionModel','method'=>'orderFinalize','arguments'=>[$order_id]]
-                ]
-        ];
-        jobCreate($finishing_task);
-
-        //SECOND TRY AFTER 5 MIN
-        $timeout_min=2;
-        $next_start_time=time()+$timeout_min*60;
-        $finishing_task['task_next_start_time']=$next_start_time;
-        jobCreate($finishing_task);
-        return 'ok';
-    }
-    
-    private function onCustomerFinish( $order_id ){
-        $OrderTransactionModel=model('OrderTransactionModel');
-        if( $OrderTransactionModel->orderPaymentFinalizeCheck($order_id) ){
-            return 'ok';
-        }
-        return $OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    //SUPPLIER HANDLERS
-    //////////////////////////////////////////////////////////////////////////
-    private function onSupplierRejected( $order_id ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $EntryModel=model('EntryModel');
-
-        $EntryModel->listStockMove($order_id,'free');
-        helper('job');
-        
-        $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'basic');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $store_email=(object)[
-            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
-            'message_transport'=>'email',
-            'message_subject'=>"Отмена Заказа №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_supplier_rejected_STORE_email.php',
-            'context'=>$context
-        ];
-        $cust_sms=(object)[
-            'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'message',
-            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"supplier_rejected Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
-        return $this->itemStageCreate($order_id, 'customer_refunded');
-    }
-        
-    private function onSupplierStart(){
-        return 'ok';
-    }
-    
-    private function onSupplierCorrected(){
-        return 'ok';
-    }
-    
-    private function onSupplierReclaimed($order_id){
-        /*
-         * Should we start reclamation???? 
-         * Or admin should do it from cloud control panel???
-         * Or money should stay as prepay at account???
-         * 
-         * Penalty to courier???
-         * Penalty to customer???
-         */
-        return $this->itemStageCreate($order_id, 'customer_finishing');
-    }
-    private function onSupplierFinish( $order_id ){
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentFixation',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_id
-        ];
-        $OrderTransactionModel=model('OrderTransactionModel');
-        $orderPaymentFixationTrans=$OrderTransactionModel->itemFind($filter);
-        $order=$this->itemGet($order_id);
-
-        if( !$orderPaymentFixationTrans?->trans_amount || !$order?->order_sum_total ){
-            return 'order_sum_undefined';
-        }
-        if( $orderPaymentFixationTrans->trans_amount < $order->order_sum_total ){
-            return 'order_sum_exceeded';
-        }
-        if( ! ($order?->order_sum_product>0) ){
-            return 'order_sum_zero';
-        }
-        $PrefModel=model('PrefModel');
-
-
-        $EntryModel=model('EntryModel');
-        $stock_move_result=$EntryModel->listStockMove($order_id,'commited');
-
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('delivery_no_courier_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"check if Courier was not found #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['supplier_finish','delivery_no_courier',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        helper('job');
-        jobCreate($stage_reset_task);
-        return 'ok';
-    }
-    
-    
-    //////////////////////////////////////////////////////////////////////////
-    //DELIVERY HANDLERS
-    //////////////////////////////////////////////////////////////////////////
-    private function onDeliverySearch( $order_id ){
-        $order=$this->itemGet($order_id);
-        $StoreModel=model('StoreModel');
-        $CourierModel=model('CourierModel');
-        $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $context=[
-            'store'=>$store,
-        ];
-        $CourierModel->listNotify($context);
-        return $this->itemStageCreate($order_id, 'customer_start');
-    }
-    
-    private function onDeliveryStart( $order_id ){
-        $CourierModel=model('CourierModel');
-        if( !$CourierModel->isReadyCourier() ){
-            return 'wrong_courier_status';
-        }
-        $order=$this->itemGet($order_id);
-        if( !$order->images ){
-            return 'photos_must_be_made';
-        }
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
-        return 'ok';
-    }
-    private function onDeliveryRejected( $order_id ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $CourierModel=model('CourierModel');
-        helper('job');
-        
-        $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'all');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'courier'=>$courier,
-            'customer'=>$customer
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
-            'message_subject'=>"#{$order->order_id} ДОСТАВКА НЕ УДАЛАСЬ",
-            'template'=>'messages/order/on_delivery_rejected_ADMIN_email.php',
-            'context'=>$context
-        ];
-        $admin_sms=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
-            'template'=>'messages/order/on_delivery_rejected_ADMIN_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"delivery_rejected Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        return 'ok';
-    }
-
-    private function onDeliveryNoCourier( $order_id ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        helper('job');
-        
-        $StoreModel->itemCacheClear();
-        $order=$this->itemGet($order_id,'basic');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
-            'message_subject'=>"#{$order->order_id} Курьер не найден",
-            'template'=>'messages/order/on_delivery_nocourier_ADMIN_email.php',
-            'context'=>$context
-        ];
-        $admin_sms=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
-            'template'=>'messages/order/on_delivery_nocourier_ADMIN_sms.php',
-            'context'=>$context
-        ];
-        $cust_sms=(object)[
-            'message_transport'=>'push',
-            'message_reciever_id'=>$order->owner_id,
-            'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
-            'context'=>$context
-        ];
-        $store_sms=(object)[
-            'message_transport'=>'push',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'template'=>'messages/order/on_customer_start_STORE_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"delivery_notfound Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms,$cust_sms,$store_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        $this->itemStageCreate($order_id, 'customer_refunded');
-        return 'ok';
-    }
-
-    private function onDeliveryFinish( $order_id ){
-        //make transaction for commission of courier
-        $PrefModel=model('PrefModel');
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"customer_finishing Fastforward #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finishing',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        helper('job');
-        jobCreate($stage_reset_task);
-        return 'ok';
-    }
-    
 }

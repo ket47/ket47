@@ -1,0 +1,1 @@
+Комиссия сайта за предоставленные услуги <?= isset($order_data->paymentFee)?($order_data->paymentFee*100)."%":""?>

@@ -8,11 +8,11 @@ class ICExchangeProductModel extends Model{
     private $ProductModel;
     public function productTransStart(){
         $this->ProductModel=model('ProductModel');
-        $this->ProductModel->transStart();
+        $this->ProductModel->transBegin();
     }
 
     public function productTransComplete(){
-        $this->ProductModel->transComplete();
+        $this->ProductModel->transCommit();
     }
 
     private $unit_dict=[

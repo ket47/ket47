@@ -25,19 +25,13 @@ class Order extends \App\Controllers\BaseController {
 
     public function itemDetailsPrepaymentGet(){
         $order_id = $this->request->getVar('order_id');
-        $TransactionModel = model('TransactionModel');
-        $filter=(object)[
-            'trans_tags'=>'#orderPaymentFixation',
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_id
-        ];
-        $trans=$TransactionModel->itemFind($filter);
-        if(!$trans){
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_id);
+        if(!$order_data){
             return $this->failNotFound('notfound');
         }
         return $this->respond([
-            'trans_id'=>$trans->trans_id,
-            'trans_amount'=>$trans->trans_amount
+            'order_sum_prepayed'=>$order_data->payment_card_fixate_sum??0
         ]);
     }
 
@@ -70,7 +64,7 @@ class Order extends \App\Controllers\BaseController {
         if( ($data->order_id??-1)>0 ){
             $order_id_exists=$OrderModel->where($data->order_id)->get()->getRow('order_id');
         }
-        $OrderModel->transStart();
+        $OrderModel->transBegin();
         if( !$order_id_exists ){
             if( !isset($data->order_store_id) ){
                 $OrderModel->transRollback();
@@ -100,7 +94,7 @@ class Order extends \App\Controllers\BaseController {
             $OrderModel->transRollback();
             return $this->failValidationErrors($OrderModel->errors());
         }
-        $OrderModel->transComplete();
+        $OrderModel->transCommit();
         return $this->itemGet($data->order_id);
     }
 
@@ -136,6 +130,9 @@ class Order extends \App\Controllers\BaseController {
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
+        if ($result === 'notfound') {
+            return $this->failNotFound($result);
+        }
         return $this->fail($result);
     }
 
@@ -167,6 +164,208 @@ class Order extends \App\Controllers\BaseController {
         return $this->fail($result);   
     }
 
+    public function itemCheckoutDataGet(){
+        $order_id = $this->request->getVar('order_id');
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($order_id,'basic');
+        if ($order === 'forbidden') {
+            return $this->failForbidden();
+        }
+        if ($order === 'notfound') {
+            return $this->failNotFound();
+        }
+
+        $LocationModel=model('LocationModel');
+        $PromoModel=model('PromoModel');
+        $OrderModel=model('OrderModel');
+
+        $bulkResponse=(object)[];
+        $bulkResponse->Store_deliveryOptions=$this->itemDeliveryOptionsGet(
+            $order->order_store_id
+        );
+        if( $bulkResponse->Store_deliveryOptions=='not_ready' || $bulkResponse->Store_deliveryOptions=='no_tariff' ){
+            return $this->fail($bulkResponse->Store_deliveryOptions);
+        }
+        $bulkResponse->Location_distanceHolderGet=$LocationModel->distanceHolderGet(
+            'store',$order->order_store_id,
+            'user',$order->owner_id
+        );
+        $bulkResponse->Promo_itemLinkGet=$PromoModel->itemLinkGet(
+            $order_id
+        );
+        $bulkResponse->Promo_listGet=$PromoModel->listGet(
+            $order->owner_id,
+            'active',
+            'count'
+        );
+        return $this->respond($bulkResponse);
+    }
+
+    private function itemDeliveryOptionsGet( $store_id ){
+        $StoreModel=model('StoreModel');
+        if(!$StoreModel->itemIsReady($store_id)){
+            return 'not_ready';
+        }
+        
+        $store=$StoreModel->itemGet($store_id,'basic');
+        $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id);
+        if(!$storeTariffRuleList){
+            return 'no_tariff';
+        }
+
+        $deliveryOptions=[];
+        foreach($storeTariffRuleList as $tariff){
+            if($tariff->delivery_allow==1){
+                $rule=[
+                    'tariff_id'=>$tariff->tariff_id,
+                    'order_sum_delivery'=>(int)$tariff->delivery_cost,
+                    'deliveryByCourier'=>1,
+                    'deliveryByStore'=>0,
+                    'pickupByCustomer'=>0,
+                    'paymentByCard'=>0,
+                    'paymentByCash'=>0,
+                    'paymentByCashStore'=>0
+                ];
+                if($tariff->card_allow==1){
+                    $rule['paymentByCard']=1;
+                }
+                if($tariff->cash_allow==1){
+                    $rule['paymentByCash']=1;
+                }
+                $deliveryOptions[]=$rule;
+            } else {
+                if($store->store_delivery_allow==1){
+                    $rule=[
+                        'tariff_id'=>$tariff->tariff_id,
+                        'order_sum_delivery'=>(int)$store->store_delivery_cost,
+                        'deliveryByCourier'=>0,
+                        'deliveryByStore'=>1,
+                        'pickupByCustomer'=>0,
+                        'paymentByCard'=>0,
+                        'paymentByCash'=>0,
+                        'paymentByCashStore'=>1
+                    ];
+                    if($tariff->card_allow==1){
+                        $rule['paymentByCard']=1;
+                    }
+                    $deliveryOptions[]=$rule;
+                }
+                if($store->store_pickup_allow==1){
+                    $rule=[
+                        'tariff_id'=>$tariff->tariff_id,
+                        'order_sum_delivery'=>0,
+                        'deliveryByCourier'=>0,
+                        'deliveryByStore'=>0,
+                        'pickupByCustomer'=>1,
+                        'paymentByCard'=>0,
+                        'paymentByCash'=>0,
+                        'paymentByCashStore'=>1
+                    ];
+                    if($tariff->card_allow==1){
+                        $rule['paymentByCard']=1;
+                    }
+                    $deliveryOptions[]=$rule;
+                }
+            }
+        }
+        $result='no_tariff';
+        if( count($deliveryOptions)>0 ){
+            $result=$deliveryOptions;
+        }
+        return $result;
+    }
+
+    public function itemCheckoutDataSet(){
+        $checkoutData = $this->request->getJSON();
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($checkoutData->order_id,'basic');
+        if ($order === 'forbidden' || !$checkoutData->order_id??0 || !$checkoutData->tariff_id??0 ) {
+            return $this->failForbidden();
+        }
+        if ($order === 'notfound') {
+            return $this->failNotFound();
+        }
+        $TariffMemberModel=model('TariffMemberModel');
+        $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
+        if(!$tariff){
+            return 'no_tariff';
+        }
+        $order_data=(object)[];
+        if( $tariff->order_cost ){
+            $order_data->order_cost=$tariff->order_cost;
+        }
+        //DELIVERY OPTIONS SET
+        if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
+            $order_data->delivery_by_courier=1;
+            $order_data->delivery_fee=$tariff->delivery_fee;
+            $order_data->delivery_cost=$tariff->delivery_cost;
+        }
+        if( $checkoutData->deliveryByStore??0 ){
+            $order_data->delivery_by_store=1;
+            $PromoModel=model('PromoModel');
+            $PromoModel->itemUnLink($checkoutData->order_id);
+        }
+        if( $checkoutData->pickupByCustomer??0 ){
+            $order_data->pickup_by_customer=1;
+            $PromoModel=model('PromoModel');
+            $PromoModel->itemUnLink($checkoutData->order_id);
+        }
+        //PAYMENT OPTIONS SET
+        if( $checkoutData->paymentByCard??0 && $tariff->card_allow ){
+            $order_data->payment_by_card=1;
+            $order_data->payment_fee=$tariff->card_fee;
+        }
+        if( $checkoutData->paymentByCash??0 && $tariff->cash_allow ){
+            $order_data->payment_by_cash=1;
+            $order_data->payment_fee=$tariff->cash_fee;
+        }
+        if( $checkoutData->paymentByCashStore??0 ){
+            $order_data->payment_by_cash_store=1;
+        }
+        $OrderModel->itemDataDelete($checkoutData->order_id);
+        $result=$OrderModel->itemDataUpdate($checkoutData->order_id,$order_data);
+        $OrderModel->deliverySumUpdate($checkoutData->order_id);
+        return $this->respond($result);
+    }
+
+    public function itemMetaGet(){
+        $order_id=$this->request->getVar('order_id');
+        $OrderModel=model('OrderModel');
+        $TransactionModel=model('TransactionModel');
+
+        $order=$OrderModel->itemGet($order_id);
+        $order_data=$OrderModel->itemDataGet($order_id);
+
+
+        if ($order === 'forbidden') {
+            return $this->failForbidden($order);
+        }
+        if ($order === 'notfound') {
+            return $this->failNotFound($order);
+        }
+
+        if($order->user_role==='admin'){
+            $meta=$order_data;
+        } else {
+            $meta=(object)[
+                'invoice_link'=>$order_data->invoice_link??null,
+                'payment_by_card'=>$order_data->payment_by_card??0,
+                'delivery_by_courier'=>$order_data->delivery_by_courier??0,
+                'delivery_by_store'=>$order_data->delivery_by_store??0,
+                'pickup_by_customer'=>$order_data->pickup_by_customer??0,
+                'payment_card_fixate_sum'=>$order_data->payment_card_fixate_sum??0,
+                'payment_card_confirm_sum'=>$order_data->payment_card_confirm_sum??0,
+                'payment_card_refund_sum'=>$order_data->payment_card_refund_sum??0,
+            ];
+        }
+        $filter=(object)[
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_id
+        ];
+        $meta->transactions=$TransactionModel->listFind($filter);
+        return $this->respond($meta);
+    }
+
     public function listGet() {
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),
@@ -178,7 +377,8 @@ class Order extends \App\Controllers\BaseController {
             'order_store_id'=>$this->request->getVar('order_store_id'),
             'order_group_type'=>$this->request->getVar('order_group_type'),
             'date_start'=>$this->request->getVar('date_start'),
-            'date_finish'=>$this->request->getVar('date_finish')
+            'date_finish'=>$this->request->getVar('date_finish'),
+            'has_invoice'=>$this->request->getVar('has_invoice'),
         ];
         $OrderModel=model('OrderModel');
         $order_list=$OrderModel->listGet($filter);

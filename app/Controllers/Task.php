@@ -47,8 +47,8 @@ class Task extends \App\Controllers\BaseController{
                 }
                 continue;
             }
-            echo "\nJob {$task->task_name} Started at ".date('H:i:s');
-            $this->itemExecute( $task );
+            echo "\nJob {$task->task_name} Started at ".date('H:i:s')." result=";
+            echo $this->itemExecute( $task );
             echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is job
         }
@@ -151,8 +151,16 @@ class Task extends \App\Controllers\BaseController{
         }
         return $task_result;
     }
-    
-    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
+
+    private function orderStageCreate($order_id,$new_stage,$data){
+        $OrderModel=model('OrderModel');
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+            $OrderModel->itemStageCreate( $order_id, $new_stage, $data );
+        $UserModel->systemUserLogout();
+    }
+
+    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){//reset stage of multiple orders
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         $UserModel->systemUserLogin();

@@ -133,13 +133,14 @@ class User extends \App\Controllers\BaseController{
         $user_name=$this->request->getVar('user_name');
         $user_pass=$this->request->getVar('user_pass');
         $user_pass_confirm=$this->request->getVar('user_pass_confirm');
+        $user_email=$this->request->getVar('user_email');
         $inviter_user_id=$this->request->getVar('inviter_user_id');
         $this->signOut();
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
 
-        $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm);
+        $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email);
         if( $UserModel->errors() ){
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }

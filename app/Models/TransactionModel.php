@@ -18,7 +18,7 @@ class TransactionModel extends Model{
         'trans_credit',
         'trans_holder',
         'trans_holder_id',
-        'owner_id',
+        'trans_description',
         ];
 
     protected $useSoftDeletes = true;
@@ -64,141 +64,48 @@ class TransactionModel extends Model{
         return $trans;
     }
 
-    private function itemCreateTags($trans){
-        $tags=$trans['trans_tags']??'';
-        if($trans['trans_role']??''){
-            list($debits,$credits)=explode('->',$trans['trans_role']);
-            $trans['trans_debit']=$debits;
-            $trans['trans_credit']=$credits;
-            $tags.=str_replace('.',' #debit-','.'.$debits);
-            $tags.=str_replace('.',' #credit-','.'.$credits);
+    private function itemCreateTags(object $trans){
+        $tags=$trans->trans_tags??'';
+        if($trans->trans_role??''){
+            list($debits,$credits)=explode('->',$trans->trans_role);
+            $trans->trans_debit=$debits;
+            $trans->trans_credit=$credits;
+            $tags.=str_replace('.',' #debit','.'.ucfirst($debits));
+            $tags.=str_replace('.',' #credit','.'.ucfirst($credits));
         }
-        if($trans['trans_holder']??''){
-            $tags.=" #{$trans['trans_holder']}-{$trans['trans_holder_id']}";
+        if($trans->trans_holder??''){
+            //$tags.=" #{$trans->trans_holder}-{$trans->trans_holder_id}";
         }
-        $trans['trans_tags']=$tags;
+        $trans->trans_tags=$tags;
         return $trans;
     }
 
-    public function itemCreate( $trans ){
+    public function itemCreate( object $trans ){
         if( !$this->permit(null, 'w') ){
-            return 'forbidden';
+            return 0;
         }
+        $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
         $trans=$this->itemCreateTags($trans);
         $trans_id=$this->insert($trans,true);
         return $trans_id;
     }
 
-    // public function orderCardPreauthCreate($order,$acquirer_data){
-    //     $user_id=session()->get('user_id');
-    //     $trans=[
-    //         'trans_amount'=>$order->order_sum_total,
-    //         'trans_data'=>json_encode($acquirer_data),
-    //         'trans_role'=>'customer.card->money.acquirer.blocked',
-    //         'trans_tags'=>'#orderPrepayment',
-    //         'owner_id'=>$order->owner_id,
-    //         'is_disabled'=>0,
-    //         'holder'=>'order',
-    //         'holder_id'=>$order->order_id,
-    //         'updated_by'=>$user_id,
-    //     ];
-    //     $this->itemCreate($trans);
-    //     return $this->db->affectedRows()?'ok':'idle';
-    // }
+    public function itemCreateOnce( object $trans ){
+        $created=$this->itemFind($trans);
+        if( $created ){
+            return $created->trans_id;
+        }
+        return $this->itemCreate($trans);
+    }
 
-    // public function orderSettlementGet($order_id){
-    //     $OrderModel=model('OrderModel');
-    //     $order=$OrderModel->where('order_id',$order_id)->get()->getRow();
-
-    //     $filter=(object)[
-    //         'trans_tags'=>'#orderPrepayment',
-    //         'trans_holder'=>'order',
-    //         'trans_holder_id'=>$order_id
-    //     ];
-    //     $orderPrepaymentTrans=$this->itemFind($filter);
-    //     $orderSumToClaim=$order->order_sum_total;
-    //     $orderSumToRefund=$orderPrepaymentTrans->trans_amount-$order->order_sum_total;
-
-    //     if($orderSumToRefund<0){
-    //         return 'trans_amount_is_unsufficient';
-    //     }
-
-    //     $settlement=[];
-    //     if($orderSumToRefund>0){
-    //         $settlement['refund_sum']=$orderSumToRefund;
-    //         $filter=(object)[
-    //             'trans_tags'=>'#orderRefund',
-    //             'trans_holder'=>'order',
-    //             'trans_holder_id'=>$order_id
-    //         ];
-    //         $orderRefundTrans=$this->itemFind($filter);
-    //         if($orderRefundTrans){
-    //             $settlement['refund_commited']=true;
-    //         }
-    //         $settlement['refund_commited']=false;
-    //     } else {
-    //         $settlement['refund_sum']=0;
-    //         $settlement['refund_commited']=true;
-    //     }
-
-    //     if($orderSumToClaim>0){
-    //         $settlement['claim_sum']=$orderSumToClaim;
-    //         $filter=(object)[
-    //             'trans_tags'=>'#orderClaim',
-    //             'trans_holder'=>'order',
-    //             'trans_holder_id'=>$order_id
-    //         ];
-    //         $orderClaimTrans=$this->itemFind($filter);
-    //         if($orderClaimTrans){
-    //             $settlement['claim_commited']=true;
-    //         }
-    //         $settlement['claim_commited']=false;
-    //     } else {
-    //         $settlement['claim_sum']=0;
-    //         $settlement['claim_commited']=true;
-    //     }
-
-    //     if($orderSumToClaim>0){
-    //         $settlement['bill_sum']=$orderSumToClaim;
-    //         $filter=(object)[
-    //             'trans_tags'=>'#orderBill',
-    //             'trans_holder'=>'order',
-    //             'trans_holder_id'=>$order_id
-    //         ];
-    //         $orderBillTrans=$this->itemFind($filter);
-    //         if($orderBillTrans){
-    //             $settlement['bill_commited']=true;
-    //         }
-    //         $settlement['bill_commited']=false;
-    //     } else {
-    //         $settlement['bill_sum']=0;
-    //         $settlement['bill_commited']=true;
-    //     }
-    //     return $settlement;
-    // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    public function itemUpdate( $trans ){
+    public function itemUpdate( object $trans ){
         $this->permitWhere('w');
         $this->update($trans->trans_id,$trans);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function itemDelete( $trans_id ){
+    public function itemDelete( int $trans_id ){
         $this->permitWhere('w');
         $this->delete($trans_id);
         return $this->db->affectedRows()?'ok':'idle';
@@ -207,7 +114,7 @@ class TransactionModel extends Model{
     public function allowEnable(){
         $this->allowedFields[]='is_disabled';
     }
-    
+
     public function listFind( object $filter ){
         $this->permitWhere('r');
         if( $filter->trans_role??null ){
@@ -222,87 +129,129 @@ class TransactionModel extends Model{
         if( $filter->trans_holder_id??null ){
             $this->where('trans_holder_id',$filter->trans_holder_id);
         }
+        //if( sudo() ){
+        //    $this->select("*,created_at trans_date");
+        //} else {
+            $this->select("trans_id,trans_description,trans_amount");
+        //}
         $tranList=$this->orderBy('updated_at DESC')->get()->getResult();
         if($tranList){
             foreach($tranList as $trans){
-                if( $trans?->trans_data ){
+                if( $trans->trans_data??null ){
                     $trans->trans_data=json_decode($trans->trans_data);
                 }
             }
         }
         return $tranList;
     }
+    
+    public function listGet( object $filter ){
+        if($filter->account??null){
+            $debit_case="MATCH (trans_tags) AGAINST ('#debit".ucfirst($filter->account)."' IN BOOLEAN MODE)";
+            $credit_case="MATCH (trans_tags) AGAINST ('#credit".ucfirst($filter->account)."' IN BOOLEAN MODE)";
+        } else {
+            return 'no_account';
+        }
+        $start_case= $filter->start_at?"created_at>'{$filter->start_at} 00:00:00'":"1";
+        $finish_case=$filter->finish_at?"created_at<'{$filter->finish_at} 23:59:59'":"1";
+        $permission=$this->permitWhereGet('r','item');
 
-    public function listGet( $filter ){
-        $ledger=[
-            'ibal'=>$this->listIbalGet($filter),
-            'entries'=>$this->listEntriesGet($filter),
-            'fbal'=>$this->listFbalGet($filter)
+        $sql_create_inner="
+            CREATE TEMPORARY TABLE tmp_ledger_inner AS(
+            SELECT 
+                trans_id,
+                trans_description,
+                trans_amount,
+                created_at trans_date,
+                IF($debit_case,1,0) is_debit,
+                IF($start_case,1,0) after_start
+            FROM
+                transaction_list
+            WHERE
+                $permission
+                AND ($debit_case OR $credit_case)
+                AND $finish_case
+                AND is_disabled=0
+            )
+        ";
+        $sql_ledger_get="
+            SELECT
+                *
+            FROM
+                tmp_ledger_inner
+        ";
+        $sql_meta_get="
+            SELECT
+                SUM(IF(after_start AND is_debit,trans_amount,0)) sum_debit,
+                SUM(IF(after_start AND NOT is_debit,trans_amount,0)) sum_credit,
+                SUM(IF(NOT after_start,IF(is_debit,trans_amount,-trans_amount),0)) sum_start,
+                SUM(IF(is_debit,trans_amount,-trans_amount)) sum_finish
+            FROM
+                tmp_ledger_inner
+        ";
+        $this->query($sql_create_inner);
+        $ledger =$this->query($sql_ledger_get)->getResult();
+        $meta   =$this->query($sql_meta_get)->getRow();
+        return [
+            'ledger'=>$ledger,
+            'meta'=>$meta
         ];
-        return $ledger;
     }
-    
-    private function listIbalGet( $filter ){
-        if( $filter['idate']??0 ){
-            $this->where('created_at<',$filter['idate']);
+
+    public function listDeleteChildren( $holder,$holder_id ){
+        $OrderModel=model('OrderModel');
+        if( !$OrderModel->permit($holder_id,'w') ){
+            return 'forbidden';
+        }
+        $this->permitWhere('w');
+        $this->where('trans_holder',$holder);
+        $this->where('trans_holder_id',$holder_id);
+        $this->delete();
+    }
+
+    public function listPurge( $olderThan=APP_TRASHED_DAYS ){
+        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
+    }
+
+    public function balanceGet( object $filter, $mode=null ):object{
+        if( $mode!='skip_permision_check' ){
+            $this->permitWhere('r');
+        }
+        if(empty($filter->trans_tags)){
+            $filter->trans_tags='';
+        }
+        if($filter->account??null){
+            $debit_tag='#debit'.ucfirst($filter->account);
+            $credit_tag='#credit'.ucfirst($filter->account);
+
+            $filter->trans_tags.=" $debit_tag $credit_tag";
+            $this->select("SUM(IF(MATCH (`trans_tags`) AGAINST ('$debit_tag' IN BOOLEAN MODE),trans_amount,0)) debit_sum");
+            $this->select("SUM(IF(MATCH (`trans_tags`) AGAINST ('$credit_tag' IN BOOLEAN MODE),trans_amount,0)) credit_sum");    
         } else {
-            return 0;
+            return 'no_account';
         }
-        $this->permitWhere('r');
-        if( $filter['acc_debit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
+        if( $filter->trans_holder??null ){
+            $this->where('trans_holder',$filter->trans_holder);
         }
-        if( $filter['acc_credit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
+        if( $filter->trans_holder_id??null ){
+            $this->where('trans_holder_id',$filter->trans_holder_id);
         }
-        $this->select("SUM(trans_amount) ibal");
-        return $this->get()->getRow('ibal');
+        $this->where("MATCH (`trans_tags`) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
+        $meta=$this->get()->getRow();
+        return (object)[
+            'debitSum'=>$meta->debit_sum,
+            'creditSum'=>$meta->credit_sum,
+            'balance'=>$meta->debit_sum-$meta->credit_sum
+        ];
     }
-    
-    private function listFbalGet( $filter ){
-        if( $filter['fdate']??0 ){
-            $this->where('created_at<',$filter['fdate']);
-        } else {
-            return 0;
+
+    public function sumGet(array $trans_tags){
+        foreach($trans_tags as $tag){
+            $this->where("MATCH (trans_tags) AGAINST ('{$tag}' IN BOOLEAN MODE)");
         }
-        $this->permitWhere('r');
-        if( $filter['acc_debit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
-        }
-        if( $filter['acc_credit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
-        }
-        $this->select("SUM(trans_amount) fbal");
-        return $this->get()->getRow('fbal');        
+        $this->select("SUM(trans_amount) sum_total");
+        return $this->get()->getRow('sum_total')??0;
     }
-    
-    private function listEntriesGet( $filter ){
-        $this->filterMake($filter);
-        if( $filter['acc_debit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
-        }
-        if( $filter['acc_credit_code']??0 ){
-            $this->where('acc_debit_code',$filter['acc_debit_code']);
-        }
-        if( $filter['idate']??0 ){
-            $this->where('created_at>',$filter['idate']);
-        }
-        if( $filter['fdate']??0 ){
-            $this->where('created_at<',$filter['fdate']);
-        }
-        return $this->get()->getResult();        
-    }
-    
-    public function listCreate(){
-        return false;
-    }
-    
-    public function listUpdate(){
-        return false;
-    }
-    
-    public function listDelete(){
-        return false;
-    }
-    
 }

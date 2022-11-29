@@ -28,7 +28,7 @@ class Promo extends \App\Controllers\BaseController{
         $promo_id=$this->request->getVar('promo_id');
         $order_id=$this->request->getVar('order_id');
         $PromoModel=model('PromoModel');
-        $result=$PromoModel->itemLink($promo_id,$order_id);
+        $result=$PromoModel->itemLink($order_id,$promo_id);
         if($result=='forbidden'){
             return $this->failForbidden('forbidden');
         }

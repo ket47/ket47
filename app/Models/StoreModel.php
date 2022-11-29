@@ -17,6 +17,9 @@ class StoreModel extends Model{
         'store_tax_num',
         'store_company_name_new',
         'store_minimal_order',
+        'store_delivery_allow',
+        'store_delivery_cost',
+        'store_pickup_allow',
         'store_time_preparation',
         'store_time_opens_0',
         'store_time_opens_1',
@@ -75,21 +78,13 @@ class StoreModel extends Model{
             return $store;
         }
         
-        $LocationModel=model('LocationModel');
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $LocationModel=model('LocationModel');
+        
         $ImageModel=model('ImageModel');
+
         $store->is_writable=$this->permit($store_id,'w');
         $store->member_of_groups=$StoreGroupMemberModel->memberOfGroupsGet($store->store_id);
-        $filter=[
-            'image_holder'=>'store',
-            'image_holder_id'=>$store->store_id,
-            'is_disabled'=>1,
-            'is_deleted'=>0,
-            'is_active'=>1,
-            'limit'=>5
-        ];
-        $store->images=$ImageModel->listGet($filter);
-        
         $filter_loc=[
             'location_holder'=>'store',
             'location_holder_id'=>$store->store_id,
@@ -99,6 +94,15 @@ class StoreModel extends Model{
             $LocationModel->distanceToUserInclude();
         }
         $store->locations=$LocationModel->listGet($filter_loc);
+        $filter=[
+            'image_holder'=>'store',
+            'image_holder_id'=>$store->store_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1,
+            'limit'=>5
+        ];
+        $store->images=$ImageModel->listGet($filter);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
     }
@@ -108,10 +112,26 @@ class StoreModel extends Model{
         $weekday=date('N')-1;
         $dayhour=date('H',time()+$beforeCloseMargin);
         $this->select("IF(is_working AND is_disabled=0 AND deleted_at IS NULL AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_ready");
+        $this->select("store_tax_num");
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
         if( !$store ){
-            return 'notfound';
+            return 0;
+        }
+        if( empty($store->store_tax_num) || strlen($store->store_tax_num)<10 ){
+            return 0;
+        }
+        /**
+         * should I use balance caching instead?
+         */
+        $TransactionModel=model('TransactionModel');
+        $filter=(object)[
+            'trans_tags'=>" +#store{$store_id}",
+            'account'=>'supplier',
+        ];
+        $storeAccount=$TransactionModel->balanceGet($filter,'skip_permision_check');
+        if($storeAccount->balance<0){
+            return 0;
         }
         return $store->is_ready?1:0;     
     }
@@ -122,7 +142,7 @@ class StoreModel extends Model{
         }
         $user_id=session()->get('user_id');
         $has_store_id=$this->where('owner_id',$user_id)->get()->getRow('store_id');
-        if( $has_store_id ){
+        if( !sudo() && $has_store_id ){
             return 'limit_exeeded';
         }
         $newstore=[
@@ -231,6 +251,30 @@ class StoreModel extends Model{
         $this->update($store_id,$data);
         return $this->db->affectedRows()?'ok':'idle';
     }
+
+    public function tariffRuleListGet( $store_id ){
+        $this->permitWhere('r');
+        $this->join('tariff_member_list','store_id');
+        $this->join('tariff_list','tariff_id');
+        $this->where('store_id',$store_id);
+        $this->where('start_at<=NOW()');
+        $this->where('finish_at>=NOW()');
+        $this->where('tariff_list.is_disabled',0);
+        $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
+        $this->orderBy("delivery_allow DESC");
+        $this->orderBy("card_allow DESC");
+        return $this->get()->getResult();
+    }
+
+    public function tariffRuleDeliveryCostGet( $store_id ){
+        $this->limit(1);
+        $this->select('IF(delivery_cost>0,delivery_cost,store_delivery_cost) order_sum_delivery');
+        $delivery_option=$this->tariffRuleListGet($store_id);
+        if( isset($delivery_option[0]) ){
+            return $delivery_option[0]->order_sum_delivery;
+        }
+        return 0;
+    }
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -274,7 +318,7 @@ class StoreModel extends Model{
     }
     
     public function listPurge( $olderThan=APP_TRASHED_DAYS ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
+        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);
     }
@@ -362,6 +406,9 @@ class StoreModel extends Model{
         $this->permitWhere('w');//have read access only store administrators
         $store=$this->get()->getRow();
 
+        if( !$store){
+            return 'notfound';
+        }
         $owners=$store->owner_id.($store->owner_ally_ids?','.$store->owner_ally_ids:'');
         if($owners){ 
             $UserModel=model('UserModel');

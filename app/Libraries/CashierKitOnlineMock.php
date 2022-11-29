@@ -1,6 +1,6 @@
 <?php
 namespace App\Libraries;
-class CashierKitOnline{
+class CashierKitOnlineMock{
     private $url_api = "https://api.kit-invest.ru/WebService.svc/";
 
     public function print($order_all){
@@ -111,26 +111,23 @@ class CashierKitOnline{
             pl(["KIT ONLINE CHECK PRINT FAILED",$response],false);
             return $response;
         }
-        $atempt_count=10;
-        while($atempt_count>0){
-            $atempt_count--;
-            sleep(2);
-            $response->Registration=$this->statusGet($order_all->order_id);
-            if($response->Registration->ResultCode!=0){
-                continue;
-            }
-            if($response->Registration->CheckState->State<1000){
-                continue;
-            }
-            return $response;
-        }
+        //MOCKING
+        $response->Registration=(object)[
+            'ResultCode'=>0,
+            'Link'=>"https://online.kit-invest.ru/Public/Check?link=1234",
+            'FiscalData'=>(object)[
+                'CheckNumber'=>1234,
+                'Date'=>"11.05.2019 12:45"
+            ]
+        ];
+        return $response;
     }
 
     private function apiExecute($CheckNumber,$method,$data){
         $url = $this->url_api.$method;
-        $data['Request']['CompanyId']=getenv('kitonline.CompanyId');
-        $data['Request']['UserLogin']=getenv('kitonline.UserLogin');
-        $data['Request']['Sign']=md5(getenv('kitonline.CompanyId').getenv('kitonline.Password').$CheckNumber);
+        $data['Request']['CompanyId']='2';
+        $data['Request']['UserLogin']='bot1111';
+        $data['Request']['Sign']=md5('2'.'bot11112019'.$CheckNumber);
         //echo json_encode($data);
         $options = array(
             'http' => array(

@@ -2,16 +2,25 @@
 namespace App\Libraries;
 class AcquirerUniteller{
     public function linkGet($order_id){
-        $order_basic=model('OrderModel')->itemGet($order_id,'basic');
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($order_id,'basic');
         if( !is_object($order_basic) ){
             return 'order_notfound';
         }
         if( !($order_basic->order_sum_product>0) || $order_basic->stage_current!='customer_confirmed' ){
             return 'order_notvalid';
         }
+        $store_is_ready=model('StoreModel')->itemIsReady($order_basic->order_store_id);
+        if( $store_is_ready!==1 ){
+            return 'store_notready';
+        }
         $customer=model('UserModel')->itemGet($order_basic->owner_id);
-        if( !is_object($customer) ){
+        if( !is_object($customer) ){//??? strange check...
             return 'user_notfound';
+        }
+        $order_data=$OrderModel->itemDataGet($order_id);
+        if( ($order_data->payment_by_card??0)!=1 ){
+            return 'card_payment_notallowed';
         }
         $p=(object)[
             'Shop_IDP' => getenv('uniteller.Shop_IDP'),

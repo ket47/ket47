@@ -24,6 +24,9 @@ class PromoModel extends Model{
     protected $promo_lifetime=183*24*60*60;
     
     public function itemGet($promo_id){
+        if( !$promo_id ){
+            return null;
+        }
         $this->permitWhere('r');
         $this->where('promo_id',$promo_id);
         return $this->get()->getRow();
@@ -55,12 +58,12 @@ class PromoModel extends Model{
         if( !$promo ){
             return false;
         }
-        $this->transStart();
+        $this->transBegin();
         $this->permitWhere('w');
         $this->update($promo->promo_id,['is_used'=>1]);
 
         $this->itemActivate($promo->promo_id);
-        $this->transComplete();
+        $this->transCommit();
     }
 
     private function itemActivate($promo_activator_id){
@@ -72,6 +75,9 @@ class PromoModel extends Model{
     }
 
     private function itemOrderApply($order_id,$promo_value){
+        if( !$order_id ){
+            return true;
+        }
         $order=(object)[
             'order_id'=>$order_id,
             'order_sum_promo'=>$promo_value
@@ -80,22 +86,29 @@ class PromoModel extends Model{
         $OrderModel->itemUpdate($order);
     }
 
-    public function itemLink($promo_id,$order_id){
+    public function itemUnlink( int $order_id ){
         $this->permitWhere('w');
         $this->where('promo_order_id',$order_id);
         $this->update(null,['promo_order_id'=>null]);
+        $this->itemOrderApply($order_id,0);//all promos deselected update order to 0
+    }
+
+    /**
+     * Links and Unlinks promos and orders
+     */
+    public function itemLink( int $order_id, int $promo_id=null ){
+        $this->itemUnlink($order_id);
         $promo=$this->itemGet($promo_id);
-        if( !$promo ){
-            $this->itemOrderApply($order_id,0);//all promos deselected update order to 0
-            return false;
+        if( !$promo ){//unlinking
+            return 'ok';
         }
-        $this->transStart();
-        $this->itemOrderApply($promo->promo_order_id,0);
-        $this->itemOrderApply($order_id,$promo->promo_value);
-        $this->permitWhere('w');
-        $this->update($promo_id,['promo_order_id'=>$order_id]);
-        $result=$this->db->affectedRows()?'ok':'idle';
-        $this->transComplete();
+        $this->transBegin();
+            $this->itemOrderApply($promo->promo_order_id,0);
+            $this->itemOrderApply($order_id,$promo->promo_value);
+            $this->permitWhere('w');
+            $this->update($promo_id,['promo_order_id'=>$order_id]);
+            $result=$this->db->affectedRows()?'ok':'idle';
+        $this->transCommit();
         return $result;
     }
 
@@ -145,14 +158,14 @@ class PromoModel extends Model{
         $child_name="За приглашённого друга: {$new_user_name}";
 
         $promo_voucher_count=5;
-        $this->transStart();
-        for($i=0;$i<$promo_voucher_count;$i++){
-            $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
-            if($inviter_user_id>0){
-                $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id);
+        $this->transBegin();
+            for($i=0;$i<$promo_voucher_count;$i++){
+                $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
+                if($inviter_user_id>0){
+                    $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id);
+                }
             }
-        }
-        $this->transComplete();
+        $this->transCommit();
 
         $this->userNotify($user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$parent_value,'promo_name'=>$parent_name]);
         if($inviter_user_id>0){
