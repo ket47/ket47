@@ -80,6 +80,10 @@ class Tariff extends \App\Controllers\BaseController{
         $store_id=$this->request->getVar('store_id');
         $start_at=$this->request->getVar('start_at');
         $finish_at=$this->request->getVar('finish_at');
+
+        if( !$tariff_id || !$store_id || !$start_at || !$finish_at ){
+            return $this->failNotFound('notariff');
+        }
         
         $TariffMemberModel=model('TariffMemberModel');
         $result=$TariffMemberModel->itemCreate($tariff_id,$store_id,$start_at,$finish_at);
@@ -92,6 +96,9 @@ class Tariff extends \App\Controllers\BaseController{
     public function storeTariffDelete(){
         $tariff_id=$this->request->getVar('tariff_id');
         $store_id=$this->request->getVar('store_id');
+        if( !$tariff_id || !$store_id ){
+            return $this->failNotFound('notariff');
+        }
         $TariffMemberModel=model('TariffMemberModel');
         $result=$TariffMemberModel->itemDelete($tariff_id,$store_id);
         if( $result=='forbidden' ){

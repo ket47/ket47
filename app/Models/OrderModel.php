@@ -102,28 +102,6 @@ class OrderModel extends Model{
         return $order;
     }
 
-    // public function itemTariffGet( int $order_id ){
-    //     if( !$this->order_tariff ){
-    //         $this->itemGet($order_id,'basic');
-    //     }
-    //     return $this->order_tariff;
-    // }
-
-
-
-    /**
-     * ????????????????????????????????????????????????
-     */
-    // public function itemTariffRuleGet( int $order_id ){
-    //     $order_tariff=$this->itemTariffGet($order_id);
-    //     return (object)[
-    //         'card_allow'=>$order_tariff->card_allow,
-    //         'cash_allow'=>$order_tariff->cash_allow,
-    //         'delivery_allow'=>$order_tariff->delivery_allow,
-    //         'delivery_cost'=>$order_tariff->delivery_cost
-    //     ];
-    // }
-
     public function itemDataGet( int $order_id, bool $use_cache=true ){
         if( !$this->order_data || !$use_cache ){
             $this->permitWhere('r');
@@ -348,6 +326,7 @@ class OrderModel extends Model{
         $this->whereNotIn('ogl.group_type',['customer_cart','system_finish']);//
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->select('COUNT(*) count');
+        $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
         return $this->get()->getRow('count');
     }
     

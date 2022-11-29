@@ -45,6 +45,12 @@ class TariffMemberModel extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
+
+        $existing_tariff_id=$this->where('tariff_id',$tariff_id)->where('store_id',$store_id)->get()->getRow('tariff_id');
+        if($existing_tariff_id){
+            return 'idle';
+        }
+
         if( !$start_at ){
             $start_at=date('Y-m-d H:i:s');
         }
