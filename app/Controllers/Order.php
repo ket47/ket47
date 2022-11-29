@@ -349,6 +349,7 @@ class Order extends \App\Controllers\BaseController {
         } else {
             $meta=(object)[
                 'invoice_link'=>$order_data->invoice_link??null,
+                'invoice_sum'=>$order_data->invoice_sum??null,
                 'payment_by_card'=>$order_data->payment_by_card??0,
                 'delivery_by_courier'=>$order_data->delivery_by_courier??0,
                 'delivery_by_store'=>$order_data->delivery_by_store??0,
