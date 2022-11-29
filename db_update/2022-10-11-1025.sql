@@ -1,0 +1,20 @@
+CREATE TABLE `tariff_list` (
+  `tariff_id` int NOT NULL AUTO_INCREMENT,
+  `tariff_name` varchar(45) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `order_allow` tinyint NOT NULL DEFAULT '0',
+  `order_fee` tinyint NOT NULL DEFAULT '0',
+  `order_cost` smallint NOT NULL DEFAULT '0',
+  `card_allow` tinyint NOT NULL DEFAULT '0',
+  `card_fee` tinyint NOT NULL DEFAULT '0',
+  `cash_allow` tinyint DEFAULT '0',
+  `cash_fee` tinyint NOT NULL DEFAULT '0',
+  `delivery_allow` tinyint DEFAULT NULL,
+  `delivery_fee` tinyint NOT NULL DEFAULT '0',
+  `delivery_cost` smallint NOT NULL DEFAULT '0',
+  `is_disabled` tinyint DEFAULT '0',
+  `is_public` tinyint DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`tariff_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
