@@ -4,4 +4,4 @@ CHANGE COLUMN `order_sum_total` `order_sum_total` FLOAT GENERATED ALWAYS AS (((`
 ALTER TABLE `order_list` 
 DROP COLUMN `order_sum_tax`,
 DROP COLUMN `order_sum_fixed`,
-ADD COLUMN `order_data` JSON NULL AFTER `order_tariff`;
+ADD COLUMN `order_data` JSON NULL AFTER `order_finish_location_id`;
