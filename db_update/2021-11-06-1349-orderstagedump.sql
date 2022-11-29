@@ -4,7 +4,7 @@ LIMIT 0, 50000
 
 -- Date: 2021-11-06 13:48
 */
-SET NAMES=utf8;
+SET NAMES 'utf8';
 INSERT INTO order_group_list (`group_id`,`group_parent_id`,`group_name`,`group_type`,`group_path_id`,`group_path`,`owner_id`,`owner_ally_ids`,`is_disabled`,`created_at`,`updated_at`,`deleted_at`) VALUES (2,0,'Поставщик','','/2/','/Поставщик/',0,'0',0,'2021-10-23 10:54:34','2021-10-28 11:12:58',NULL);
 INSERT INTO order_group_list (`group_id`,`group_parent_id`,`group_name`,`group_type`,`group_path_id`,`group_path`,`owner_id`,`owner_ally_ids`,`is_disabled`,`created_at`,`updated_at`,`deleted_at`) VALUES (3,0,'Доставка','','/3/','/Доставка/',0,'0',0,'2021-10-23 10:54:46','2021-10-28 11:13:00',NULL);
 INSERT INTO order_group_list (`group_id`,`group_parent_id`,`group_name`,`group_type`,`group_path_id`,`group_path`,`owner_id`,`owner_ally_ids`,`is_disabled`,`created_at`,`updated_at`,`deleted_at`) VALUES (5,3,'Доставлен','delivery_finish','/3/5/','/Доставка/Доставлен/',0,'0',0,'2021-10-23 10:55:02','2021-10-27 16:45:07',NULL);
