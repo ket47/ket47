@@ -186,8 +186,8 @@ class OrderModel extends Model{
             SET
                 `order_sum_delivery` =
                 `order_sum_product` 
-                * COALESCE(CAST(`order_data`->'$.delivery_fee' AS FLOAT),0) 
-                + COALESCE(CAST(`order_data`->'$.delivery_cost' AS FLOAT),0)
+                * COALESCE(CAST(`order_data`->'$.delivery_fee' AS DECIMAL(10,2)),0) 
+                + COALESCE(CAST(`order_data`->'$.delivery_cost' AS DECIMAL(10,2)),0)
             WHERE
                 order_id=$order_id";
         $this->query($sql);
