@@ -9,7 +9,6 @@ class CashierKitOnline{
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
             'CalculationType'=>'1',
             'Sum'=>$order_all->order_sum_total*100,
-            'Email'=>$order_all->customer?->user_email,
             'Phone'=>$order_all->customer->user_phone,
             'Pay'=>[
                 'CashSum'=>0,
@@ -26,6 +25,9 @@ class CashierKitOnline{
             $discount_modifier=(1-$order_all->order_sum_promo/$order_all->order_sum_product);
         }
         foreach($order_all->entries as $entry){
+            if($entry->entry_quantity==0){
+                continue;
+            }
             $Check['Subjects'][]=[
                 'SubjectName'=>$entry->entry_text,
                 'Price'=>round($entry->entry_price*100*$discount_modifier),

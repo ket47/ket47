@@ -51,7 +51,10 @@ trait OrderStageTrait{
         return $this->itemStageHandle( $order_id, $stage, $data );
     }
 
+    private $itemStageUnconfirmedGroupId=null;
+    private $itemStageUnconfirmedOrderId=null;
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
+        $this->itemStageConfirm();
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
             return $order;
@@ -60,37 +63,52 @@ trait OrderStageTrait{
             return 'ok';
         }
         $OrderGroupModel=model('OrderGroupModel');
-        $next_stage_group_id=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
-        $result=$this->itemStageValidate($stage,$order,$next_stage_group_id);
+        $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
+        $result=$this->itemStageValidate($stage,$order,$this->itemStageUnconfirmedGroupId);
         if( $result!=='ok' ){
             return $result;
         }
-        
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $this->allowedFields[]='order_group_id';
         if( $check_permission ){
             $this->permitWhere('w');
         }
 
+        $this->itemStageUnconfirmedOrderId=$order_id;
         $this->transBegin();
-            $updated=$this->update($order_id,['order_group_id'=>$next_stage_group_id]);
-            $joined=$OrderGroupMemberModel->joinGroup($order_id,$next_stage_group_id);
-            $this->itemCacheClear();//because order properties have changed
             $handled=$this->itemStageHandle( $order_id, $stage, $data );
-            if( !$updated || !$joined || $handled!=='ok' ){//failed
+            if($handled==='ok'){
+                $this->itemStageConfirm();
+            } else {//failed
                 $this->transRollback();
                 return $handled;
             }
         $this->transCommit();
         $this->itemStageChangeNotify($order, $stage);
+        $this->itemStageUnconfirmedOrderId=null;
         return 'ok';
+    }
+
+    public function itemStageConfirm(){
+        if(!$this->itemStageUnconfirmedOrderId || !$this->itemStageUnconfirmedGroupId){
+            return;
+        }
+        $this->allowedFields[]='order_group_id';
+        $this->update($this->itemStageUnconfirmedOrderId,['order_group_id'=>$this->itemStageUnconfirmedGroupId]);
+        $this->itemCacheClear();//because order properties have changed
+        
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $OrderGroupMemberModel->joinGroup($this->itemStageUnconfirmedOrderId,$this->itemStageUnconfirmedGroupId);
     }
     
     private function itemStageHandle( $order_id, $stage, $data ){
         $this->itemStageScriptLoad();
         helper('job');
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
-        return $this->StageScript->{$stageHandlerName}($order_id, $data);
+        try{
+            return $this->StageScript->{$stageHandlerName}($order_id, $data);
+        } catch (\Exception $e){
+            log_message('error',"itemStageCreate ".$e->getMessage()."\n".json_encode($e->getTrace(),JSON_PRETTY_PRINT));
+        }
+        return 'error';
     }
     
     private function itemStageChangeNotify($order, $stage){
@@ -108,7 +126,7 @@ trait OrderStageTrait{
             ]
         ];
         $notification_task=[
-            'task_name'=>"onStageChanged background push Notify #$order->order_id",
+            'task_name'=>"onStageChanged to $stage. background push Notify #$order->order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$push]]]
                 ]

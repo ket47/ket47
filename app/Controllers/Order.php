@@ -294,6 +294,9 @@ class Order extends \App\Controllers\BaseController {
         if( $tariff->order_cost ){
             $order_data->order_cost=$tariff->order_cost;
         }
+        if( $tariff->order_fee ){
+            $order_data->order_fee=$tariff->order_fee;
+        }
         //DELIVERY OPTIONS SET
         if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
             $order_data->delivery_by_courier=1;

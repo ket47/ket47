@@ -14,7 +14,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
         if($result && isset($result->order_id)){
             return $this->statusApply($result);
         }
-        return $this->fail('acquirer_rejected');
+        return $this->respond('notpayed');
     }
 
 
@@ -96,7 +96,7 @@ class CardAcquirer extends \App\Controllers\BaseController{
         $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
         $result=$Acquirer->linkGet($order_id);
-        if( in_array($result,['order_notfound','order_notvalid','user_notfound','store_notready','card_payment_notallowed']) ){
+        if( in_array($result,['order_notfound','order_notvalid','user_notfound','store_notready','card_payment_notallowed','already_payed']) ){
             return $this->fail($result);
         }
         return $result;

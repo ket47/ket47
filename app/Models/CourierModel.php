@@ -355,6 +355,7 @@ class CourierModel extends Model{
         ///////////////////////////////////////////////////
         //CREATING READY COURIERS NOTIFICATIONS
         ///////////////////////////////////////////////////
+        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<13");//at maximum notifications during 13 hours
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5,'order']);
         if( !$ready_courier_list ){
             return false;

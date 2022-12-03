@@ -27,6 +27,8 @@ class AcquirerUnitellerMock{
 
     public function statusGet($order_id){
         $order=model('OrderModel')->itemGet($order_id,'basic');
+        $order_data=model('OrderModel')->itemDataGet($order_id);
+        $balance=$order_data->payment_card_confirm_sum??$order_data->payment_card_fixate_sum??$order->order_sum_total;
         $status='authorized';
         if(getenv('test.acquirerMockFailAuth')){
             $status='waiting';
@@ -34,7 +36,7 @@ class AcquirerUnitellerMock{
         return (object)[
             'order_id'=>$order_id,
             'status'=>$status,
-            'total'=>$order->order_sum_total,
+            'total'=>$balance,
             'billNumber'=>rand(100000,999999),
             'approvalCode'=>000,
         ];

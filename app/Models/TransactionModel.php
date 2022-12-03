@@ -68,8 +68,14 @@ class TransactionModel extends Model{
         $tags=$trans->trans_tags??'';
         if($trans->trans_role??''){
             list($debits,$credits)=explode('->',$trans->trans_role);
-            $trans->trans_debit=$debits;
-            $trans->trans_credit=$credits;
+            if($trans->trans_amount>0){
+                $trans->trans_debit=$debits;
+                $trans->trans_credit=$credits;
+            } else {
+                $trans->trans_debit=$credits;
+                $trans->trans_credit=$debits;
+                $trans->trans_role="{$credits}->{$debits}";
+            }
             $tags.=str_replace('.',' #debit','.'.ucfirst($debits));
             $tags.=str_replace('.',' #credit','.'.ucfirst($credits));
         }
@@ -83,6 +89,9 @@ class TransactionModel extends Model{
     public function itemCreate( object $trans ){
         if( !$this->permit(null, 'w') ){
             return 0;
+        }
+        if( $trans->trans_amount==0 ){
+            return -1;
         }
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';

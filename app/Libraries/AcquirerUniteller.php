@@ -22,6 +22,9 @@ class AcquirerUniteller{
         if( ($order_data->payment_by_card??0)!=1 ){
             return 'card_payment_notallowed';
         }
+        if($this->statusGet($order_id)){
+            return 'already_payed';
+        }
         $p=(object)[
             'Shop_IDP' => getenv('uniteller.Shop_IDP'),
             'Order_IDP' => getenv('uniteller.orderPreffix').$order_id,
@@ -78,7 +81,8 @@ class AcquirerUniteller{
                 'content' => http_build_query($request)
                 ]
         ]);
-        $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
+        $result = file_get_contents(getenv('uniteller.gateway').'results/', true, $context);
+        pl([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],false);
         if(!$result){
             return null;
         }
@@ -136,7 +140,7 @@ class AcquirerUniteller{
     public function confirm($billNumber,$sum){
         $request=[
             'Billnumber'=>$billNumber,
-            'Subtotal_P'=>$sum,
+            'Subtotal_P'=>(float)$sum,
             'Shop_ID'=>getenv('uniteller.Shop_IDP'),
             'Login'=>getenv('uniteller.login'),
             'Password'=>getenv('uniteller.password'),
@@ -151,11 +155,12 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'confirm/', false, $context);
-        if(!$result || str_contains($result,'ErrorCode')){
+        $rows=str_getcsv($result,"\n");
+        $response=str_getcsv($rows[1],";");
+        if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE confirm UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;
         }
-        $response=explode(';',$result);
         return (object)[
             'order_id'=>$response[0],
             'status'=>$response[1],
@@ -168,7 +173,7 @@ class AcquirerUniteller{
     public function refund($billNumber,$sum){
         $request=[
             'Billnumber'=>$billNumber,
-            'Subtotal_P'=>$sum,
+            'Subtotal_P'=>(float)$sum,
             'Shop_ID'=>getenv('uniteller.Shop_IDP'),
             'Login'=>getenv('uniteller.login'),
             'Password'=>getenv('uniteller.password'),
@@ -183,11 +188,12 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'unblock/', false, $context);
-        if(!$result || str_contains($result,'ErrorCode')){
+        $rows=str_getcsv($result,"\n");
+        $response=str_getcsv($rows[1],";");
+        if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE refund UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;
         }
-        $response=explode(';',$result);
         return (object)[
             'order_id'=>$response[0],
             'status'=>$response[1],

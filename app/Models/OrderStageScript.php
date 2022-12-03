@@ -25,7 +25,7 @@ class OrderStageScript{
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
-            'customer_rejected'=>           ['Отменить заказ','danger']   
+            'customer_rejected'=>           ['Отменить заказ','danger']
             ],
         'customer_rejected'=>[
             'system_reckon'=>               []
@@ -110,7 +110,7 @@ class OrderStageScript{
 
         'system_reckon'=>[
             'system_finish'=>               [],
-            'admin_supervise'=>             ['Решить спор','danger'],
+            'admin_supervise'=>             ['Установить статус','danger'],
             ],
     ];
 
@@ -159,8 +159,15 @@ class OrderStageScript{
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
+        /**
+         * we should pause db transaction so API cals can be atomized
+         */
+        $this->OrderModel->transComplete();
         $OrderTransactionModel=model('OrderTransactionModel');
-        return $OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
+        $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
+        $this->OrderModel->transBegin();
+        return $result;
+
     }
     //////////////////////////////////////////////////////////////////////////
     //CUSTOMER HANDLERS
@@ -253,7 +260,8 @@ class OrderStageScript{
             'payment_card_fixate_date'=>date('Y-m-d H:i:s'),
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
-        return $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
     }
     
     public function onCustomerStart( $order_id, $data ){
@@ -441,7 +449,7 @@ class OrderStageScript{
             'order'=>$order,
         ];
         $cust_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
             'context'=>$context
@@ -633,12 +641,12 @@ class OrderStageScript{
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
+        $timeout_min=(int)$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
             'task_name'=>"system_reckon Fastforward #$order_id",
             'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_accept',$order_id]]
+                    ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finish',$order_id]]
                 ],
             'task_next_start_time'=>$next_start_time
         ];
