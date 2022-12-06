@@ -104,13 +104,13 @@ class OrderModel extends Model{
 
     private function itemInfoInclude(&$order){
         if( $order->user_role??null && $this->order_data ){
-            if( $order->user_role=='customer' && $this->order_data->info_for_customer??null ){
+            if( $order->user_role=='customer' && ($this->order_data->info_for_customer??null) ){
                 $order->info=json_decode($this->order_data->info_for_customer);
             } else
-            if( $order->user_role=='supplier' && $this->order_data->info_for_supplier??null ){
+            if( $order->user_role=='supplier' && ($this->order_data->info_for_supplier??null) ){
                 $order->info=json_decode($this->order_data->info_for_supplier);
             } else
-            if( $order->user_role=='courier' && $this->order_data->info_for_courier??null ){
+            if( $order->user_role=='courier' && ($this->order_data->info_for_courier??null) ){
                 $order->info=json_decode($this->order_data->info_for_courier);
             } else 
             if( $order->user_role=='admin' ){

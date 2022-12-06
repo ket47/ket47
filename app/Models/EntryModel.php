@@ -10,16 +10,8 @@ class EntryModel extends Model{
     protected $table      = 'order_entry_list';
     protected $primaryKey = 'entry_id';
     protected $allowedFields = [
-        'order_id',
-        'product_id',
-        'entry_text',
         'entry_quantity',
-        'entry_self_price',
-        'entry_price',
         'entry_comment',
-        'deleted_at',
-        'owner_id',
-        'owner_ally_ids'
         ];
 
     protected $useSoftDeletes = false;
@@ -54,7 +46,7 @@ class EntryModel extends Model{
         return false;
     }
     
-    public function itemCreate($order_id,$product_id,$product_quantity){//item on duplicate key update
+    public function itemCreate($order_id,$product_id,$product_quantity,$entry_comment=null){//item on duplicate key update
         $OrderModel=model('OrderModel');
         $ProductModel=model('ProductModel');
         $OrderModel->permitWhere('w');
@@ -69,12 +61,20 @@ class EntryModel extends Model{
         if( !$product_quantity || $product_quantity<1 ){
             $product_quantity=1;
         }
+
+        $this->allowedFields[]='order_id';
+        $this->allowedFields[]='product_id';
+        $this->allowedFields[]='entry_text';
+        $this->allowedFields[]='entry_price';
+        $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
         $new_entry=[
             'order_id'=>$order_id,
             'product_id'=>$product_id,
             'entry_text'=>"{$product_basic->product_name} {$product_basic->product_code}",
             'entry_quantity'=>$product_quantity,
             'entry_price'=>$product_basic->product_final_price,
+            'entry_comment'=>$entry_comment,
             'owner_id'=>$order_basic->owner_id,
             'owner_ally_ids'=>$order_basic->owner_ally_ids
             ];
@@ -120,11 +120,11 @@ class EntryModel extends Model{
         if( !$this->itemEditAllow( $order_basic ) ){
             return 'forbidden_at_this_stage';
         }
-        if( $stock->is_counted && isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
-            $entry->entry_comment= preg_replace('/\[.+\]/u', '', $stock->entry_comment);
-            $entry->entry_comment.="[Количество уменьшено с {$entry->entry_quantity} до {$stock->product_quantity}]";
-            $entry->entry_quantity=$stock->product_quantity;
-        }
+        // if( $stock->is_counted && isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
+        //     $entry->entry_comment= preg_replace('/\[.+\]/u', '', $stock->entry_comment);
+        //     $entry->entry_comment.="[Количество уменьшено с {$entry->entry_quantity} до {$stock->product_quantity}]";
+        //     $entry->entry_quantity=$stock->product_quantity;
+        // }
         $this->update($entry->entry_id,$entry);
         $result=$this->db->affectedRows()>0?'ok':'idle';
         return $result;
@@ -215,7 +215,7 @@ class EntryModel extends Model{
             if(!$entry->product_id??0 || !$entry->entry_quantity??0){
                 continue;
             }
-            $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity);//item on duplicate key update
+            $this->itemCreate($order_id,$entry->product_id,$entry->entry_quantity,($entry->entry_comment??null));//item on duplicate key update
             if( $this->errors() ){
                 return 'validation_error';
             }
@@ -284,10 +284,6 @@ class EntryModel extends Model{
                     JOIN
                 order_entry_list oel USING(product_id)
             SET
-                oel.entry_comment=IF(
-                    oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved,
-                    CONCAT('[Количество уменьшено с ',oel.entry_quantity,' до ',(pl.product_quantity-pl.product_quantity_reserved),']'),
-                    ''),
                 oel.entry_quantity=IF(
                     oel.entry_quantity>pl.product_quantity-pl.product_quantity_reserved,
                     pl.product_quantity-pl.product_quantity_reserved,
