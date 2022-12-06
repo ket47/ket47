@@ -75,6 +75,7 @@ class TransactionModel extends Model{
                 $trans->trans_debit=$credits;
                 $trans->trans_credit=$debits;
                 $trans->trans_role="{$credits}->{$debits}";
+                $trans->trans_amount=-$trans->trans_amount;
             }
             $tags.=str_replace('.',' #debit','.'.ucfirst($debits));
             $tags.=str_replace('.',' #credit','.'.ucfirst($credits));
