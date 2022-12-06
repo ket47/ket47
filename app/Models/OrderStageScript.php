@@ -448,6 +448,7 @@ class OrderStageScript{
             $update=(object)[
                 'info_for_supplier'=>json_encode([
                     'customer_location_address'=>$customerLocation->location_address,
+                    'customer_location_comment'=>$customerLocation->location_comment,
                     'customer_location_latitude'=>$customerLocation->location_latitude,
                     'customer_location_longitude'=>$customerLocation->location_longitude,
                     'customer_phone'=>$order->customer->user_phone,
@@ -559,6 +560,23 @@ class OrderStageScript{
         }
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+
+        $order=$this->OrderModel->itemGet($order_id);
+        $LocationModel=model("LocationModel");
+        $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
+        $update=(object)[
+            'info_for_courier'=>json_encode([
+                'customer_location_address'=>$customerLocation->location_address,
+                'customer_location_comment'=>$customerLocation->location_comment,
+                'customer_location_latitude'=>$customerLocation->location_latitude,
+                'customer_location_longitude'=>$customerLocation->location_longitude,
+                'customer_phone'=>$order->customer->user_phone,
+                'customer_name'=>$order->customer->user_name,
+                'customer_email'=>$order->customer->user_email,
+            ])
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
+
         return 'ok';
     }
     public function onDeliveryRejected( $order_id ){
