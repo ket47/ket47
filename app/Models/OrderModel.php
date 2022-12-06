@@ -39,8 +39,8 @@ class OrderModel extends Model{
         else {
             $this->select("
                 IF(order_list.owner_id=$user_id,'customer',
-                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_courier_admins),0),'delivery',
                 IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_store_admins),0),'supplier',
+                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_courier_admins),0),'delivery',
                 'other'))) user_role
                 ");
         }
@@ -68,7 +68,7 @@ class OrderModel extends Model{
         }
         $this->order_data=json_decode($order->order_data);
         unset($order->order_data);
-
+        $this->itemInfoInclude($order);
         if($mode=='basic'){
             $this->itemCache[$mode.$order_id]=$order;
             return $order;
@@ -100,6 +100,23 @@ class OrderModel extends Model{
         }
         $this->itemCache[$mode.$order_id]=$order;
         return $order;
+    }
+
+    private function itemInfoInclude(&$order){
+        if( $order->user_role??null && $this->order_data ){
+            if( $order->user_role=='customer' && $this->order_data->info_for_customer??null ){
+                $order->info=json_decode($this->order_data->info_for_customer);
+            } else
+            if( $order->user_role=='supplier' && $this->order_data->info_for_supplier??null ){
+                $order->info=json_decode($this->order_data->info_for_supplier);
+            } else
+            if( $order->user_role=='courier' && $this->order_data->info_for_courier??null ){
+                $order->info=json_decode($this->order_data->info_for_courier);
+            } else 
+            if( $order->user_role=='admin' ){
+                $order->info=json_decode($this->order_data->info_for_customer??$this->order_data->info_for_supplier??$this->order_data->info_for_courier??null);
+            }
+        }
     }
 
     public function itemDataGet( int $order_id, bool $use_cache=true ){

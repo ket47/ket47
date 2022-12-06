@@ -164,6 +164,27 @@ class Order extends \App\Controllers\BaseController {
         return $this->fail($result);   
     }
 
+    // public function itemInfoGet(){
+    //     $order_id = $this->request->getVar('order_id');
+    //     $OrderModel=model('OrderModel');
+    //     $OrderModel->permitWhere('r');
+    //     $OrderModel->where('order_id',$order_id);
+    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_customer') info_for_customer");
+    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_supplier') info_for_supplier");
+    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_courier') info_for_courier");
+    //     $info=$OrderModel->get()->getRow();
+
+    //     if(!$info || !$info->info_for_customer || !$info->info_for_supplier || !$info->info_for_courier){
+    //         return $this->failNotFound();
+    //     }
+    //     $response=(object)[
+    //         'info_for_customer'=>$info->info_for_customer?json_decode($info->info_for_customer):null,
+    //         'info_for_supplier'=>$info->info_for_supplier?json_decode($info->info_for_supplier):null,
+    //         'info_for_courier'=>$info->info_for_customer?json_decode($info->info_for_courier):null,
+    //     ];
+    //     return $this->respond($response);
+    // }
+
     public function itemCheckoutDataGet(){
         $order_id = $this->request->getVar('order_id');
         $OrderModel = model('OrderModel');

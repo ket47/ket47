@@ -55,7 +55,7 @@ class OrderTransactionModel extends TransactionModel{
         $order_data_update=(object)[
             'finalize_refund_done'=>1
         ];
-        if($refundSum!==0){
+        if($refundSum!=0){
             $acquirer_data=$Acquirer->refund($fixationId,$refundSum);
             if( !$acquirer_data ){//connection error need to repeat
                 return false;
@@ -91,7 +91,7 @@ class OrderTransactionModel extends TransactionModel{
         $order_data_update=(object)[
             'finalize_confirm_done'=>1
         ];
-        if($confirmSum!==0){
+        if($confirmSum!=0){
             $Acquirer=\Config\Services::acquirer();
             $acquirer_data=$Acquirer->confirm($fixationId,$confirmSum);
             if( !$acquirer_data ){//connection error need to repeat
@@ -196,10 +196,12 @@ class OrderTransactionModel extends TransactionModel{
             'trans_holder'=>'order',
             'trans_holder_id'=>$order_basic->order_id
         ];
-        $result=$this->itemCreate($commissionTrans);
-        if( !$result ){
-            log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
-            return false;
+        if($commissionTrans->trans_amount!=0){
+            $result=$this->itemCreate($commissionTrans);
+            if( !$result ){
+                log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
+                return false;
+            }
         }
 
         $invoiceTrans=(object)[
@@ -213,10 +215,12 @@ class OrderTransactionModel extends TransactionModel{
             'trans_holder'=>'order',
             'trans_holder_id'=>$order_basic->order_id
         ];
-        $result=$this->itemCreate($invoiceTrans);
-        if( !$result ){
-            log_message('error',"Making #orderInvoice transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
-            return false;
+        if($invoiceTrans->trans_amount!=0){
+            $result=$this->itemCreate($invoiceTrans);
+            if( !$result ){
+                log_message('error',"Making #orderInvoice transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                return false;
+            }
         }
         $order_data_update=(object)[
             'finalize_settle_supplier_done'=>1
@@ -271,10 +275,12 @@ class OrderTransactionModel extends TransactionModel{
             'trans_holder'=>'order',
             'trans_holder_id'=>$order_basic->order_id
         ];
-        $result=$this->itemCreate($bonusTrans);
-        if( !$result ){
-            log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
-            return false;
+        if($bonusTrans->trans_amount!=0){
+            $result=$this->itemCreate($bonusTrans);
+            if( !$result ){
+                log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                return false;
+            }
         }
         $order_data_update=(object)[
             'finalize_settle_courier_done'=>1
@@ -315,10 +321,12 @@ class OrderTransactionModel extends TransactionModel{
             'trans_holder'=>'order',
             'trans_holder_id'=>$order_basic->order_id
         ];
-        $result= $this->itemCreate($comissionTrans);
-        if( !$result ){
-            log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id}");
-            return false;
+        if($comissionTrans->trans_amount!=0){
+            $result= $this->itemCreate($comissionTrans);
+            if( !$result ){
+                log_message('error',"Making #commissionSum transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                return false;
+            }
         }
         $order_data_update=(object)[
             'finalize_settle_system_done'=>1

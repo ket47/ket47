@@ -439,7 +439,24 @@ class OrderStageScript{
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
-    public function onSupplierStart(){
+    public function onSupplierStart($order_id){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
+            $order=$this->OrderModel->itemGet($order_id);
+            $LocationModel=model("LocationModel");
+            $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
+            $update=(object)[
+                'info_for_supplier'=>json_encode([
+                    'customer_location_address'=>$customerLocation->location_address,
+                    'customer_location_latitude'=>$customerLocation->location_latitude,
+                    'customer_location_longitude'=>$customerLocation->location_longitude,
+                    'customer_phone'=>$order->customer->user_phone,
+                    'customer_name'=>$order->customer->user_name,
+                    'customer_email'=>$order->customer->user_email,
+                ])
+            ];
+            $this->OrderModel->itemDataUpdate($order_id,$update);
+        }
         return 'ok';
     }
     
