@@ -50,13 +50,11 @@ class OrderStageScript{
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_corrected'=>          ['Изменить'],
-            'supplier_rejected'=>           [],
             'delivery_no_courier'=>         [],
             ],
         'supplier_corrected'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_action_add'=>         ['Добавить товар'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
             'delivery_no_courier'=>         [],
             ],
         'supplier_finish'=>[
@@ -92,7 +90,7 @@ class OrderStageScript{
 
 
         'admin_supervise'=>[
-            'system_finish'=>               ['Завершить нормально','success'],
+            'system_finish'=>               ['Проблема решена','success'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
             'admin_sanction_delivery'=>     ['Оштрафовать курьера','danger'],

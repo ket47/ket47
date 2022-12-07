@@ -247,7 +247,7 @@ class OrderTransactionModel extends TransactionModel{
         $distanceFee        =(int) getenv('delivery.courier.distanceFee')??0;
         $productSum=$order_basic->order_sum_product;
         $distanceM=$LocationModel->distanceGet($order_basic->order_start_location_id, $order_basic->order_finish_location_id);
-        $distanceKM=round($distanceM/1000*1.3-$distanceTreshold);//+30%
+        $distanceKM=round($distanceM/1000*1.2-$distanceTreshold);//+20%
 
         $compensationSum=0;
         if( $distanceKM>0 ){

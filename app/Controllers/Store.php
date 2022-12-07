@@ -230,6 +230,7 @@ class Store extends \App\Controllers\BaseController{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
+        $image_holder=$this->request->getVar('image_holder');
         $image_holder_id=$this->request->getVar('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
@@ -245,7 +246,8 @@ class Store extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                $result=$this->fileSaveImage($image_holder_id,$file,$image_holder);
+                if( $result!==true ){
                     return $this->fail($result);
                 }
             }
@@ -256,9 +258,10 @@ class Store extends \App\Controllers\BaseController{
         return $this->fail('no_valid_images');
     }
     
-    private function fileSaveImage( $image_holder_id, $file ){
+    private function fileSaveImage( $image_holder_id, $file, $image_holder='store' ){
+        $image_holder=($image_holder=='store_avatar'?'store_avatar':'store');
         $image_data=[
-            'image_holder'=>'store',
+            'image_holder'=>$image_holder,
             'image_holder_id'=>$image_holder_id
         ];
         $StoreModel=model('StoreModel');

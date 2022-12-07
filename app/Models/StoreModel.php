@@ -103,6 +103,14 @@ class StoreModel extends Model{
             'limit'=>5
         ];
         $store->images=$ImageModel->listGet($filter);
+        $filter=[
+            'image_holder'=>'store_avatar',
+            'image_holder_id'=>$store->store_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1
+        ];
+        $store->avatar=$ImageModel->listGet($filter);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
     }
@@ -488,11 +496,16 @@ class StoreModel extends Model{
     public function imageCreate( $data ){
         $data['is_disabled']=1;
         $data['owner_id']=session()->get('user_id');
-        if( $this->permit($data['image_holder_id'], 'w') ){
-            $ImageModel=model('ImageModel');
-            return $ImageModel->itemCreate($data);
+        if( !$this->permit($data['image_holder_id'], 'w') ){
+            return 0;
         }
-        return 0;
+        if($data['image_holder']=='store_avatar'){
+            $limit=1;
+        } else {
+            $limit=5;
+        }
+        $ImageModel=model('ImageModel');
+        return $ImageModel->itemCreate($data,$limit);
     }
 
     public function imageUpdate( $data ){
