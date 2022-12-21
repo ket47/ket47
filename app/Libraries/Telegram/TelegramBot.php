@@ -190,11 +190,20 @@ class TelegramBot{
         return $result;
     }
     public function pinMessage($message_id){
+        $pinned_message_id=session()->get('pinned_message_id');
+        if($pinned_message_id==$message_id){
+            return true;
+        }
+        session()->set('pinned_message_id',$message_id);
         $content['chat_id']=session()->get('chat_id');
         $content['message_id']=$message_id;
         return $this->Telegram->pinChatMessage($content);
     }
     public function unpinMessage($message_id){
+        $pinned_message_id=session()->get('pinned_message_id');
+        if($pinned_message_id!=$message_id){
+            return true;
+        }
         $content['chat_id']=session()->get('chat_id');
         $content['message_id']=$message_id;
         return $this->Telegram->unpinChatMessage($content);

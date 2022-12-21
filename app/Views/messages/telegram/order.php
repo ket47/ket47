@@ -18,4 +18,4 @@
 <?php endforeach;?>
 Сумма заказа:<?=$order->order_sum_total?>
 
-◼◼◼◼◼◼◼◼◼◼◼◼◼
+◻◻◻◻◻◻◻◻◻◻◻◻◻
