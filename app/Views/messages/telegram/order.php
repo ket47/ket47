@@ -23,11 +23,13 @@
 <b>Коментарий к заказу</b>
 <?=$order->order_description?>
 
+
 <?php endif;?>
 <?php if($order->order_objection??null): ?>
 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 <b>Проблема с заказом</b>
 <?=$order->order_objection?>
+
 
 <?php endif;?>
 ◻◻◻◻◻◻◻◻◻◻◻◻◻
