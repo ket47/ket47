@@ -47,7 +47,7 @@ trait OrderTrait{
         $list_type=($list_type_id==1?'active_only':'system_finish');
         $OrderModel=model("OrderModel");
         $orders=$OrderModel->listGet(['order_group_type'=>$list_type,'limit'=>5]);
-        $html="Нет заказов";
+        $html="Нет заказов\n◼◼◼◼◼◼◼◼◼◼◼◼◼";
         if( count($orders) ){
             foreach($orders as $i=>$order){
                 $store_names[]=$order->store_name;
