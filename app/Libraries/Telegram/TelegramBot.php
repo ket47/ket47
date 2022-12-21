@@ -1,0 +1,333 @@
+<?php
+namespace App\Libraries\Telegram;
+
+use CodeIgniter\CLI\CLI;
+function w($text){
+    //CLI::write("W HELPER:".json_encode($text));
+    print_r($text);
+}
+function clearPhone( $phone_number ){
+    return '7'.substr(preg_replace('/[^\d]/', '', $phone_number),-10);
+}
+class TelegramBot{
+    use CourierTrait;
+    use OrderTrait;
+    use SupplierTrait;
+
+    public function onMessage(){
+        $text=$this->Telegram->Text();
+        if($text=='/signout'){
+            return $this->userSignOut();
+        }
+        $is_known_command=$this->buttonExecute($text);
+        if(!$is_known_command){
+            $this->sendMainMenu();
+        }
+    }
+    public function onContact(){
+        $incoming=$this->Telegram->getData();
+        $fromTelegramUserId=$incoming['message']['from']['id'];
+        $contactTelegramUserId=$incoming['message']['contact']['user_id'];
+
+        if($fromTelegramUserId!==$contactTelegramUserId){
+            $this->sendText("Нужен ваш контакт");
+            $this->userPhoneRequest();
+            return;
+        }
+        $user_phone=$this->Telegram->getContactPhoneNumber();
+        $this->userSignUp($user_phone);
+    }
+    public function onLocation(){
+        $user_location=$this->Telegram->Location();
+        if( $user_location && $this->isCourier() ){
+            $this->onCourierUpdateLocation($user_location);
+        }
+    }
+    public function onEdited_message(){
+        $user_location=$this->Telegram->Location();
+        if( $user_location && $this->isCourier() ){
+            $this->onCourierUpdateLocation($user_location);
+        }
+    }
+    public function onCallback_query(){
+        $callbackQuery=$this->Telegram->Callback_Data();
+        if(!$callbackQuery){
+            return false;
+        }
+        $command=explode('-',$callbackQuery);
+        if( substr($command[0],0,2)!=='on' ){
+            pl("calback query forbidden must begin with 'on' {$command[0]}($command[1])");
+        }
+        if( method_exists($this,$command[0]) ){
+            return $this->{$command[0]}(...explode(',',$command[1]));
+        }
+        pl("calback query not executed {$command[0]}($command[1])",0);
+    }
+    public function onPhoto(){
+        $photo=$this->Telegram->IncomingData()['photo']??null;
+        if( !is_array($photo) ){
+            return $this->sendText("Не смог загрузить фото");
+        }
+        $file=array_pop($photo);
+        $file_path=$this->Telegram->getFile($file['file_id']);
+        $file_url="https://api.telegram.org/file/bot".getenv('telegram.token')."/{$file_path['result']['file_path']}";
+
+        $order_id=session()->get('opened_order_id');
+        if(!$order_id){
+            return $this->sendText("Сначала выберите заказ к которому надо добавить фото");
+        }
+        $result=$this->orderPhotoDownload($order_id,$file_url);
+        if( $result==='forbidden' ){
+            return $this->sendText("Нет доступа");
+        }
+        if( $result==='limit_exeeded' ){
+            return $this->sendText("Уже загружено максимально количество фото");
+        }
+        return $this->sendText("Фото добавлено");
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private function sessionSetup($chat_id){
+        session_write_close();
+        session_unset();
+        session_id("telegrambot.{$chat_id}");
+        session_start();
+        session()->set('chat_id',$chat_id);
+    }
+
+    public function dispatch($Telegram){
+        $this->Telegram=$Telegram;
+        $type=$Telegram->getUpdateType();
+        $chat_id=$this->Telegram->ChatID();
+        $this->sessionSetup($chat_id);
+
+        $handler="on".ucfirst($type);
+        if( $handler==='onContact' ){
+            return $this->onContact($Telegram);
+        }
+        $signin_ok=$this->userSignIn();
+        if(!$signin_ok){
+            return false;
+        }
+        if( !method_exists($this,$handler) ){
+            w("Incoming message type is unknown ".$type);
+            $this->sendMainMenu();
+            return false;
+        }
+        try{
+            $this->$handler($Telegram);
+        } catch(\Throwable $e){
+            w("ERR: ".$e->getMessage()." File:".$e->getFile()." Line:".$e->getLine());
+        }
+    }
+
+
+
+
+
+    public function sendNotification($ChatID,$html,$options=null){
+        $this->sessionSetup($ChatID);
+        $opts=null;
+        if( $options['buttons']??null ){
+            $menu=array_merge(
+                $this->buttonInlineRowBuild( $options['buttons'] )
+            );
+            $opts=[
+                'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=true),
+            ];
+        }
+
+
+        return $this->sendHTML($html,$opts);
+    }
+    public function sendText( $text, $opts=null, $permanent_message_name=null ){
+        return $this->sendMessage(['text'=>$text],$opts, $permanent_message_name);
+    }
+    public function sendHTML( $text , $opts=null, $permanent_message_name=null){
+        return $this->sendMessage(['text'=>$text,'parse_mode'=>'HTML'],$opts, $permanent_message_name);
+    }
+    public function sendMessage( $content, $opts=null, $permanent_message_name=null ){
+        if( $opts ){
+            $content=array_merge($content,$opts);
+        }
+        $content['chat_id']=session()->get('chat_id');
+
+        $content['message_id']=null;
+        if( $permanent_message_name ){
+            $content['message_id']=session()->get($permanent_message_name);
+        }
+        if($content['message_id']??null){
+            $result=$this->Telegram->editMessageText($content);
+        } else {
+            $result=$this->Telegram->sendMessage($content);
+        }
+
+        if( $permanent_message_name ){
+            if( ($result['error_code']??null)=='400' ){
+                $this->Telegram->deleteMessage($content);
+                if(isset($opts['message_id'])){
+                    unset($opts['message_id']);
+                }
+                session()->remove($permanent_message_name);
+                $result=$this->Telegram->sendMessage($content);
+            }
+            session()->set($permanent_message_name,$result['result']['message_id']??null);
+        }
+        if( ($result['error_code']??null)=='400' ){
+            w("SEND MESSAGE ERROR: ".$result['description']);
+        }
+        return $result;
+    }
+    public function pinMessage($message_id){
+        $content['chat_id']=session()->get('chat_id');
+        $content['message_id']=$message_id;
+        return $this->Telegram->pinChatMessage($content);
+    }
+    public function unpinMessage($message_id){
+        $content['chat_id']=session()->get('chat_id');
+        $content['message_id']=$message_id;
+        return $this->Telegram->unpinChatMessage($content);
+    }
+
+    public function sendMainMenu(){
+        $courierStatusHTML=$this->courierStatusGet();
+        $supplierStatusHTML=$this->supplierStatusGet();
+        $menu=array_merge(
+            $this->buttonInlineRowBuild( $this->orderButtons ),
+            $this->buttonInlineRowBuild( $this->courierButtons ),
+            $this->buttonInlineRowBuild( $this->supplierButtonsGet() ),
+        );
+        $opts=[
+            'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=false),
+        ];
+        $context=[
+            'user'=>$this->userGet(),
+            'courierStatusHTML'=>$courierStatusHTML,
+            'supplierStatusHTML'=>$supplierStatusHTML,
+        ];
+        $html=View('messages/telegram/mainMenu',$context);
+        $this->sendHTML($html,$opts,'mmenu_message');
+    }
+    private function buttonInlineRowBuild( $buttons ){
+        $row=[];
+        foreach($buttons as $button){
+            $filter=$button[0];
+            $action=$button[1];
+            $name=$button[2];
+            if( $this->buttonFilter($filter) ){
+                $row[]=$this->Telegram->buildInlineKeyboardButton($name,'',"{$action}-");
+            }
+        }
+        return $row;
+    }
+    private function buttonFilter($filter){
+        if(!$filter){
+            return true;
+        }
+        if( method_exists($this,$filter) && $this->{$filter}() ){
+            return true;
+        }
+        return false;
+    }
+    private function buttonExecute($command){
+        $all_buttons=array_merge($this->courierButtons);
+        foreach($all_buttons as $button){
+            if( $button[2][0]!=$command ){
+                continue;
+            }
+            if( method_exists($this,$button[1]) ){
+                $this->{$button[1]}();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isUserSignedIn(){
+        if( session()->get('user_id')>0 ){
+            return true;
+        }
+        return false;
+    }
+    private $user;
+    private function userSignOut(){
+        $chat_id=$this->Telegram->ChatID();
+        $this->sessionSetup($chat_id);
+    }
+    private function userSignIn(){
+        if( $this->isUserSignedIn() ){
+            return true;
+        }
+        $telegramChatId=session()->get('chat_id');
+        $UserModel=model("UserModel");
+        $UserModel->where("JSON_EXTRACT(user_data,\"$.telegramChatId\")='$telegramChatId'");
+        $user_id=$UserModel->get()->getRow('user_id');
+        if(!$user_id){
+            $this->userPhoneRequest();
+            return false;
+        }
+        $PermissionModel=model('PermissionModel');
+        $PermissionModel->listFillSession();
+        session()->set('user_id',$user_id);
+        session()->set('user_data',null);
+        return true;
+    }
+    private function userGet(){
+        $user_id=session()->get('user_id');
+        $user=session()->get('user_data');
+        if(!$user){
+            $UserModel=model('UserModel');
+            $user=$UserModel->itemGet($user_id);
+            // if( !is_object($user) ){
+            //     $this->userPhoneRequest();
+            //     return null;
+            // }
+            session()->set('user_data',$user);
+        }
+        return $user;
+    }
+    private function userSignUp($user_phone){
+        $this->userSignOut();
+
+        $telegramChatId=$this->Telegram->ChatID();
+        $user_phone_cleared=clearPhone($user_phone);
+        $UserModel=model("UserModel");
+        $user_id=$UserModel->where('user_phone',$user_phone_cleared)->get()->getRow('user_id');
+        if(!$user_id){
+            return $this->sendText("Вам необходимо сначала зарегистрироваться номером $user_phone_cleared на сайте https://tezkel.com");
+
+        }
+        $UserModel->query("UPDATE user_list SET user_data=JSON_SET(COALESCE(user_data,'{}'),'$.telegramChatId','$telegramChatId') WHERE user_id='$user_id'");
+        $this->sessionSetup($telegramChatId);
+        $signin_ok=$this->userSignIn();
+        if($signin_ok){
+            $user=$this->userGet();
+            $this->sendText("Приветствую вас, {$user->user_name}",['reply_markup' => null,]);
+            return $this->sendMainMenu();
+        }
+    }
+    private function userPhoneRequest(){
+        $this->userSignOut();
+        $option=[
+            [$this->Telegram->buildKeyboardButton("Отправить ваш номер телефона",true)]
+        ];
+        $keyb = $this->Telegram->buildKeyBoard($option, $onetime=true);
+        $content=[
+            'chat_id'=>$this->Telegram->ChatID(),
+            'reply_markup' => $keyb,
+            'text' => "Чтобы начать общение, мне необходим ваш номер телефона учетной записи на https://tezkel.com"
+        ];
+        $this->Telegram->sendMessage($content);
+    }
+}

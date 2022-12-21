@@ -45,6 +45,10 @@ class CourierModel extends Model{
             $this->where('courier_list.owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
+
+        $this->select("{$this->table}.*,group_name status_name,group_type status_type");
+        $this->join('courier_group_member_list','courier_id=member_id','left');
+        $this->join('courier_group_list','group_id','left');
         if($mode=='basic'){
             return $this->get()->getRow();
         }
@@ -73,7 +77,6 @@ class CourierModel extends Model{
         $courier->images=$ImageModel->listGet($filter);
         return $courier;  
     }
-    
     public function itemCreate($user_id){
         if(!$user_id){
             return 'notfound';
@@ -240,10 +243,11 @@ class CourierModel extends Model{
     }
 
     public function listJobGet( $courier_id ){
-        $isReadyCourier=$this->isReadyCourier();
-        if( !$isReadyCourier ){
-            return 'notready';
-        }
+        //courier should be able to preview jobs
+        // $isReadyCourier=$this->isReadyCourier();
+        // if( !$isReadyCourier ){
+        //     return 'notready';
+        // }
         $point_distance=getenv('delivery.radius');
 
         $LocationModel=model('LocationModel');
@@ -252,6 +256,7 @@ class CourierModel extends Model{
             return 'courier_location_required';
         }
 
+        $LocationModel->select("location_latitude,location_longitude");
         $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
         $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
         $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
@@ -373,7 +378,10 @@ class CourierModel extends Model{
                             'title'=>'Новое задание',
                             'body'=>$message_text,
                             'link'=>getenv('app.frontendUrl').'order/order-list'
-                        ]
+                        ],
+                        'telegram_options'=>[
+                            'buttons'=>[['','onCourierJobStart-1063','🚀 Взять задание']]
+                        ],
                     ];
         }
         $sms_job=[

@@ -54,17 +54,6 @@ class BaseController extends Controller
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
         //$this->handleCors();
         $this->handleSession($request,$response);
-        // \CodeIgniter\Events\Events::on('post_system', function(){
-        //     if (is_callable('fastcgi_finish_request')) {
-        //         fastcgi_finish_request();
-        //     }
-        //     session_write_close();
-        //     header('Content-Length: '.ob_get_length());
-        //     ob_end_flush();
-        //     @ob_flush();
-        //     flush();
-        //     \CodeIgniter\Events\Events::trigger('post_response');
-        // });
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
         //--------------------------------------------------------------------
@@ -74,7 +63,6 @@ class BaseController extends Controller
         if( session()->get('user_id')==null ){
             $this->guestUserInit();
         }
-        //log_message('critical',json_encode(\Config\Services::timer()->getTimers()) );
     }
 
     public function batch(){
@@ -94,7 +82,6 @@ class BaseController extends Controller
         echo json_encode($responses);
         die;
     }
-        
     private function handleSession($request,$response){
         $session_id=$request->getHeaderLine('x-sid');
         if( $session_id && strlen($session_id)>30 ){

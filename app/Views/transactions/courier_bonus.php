@@ -3,7 +3,7 @@
     Фикс:<?=$costSum?>
 <?php endif;?>
 <?php if($feeSum):?>
-    %:<?=$feeSum?>
+    % от суммы:<?=$feeSum?>
 <?php endif;?>
 <?php if($compensationSum):?>
     Компенсация за <?=$distance_km?>км:<?=$compensationSum?>

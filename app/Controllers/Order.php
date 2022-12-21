@@ -199,6 +199,7 @@ class Order extends \App\Controllers\BaseController {
         $LocationModel=model('LocationModel');
         $PromoModel=model('PromoModel');
         $OrderModel=model('OrderModel');
+        $UserCardModel=model('UserCardModel');
 
         $bulkResponse=(object)[];
         $bulkResponse->Store_deliveryOptions=$this->itemDeliveryOptionsGet(
@@ -219,6 +220,7 @@ class Order extends \App\Controllers\BaseController {
             'active',
             'count'
         );
+        $bulkResponse->bankCard=$UserCardModel->itemMainGet();
         return $this->respond($bulkResponse);
     }
 
@@ -346,6 +348,10 @@ class Order extends \App\Controllers\BaseController {
         if( $checkoutData->paymentByCashStore??0 ){
             $order_data->payment_by_cash_store=1;
         }
+
+        if( $checkoutData->storeCorrectionAllow??0 ){
+            $order_data->store_correction_allow=1;
+        }
         $OrderModel->itemDataDelete($checkoutData->order_id);
         $result=$OrderModel->itemDataUpdate($checkoutData->order_id,$order_data);
         $OrderModel->deliverySumUpdate($checkoutData->order_id);
@@ -460,7 +466,8 @@ class Order extends \App\Controllers\BaseController {
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                $result=$this->fileSaveImage($image_holder_id,$file);
+                if( $result!==true ){
                     return $this->fail($result);
                 }
             }

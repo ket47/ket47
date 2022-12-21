@@ -32,7 +32,7 @@ class OrderModel extends Model{
     protected $order_tariff=null;
     
     private function itemUserRoleCalc(){
-        $user_id=session()->get('user_id');
+        $user_id=session()->get('user_id')??-1;
         if( sudo() ){
             $this->select("'admin' user_role");
         }
@@ -114,7 +114,11 @@ class OrderModel extends Model{
                 $order->info=json_decode($this->order_data->info_for_courier);
             } else 
             if( $order->user_role=='admin' ){
-                $order->info=json_decode($this->order_data->info_for_customer??$this->order_data->info_for_supplier??$this->order_data->info_for_courier??null);
+                $order->info=(object)array_merge(
+                    json_decode($this->order_data->info_for_customer??'',true)??[],
+                    json_decode($this->order_data->info_for_supplier??'',true)??[],
+                    json_decode($this->order_data->info_for_courier??'',true)??[]
+                );
             }
         }
     }
@@ -308,7 +312,7 @@ class OrderModel extends Model{
             $this->select("`order_data`->'$.invoice_link' invoice_link,`order_data`->'$.invoice_date' invoice_date,");
             $this->where('JSON_CONTAINS_PATH(order_data,"one","$.invoice_link")=1');
         }
-        if($filter['order_group_type']??0){
+        if($filter['order_group_type']??null){
             if($filter['order_group_type']=='active_only'){
                 $this->where('ogl.group_type<>','system_finish');
                 $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer'OR `ogl`.`group_type`<>'customer_cart'");
@@ -340,11 +344,14 @@ class OrderModel extends Model{
 
     public function listCountGet(){
         $this->permitWhere('r');
-        $this->whereNotIn('ogl.group_type',['customer_cart','system_finish']);//
-        $this->join('order_group_list ogl',"order_group_id=group_id",'left');
-        $this->select('COUNT(*) count');
+        $this->whereNotIn('ogl.group_type',['system_finish']);//
+        $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer' OR `ogl`.`group_type`<>'customer_cart'");
         $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
-        return $this->get()->getRow('count');
+
+        $this->itemUserRoleCalc();
+        $this->join('order_group_list ogl',"order_group_id=group_id",'left');
+        $this->select('COUNT(*) count,group_type');
+        return $this->get()->getRow('count')??0;
     }
     
     public function listCreate(){

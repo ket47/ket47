@@ -44,7 +44,7 @@ class OrderTransactionModel extends TransactionModel{
         $fixationId=($order_data->payment_card_fixate_id??0);
 
         $refundSum=$fixationBalance-$order_basic->order_sum_total;
-        if( $order_data->order_is_canceled??0 ){
+        if( ($order_data->order_is_canceled??0) || ($order_data->sanction_courier_fee??0) || ($order_data->sanction_supplier_fee??0)  ){
             $refundSum=$fixationBalance;
         }
         if( $refundSum<0 ){
@@ -74,6 +74,8 @@ class OrderTransactionModel extends TransactionModel{
         $skip=
                 ($order_data->finalize_confirm_done??0)
             ||  ($order_data->order_is_canceled??0)
+            ||  ($order_data->sanction_courier_fee??0) 
+            ||  ($order_data->sanction_supplier_fee??0)
             ||  !($order_data->payment_card_fixate_id??0);
         if( $skip ){
             return true;
@@ -111,6 +113,8 @@ class OrderTransactionModel extends TransactionModel{
         $skip=
                 ($order_data->finalize_invoice_done??0)
             ||  ($order_data->order_is_canceled??0)
+            ||  ($order_data->sanction_courier_fee??0) 
+            ||  ($order_data->sanction_supplier_fee??0)
             ||  !($order_data->payment_by_card??0);
         if( $skip ){
             return true;
@@ -169,41 +173,13 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
         $productSum=$order_basic->order_sum_product;
-        $paymentSum=$order_data->payment_card_confirm_sum??0;
-
-        $paymentFee=$order_data->payment_fee??0;
-        $paymentCost=$order_data->payment_cost??0;
-        $orderFee=$order_data->order_fee??0;
-        $orderCost=$order_data->order_cost??0;
-        
-        $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;
 
         $context=[
             'order_basic'=>$order_basic,
             'order_data'=>$order_data
         ];
-        $commissionDescription=view('transactions/supplier_commission',$context);
+
         $invoiceDescription=view('transactions/supplier_invoice',$context);
-
-        $commissionTrans=(object)[
-            'trans_amount'=>$commissionSum,
-            'trans_role'=>'capital.profit->supplier',
-            'trans_tags'=>"#orderCommission #store{$order_basic->order_store_id}",
-            'trans_description'=>$commissionDescription,
-            'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>$order_basic->order_store_admins,
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        if($commissionTrans->trans_amount!=0){
-            $result=$this->itemCreate($commissionTrans);
-            if( !$result ){
-                log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
-                return false;
-            }
-        }
-
         $invoiceTrans=(object)[
             'trans_amount'=>$productSum,
             'trans_role'=>'supplier->transit',
@@ -222,6 +198,57 @@ class OrderTransactionModel extends TransactionModel{
                 return false;
             }
         }
+
+        if($order_data->sanction_supplier_fee??0){
+            $sanctionDescription=view('transactions/supplier_sanction',$context);
+            $sanctionTrans=(object)[
+                'trans_amount'=>$productSum,
+                'trans_role'=>'capital.profit->supplier',
+                'trans_tags'=>"#orderSanction #store{$order_basic->order_store_id}",
+                'trans_description'=>$sanctionDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>$order_basic->order_store_admins,
+                'is_disabled'=>0,
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_basic->order_id
+            ];
+            if($sanctionTrans->trans_amount!=0){
+                $result=$this->itemCreate($sanctionTrans);
+                if( !$result ){
+                    log_message('error',"Making #sanctionTrans transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
+            }
+        } else {
+            $paymentSum=$order_data->payment_card_confirm_sum??0;
+
+            $paymentFee=$order_data->payment_fee??0;
+            $paymentCost=$order_data->payment_cost??0;
+            $orderFee=$order_data->order_fee??0;
+            $orderCost=$order_data->order_cost??0;
+            
+            $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;    
+            $commissionDescription=view('transactions/supplier_commission',$context);
+            $commissionTrans=(object)[
+                'trans_amount'=>$commissionSum,
+                'trans_role'=>'capital.profit->supplier',
+                'trans_tags'=>"#orderCommission #store{$order_basic->order_store_id}",
+                'trans_description'=>$commissionDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>$order_basic->order_store_admins,
+                'is_disabled'=>0,
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_basic->order_id
+            ];
+            if($commissionTrans->trans_amount!=0){
+                $result=$this->itemCreate($commissionTrans);
+                if( !$result ){
+                    log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
+                    return false;
+                }
+            }
+        }
+
         $order_data_update=(object)[
             'finalize_settle_supplier_done'=>1
         ];
@@ -240,46 +267,74 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
-        $LocationModel=model('LocationModel');
-        $courierCost        =(int) getenv('delivery.courier.cost')??0;
-        $courierFee         =(int) getenv('delivery.courier.fee')??0;
-        $distanceTreshold   =(int) getenv('delivery.courier.distanceTreshold')??0;
-        $distanceFee        =(int) getenv('delivery.courier.distanceFee')??0;
-        $productSum=$order_basic->order_sum_product;
-        $distanceM=$LocationModel->distanceGet($order_basic->order_start_location_id, $order_basic->order_finish_location_id);
-        $distanceKM=round($distanceM/1000*1.2-$distanceTreshold);//+20%
-
-        $compensationSum=0;
-        if( $distanceKM>0 ){
-            $compensationSum=$distanceFee*$distanceKM;
-        }
-        $bonusSum=$courierCost+$compensationSum+$productSum*$courierFee/100;
-        $context=[
-            'order_basic'=>$order_basic,
-            'order_data'=>$order_data,
-            'costSum'=>$courierCost,
-            'feeSum'=>$productSum*$courierFee/100,
-            'compensationSum'=>$compensationSum,
-            'distance_km'=>$distanceKM,
-        ];
-        $bonusDescription=view('transactions/courier_bonus',$context);
-
-        $bonusTrans=(object)[
-            'trans_amount'=>$bonusSum,
-            'trans_role'=>'courier->capital.profit',
-            'trans_tags'=>'#courierBonus',
-            'trans_description'=>$bonusDescription,
-            'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>($order_basic->order_courier_admins??0),
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        if($bonusTrans->trans_amount!=0){
-            $result=$this->itemCreate($bonusTrans);
-            if( !$result ){
-                log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
-                return false;
+        if($order_data->sanction_courier_fee??0){
+            $sanctionSum=$order_basic->order_sum_total;
+            $context=[
+                'order_basic'=>$order_basic,
+                'order_data'=>$order_data
+            ];
+            $sanctionDescription=view('transactions/courier_sanction',$context);
+    
+            $sanctionTrans=(object)[
+                'trans_amount'=>$sanctionSum,
+                'trans_role'=>'capital.profit->courier',
+                'trans_tags'=>'#courierSanction',
+                'trans_description'=>$sanctionDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>($order_basic->order_courier_admins??0),
+                'is_disabled'=>0,
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_basic->order_id
+            ];
+            if($sanctionTrans->trans_amount!=0){
+                $result=$this->itemCreate($sanctionTrans);
+                if( !$result ){
+                    log_message('error',"Making #courierSanction transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
+            }
+        } else {
+            $LocationModel=model('LocationModel');
+            $courierCost        =(int) getenv('delivery.courier.cost')??0;
+            $courierFee         =(int) getenv('delivery.courier.fee')??0;
+            $distanceTreshold   =(int) getenv('delivery.courier.distanceTreshold')??0;
+            $distanceFee        =(int) getenv('delivery.courier.distanceFee')??0;
+            $productSum=$order_basic->order_sum_product;
+            $distanceM=$LocationModel->distanceGet($order_basic->order_start_location_id, $order_basic->order_finish_location_id);
+            $distanceKM=round($distanceM/1000*1.2-$distanceTreshold);//+20%
+    
+            $compensationSum=0;
+            if( $distanceKM>0 ){
+                $compensationSum=$distanceFee*$distanceKM;
+            }
+            $bonusSum=$courierCost+$compensationSum+$productSum*$courierFee/100;
+            $context=[
+                'order_basic'=>$order_basic,
+                'order_data'=>$order_data,
+                'costSum'=>$courierCost,
+                'feeSum'=>$productSum*$courierFee/100,
+                'compensationSum'=>$compensationSum,
+                'distance_km'=>$distanceKM,
+            ];
+            $bonusDescription=view('transactions/courier_bonus',$context);
+    
+            $bonusTrans=(object)[
+                'trans_amount'=>$bonusSum,
+                'trans_role'=>'courier->capital.profit',
+                'trans_tags'=>'#courierBonus',
+                'trans_description'=>$bonusDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>($order_basic->order_courier_admins??0),
+                'is_disabled'=>0,
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_basic->order_id
+            ];
+            if($bonusTrans->trans_amount!=0){
+                $result=$this->itemCreate($bonusTrans);
+                if( !$result ){
+                    log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
             }
         }
         $order_data_update=(object)[

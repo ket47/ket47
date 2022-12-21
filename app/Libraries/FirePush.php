@@ -67,36 +67,3 @@ class FirePush{
         return false;
     }
 }
-/**
- *
-{
-  "message": {
-    "webpush": {
-      "notification": {
-        "title": "Fish Photos 🐟",
-        "body":"Thanks for signing up for Fish Photos! You now will receive fun daily photos of fish!",
-        "icon": "firebase-logo.png",
-        "click_action": "https://example.com/fish_photos",
-        "image": "guppies.jpg",
-        "data": {
-          "notificationType": "fishPhoto",
-          "photoId": "123456"
-        },
-        "actions": [
-          {
-            "title": "Like",
-            "action": "like",
-            "icon": "icons/heart.png"
-          },
-          {
-            "title": "Unsubscribe",
-            "action": "unsubscribe",
-            "icon": "icons/cross.png"
-          }
-        ]
-      }
-    },
-    "token": "<APP_INSTANCE_REGISTRATION_TOKEN>"
-  }
-}
- */

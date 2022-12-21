@@ -183,7 +183,6 @@ class StoreModel extends Model{
         model('ProductModel')->listUpdateValidity($store->store_id);
         if( sudo() ){
             $this->allowedFields[]='is_primary';
-            $this->allowedFields[]='store_commission';
             $this->allowedFields[]='owner_id';
         }
         $this->update($store->store_id,$store);

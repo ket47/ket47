@@ -80,7 +80,7 @@ class Task extends \App\Controllers\BaseController{
         model("ImageModel")->listPurge($trashed_days);
         model("ProductModel")->listPurge($trashed_days);
         model("StoreModel")->listPurge($trashed_days);
-        model("OrderModel")->listPurge($trashed_days);
+        model("OrderModel")->listPurge(-1);
         model("UserModel")->listPurge($trashed_days);
         echo "\npurged";
     }

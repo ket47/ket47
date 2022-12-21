@@ -6,7 +6,7 @@ function p( $object ){
     print_r($object);die;
 }
 function pl( $object, $die=true ){
-    log_message('error','PL HELPER '.json_encode($object));
+    log_message('error','PL HELPER '.json_encode($object,JSON_UNESCAPED_UNICODE));
     if($die)
         die();
 }

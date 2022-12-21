@@ -4,8 +4,42 @@ namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
 class WebHooks extends \App\Controllers\BaseController{
-
     use ResponseTrait;
+
+    public function telegramWebhook(){
+        $telegramToken=getenv('telegram.token');
+        $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
+        $Tbot=new \App\Libraries\Telegram\TelegramBot();
+        $Tbot->dispatch($Telegram);
+    }
+
+    public function telegramPoll(){
+        $telegramToken=getenv('telegram.token');
+        $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
+        $Tbot=new \App\Libraries\Telegram\TelegramBot();
+        while(1){
+            $Telegram->getUpdates($offset = 0, $limit = 100, 1, $update = true);
+            for ($i = 0; $i < $Telegram->UpdateCount(); $i++) {
+                $Telegram->serveUpdate($i);
+                $Tbot->dispatch($Telegram);
+            }
+            break;
+        }
+    }
+    // public function telegramPing(){
+    //     $arrContextOptions=array(
+    //         "ssl"=>array(
+    //             "verify_peer"=>false,
+    //             "verify_peer_name"=>false,
+    //         ),
+    //     );
+    //     while(1){
+    //         $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
+    //         if($result){
+    //             CLI::write("W HELPER:".$result);
+    //         }
+    //     }
+    // }
     
     public function viberWebhook(){
         $Viber= new \App\Libraries\Viber();
@@ -59,7 +93,5 @@ class WebHooks extends \App\Controllers\BaseController{
             "send_photo"=>false
         ];
         $response=$Viber->call_api('set_webhook',$request);
-        print_r($request);
-        p($response);
     }
 }

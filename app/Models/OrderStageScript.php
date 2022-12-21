@@ -12,15 +12,15 @@ class OrderStageScript{
         //     'customer_cart'=>               ['Восстановить'],
         //     ],
         'customer_cart'=>[
-            'customer_purged'=>             ['Удалить','danger'],
+            'customer_deleted'=>            ['Удалить','danger'],
             'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Продолжить','success'],
+            'customer_action_confirm'=>     ['Продолжить'],
             ],
-        'customer_purged'=>                 [],
+        'customer_deleted'=>                [],
         'customer_confirmed'=>[
-            'customer_cart'=>               ['Изменить'],
+            'customer_cart'=>               ['Изменить','light'],
             'customer_start'=>              [],
-            'customer_action_checkout'=>    ['Продолжить','success'],
+            'customer_action_checkout'=>    ['Продолжить'],
             ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
@@ -304,6 +304,9 @@ class OrderStageScript{
         $store_sms=(object)[
             'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context
         ];
@@ -439,20 +442,27 @@ class OrderStageScript{
         
     public function onSupplierStart($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
+        $info_for_supplier=[];
         if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
             $order=$this->OrderModel->itemGet($order_id);
             $LocationModel=model("LocationModel");
             $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
+            $info_for_supplier=[
+                'customer_location_address'=>$customerLocation->location_address,
+                'customer_location_comment'=>$customerLocation->location_comment,
+                'customer_location_latitude'=>$customerLocation->location_latitude,
+                'customer_location_longitude'=>$customerLocation->location_longitude,
+                'customer_phone'=>$order->customer->user_phone,
+                'customer_name'=>$order->customer->user_name,
+                'customer_email'=>$order->customer->user_email,
+            ];
+        }
+        if($order_data->payment_card_fixate_sum??0){
+            $info_for_supplier['payment_card_fixate_sum']=$order_data->payment_card_fixate_sum;
+        }
+        if(count($info_for_supplier)){
             $update=(object)[
-                'info_for_supplier'=>json_encode([
-                    'customer_location_address'=>$customerLocation->location_address,
-                    'customer_location_comment'=>$customerLocation->location_comment,
-                    'customer_location_latitude'=>$customerLocation->location_latitude,
-                    'customer_location_longitude'=>$customerLocation->location_longitude,
-                    'customer_phone'=>$order->customer->user_phone,
-                    'customer_name'=>$order->customer->user_name,
-                    'customer_email'=>$order->customer->user_email,
-                ])
+                'info_for_supplier'=>json_encode($info_for_supplier)
             ];
             $this->OrderModel->itemDataUpdate($order_id,$update);
         }
@@ -460,24 +470,28 @@ class OrderStageScript{
     }
     
     public function onSupplierCorrected($order_id){
-        $order=$this->OrderModel->itemGet($order_id);
-        $context=[
-            'order'=>$order,
-        ];
-        $cust_sms=(object)[
-            'message_transport'=>'push',
-            'message_reciever_id'=>$order->owner_id,
-            'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"supplier_corrected Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-        return 'ok';
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( isset($order_data->store_correction_allow) ){
+            $order=$this->OrderModel->itemGet($order_id);
+            $context=[
+                'order'=>$order,
+            ];
+            $cust_sms=(object)[
+                'message_transport'=>'push',
+                'message_reciever_id'=>$order->owner_id,
+                'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
+                'context'=>$context
+            ];
+            $notification_task=[
+                'task_name'=>"supplier_corrected Notify #$order_id",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
+                    ]
+            ];
+            jobCreate($notification_task);
+            return 'ok';
+        }
+        return 'forbidden_bycustomer';
     }
     
     public function onSupplierReclaimed($order_id){
@@ -489,7 +503,7 @@ class OrderStageScript{
          * Penalty to courier???
          * Penalty to customer???
          */
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        return 'ok';
     }
     public function onSupplierFinish( $order_id ){
         $order=$this->OrderModel->itemGet($order_id,'basic');
@@ -561,6 +575,7 @@ class OrderStageScript{
 
         $order=$this->OrderModel->itemGet($order_id);
         $LocationModel=model("LocationModel");
+        $supplierLocation=$LocationModel->itemGet($order->order_start_location_id);
         $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
         $update=(object)[
             'info_for_courier'=>json_encode([
@@ -571,10 +586,16 @@ class OrderStageScript{
                 'customer_phone'=>$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
+
+                'supplier_location_address'=>$supplierLocation->location_address,
+                'supplier_location_comment'=>$supplierLocation->location_comment,
+                'supplier_location_latitude'=>$supplierLocation->location_latitude,
+                'supplier_location_longitude'=>$supplierLocation->location_longitude,
+                'supplier_name'=>$order->store->store_name,
+                'supplier_phone'=>$order->store->store_phone,
             ])
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
-
         return 'ok';
     }
     public function onDeliveryRejected( $order_id ){

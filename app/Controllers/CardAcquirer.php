@@ -65,29 +65,29 @@ class CardAcquirer extends \App\Controllers\BaseController{
         return $this->fail('cant_change_order_stage');     
     }
 
-    public function orderStatusReport(){//do we need this???
-        $Acquirer=\Config\Services::acquirer();
-        $result=$Acquirer->orderStatusReport($this->request);
-        if( $result=='unauthorized' ){
-            return $this->failUnauthorized();
-        }
-        if( !$this->authorizeAsSystem($result->order_id) ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id CAN'T AUTHORIZE AS SYSTEM");
-            return $this->failUnauthorized();
-        }
+    // public function orderStatusReport(){//do we need this???
+    //     $Acquirer=\Config\Services::acquirer();
+    //     $result=$Acquirer->orderStatusReport($this->request);
+    //     if( $result=='unauthorized' ){
+    //         return $this->failUnauthorized();
+    //     }
+    //     if( !$this->authorizeAsSystem($result->order_id) ){
+    //         $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id CAN'T AUTHORIZE AS SYSTEM");
+    //         return $this->failUnauthorized();
+    //     }
 
-        $OrderModel=model('OrderModel');
-        $order=$OrderModel->itemGet($result->order_id);
-        if( $order->stage_current==='customer_confirmed' ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id = REPORTED AS NEW");
-            return $this->respond($result->new);//Заказ не оплачен
-        }
-        if( $this->paymentIsDone($result->order_id) ){
-            return $this->respond($result->paid);//Заказ оплачен
-        }
-        $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id = REPORTED AS CANCELED");
-        return $this->respond($result->canceled);//Заказ отменен или не готов к оплате
-    }
+    //     $OrderModel=model('OrderModel');
+    //     $order=$OrderModel->itemGet($result->order_id);
+    //     if( $order->stage_current==='customer_confirmed' ){
+    //         $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id = REPORTED AS NEW");
+    //         return $this->respond($result->new);//Заказ не оплачен
+    //     }
+    //     if( $this->paymentIsDone($result->order_id) ){
+    //         return $this->respond($result->paid);//Заказ оплачен
+    //     }
+    //     $this->log_message('error', "paymentStatusCheck; order_id:$result->order_id = REPORTED AS CANCELED");
+    //     return $this->respond($result->canceled);//Заказ отменен или не готов к оплате
+    // }
     ///////////////////////////////////////////////////////////////////////
     //PAYMENT SECTION
     ///////////////////////////////////////////////////////////////////////
@@ -95,17 +95,68 @@ class CardAcquirer extends \App\Controllers\BaseController{
     public function paymentLinkGet(){
         $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
-        $result=$Acquirer->linkGet($order_id);
-        if( in_array($result,['order_notfound','order_notvalid','user_notfound','store_notready','card_payment_notallowed','already_payed']) ){
+        if($Acquirer->statusGet($order_id,'beforepayment')){
+            return $this->fail('already_payed');
+        }
+        $result=$this->orderValidate($order_id);
+        if( $result!='ok' ){
             return $this->fail($result);
         }
+        $OrderModel=model('OrderModel');
+        $order_all=$OrderModel->itemGet($order_id,'all');
+        return $Acquirer->linkGet($order_all);
+    }
+
+    public function paymentDo(){
+        $order_id=$this->request->getVar('order_id');
+        $card_id=$this->request->getVar('card_id');
+        $result=$this->orderValidate($order_id);
+        if( $result!='ok' ){
+            return $this->fail($result);
+        }
+        if( !$card_id ){
+            return $this->fail('nocardid');
+        }
+        $Acquirer=\Config\Services::acquirer();
+
+
+        $OrderModel=model('OrderModel');
+        $order_all=$OrderModel->itemGet($order_id,'all');
+        $result=$Acquirer->pay($order_all,$card_id);
         return $result;
     }
 
-    public function paymentLinkGo(){
-        $link=$this->paymentLinkGet();
-        return $this->response->redirect($link);
+    private function orderValidate( $order_id ){
+        $OrderModel=model('OrderModel');
+        $StoreModel=model('StoreModel');
+        $order_all=$OrderModel->itemGet($order_id,'all');
+
+        if( !is_object($order_all) ){
+            return 'order_notfound';
+        }
+        $order_data=$OrderModel->itemDataGet($order_id);
+        $store_is_ready=$StoreModel->itemIsReady($order_all->order_store_id);
+        if( !($order_all->order_sum_product>0) || $order_all->stage_current!='customer_confirmed' ){
+            return 'order_notvalid';
+        }
+        if( $store_is_ready!==1 ){
+            return 'store_notready';
+        }
+        if( !($order_all->customer??null) ){
+            return 'user_notfound';
+        }
+        if( ($order_data->payment_by_card??0)!=1 ){
+            return 'card_payment_notallowed';
+        }
+        return 'ok';
     }
+
+
+
+
+
+
+
 
     public function pageOk(){
         return view('payment/payment_result_ok');
@@ -114,6 +165,33 @@ class CardAcquirer extends \App\Controllers\BaseController{
     public function pageNo(){
         return view('payment/payment_result_no');
     }
+    
+    public function cardRegisterLinkGet(){
+        $user_id=session()->get('user_id');
+        if( !($user_id>0) ){
+            return $this->failForbidden('forbidden');
+        }
+        $Acquirer=\Config\Services::acquirer();
+        $result=$Acquirer->cardRegisterLinkGet($user_id);
+        return $result;
+    }
+
+    public function cardRegisterActivate(){
+        $Acquirer=\Config\Services::acquirer();
+        $result=$Acquirer->cardRegisterActivate();
+        if( $result=='ok' ){
+            return $this->respond($result);
+        }
+        return $this->fail($result);
+    }
+
+
+
+
+
+
+
+
 
     private function paymentIsDone( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');

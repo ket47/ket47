@@ -51,9 +51,12 @@ class Messenger{
             case 'sms':
                 return $this->itemSendSms($message);
                 break;
-            case 'viber':
-                return $this->itemSendViber($message);
+            case 'telegram':
+                return $this->itemSendTelegram($message);
                 break;
+            // case 'viber':
+            //     return $this->itemSendViber($message);
+            //     break;
             case 'push':
                 return $this->itemSendPush($message);
                 break;
@@ -132,7 +135,7 @@ class Messenger{
         if( $this->itemSendPush($message) ){
             //return true;//try to send viber even if push is successfull
         }
-        if( $this->itemSendViber($message) ){
+        if( $this->itemSendTelegram($message) ){
             return true;
         }
         return $this->itemSendSms($message);
@@ -171,17 +174,10 @@ class Messenger{
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
                 'data'=>$message->message_data,
-
                 //'title'=>$message->message_subject??'',
                 //'body'=>$message->message_text??'',
                 //'link'=>$message->message_link,
             ]);
-
-
-            // log_message('error',"Push sent RESULT:$result ->".json_encode((object)[
-            //     'token'=>$sub->sub_registration_id,
-            //     'data'=>$message->message_data,
-            // ]));
             if($result){
                 $pushsent=true;
             }
@@ -189,6 +185,25 @@ class Messenger{
         return $pushsent;
     }
     
+    private function itemSendTelegram( $message ){
+        if( !isset($message->reciever->user_data->telegramChatId) ){
+            return false;
+        }
+        $telegramToken=getenv('telegram.token');
+        $TelegramBot = new \App\Libraries\Telegram\TelegramBot();
+        $TelegramBot->Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
+
+        $result=$TelegramBot->sendNotification($message->reciever->user_data->telegramChatId,$message->message_text,$message->telegram_options??null);
+
+
+
+        if( $result && ($result['ok']??null)==1 ){
+            return true;
+        }
+        log_message('error', 'Telegram message failed: '.json_encode([$result,$message]));
+        return false;
+    }
+
     private function itemSendViber( $message ){
         if( !isset($message->reciever->user_data->viberId) ){
             //log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);

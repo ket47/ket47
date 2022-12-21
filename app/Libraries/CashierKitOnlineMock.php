@@ -9,7 +9,6 @@ class CashierKitOnlineMock{
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
             'CalculationType'=>'1',
             'Sum'=>$order_all->order_sum_total*100,
-            'Email'=>$order_all->customer?->user_email,
             'Phone'=>$order_all->customer->user_phone,
             'Pay'=>[
                 'CashSum'=>0,
