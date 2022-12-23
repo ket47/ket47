@@ -219,6 +219,7 @@ class TelegramBot{
         );
         $opts=[
             'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=false),
+            'disable_web_page_preview'=>1,
         ];
         $context=[
             'user'=>$this->userGet(),
