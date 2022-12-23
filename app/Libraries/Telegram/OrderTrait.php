@@ -55,7 +55,7 @@ trait OrderTrait{
             }
         }
         $context=[
-            'orders'=>$orders,
+            'orderCount'=>count($orders),
             'listType'=>$list_type,
             'storeNames'=>implode(',',array_unique($store_names))
         ];
