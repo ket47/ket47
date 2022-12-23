@@ -128,7 +128,7 @@ class TelegramBot{
         try{
             $this->$handler($Telegram);
         } catch(\Throwable $e){
-            w("ERR: ".$e->getMessage()." File:".$e->getFile()." Line:".$e->getLine());
+            pl("ERR: ".$e->getMessage()." File:".$e->getFile()." Line:".$e->getLine());
         }
     }
 
