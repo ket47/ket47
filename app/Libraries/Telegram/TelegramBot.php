@@ -213,12 +213,13 @@ class TelegramBot{
         $courierStatusHTML=$this->courierStatusGet();
         $supplierStatusHTML=$this->supplierStatusGet();
         $menu=array_merge(
-            $this->buttonInlineRowBuild( $this->orderButtons ),
-            $this->buttonInlineRowBuild( $this->courierButtons ),
+            array_chunk(
+                $this->buttonInlineRowBuild( array_merge($this->orderButtons,$this->courierButtons) )
+            ,2),
             $this->buttonInlineRowBuild( $this->supplierButtonsGet() ),
         );
         $opts=[
-            'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=false),
+            'reply_markup' => $this->Telegram->buildInlineKeyBoard($menu, $onetime=false),
             'disable_web_page_preview'=>1,
         ];
         $context=[
