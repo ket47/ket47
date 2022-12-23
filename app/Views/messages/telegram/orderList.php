@@ -3,5 +3,5 @@
 ◻◻◻◻◻◻◻◻◻◻◻◻◻ 
 <?php if(!$orderCount): ?>
 Нет заказов 
-<?php endif; ?>
 ◻◻◻◻◻◻◻◻◻◻◻◻◻ 
+<?php endif; ?>
