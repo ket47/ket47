@@ -330,13 +330,14 @@ class TelegramBot{
     private function userPhoneRequest(){
         $this->userSignOut();
         $option=[
-            [$this->Telegram->buildKeyboardButton("Отправить ваш номер телефона",true)]
+            [$this->Telegram->buildKeyboardButton("✅✅✅ ВОЙТИ ✅✅✅",true)]
         ];
         $keyb = $this->Telegram->buildKeyBoard($option, $onetime=true);
         $content=[
             'chat_id'=>$this->Telegram->ChatID(),
             'reply_markup' => $keyb,
-            'text' => "Чтобы начать общение, мне необходим ваш номер телефона учетной записи на https://tezkel.com"
+            'text' => "Нажмите на поле внизу ✅✅✅ ВОЙТИ ✅✅✅ ниже, чтобы начать общение. Мне необходим ваш номер телефона учетной записи на https://tezkel.com",
+            'disable_web_page_preview'=>1,
         ];
         $this->Telegram->sendMessage($content);
     }
