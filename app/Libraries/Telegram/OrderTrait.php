@@ -47,19 +47,19 @@ trait OrderTrait{
         $list_type=($list_type_id==1?'active_only':'system_finish');
         $OrderModel=model("OrderModel");
         $orders=$OrderModel->listGet(['order_group_type'=>$list_type,'limit'=>5]);
-        $html="◻◻◻◻◻◻◻◻◻◻◻◻◻\nНет заказов\n◻◻◻◻◻◻◻◻◻◻◻◻◻";
         if( count($orders) ){
             foreach($orders as $i=>$order){
                 $store_names[]=$order->store_name;
                 $label=($i+1).") Заказ #{$order->order_id} от ".date('d.m.y H:i',strtotime($order->created_at))." [{$order->stage_current_name}]";
                 $buttons[]=$this->Telegram->buildInlineKeyboardButton($label,'',"onOrderOpen-{$order->order_id}");
             }
-            if( $list_type=='active_only' ){
-                $html="◻◻◻◻◻◻◻◻◻◻◻◻◻\nВаши активные заказы из ".implode(',',array_unique($store_names))."\n◻◻◻◻◻◻◻◻◻◻◻◻◻";
-            } else {
-                $html="◻◻◻◻◻◻◻◻◻◻◻◻◻\nВаши завершенные заказы из ".implode(',',array_unique($store_names))."\n◻◻◻◻◻◻◻◻◻◻◻◻◻";
-            }
         }
+        $context=[
+            'orders'=>$orders,
+            'listType'=>$list_type,
+            'storeNames'=>implode(',',array_unique($store_names))
+        ];
+        $html=View('messages/telegram/orderList',$context);
         $buttons[]=$this->Telegram->buildInlineKeyboardButton("Открыть в приложении","https://tezkel.com/order/order-list");
         $keyboard=array_chunk($buttons,1);
         $keyboard[]=[
