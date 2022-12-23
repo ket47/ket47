@@ -14,11 +14,15 @@ class TelegramBot{
     use OrderTrait;
     use SupplierTrait;
 
+    private $commandButtonMap=[
+        '/orderlist'=>"Активные заказы"
+    ];
     public function onMessage(){
         $text=$this->Telegram->Text();
         if($text=='/signout'){
             return $this->userSignOut();
         }
+        $text=$this->commandButtonMap[$text]??$text;
         $is_known_command=$this->buttonExecute($text);
         if(!$is_known_command){
             $this->sendMainMenu();
@@ -212,14 +216,19 @@ class TelegramBot{
     public function sendMainMenu(){
         $courierStatusHTML=$this->courierStatusGet();
         $supplierStatusHTML=$this->supplierStatusGet();
-        $menu=array_merge(
-            array_chunk(
-                $this->buttonInlineRowBuild( array_merge($this->orderButtons,$this->courierButtons) )
-            ,2),
-            $this->buttonInlineRowBuild( $this->supplierButtonsGet() ),
+        $menu_2col=array_merge(
+            $this->buttonInlineRowBuild( $this->orderButtons ),
+            $this->buttonInlineRowBuild( $this->courierButtons )
         );
+        $menu_1col=array_merge(
+            $this->buttonInlineRowBuild( $this->supplierButtonsGet() )
+        );
+        $menu=array_merge(
+            array_chunk($menu_2col,2),
+            array_chunk($menu_1col,1)
+            );
         $opts=[
-            'reply_markup' => $this->Telegram->buildInlineKeyBoard($menu, $onetime=false),
+            'reply_markup' => $this->Telegram->buildInlineKeyBoard( $menu, $onetime=false),
             'disable_web_page_preview'=>1,
         ];
         $context=[
