@@ -261,7 +261,7 @@ class TelegramBot{
         return false;
     }
     private function buttonExecute($command){
-        $all_buttons=array_merge($this->courierButtons);
+        $all_buttons=array_merge($this->courierButtons,$this->orderButtons);
         foreach($all_buttons as $button){
             if( $button[2][0]!=$command ){
                 continue;
