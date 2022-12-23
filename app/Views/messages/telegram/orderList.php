@@ -1,5 +1,5 @@
 <?=$listType=='active_only'?'Активные заказы':'Завершенные заказы'?> 
-из <?=$storeNames?> 
+<?=$storeNames?> 
 ◻◻◻◻◻◻◻◻◻◻◻◻◻ 
 <?php if(!$orderCount): ?>
 Нет заказов 

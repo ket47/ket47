@@ -47,17 +47,19 @@ trait OrderTrait{
         $list_type=($list_type_id==1?'active_only':'system_finish');
         $OrderModel=model("OrderModel");
         $orders=$OrderModel->listGet(['order_group_type'=>$list_type,'limit'=>5]);
+        $storeNames='';
         if( count($orders) ){
             foreach($orders as $i=>$order){
                 $store_names[]=$order->store_name;
                 $label=($i+1).") Заказ #{$order->order_id} от ".date('d.m.y H:i',strtotime($order->created_at))." [{$order->stage_current_name}]";
                 $buttons[]=$this->Telegram->buildInlineKeyboardButton($label,'',"onOrderOpen-{$order->order_id}");
             }
+            $storeNames=implode(',',array_unique($store_names));
         }
         $context=[
             'orderCount'=>count($orders),
             'listType'=>$list_type,
-            'storeNames'=>implode(',',array_unique($store_names))
+            'storeNames'=>$storeNames
         ];
         $html=View('messages/telegram/orderList',$context);
         $buttons[]=$this->Telegram->buildInlineKeyboardButton("Открыть в приложении","https://tezkel.com/order/order-list");
