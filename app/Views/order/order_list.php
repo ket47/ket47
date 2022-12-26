@@ -11,7 +11,7 @@
             <div></div>
         </div>
         <?php foreach ($order_list as $i=>$order): ?>
-            <div style="display: contents" class="<?= ($order->is_disabled??null) ? 'item_disabled' : '' ?> <?= $order->deleted_at ? 'item_deleted' : '' ?>">
+            <div style="display: contents" class="<?= ($order->is_disabled??null) ? 'item_disabled' : '' ?> <?= ($order->deleted_at??null) ? 'item_deleted' : '' ?>">
                 <div><?=$i+1?></div>
                 <div style="height: 50px;">
                     <?php if($order->image_hash): ?>
