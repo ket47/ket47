@@ -78,7 +78,7 @@ class TelegramBot{
 
         $order_id=session()->get('opened_order_id');
         if(!$order_id){
-            return $this->sendText("Сначала выберите заказ к которому надо добавить фото");
+            return $this->sendText("Сначала откройте заказ к которому надо добавить фото");
         }
         $result=$this->orderPhotoDownload($order_id,$file_url);
         if( $result==='forbidden' ){
