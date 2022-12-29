@@ -5,6 +5,13 @@ class AcquirerUnitellerMock{
         return getenv('uniteller.gateway').'pay?';
     }
 
+    public function cardRegisterLinkGet($user_id){
+        return getenv('uniteller.gateway').'pay?';
+    }
+
+    public function cardRegisterActivate(){
+        return 'ok';
+    }
     public function statusGet($order_id,$mode=null){
         $order=model('OrderModel')->itemGet($order_id,'basic');
         $order_data=model('OrderModel')->itemDataGet($order_id);

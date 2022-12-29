@@ -118,12 +118,13 @@ class CardAcquirer extends \App\Controllers\BaseController{
             return $this->fail('nocardid');
         }
         $Acquirer=\Config\Services::acquirer();
-
-
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
         $result=$Acquirer->pay($order_all,$card_id);
-        return $result;
+        if( $result ){
+            return $this->respond('ok');
+        }
+        return $this->fail('not_authorized');
     }
 
     private function orderValidate( $order_id ){
@@ -173,6 +174,9 @@ class CardAcquirer extends \App\Controllers\BaseController{
         }
         $Acquirer=\Config\Services::acquirer();
         $result=$Acquirer->cardRegisterLinkGet($user_id);
+        if($result=='nocardid'){
+            return $this->fail($result);
+        }
         return $result;
     }
 

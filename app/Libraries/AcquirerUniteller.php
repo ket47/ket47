@@ -10,11 +10,11 @@ class AcquirerUniteller{
             'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
             'Phone' => $order_all->customer?->user_phone,
             'PhoneVerified' => $order_all->customer->user_phone,
-            'FirstName'=>$order_all->customer->user_name,
+            //'FirstName'=>$order_all->customer->user_name,
             'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
             'Preauth'=>1,
-            'IsRecurrentStart'=>0,
+            'IsRecurrentStart'=>1,
             'Lifetime' => 5*60,// 5 min
             //'OrderLifetime' => 5*60,// 5 min
             'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
@@ -46,11 +46,61 @@ class AcquirerUniteller{
         if( !$card_id || $card_id=='forbidden' ){
             return 'nocardid';
         }
+        $UserModel=model('UserModel');
+        $customer=$UserModel->itemGet($user_id,'basic');
+        // $p=(object)[
+        //     'Shop_IDP' => getenv('uniteller.Shop_IDP'),
+        //     'Order_IDP' => getenv('uniteller.orderPreffix').'REG'.$card_id,
+        //     'Subtotal_P' => 11,
+        //     'Customer_IDP' => $user_id,
+        //     'Email' => $customer->user_email??"user{$user_id}@tezkel.com",
+        //     'Phone' => $customer->user_phone,
+        //     'PhoneVerified' => $customer->user_phone,
+        //     //'FirstName'=>$order_all->customer->user_name,
+        //     'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
+        //     'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
+        //     'Preauth'=>1,
+        //     'IsRecurrentStart'=>0,
+        //     'Lifetime' => 5*60,// 5 min
+        //     //'OrderLifetime' => 5*60,// 5 min
+        //     'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
+        //     //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
+        // ];
+        // $p->Signature = strtoupper(
+        //     md5(
+        //         md5($p->Shop_IDP) . "&" .
+        //         md5($p->Order_IDP) . "&" .
+        //         md5($p->Subtotal_P) . "&" .
+        //         md5($p->MeanType??'') . "&" .
+        //         md5($p->EMoneyType??'') . "&" .
+        //         md5($p->Lifetime??'') . "&" .
+        //         md5($p->Customer_IDP) . "&" .
+        //         md5($p->Card_IDP??'') . "&" .
+        //         md5($p->IData??'') . "&" .
+        //         md5($p->PT_Code??'') . "&" .
+        //         md5($p->PhoneVerified??'') . "&" .
+        //         md5( getenv('uniteller.password') )
+        //     )
+        // );
+
+
+
+
+
+
+
+
+
+
+
         $p=(object)[
             'Shop_IDP' => getenv('uniteller.Shop_IDP'),
             'Order_IDP' => getenv('uniteller.orderPreffix').'REG'.$card_id,
+            'Subtotal_P' => 11,
             'Customer_IDP' => $user_id,
-            'Email' => "user{$user_id}@tezkel.com",
+            'Email' => $customer?->user_email??"user{$user_id}@tezkel.com",
+            'Phone' => $customer?->user_phone,
+            'PhoneVerified' => $customer->user_phone,
             'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
             'Preauth'=>1,
@@ -112,9 +162,10 @@ class AcquirerUniteller{
             'card_mask'=>$response[6],
             'card_acquirer'=>'uniteller'
         ];
-        if($registrationData->card_remote_id){
+        //if($registrationData->card_remote_id){
             $this->refund($registrationData->billNumber,$registrationData->total);
-        }
+            //$this->confirm($registrationData->billNumber,$registrationData->total);
+        //}
         $UserCardModel=model("UserCardModel");
         return $UserCardModel->itemUpdate($registrationData);
     }
@@ -195,8 +246,9 @@ class AcquirerUniteller{
         $request=(object)[
             'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
             'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
-            'Subtotal_P'=>$order_all->order_sum_total,
+            'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
             'Parent_Order_IDP'=>getenv('uniteller.orderPreffix').'REG'.$card_id,
+//            'Parent_Order_IDP'=>'loc_1077',
         ];
         $request->Signature = strtoupper(
             md5(
@@ -215,12 +267,9 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
-
-        p($result);
-
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
-        if(!$result || str_contains($result,'ErrorCode') || !$response){
+        if(!$result || str_contains($result,'Error_Code') || !$response){
             log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;
         }
