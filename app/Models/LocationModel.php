@@ -27,7 +27,7 @@ class LocationModel extends Model{
         'location_latitude'   => 'required',
         'location_longitude'  => 'required',
     ];
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
@@ -58,6 +58,7 @@ class LocationModel extends Model{
         if( $location_id ){
             $this->allowedFields[]='is_disabled';
             $this->allowedFields[]='owner_id';
+            $this->allowedFields[]='owner_ally_ids';
             $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
             $data['location_order']=$inserted_count+1;
             $data['is_main']=1;
@@ -153,9 +154,8 @@ class LocationModel extends Model{
     public function itemDelete( $location_id ){
         $this->permitWhere('w');
         $this->delete($location_id);
-        $this->itemMainUpdate( $location_id );
-        $this->itemPurge( $location_id );
         $ok=$this->db->affectedRows()?'ok':'idle';
+        $this->itemMainUpdate( $location_id );
         return $ok;
     }
     

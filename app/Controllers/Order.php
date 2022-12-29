@@ -220,7 +220,9 @@ class Order extends \App\Controllers\BaseController {
             'active',
             'count'
         );
-        $bulkResponse->bankCard=$UserCardModel->itemMainGet();
+        if( getenv('uniteller.recurrentAllow') ){
+            $bulkResponse->bankCard=$UserCardModel->itemMainGet();
+        }
         return $this->respond($bulkResponse);
     }
 
@@ -339,7 +341,7 @@ class Order extends \App\Controllers\BaseController {
             return $this->fail('no_delivery');
         }
         //PAYMENT OPTIONS SET
-        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow ){
+        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow && getenv('uniteller.recurrentAllow') ){
             $order_data->payment_by_card_recurrent=1;
             $order_data->payment_by_card=1;
             $order_data->payment_fee=$tariff->card_fee;

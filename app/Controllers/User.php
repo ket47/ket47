@@ -47,6 +47,9 @@ class User extends \App\Controllers\BaseController{
                 'messagingSenderId'=>getenv('firebase.messagingSenderId'),
                 'appId'=>getenv('firebase.appId'),
                 'vapidKey'=>getenv('firebase.vapidKey'),
+            ],
+            'other'=>[
+                'recurrentPaymentAllow'=>getenv('uniteller.recurrentAllow'),
             ]
         ];
         return $this->respond($settings);

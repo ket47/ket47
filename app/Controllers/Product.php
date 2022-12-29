@@ -60,7 +60,9 @@ class Product extends \App\Controllers\BaseController{
         $product=[
             'store_id'=>$store_id,
             'product_name'=>$this->request->getVar('product_name'),
-            'product_price'=>$this->request->getVar('product_price')
+            'product_price'=>$this->request->getVar('product_price'),
+            'product_parent_id'=>$this->request->getVar('product_parent_id'),
+            'product_option'=>$this->request->getVar('product_option'),
         ];
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemCreate($product);
@@ -141,6 +143,37 @@ class Product extends \App\Controllers\BaseController{
         $result=$ProductModel->itemDisable($product_id,$is_disabled);
         if( $result==='ok' ){
             return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+    public function itemOptionGet(){
+        $product_parent_id=$this->request->getVar('product_parent_id');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemOptionGet($product_parent_id);
+        if( !$result ){
+            return $this->failNotFound();
+        }
+        return $this->respond($result);
+    }
+
+    public function itemOptionSave(){
+        $product_id=$this->request->getVar('product_id');
+        $product_parent_id=$this->request->getVar('product_parent_id');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemOptionSave($product_id,$product_parent_id);
+        if( $result==='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+    public function itemOptionDelete(){
+        $product_id=$this->request->getVar('product_id');
+        $ProductModel=model('ProductModel');
+        $result=$ProductModel->itemOptionDelete($product_id);
+        if( $result==='ok' ){
+            return $this->respondDeleted($result);
         }
         return $this->fail($result);
     }

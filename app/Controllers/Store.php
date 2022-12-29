@@ -343,6 +343,9 @@ class Store extends \App\Controllers\BaseController{
         if( !$StoreModel->permit($location_holder_id,'w') ){
             return $this->failForbidden('forbidden');
         }
+        $store=$StoreModel->itemGet($location_holder_id);
+        $data['owner_id']=$store->owner_id;
+        $data['owner_ally_ids']=$store->owner_ally_ids;
         $result= $LocationModel->itemCreate($data,1);
         if( $LocationModel->errors() ){
             return $this->failValidationErrors(json_encode($LocationModel->errors()));
@@ -351,8 +354,10 @@ class Store extends \App\Controllers\BaseController{
     }
     
     public function locationDelete(){
+        //$location_holder_id=$this->request->getVar('location_holder_id');
         $location_id=$this->request->getVar('location_id');
         $LocationModel=model('LocationModel');
+
         $result=$LocationModel->itemDelete($location_id);
         if( $result=='ok' ){
             return $this->respondDeleted('ok');

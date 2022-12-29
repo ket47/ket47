@@ -7,10 +7,12 @@ class ProductModel extends Model{
     use PermissionTrait;
     use FilterTrait;
     
-    protected $table      = 'product_list';
+    protected $table      = '`product_list`';
     protected $primaryKey = 'product_id';
     protected $allowedFields = [
         'store_id',
+        'product_parent_id',
+        'product_option',
         'product_external_id',
         'product_code',
         'product_barcode',
@@ -18,11 +20,12 @@ class ProductModel extends Model{
         'product_quantity',
         'product_quantity_min',
         'product_quantity_expire_at',
-        'product_quantity_reserve',
+        'product_quantity_reserved',
         'product_description',
         'product_weight',
         'product_unit',
         'product_price',
+        'product_net_price',
         'product_promo_price',
         'product_promo_start',
         'product_promo_finish',
@@ -42,10 +45,37 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     public function itemGet( $product_id, $mode='all' ){
         $this->permitWhere('r');
-        $this->where('product_id',$product_id);
-        $this->select("*");
-        $this->select("ROUND(IF(IFNULL(`product_promo_price`,0)>0 AND `product_price`>`product_promo_price` AND `product_promo_start` < NOW() AND `product_promo_finish` > NOW(),`product_promo_price`,`product_price`)) product_final_price");
+        $this->where('product_list.`product_id`',$product_id);
+        $this->select("ROUND(IF(IFNULL(product_list.`product_promo_price`,0)>0 AND product_list.`product_price`>product_list.`product_promo_price` AND product_list.`product_promo_start` < NOW() AND product_list.`product_promo_finish` > NOW(),product_list.`product_promo_price`,product_list.`product_price`)) product_final_price");
 
+        $this->join('product_list parent_pl','parent_pl.product_id=product_list.product_parent_id','left');
+        $this->select("
+            product_list.product_id,
+            product_list.store_id,
+            product_list.product_parent_id,
+            product_list.product_external_id,
+            product_list.product_code,
+            product_list.product_barcode,
+            product_list.product_option,
+            product_list.product_quantity,
+            product_list.product_quantity_min,
+            product_list.product_quantity_expire_at,
+            product_list.product_quantity_reserved,
+            product_list.product_weight,
+            product_list.product_price,
+            product_list.product_net_price,
+            product_list.product_promo_price,
+            product_list.product_promo_start,
+            product_list.product_promo_finish,
+            product_list.is_counted,
+            product_list.is_disabled,
+            product_list.deleted_at,
+            product_list.validity,
+
+            COALESCE(parent_pl.product_name,product_list.product_name) product_name,
+            COALESCE(parent_pl.product_description,product_list.product_description) product_description,
+            COALESCE(parent_pl.product_unit,product_list.product_unit) product_unit
+        ");
         $product = $this->get()->getRow();
         if( !$product ){
             return 'notfound';
@@ -53,20 +83,24 @@ class ProductModel extends Model{
         if($mode=='basic'){
             return $product;
         }
+        $product_parent_id=($product->product_parent_id?$product->product_parent_id:$product->product_id);
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
         $ProductGroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
         $product->is_writable=$this->permit($product_id,'w');
-        $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product->product_id);
+        $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product_parent_id);
         $filter=[
             'image_holder'=>'product',
-            'image_holder_id'=>$product->product_id,
+            'image_holder_id'=>$product_parent_id,
             'is_disabled'=>$product->is_writable,
             'is_deleted'=>0,
             'is_active'=>1,
             'limit'=>5
         ];
         $product->images=$ImageModel->listGet($filter);
+        if($product->product_parent_id??null){
+            $product->options=$this->itemOptionGet( $product->product_parent_id, 'active_only' );
+        }
         return $product;
     }
     
@@ -132,13 +166,16 @@ class ProductModel extends Model{
         $ImageModel->permitWhere('w');
         $ImageModel->listDelete('product',[$product_id]);
         $this->delete($product_id);
-        return $this->db->affectedRows()?'ok':'idle';
+        $result=$this->db->affectedRows()?'ok':'idle';
+
+        $this->itemOptionChildrenDelete($product_id);
+        return $result;
     }
     
     public function itemUnDelete( $product_id ){
         $ImageModel=model('ImageModel');
         $ImageModel->permitWhere('w');
-        $ImageModel->listUnDelete('product',$product_id);
+        $ImageModel->listUnDelete('product',[$product_id]);
         $this->update($product_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -152,6 +189,54 @@ class ProductModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
+    public function itemOptionGet( $product_parent_id, $mode=null ){
+        if(!$product_parent_id){
+            return null;
+        }
+        $this->permitWhere('r');
+        $this->where('product_parent_id',$product_parent_id);
+        $this->select('product_id,product_code,product_name,product_option,image_hash,product_list.deleted_at,(product_id=product_parent_id) is_parent');
+        $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
+        $this->orderBy('is_parent','DESC');
+        if($mode=='active_only'){
+            $this->where("product_list.deleted_at IS NULL AND product_list.is_disabled=0 AND (product_price>0 OR product_promo_price>0 OR product_net_price>0)");
+        }
+        return $this->get()->getResult();
+    }
+
+    public function itemOptionSave( $product_id, $product_parent_id ){
+        $this->permitWhere('w');
+        $this->where('product_parent_id',$product_parent_id);
+        $this->orWhere('product_id',$product_id);
+        $this->update(null,['product_parent_id'=>$product_parent_id]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemOptionDelete( $product_id ){
+        $this->where('product_id',$product_id);
+        $product_parent_id=$this->select('product_parent_id')->get()->getRow('product_parent_id');
+
+        if( !$product_parent_id ){
+            return 'ok';
+        }
+        if($product_id!==$product_parent_id){//delete only option
+            return $this->itemDelete($product_id);
+        }
+        //parent product so delete all children
+        $this->permitWhere('w');
+        $this->where('product_id',$product_id);
+        $this->update(null,['product_parent_id'=>null]);
+
+        return $this->itemOptionChildrenDelete($product_parent_id);
+    }
+
+    private function itemOptionChildrenDelete($product_parent_id){
+        $this->permitWhere('w');
+        $this->where('product_parent_id',$product_parent_id);
+        $option_ids=$this->select("GROUP_CONCAT(product_id) children_ids")->get()->getRow('children_ids');
+        $option_id_array=explode(',',$option_ids);
+        return $this->listDelete($option_id_array);
+    }
     
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
@@ -176,8 +261,10 @@ class ProductModel extends Model{
         $this->orderBy("{$this->table}.updated_at",'DESC');
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
-        $this->select("{$this->table}.*,image_hash,group_id");
+        $this->select("product_list.*,image_hash,group_id");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
+        $this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id),NULL) product_options");
+        $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $product_list= $this->get()->getResult();
         return $product_list;
     }
