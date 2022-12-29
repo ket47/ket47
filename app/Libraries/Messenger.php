@@ -2,10 +2,10 @@
 namespace App\Libraries;
 class Messenger{
     
-    public function listSend( array $message_list, $lazy_send=false ){
+    public function listSend( array $message_list ){
         foreach( $message_list as $message){
             try{
-                $this->itemSendMulticast($message,$lazy_send);
+                $this->itemSendMulticast($message);
             } catch(\Exception $e){
                 log_message('error', 'Messenger->listSend Error '.$e->getMessage()."\n".$e->getTraceAsString());
             }
@@ -31,16 +31,10 @@ class Messenger{
 
     public function itemSend( $message ){
         $message->reciever=$this->itemRecieverGet($message->message_reciever_id??0);
-        if( !isset($message->message_text) ){
-            if( isset($message->template) ){
-                $message->message_text=$this->itemRender($message);
-            }
-            //  else {
-            //     log_message('error','Message could not be send Empty text:'.json_encode($message,JSON_PRETTY_PRINT));
-            //     return false;
-            // }
+        if( isset($message->template) ){
+            $message->message_text=$this->itemRender($message);
         }
-        //log_message('error','Message to be send:'.json_encode($message,JSON_PRETTY_PRINT));
+        //log_message('error',json_encode($message,JSON_UNESCAPED_UNICODE));
         switch( $message->message_transport ){
             case 'email':
                 return $this->itemSendEmail($message);
@@ -84,7 +78,7 @@ class Messenger{
         $UserModel=model('UserModel');
         $reciever=$UserModel->select("user_name,user_phone,user_email,user_data")->where('user_id',$user_id)->get()->getRow();
 
-        //log_message('error',json_encode($reciever));
+        //log_message('error',json_encode($reciever,JSON_UNESCAPED_UNICODE));
         if( !$reciever ){
             return (object)[];
         }
@@ -192,11 +186,7 @@ class Messenger{
         $telegramToken=getenv('telegram.token');
         $TelegramBot = new \App\Libraries\Telegram\TelegramBot();
         $TelegramBot->Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
-
         $result=$TelegramBot->sendNotification($message->reciever->user_data->telegramChatId,$message->message_text,$message->telegram_options??null);
-
-
-
         if( $result && ($result['ok']??null)==1 ){
             return true;
         }

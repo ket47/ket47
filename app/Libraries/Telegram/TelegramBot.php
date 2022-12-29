@@ -143,9 +143,9 @@ class TelegramBot{
     public function sendNotification($ChatID,$html,$options=null){
         $this->sessionSetup($ChatID);
         $opts=null;
-        if( $options['buttons']??null ){
+        if( $options->buttons??null ){
             $menu=array_merge(
-                $this->buttonInlineRowBuild( $options['buttons'] )
+                $this->buttonInlineRowBuild( $options->buttons )
             );
             $opts=[
                 'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=true),

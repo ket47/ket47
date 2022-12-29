@@ -311,7 +311,7 @@ class Order extends \App\Controllers\BaseController {
         $TariffMemberModel=model('TariffMemberModel');
         $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
         if(!$tariff){
-            return 'no_tariff';
+            return $this->fail('no_tariff');
         }
         $order_data=(object)[];
         if( $tariff->order_cost ){
@@ -325,28 +325,37 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_by_courier=1;
             $order_data->delivery_fee=$tariff->delivery_fee;
             $order_data->delivery_cost=$tariff->delivery_cost;
-        }
+        } else
         if( $checkoutData->deliveryByStore??0 ){
             $order_data->delivery_by_store=1;
             $PromoModel=model('PromoModel');
             $PromoModel->itemUnLink($checkoutData->order_id);
-        }
+        } else
         if( $checkoutData->pickupByCustomer??0 ){
             $order_data->pickup_by_customer=1;
             $PromoModel=model('PromoModel');
             $PromoModel->itemUnLink($checkoutData->order_id);
+        } else {
+            return $this->fail('no_delivery');
         }
         //PAYMENT OPTIONS SET
+        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow ){
+            $order_data->payment_by_card_recurrent=1;
+            $order_data->payment_by_card=1;
+            $order_data->payment_fee=$tariff->card_fee;
+        } else
         if( $checkoutData->paymentByCard??0 && $tariff->card_allow ){
             $order_data->payment_by_card=1;
             $order_data->payment_fee=$tariff->card_fee;
-        }
+        } else
         if( $checkoutData->paymentByCash??0 && $tariff->cash_allow ){
             $order_data->payment_by_cash=1;
             $order_data->payment_fee=$tariff->cash_fee;
-        }
+        } else 
         if( $checkoutData->paymentByCashStore??0 ){
             $order_data->payment_by_cash_store=1;
+        } else {
+            return $this->fail('no_payment');
         }
 
         if( $checkoutData->storeCorrectionAllow??0 ){
