@@ -1,1 +1,1 @@
-Tezkel: <?=$courier->user_name?>, есть доступный заказ из <?=$store->store_name?>
+<?=getenv('app.title')?>: <?=$courier->user_name?>, есть доступный заказ из <?=$store->store_name?>

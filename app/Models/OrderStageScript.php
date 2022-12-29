@@ -295,7 +295,7 @@ class OrderStageScript{
         $order=$this->OrderModel->itemGet($order_id);
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id);
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
         $context=[
             'order'=>$order,
             'store'=>$store,
@@ -336,9 +336,45 @@ class OrderStageScript{
 
     public function onCustomerRejected( $order_id ){
         $EntryModel=model('EntryModel');
+        $StoreModel=model('StoreModel');
+        $UserModel=model('UserModel');
 
         $EntryModel->listStockMove($order_id,'free');
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
+
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        $StoreModel->itemCacheClear();
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $store_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
+            'template'=>'messages/order/on_customer_rejected_STORE_sms.php',
+            'context'=>$context
+        ];
+        $store_email=(object)[
+            'message_transport'=>'email',
+            //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_reciever_email'=>$store->store_email,
+            'message_subject'=>"Отмена заказа №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_rejected_STORE_email.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"customer_start Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email]]]
+                ]
+        ];
+        jobCreate($notification_task);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
@@ -556,6 +592,7 @@ class OrderStageScript{
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $context=[
             'store'=>$store,
+            'order'=>$order
         ];
         $CourierModel->listNotify($context);
         return 'ok';

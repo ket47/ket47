@@ -1,1 +1,1 @@
-<?=getenv('app.title')?> Ваша скидка <?=$promo->promo_name?> активирована
+<?=getenv('app.title')?>: Ваша скидка <?=$promo->promo_name?> активирована

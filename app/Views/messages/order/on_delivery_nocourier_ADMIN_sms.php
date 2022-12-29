@@ -1,1 +1,1 @@
-Курьер не найден. Заказ #<?=$order->order_id?> 
+<?=getenv('app.title')?>: Курьер не найден. Заказ #<?=$order->order_id?> 

@@ -1,0 +1,1 @@
+<?=getenv('app.title')?>: <?=$reciever->user_name??$store->store_name ?>, заказ №<?=$order->order_id?> был отменен клиентом

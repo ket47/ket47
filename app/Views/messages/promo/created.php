@@ -1,1 +1,1 @@
-<?=getenv('app.title')?> Вам начислено <?=$promo->count?> скидок по <?=$promo->value?>руб
+<?=getenv('app.title')?>: Вам начислено <?=$promo->count?> скидок по <?=$promo->value?>руб

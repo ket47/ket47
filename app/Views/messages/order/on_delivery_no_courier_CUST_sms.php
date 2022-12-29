@@ -1,1 +1,1 @@
-Tezkel: <?=$reciever->user_name?>, к сожалению по заказу №<?=$order->order_id?> курьер не найден
+<?=getenv('app.title')?>: <?=$reciever->user_name?>, к сожалению по заказу №<?=$order->order_id?> курьер не найден

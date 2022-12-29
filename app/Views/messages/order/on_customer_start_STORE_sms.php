@@ -1,1 +1,1 @@
-Tezkel: <?=$reciever->user_name??$store->store_name ?>, вам поступил заказ №<?=$order->order_id?>
+<?=getenv('app.title')?>: <?=$reciever->user_name??$store->store_name ?>, вам поступил заказ №<?=$order->order_id?>
