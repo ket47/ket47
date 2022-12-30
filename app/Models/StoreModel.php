@@ -37,7 +37,7 @@ class StoreModel extends Model{
         'store_time_closes_6',
         'is_working',
         'validity',
-        'owner_ally_id'
+        'owner_ally_ids'
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -463,6 +463,11 @@ class StoreModel extends Model{
         } else
         if( $action=='delete' ){
             $owners=array_diff($owner_ally_ids,[$owner_ally_id]);
+        } else
+        if( $action=='swap' ){
+            $this->allowedFields[]='owner_id';
+            $this->update($store_id,['owner_id'=>$owner_ally_id]);
+            $owners=array_merge($owner_ally_ids,[$owner_ally_id]);
         } else {
             return 'wrong_action';
         }

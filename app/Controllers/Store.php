@@ -212,7 +212,7 @@ class Store extends \App\Controllers\BaseController{
 
         $StoreModel=model('StoreModel');
         $result=$StoreModel->ownerSave( $action, $store_id, $owner_id, $owner_phone );
-        if( $result==='ok' ){
+        if( $result==='ok' || $result==='idle'){
             return $this->respondUpdated($result);
         }
         if( $result==='forbidden' ){
