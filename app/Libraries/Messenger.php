@@ -159,6 +159,7 @@ class Messenger{
                 'title'=>$message->message_subject??'',
                 'body'=>$message->message_text??'',
                 'link'=>$message->message_link??'',
+                'tag'=>$message->message_tag??'',
                 'icon'=>'/img/icons/monochrome.png'
             ];
         }

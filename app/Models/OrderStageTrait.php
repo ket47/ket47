@@ -123,6 +123,7 @@ trait OrderStageTrait{
                 'stage'=>$stage,
                 'title'=>view('messages/order/stage_changed_title',(array)$order),
                 'body' =>view('messages/order/stage_changed_body',(array)$order),
+                'tag'  =>'orderStage'
             ]
         ];
         $notification_task=[

@@ -24,6 +24,9 @@ class FirePush{
         if($push->body??null){
             $message->notification->setBody($push->body);
         }
+        if($push->tag??null){
+            $message->webpush->notification->tag=$push->tag;
+        }
         //$message->webpush->notification->icon=getenv('firebase.icon');
         //$message->webpush->fcm_options->link='http://localhost:8100/#/order-999';
         $message->data->fill((array)$push->data??[]);
