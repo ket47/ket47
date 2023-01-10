@@ -188,7 +188,7 @@ class ImageModel extends Model{
     }
     
     public function listUnDelete( string $image_holder, array $image_holder_ids ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-1 days");
         $this->permitWhere('w');
         $this->where('image_holder',$image_holder);
         $this->whereIn('image_holder_id',$image_holder_ids);
@@ -205,7 +205,7 @@ class ImageModel extends Model{
         return $this->db->affectedRows()?'ok':'error';
     }
     
-    public function listPurge( $olderThan=APP_TRASHED_DAYS, $limit=100 ){
+    public function listPurge( $olderThan=1, $limit=100 ){
         $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
         $this->where('deleted_at<',$olderStamp);
         $list_to_purge=$this->select('image_id')->limit($limit)->get()->getResult();

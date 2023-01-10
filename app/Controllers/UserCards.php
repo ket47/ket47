@@ -3,7 +3,7 @@
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
-class UserCards extends \App\Controllers\BaseController{
+class Usercards extends \App\Controllers\BaseController{
 
     use ResponseTrait;
     

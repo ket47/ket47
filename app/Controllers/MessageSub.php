@@ -3,7 +3,7 @@
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
-class MessageSub extends \App\Controllers\BaseController{
+class Messagesub extends \App\Controllers\BaseController{
 
     use ResponseTrait;
     

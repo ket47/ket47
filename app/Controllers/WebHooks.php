@@ -3,7 +3,7 @@
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
-class WebHooks extends \App\Controllers\BaseController{
+class Webhooks extends \App\Controllers\BaseController{
     use ResponseTrait;
 
     public function telegramWebhook(){
@@ -26,20 +26,24 @@ class WebHooks extends \App\Controllers\BaseController{
             break;
         }
     }
-    // public function telegramPing(){
-    //     $arrContextOptions=array(
-    //         "ssl"=>array(
-    //             "verify_peer"=>false,
-    //             "verify_peer_name"=>false,
-    //         ),
-    //     );
-    //     while(1){
-    //         $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
-    //         if($result){
-    //             CLI::write("W HELPER:".$result);
-    //         }
-    //     }
-    // }
+    public function telegramPing(){
+        if(PHP_SAPI !== 'cli'){
+            return false;
+        }
+
+        $arrContextOptions=array(
+            "ssl"=>array(
+                "verify_peer"=>false,
+                "verify_peer_name"=>false,
+            ),
+        );
+        while(1){
+            $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
+            if($result){
+                CLI::write("W HELPER:".$result);
+            }
+        }
+    }
     
     public function viberWebhook(){
         $Viber= new \App\Libraries\Viber();

@@ -52,7 +52,6 @@ class BaseController extends Controller
 	 * @param LoggerInterface   $logger
 	 */
 	public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger){
-        //$this->handleCors();
         $this->handleSession($request,$response);
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);

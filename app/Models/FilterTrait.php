@@ -74,7 +74,7 @@ trait FilterTrait{
         }
         if( $filter['is_deleted'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
-            $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+            $olderStamp= new \CodeIgniter\I18n\Time("-1 days");
             $status_where[]="{$this->table}.deleted_at>'$olderStamp' AND $permitWhere";
         }
         if( $filter['is_active'] ){

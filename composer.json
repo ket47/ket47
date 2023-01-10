@@ -5,23 +5,23 @@
 	"homepage": "https://codeigniter.com",
 	"license": "MIT",
 	"require": {
-		"php": "^7.3||^8.0",
-		"ext-curl": "*",
-		"ext-intl": "*",
-		"ext-json": "*",
-		"ext-mbstring": "*",
-		"kint-php/kint": "^3.3",
-		"laminas/laminas-escaper": "^2.6",
-		"psr/log": "^1.1",
-		"plokko/firebase-php": "^0.2.1",
-		"nutgram/nutgram": "^3.9"
+		"php": "^7.4 || ^8.0",
+        "ext-intl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "kint-php/kint": "^4.2",
+        "laminas/laminas-escaper": "^2.9",
+        "psr/log": "^1.1",
+		"plokko/firebase-php": "^0.2.1"
 	},
 	"require-dev": {
-		"codeigniter4/codeigniter4-standard": "^1.0",
-		"fakerphp/faker": "^1.9",
-		"mikey179/vfsstream": "^1.6",
+        "codeigniter/coding-standard": "^1.5",
+        "fakerphp/faker": "^1.9",
+        "friendsofphp/php-cs-fixer": "3.13.0",
+        "mikey179/vfsstream": "^1.6",
+        "nexusphp/cs-config": "^3.6",
+        "predis/predis": "^1.1 || ^2.0",
 		"phpunit/phpunit": "^9.5",
-		"predis/predis": "^1.1",
 		"squizlabs/php_codesniffer": "^3.3"
 	},
 	"suggest": {

@@ -436,7 +436,7 @@ class ProductModel extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
-        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-1 days");
         $this->where('deleted_at>',$olderStamp);
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
@@ -449,7 +449,7 @@ class ProductModel extends Model{
         $this->update($untrashed_product_ids,['deleted_at'=>NULL]);
     }
     
-    public function listPurge( $olderThan=APP_TRASHED_DAYS ){
+    public function listPurge( $olderThan=1 ){
         $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
         $this->where('deleted_at<',$olderStamp);
         return $this->delete(null,true);

@@ -3,7 +3,7 @@
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
-class CardAcquirer extends \App\Controllers\BaseController{
+class Cardacquirer extends \App\Controllers\BaseController{
 
     use ResponseTrait;
 

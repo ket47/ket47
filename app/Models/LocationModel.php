@@ -236,7 +236,7 @@ class LocationModel extends Model{
     }
     
     public function listUnDelete( $location_holder, $location_holder_id ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-".APP_TRASHED_DAYS." days");
+        $olderStamp= new \CodeIgniter\I18n\Time("-1 days");
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('deleted_at>',$olderStamp);
