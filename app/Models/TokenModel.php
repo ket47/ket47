@@ -18,6 +18,17 @@ class TokenModel extends Model{
         ];
 
     protected $useSoftDeletes = false;
+    protected $beforeInsert = ['hashToken'];
+    protected $beforeUpdate = ['hashToken'];
+    protected function hashToken(array $data){
+        if ( isset($data['data']['token_hash']) ){
+            $data['data']['token_hash'] = hash('sha256',$data['data']['token_hash']);
+        }
+        if ( isset($data['id']['token_hash']) ){
+            $data['id']['token_hash'] = hash('sha256',$data['id']['token_hash']);
+        }
+        return $data;
+    }
     
     public function itemGet($token_id=null,$token_hash=null){
         if($token_id){
@@ -59,7 +70,7 @@ class TokenModel extends Model{
         return $token;
     }
     
-    public function itemCreate($owner_id,$token_holder,$token_holder_id){
+    public function itemCreate($owner_id,$token_holder,$token_holder_id,$token_device){
         if( !($owner_id>0) ){
             return 'forbidden';
         }
@@ -73,17 +84,22 @@ class TokenModel extends Model{
         }
         $validity_time=1*365*24*60*60;//1year
         $expired_at=date('Y-m-d H:i:s',time()+$validity_time);
-        $token_hash = bin2hex(random_bytes(16));
+        $token_hash_raw = bin2hex(random_bytes(16));
 
         $this->allowedFields[]='owner_id';
         $token=[
-            'token_hash'=>$token_hash,
+            'token_hash'=>$token_hash_raw,
             'token_holder'=>$token_holder,
             'token_holder_id'=>$token_holder_id,
+            'token_device'=>$token_device,
             'expired_at'=>$expired_at,
             'owner_id'=>$owner_id,
         ];
-        return $this->insert($token,true);
+        $token_id=$this->insert($token,true);
+        return [
+            'token_id'=>$token_id,
+            'token_hash_raw'=>$token_hash_raw
+        ];
     }
     
     public function itemDelete($token_id=null,$token_hash=null){
@@ -107,5 +123,12 @@ class TokenModel extends Model{
         $this->permitWhere('r');
         return $this->get()->getResult();
     }
+
+    // public function listDiscard($user_id,$token_holder){
+    //     $this->where('token_holder',$token_holder);
+    //     $this->where('owner_id',$user_id);
+    //     $this->permitWhere('w');
+    //     $this->delete();
+    // }
     
 }
