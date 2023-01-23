@@ -226,6 +226,46 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($bulkResponse);
     }
 
+    private function deliveryNotReadyNotify($store_id){
+        $already_sent=session()->get('deliveryNotReadyNotified-'.$store_id);
+        if($already_sent){
+            return;
+        }
+        session()->set('deliveryNotReadyNotified-'.$store_id,1);
+        $StoreModel=model('StoreModel');
+        $context=[
+            'store'=>$StoreModel->itemGet($store_id),
+            'customer'=>session()->get('user_data'),
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'email',
+            'message_subject'=>"Нет доступного курьера для продавца {$context['store']->store_name}",
+            'template'=>'messages/events/on_delivery_not_found_email.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"delivery_not_found Notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
+                ]
+        ];
+        jobCreate($notification_task);
+    }
+
+    private function deliveryIsReady($store_id){
+        $aroundLocation=(object)[
+            'location_holder'=>'store',
+            'location_holder_id'=>$store_id
+        ];
+        $CourierModel=model('CourierModel');
+        $hasActiveCourier= $CourierModel->hasActiveCourier($aroundLocation);
+        if( !$hasActiveCourier ){
+            $this->deliveryNotReadyNotify($store_id);
+        }
+        return $hasActiveCourier;
+    }
+
     private function itemDeliveryOptionsGet( $store_id ){
         $StoreModel=model('StoreModel');
         if(!$StoreModel->itemIsReady($store_id)){
@@ -241,10 +281,12 @@ class Order extends \App\Controllers\BaseController {
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
+                $deliveryIsReady=$this->deliveryIsReady($store_id);
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,
                     'order_sum_delivery'=>(int)$tariff->delivery_cost,
                     'deliveryByCourier'=>1,
+                    'deliveryIsReady'=>$deliveryIsReady,
                     'deliveryByStore'=>0,
                     'pickupByCustomer'=>0,
                     'paymentByCard'=>0,
@@ -327,6 +369,9 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_by_courier=1;
             $order_data->delivery_fee=$tariff->delivery_fee;
             $order_data->delivery_cost=$tariff->delivery_cost;
+            if( !$this->deliveryIsReady($order->order_store_id) ){
+                return $this->fail('no_delivery');
+            }
         } else
         if( $checkoutData->deliveryByStore??0 ){
             $order_data->delivery_by_store=1;

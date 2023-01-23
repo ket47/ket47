@@ -124,7 +124,7 @@ class StoreModel extends Model{
         $this->select("store_tax_num");
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
-        if( !$store ){
+        if( !$store || $store->is_ready==0 ){
             return 0;
         }
         if( empty($store->store_tax_num) || strlen($store->store_tax_num)<10 ){
@@ -142,7 +142,7 @@ class StoreModel extends Model{
         if($storeAccount->balance<0){
             return 0;
         }
-        return $store->is_ready?1:0;     
+        return 1;     
     }
     
     public function itemCreate( $name ){

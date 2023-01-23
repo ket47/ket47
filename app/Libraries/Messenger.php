@@ -6,7 +6,7 @@ class Messenger{
         foreach( $message_list as $message){
             try{
                 $this->itemSendMulticast($message);
-            } catch(\Exception $e){
+            } catch(\Throwable $e){
                 log_message('error', 'Messenger->listSend Error '.$e->getMessage()."\n".$e->getTraceAsString());
             }
         }
@@ -117,7 +117,6 @@ class Messenger{
         $email->setSubject($message->message_subject??getenv('email_sendername'));
         $email->setMessage($message->message_text);
         $email_send_ok=$email->send();
-        
         if( !$email_send_ok ){
             log_message('error', 'Cant send email:'. json_encode($message).$email->printDebugger(['headers']) );
             return false;

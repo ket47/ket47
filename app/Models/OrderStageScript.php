@@ -2,6 +2,7 @@
 namespace App\Models;
 
 class OrderStageScript{
+    public $OrderModel;
     public $stageMap=[
         ''=>[
             // 'customer_deleted'=>            ['Удалить','danger'],

@@ -351,16 +351,20 @@ class CourierModel extends Model{
         $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
         $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,courier_group_member_list.created_at DESC");
         $this->join('image_list courier_photo',"courier_photo.image_holder='courier' AND courier_photo.image_holder_id=courier_id AND courier_photo.is_main=1",'left');
-        $this->join('location_list','location_holder_id=courier_id AND location_list.is_main=1','left');
+        $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1",'left');
         $courier_list= $this->get()->getResult();
         return $courier_list;  
     }
     
+    private $shiftMaximumLength=13;//at maximum notifications during 13 hours
     public function listNotify( $context ){
+
+        //We should in future check the distance between store and courier!!!
+
         ///////////////////////////////////////////////////
         //CREATING READY COURIERS NOTIFICATIONS
         ///////////////////////////////////////////////////
-        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<13");//at maximum notifications during 13 hours
+        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<{$this->shiftMaximumLength}");
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5,'order']);
         if( !$ready_courier_list ){
             return false;
@@ -393,18 +397,31 @@ class CourierModel extends Model{
         jobCreate($sms_job);
         return true;
     }
-    
-    
-    
-    
-    
-    
     public function listCreate(){
         return false;
     }
     
     public function listUpdate(){
         return false;
+    }
+
+    public function hasActiveCourier( object $aroundLocation=null ){
+        $this->select('courier_id');
+        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<{$this->shiftMaximumLength}");
+        $this->join('courier_group_member_list','member_id=courier_id');
+        $this->join('courier_group_list','group_id');
+        $this->whereIn('group_type',['ready','busy']);
+        $this->limit(1);
+
+        if( $aroundLocation ){
+            $aroundLocationRadius=getenv('delivery.radius');//maybe it should be different setting?
+            $location_holder=$aroundLocation->location_holder;
+            $location_holder_id=$aroundLocation->location_holder_id;
+            $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE is_main=1 AND location_holder='$location_holder' AND location_holder_id='$location_holder_id')");
+            $this->where("ST_Distance_Sphere(@start_point,location_point)<='$aroundLocationRadius'");
+            $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");
+        }
+        return $this->get()->getRow()?1:0;
     }
     
     /////////////////////////////////////////////////////
