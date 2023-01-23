@@ -58,6 +58,7 @@ class TariffModel extends Model{
             return 'noid';
         }
         $this->update($tariff->tariff_id,$tariff);
+        ql($this);
         return $this->db->affectedRows()?'ok':'idle';
     }
     

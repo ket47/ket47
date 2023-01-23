@@ -340,9 +340,7 @@ class StoreModel extends Model{
         $nextweekday=date('N')%7;
         $dayhour=date('H');
 
-        $PrefModel=model('PrefModel');
-        $pref=$PrefModel->itemGet('delivery_radius');
-        $delivery_radius=$pref->pref_value??15000;
+        $delivery_radius=getenv('delivery.radius');
 
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
