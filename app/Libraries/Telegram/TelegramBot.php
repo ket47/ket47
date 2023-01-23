@@ -105,7 +105,7 @@ class TelegramBot{
     private function sessionSetup($chat_id){
         session_write_close();
         session_unset();
-        session_id("telegrambot.{$chat_id}");
+        session_id(md5("telegrambot.{$chat_id}"));
         session_start();
         session()->set('chat_id',$chat_id);
     }
