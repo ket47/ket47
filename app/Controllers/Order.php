@@ -277,7 +277,6 @@ class Order extends \App\Controllers\BaseController {
         if(!$storeTariffRuleList){
             return 'no_tariff';
         }
-
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){

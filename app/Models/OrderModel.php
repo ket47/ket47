@@ -123,6 +123,7 @@ class OrderModel extends Model{
         }
     }
 
+    private $order_data;
     public function itemDataGet( int $order_id, bool $use_cache=true ){
         if( !$this->order_data || !$use_cache ){
             $this->permitWhere('r');
@@ -150,7 +151,7 @@ class OrderModel extends Model{
             'owner_id'=>$user_id,
             'order_store_id'=>$store_id,
             'order_store_admins'=>$store_owners_all,
-            'order_sum_delivery'=>$order_sum_delivery,
+            'order_sum_delivery'=>$order_sum_delivery??0,//IF null then there is no delivery
             'order_data'=>'{}',
         ];
         $this->allowedFields[]='order_data';

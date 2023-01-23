@@ -278,6 +278,7 @@ class StoreModel extends Model{
         $this->limit(1);
         $this->select('IF(delivery_cost>0,delivery_cost,store_delivery_cost) order_sum_delivery');
         $delivery_option=$this->tariffRuleListGet($store_id);
+        ql($this);
         if( isset($delivery_option[0]) ){
             return $delivery_option[0]->order_sum_delivery;
         }
