@@ -10,6 +10,7 @@ class TransactionModel extends Model{
     protected $table      = 'transaction_list';
     protected $primaryKey = 'trans_id';
     protected $allowedFields = [
+        'trans_date',
         'trans_amount',
         'trans_data',
         'trans_tags',
@@ -19,6 +20,8 @@ class TransactionModel extends Model{
         'trans_holder',
         'trans_holder_id',
         'trans_description',
+        'updated_by',
+        'created_by'
         ];
 
     protected $useSoftDeletes = true;
@@ -35,8 +38,14 @@ class TransactionModel extends Model{
     
     public function itemGet( $trans_id ){
         $this->permitWhere('r');
+        $this->select("{$this->table}.*,usu.user_name updated_user_name,usc.user_name created_user_name");
+        $this->join('user_list usu','updated_by=usu.user_id','left');
+        $this->join('user_list usc','created_by=usc.user_id','left');
         $this->where('trans_id',$trans_id);
         $trans=$this->get(1)->getRow();
+        if( !$trans ){
+            return 'notfound';
+        }
         if( $trans->trans_data ){
             $trans->trans_data=json_decode($trans->trans_data);
         }
@@ -64,32 +73,55 @@ class TransactionModel extends Model{
         return $trans;
     }
 
+    private function itemCreateOrderTags( object $trans ){
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($trans->trans_holder_id,'basic');
+        if(!is_object($order_basic)){
+            throw new \Exception("Parent Order of transaction not found",404);
+        }
+        if($order_basic->order_courier_id){
+            $trans->trans_tags.=" #courier{$order_basic->order_courier_id}";
+        }
+        if($order_basic->order_store_id){
+            $trans->trans_tags.=" #store{$order_basic->order_store_id}";
+        }
+        return $trans;
+    }
+
     private function itemCreateTags(object $trans){
-        $tags=$trans->trans_tags??'';
+        $trans->trans_tags=$trans->trans_tags??'';
         if($trans->trans_role??''){
             list($debits,$credits)=explode('->',$trans->trans_role);
             $trans->trans_debit=$debits;
             $trans->trans_credit=$credits;
-            $tags.=str_replace('.',' #debit','.'.ucfirst($debits));
-            $tags.=str_replace('.',' #credit','.'.ucfirst($credits));
+            $trans->trans_tags.=str_replace('.',' #debit','.'.ucwords($debits));
+            $trans->trans_tags.=str_replace('.',' #credit','.'.ucwords($credits));
         }
-        if($trans->trans_holder??''){
-            //$tags.=" #{$trans->trans_holder}-{$trans->trans_holder_id}";
+        $trans->trans_tags.=" #{$trans->trans_holder}{$trans->trans_holder_id}";
+        if($trans->trans_holder=='order'){
+            $trans=$this->itemCreateOrderTags($trans);
         }
-        $trans->trans_tags=$tags;
+        $tag_list=explode(' ',$trans->trans_tags);
+        $trans->trans_tags=implode(' ',array_unique($tag_list));
         return $trans;
     }
 
     public function itemCreate( object $trans ){
-        if( !$this->permit(null, 'w') ){
+        if( !sudo() ){
             return 0;
         }
         if( $trans->trans_amount==0 ){
             return -1;
         }
+        if( !($trans->trans_date??0) ){
+            $trans->trans_date=date('Y-m-d H:i:s'); 
+        }
+
+        $trans=$this->itemCreateTags($trans);
+        $trans->created_by=$trans->updated_by=session()->get('user_id');
+
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';
-        $trans=$this->itemCreateTags($trans);
         $trans_id=$this->insert($trans,true);
         return $trans_id;
     }
@@ -103,12 +135,25 @@ class TransactionModel extends Model{
     }
 
     public function itemUpdate( object $trans ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        if( $trans->trans_amount==0 ){
+            return -1;
+        }
         $this->permitWhere('w');
+
+        $trans=$this->itemCreateTags($trans);
+        $trans->updated_by=session()->get('user_id');
+
         $this->update($trans->trans_id,$trans);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete( int $trans_id ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
         $this->permitWhere('w');
         $this->delete($trans_id);
         return $this->db->affectedRows()?'ok':'idle';
@@ -155,9 +200,22 @@ class TransactionModel extends Model{
         } else {
             return 'no_account';
         }
-        $start_case= $filter->start_at?"created_at>'{$filter->start_at} 00:00:00'":"1";
-        $finish_case=$filter->finish_at?"created_at<'{$filter->finish_at} 23:59:59'":"1";
+        $start_case= $filter->start_at?"trans_date>'{$filter->start_at} 00:00:00'":"1";
+        $finish_case=$filter->finish_at?"trans_date<'{$filter->finish_at} 23:59:59'":"1";
         $permission=$this->permitWhereGet('r','item');
+
+
+        $like_case='';
+        if( $filter->q??'' ){
+            $this->like('trans_description', $filter->q);
+            $this->orLike('trans_amount', $filter->q);
+
+
+            $like_case.='AND (';
+            $like_case.="trans_description LIKE '%" .$this->escapeLikeString($filter->q) . "%' ESCAPE '!'";
+            $like_case.="OR trans_amount LIKE '%" .$this->escapeLikeString($filter->q) . "%' ESCAPE '!'";
+            $like_case.=')';
+        }
 
         $sql_create_inner="
             CREATE TEMPORARY TABLE tmp_ledger_inner AS(
@@ -165,7 +223,7 @@ class TransactionModel extends Model{
                 trans_id,
                 trans_description,
                 trans_amount,
-                created_at trans_date,
+                trans_date,
                 IF($debit_case,1,0) is_debit,
                 IF($start_case,1,0) after_start
             FROM
@@ -175,6 +233,8 @@ class TransactionModel extends Model{
                 AND ($debit_case OR $credit_case)
                 AND $finish_case
                 AND is_disabled=0
+                AND deleted_at IS NULL
+                $like_case
             )
         ";
         $sql_ledger_get="
@@ -182,6 +242,7 @@ class TransactionModel extends Model{
                 *
             FROM
                 tmp_ledger_inner
+            ORDER BY trans_date DESC
         ";
         $sql_meta_get="
             SELECT

@@ -6,6 +6,61 @@ use \CodeIgniter\API\ResponseTrait;
 class Transaction extends \App\Controllers\BaseController{
     use ResponseTrait;
     
+    public function itemGet(){
+        $trans_id=$this->request->getVar('trans_id');
+
+        $TransactionModel=model('TransactionModel');
+        $result=$TransactionModel->itemGet($trans_id);
+        if($result=='notfound'){
+            return $this->failNotFound($result);
+        }
+        return $this->respond($result);
+    }
+
+    public function itemCreate(){
+        $data = $this->request->getJSON();
+        if(!$data){
+            return $this->fail('malformed_request');
+        }
+        $TransactionModel=model('TransactionModel');
+        $result = $TransactionModel->itemCreate($data);
+        if ($result === 'forbidden') {
+            return $this->failForbidden($result);
+        }
+        return $this->respondCreated($result);
+    }
+
+    public function itemUpdate(){
+        $data = $this->request->getJSON();
+        if(!$data){
+            return $this->fail('malformed_request');
+        }
+        $TransactionModel=model('TransactionModel');
+        $result = $TransactionModel->itemUpdate($data);
+        if ($result === 'forbidden') {
+            return $this->failForbidden($result);
+        }
+        return $this->respondUpdated($result);
+    }
+
+    public function itemDelete(){
+        $trans_id=$this->request->getVar('trans_id');
+        $TransactionModel=model('TransactionModel');
+        $result = $TransactionModel->itemDelete($trans_id);
+        if ($result === 'forbidden') {
+            return $this->failForbidden($result);
+        }
+        return $this->respondDeleted($result);
+    }
+
+
+
+
+
+
+
+
+
     public function listGet(){
         $filter=(object)[
             'trans_holder'      =>$this->request->getVar('trans_holder'),
@@ -14,6 +69,7 @@ class Transaction extends \App\Controllers\BaseController{
             'start_at'          =>$this->request->getVar('start_at'),
             'finish_at'         =>$this->request->getVar('finish_at'),
             'account'           =>$this->request->getVar('account'),
+            'q'                 =>$this->request->getVar('q'),
         ];
         $start = date_create($filter->start_at);
         $finish = date_create($filter->finish_at);
@@ -23,7 +79,7 @@ class Transaction extends \App\Controllers\BaseController{
         }
         $TransactionModel=model('TransactionModel');
         $result=$TransactionModel->listGet($filter);
-        if($result=='noaccount'){
+        if($result=='no_account'){
             return $this->fail($result);
         }
         return $this->respond($result);

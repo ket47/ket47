@@ -17,6 +17,7 @@ class TelegramBot{
     private $commandButtonMap=[
         '/orderlist'=>"Активные заказы"
     ];
+    public $Telegram;
     public function onMessage(){
         $text=$this->Telegram->Text();
         if($text=='/signout'){

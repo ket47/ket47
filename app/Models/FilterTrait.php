@@ -29,9 +29,9 @@ trait FilterTrait{
             $fields= explode(',', $filter['name_query_fields']);
             $clues=explode(' ',$filter['name_query']);
             foreach( $fields as $field ){
-                if( !in_array($field,$this->allowedFields) ){
-                    continue;
-                }
+                // if( !in_array($field,$this->allowedFields) ){  WHY HAVE I DONE THIS? IS THERE A GOOD REASON?
+                //     continue;
+                // }
                 $words=[];
                 foreach($clues as $clue){
                     if( !$clue || $clue==' ' ){

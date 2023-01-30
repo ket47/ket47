@@ -634,6 +634,39 @@ class OrderStageScript{
             ])
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
+
+
+
+
+        $StoreModel=model('StoreModel');
+        $StoreModel->itemCacheClear();
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store
+        ];
+        $admin_sms=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
+            'context'=>$context
+        ];
+        $store_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'template'=>'messages/order/on_delivery_found_STORE_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"delivery_found Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+
+
         return 'ok';
     }
     public function onDeliveryRejected( $order_id ){
@@ -706,13 +739,13 @@ class OrderStageScript{
             'context'=>$context
         ];
         $cust_sms=(object)[
-            'message_transport'=>'push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context

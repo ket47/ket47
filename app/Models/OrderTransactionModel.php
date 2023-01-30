@@ -183,7 +183,7 @@ class OrderTransactionModel extends TransactionModel{
         $invoiceTrans=(object)[
             'trans_amount'=>$productSum,
             'trans_role'=>'supplier->transit',
-            'trans_tags'=>"#orderInvoice #store{$order_basic->order_store_id}",
+            'trans_tags'=>"#orderInvoice",
             'trans_description'=>$invoiceDescription,
             'owner_id'=>0,//customer should not see
             'owner_ally_ids'=>$order_basic->order_store_admins,
@@ -203,8 +203,8 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionDescription=view('transactions/supplier_sanction',$context);
             $sanctionTrans=(object)[
                 'trans_amount'=>$productSum,
-                'trans_role'=>'capital.profit->supplier',
-                'trans_tags'=>"#orderSanction #store{$order_basic->order_store_id}",
+                'trans_role'=>'transit->supplier',
+                'trans_tags'=>"#orderSanction",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>$order_basic->order_store_admins,
@@ -219,33 +219,32 @@ class OrderTransactionModel extends TransactionModel{
                     return false;
                 }
             }
-        } else {
-            $paymentSum=$order_data->payment_card_confirm_sum??0;
+        }
+        $paymentSum=$order_data->payment_card_confirm_sum??0;
 
-            $paymentFee=$order_data->payment_fee??0;
-            $paymentCost=$order_data->payment_cost??0;
-            $orderFee=$order_data->order_fee??0;
-            $orderCost=$order_data->order_cost??0;
-            
-            $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;    
-            $commissionDescription=view('transactions/supplier_commission',$context);
-            $commissionTrans=(object)[
-                'trans_amount'=>$commissionSum,
-                'trans_role'=>'capital.profit->supplier',
-                'trans_tags'=>"#orderCommission #store{$order_basic->order_store_id}",
-                'trans_description'=>$commissionDescription,
-                'owner_id'=>0,//customer should not see
-                'owner_ally_ids'=>$order_basic->order_store_admins,
-                'is_disabled'=>0,
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_basic->order_id
-            ];
-            if($commissionTrans->trans_amount!=0){
-                $result=$this->itemCreate($commissionTrans);
-                if( !$result ){
-                    log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
-                    return false;
-                }
+        $paymentFee=$order_data->payment_fee??0;
+        $paymentCost=$order_data->payment_cost??0;
+        $orderFee=$order_data->order_fee??0;
+        $orderCost=$order_data->order_cost??0;
+        
+        $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;    
+        $commissionDescription=view('transactions/supplier_commission',$context);
+        $commissionTrans=(object)[
+            'trans_amount'=>$commissionSum,
+            'trans_role'=>'capital.profit->supplier',
+            'trans_tags'=>"#orderCommission",
+            'trans_description'=>$commissionDescription,
+            'owner_id'=>0,//customer should not see
+            'owner_ally_ids'=>$order_basic->order_store_admins,
+            'is_disabled'=>0,
+            'trans_holder'=>'order',
+            'trans_holder_id'=>$order_basic->order_id
+        ];
+        if($commissionTrans->trans_amount!=0){
+            $result=$this->itemCreate($commissionTrans);
+            if( !$result ){
+                log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
+                return false;
             }
         }
 
@@ -278,7 +277,7 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionTrans=(object)[
                 'trans_amount'=>$sanctionSum,
                 'trans_role'=>'capital.profit->courier',
-                'trans_tags'=>'#courierSanction',
+                'trans_tags'=>"#courierSanction #courier{$order_basic->order_courier_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>($order_basic->order_courier_admins??0),
