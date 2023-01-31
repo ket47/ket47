@@ -94,7 +94,7 @@ class OrderStageScript{
             'system_finish'=>               ['Проблема решена','success'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
-            'admin_sanction_delivery'=>     ['Оштрафовать курьера','danger'],
+            'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
             ],
         'admin_sanction_customer'=>[
             'system_reckon'=>               [],
@@ -102,7 +102,7 @@ class OrderStageScript{
         'admin_sanction_supplier'=>[
             'system_reckon'=>               [],
             ],
-        'admin_sanction_delivery'=>[
+        'admin_sanction_courier'=>[
             'system_reckon'=>               [],
             ],
 

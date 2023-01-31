@@ -100,15 +100,15 @@ trait CourierTrait{
 
 
     private function courierGet(){
-        $courier=session()->get('courier');
-        if(!$courier){
+        /**
+         * If status has been changed outside of bot then cache data become outdated!!!
+         */
+        //$courier=session()->get('courier');
+        //if(!$courier){
             $CourierModel=model('CourierModel');
             $courier=$CourierModel->itemGet(null,'basic');
-            session()->set('courier',$courier);
-            if( $courier->status_type=='idle' && !session()->get('live_location_warning_sent') ){
-                session()->set('live_location_warning_sent',1);
-            }
-        }
+        //    session()->set('courier',$courier);
+        //}
         return $courier;
     }
     private function isCourier(){

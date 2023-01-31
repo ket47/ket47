@@ -489,7 +489,6 @@ class CourierModel extends Model{
         $this->where("TIMESTAMPDIFF(MINUTE,location_list.created_at, NOW())>{$locationUnknownTimeoutMin}");
         $this->select('courier_id');
         $idleCouriers=$this->get()->getResult();
-        ql($this);
         foreach($idleCouriers as $courier){
             $this->itemShiftClose($courier->courier_id);
         }
