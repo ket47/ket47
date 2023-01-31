@@ -110,7 +110,7 @@ class OrderModel extends Model{
             if( $order->user_role=='supplier' && ($this->order_data->info_for_supplier??null) ){
                 $order->info=json_decode($this->order_data->info_for_supplier);
             } else
-            if( $order->user_role=='courier' && ($this->order_data->info_for_courier??null) ){
+            if( $order->user_role=='delivery' && ($this->order_data->info_for_courier??null) ){
                 $order->info=json_decode($this->order_data->info_for_courier);
             } else 
             if( $order->user_role=='admin' ){
