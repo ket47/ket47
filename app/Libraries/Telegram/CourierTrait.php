@@ -115,7 +115,7 @@ trait CourierTrait{
         if( !$this->isUserSignedIn() ){
             return false;
         }
-        $user=session()->get('user_data');
+        $user=$this->userGet();
         $isCourier=str_contains($user->member_of_groups->group_types??'','courier');
         if( !$isCourier ){
             return false;
@@ -145,7 +145,8 @@ trait CourierTrait{
         if( $this->isCourierIdle() ){
             $user=$this->userGet();
             $CourierModel=model("CourierModel");
-            $CourierModel->itemUpdateStatus($courier->courier_id,'ready');
+            //$CourierModel->itemUpdateStatus($courier->courier_id,'ready');
+            $CourierModel->itemShiftOpen($courier->courier_id);
             session()->remove('courier');
             return $this->sendMainMenu();
         }
@@ -162,7 +163,8 @@ trait CourierTrait{
         }
         $courier=$this->courierGet();
         $CourierModel=model("CourierModel");
-        $CourierModel->itemUpdateStatus($courier->courier_id,'idle');
+        //$CourierModel->itemUpdateStatus($courier->courier_id,'idle');
+        $CourierModel->itemShiftClose($courier->courier_id);
         session()->remove('courier');
         return $this->sendMainMenu();
     }

@@ -133,16 +133,13 @@ class TelegramBot{
         try{
             $this->$handler($Telegram);
         } catch(\Throwable $e){
-            pl("ERR: ".$e->getMessage()." File:".$e->getFile()." Line:".$e->getLine());
+            pl("Telegram bot ERR: ".$e->getMessage()." File:".$e->getFile()." Line:".$e->getLine());
         }
     }
 
 
-
-
-
     public function sendNotification($ChatID,$html,$options=null){
-        $this->sessionSetup($ChatID);
+        session()->set('chat_id',$ChatID);//Dont use incoming session !!!
         $opts=null;
         if( $options->buttons??null ){
             $menu=array_merge(
@@ -152,8 +149,6 @@ class TelegramBot{
                 'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=true),
             ];
         }
-
-
         return $this->sendHTML($html,$opts);
     }
     public function sendText( $text, $opts=null, $permanent_message_name=null ){
@@ -292,7 +287,7 @@ class TelegramBot{
         }
         $telegramChatId=session()->get('chat_id');
         $UserModel=model("UserModel");
-        $UserModel->where("JSON_EXTRACT(user_data,\"$.telegramChatId\")='$telegramChatId'");
+        $UserModel->where("JSON_EXTRACT(user_data,\"$.telegramChatId\")='$telegramChatId'")->select('user_id');
         $user_id=$UserModel->get()->getRow('user_id');
         if(!$user_id){
             $this->userPhoneRequest();

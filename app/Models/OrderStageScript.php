@@ -601,7 +601,7 @@ class OrderStageScript{
     
     public function onDeliveryStart( $order_id ){
         $CourierModel=model('CourierModel');
-        if( !$CourierModel->isReadyCourier() ){
+        if( !$CourierModel->isCourierReady() ){
             return 'wrong_courier_status';
         }
         $order=$this->OrderModel->itemGet($order_id);

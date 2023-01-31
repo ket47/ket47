@@ -18,7 +18,7 @@ class Webhooks extends \App\Controllers\BaseController{
         $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
         $Tbot=new \App\Libraries\Telegram\TelegramBot();
         while(1){
-            $Telegram->getUpdates($offset = 0, $limit = 100, 1, $update = true);
+            $Telegram->getUpdates($offset = 0, $limit = 3, 1, $update = true);
             for ($i = 0; $i < $Telegram->UpdateCount(); $i++) {
                 $Telegram->serveUpdate($i);
                 $Tbot->dispatch($Telegram);
@@ -40,7 +40,7 @@ class Webhooks extends \App\Controllers\BaseController{
         while(1){
             $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
             if($result){
-                CLI::write("W HELPER:".$result);
+                \CodeIgniter\CLI\CLI::write("W HELPER:".$result);
             }
         }
     }

@@ -9,7 +9,7 @@ class Task extends \App\Controllers\BaseController{
 
     private function jobTimeoutsSet(){
         $db = \Config\Database::connect();
-        $db->query("set session wait_timeout=300");
+        $db->query("set session wait_timeout=3600");
         set_time_limit(3600);
         session_write_close();
     }
@@ -28,7 +28,7 @@ class Task extends \App\Controllers\BaseController{
         echo "\nWorker #$worker_id Starting.".date('H:i:s');
         echo "\nWaiting for a Job";
         $predis = new \Credis_Client();
-        $this->timedJobCheck($predis);
+        $this->timedJobDo($predis);
 
         while(time() < $start_time + $time_limit){
             $job = $predis->blPop('queue.priority.normal',4);
@@ -58,31 +58,50 @@ class Task extends \App\Controllers\BaseController{
         }
     }
 
-    private function timedJobCheck($predis){
-        $timer=$predis->get('cronjobtimer');
-        if($timer){//time not came
-            echo "\ntimedJobCheck skipping: $timer";
+    // private function timedJobCheck($predis){
+    //     $timer=$predis->get('cronjobtimer');
+    //     if($timer){//time not came
+    //         echo "\ntimedJobCheck skipping: $timer";
+    //         return false;
+    //     }
+    //     echo "\nTimed Jobs will execute:";
+    //     $this->timedJobDo();
+    //     $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
+    //     return true;
+    // }
+
+    private function timedJobDo($predis){
+        $this->taskPurge($predis);
+        $this->taskShiftClose($predis);
+    }
+
+    private function taskPurge($predis){
+        $timerNotExpired=$predis->get('purgetimer');
+        if( $timerNotExpired ){
             return false;
         }
-        echo "\nTimed Jobs will execute:";
-        $this->timedJobDo();
-        $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
-        return true;
-    }
+        $predis->setEx('purgetimer',30*60,1);//30 min
 
-    private function timedJobDo(){
-        $this->taskPurge();
-    }
-
-    private function taskPurge(){
-        echo "\npurging started...";
         $trashed_days= getenv('app.trashed_days');
         model("ImageModel")->listPurge($trashed_days);
         model("ProductModel")->listPurge($trashed_days);
         model("StoreModel")->listPurge($trashed_days);
         model("OrderModel")->listPurge(-1);
         model("UserModel")->listPurge($trashed_days);
-        echo "\npurged";
+    }
+
+    private function taskShiftClose($predis){
+        $timerNotExpired=$predis->get('couriershifttimer');
+        if( $timerNotExpired ){
+            return false;
+        }
+        $predis->setEx('couriershifttimer',5*60,1);//5 min
+        
+        $CourierModel=model('CourierModel');
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+            $CourierModel->listIdleShiftClose();
+        $UserModel->systemUserLogout();
     }
 
 

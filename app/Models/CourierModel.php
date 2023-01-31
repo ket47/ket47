@@ -149,6 +149,82 @@ class CourierModel extends Model{
         return 'error';
     }
 
+    public function itemShiftOpen( $courier_id ){
+        $courier=$this->itemGet($courier_id,'basic');
+        if( !is_object($courier) ){
+            return false;
+        }
+        $result=$this->itemUpdateStatus($courier_id,'ready');
+        if( $result=='ok' ){
+            $message_text=view('messages/events/on_delivery_shift_opened_sms');
+        } else 
+        if( $result=='notactive' ){
+            $message_text=view('messages/events/on_delivery_shift_notactive_sms');
+        } else {
+            $message_text=view('messages/events/on_delivery_shift_error_sms');
+        }
+
+        $message=(object)[
+            'message_reciever_id'=>$courier->owner_id,
+            'message_transport'=>'message',
+            'message_text'=>$message_text,
+            'message_data'=>[
+                'title'=>'🚀 Смена открыта',
+                'body'=>$message_text,
+            ]
+        ];
+
+
+
+
+        $sms_job=[
+            'task_name'=>"Courier Notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                ],
+        ];
+        jobCreate($sms_job);
+        
+        //$Messenger=new \App\Libraries\Messenger();
+        //return $Messenger->itemSend($message);
+    }
+
+    public function itemShiftClose( $courier_id ){
+        $courier=$this->itemGet($courier_id,'basic');
+        if( !is_object($courier) ){
+            return false;
+        }
+        $result=$this->itemUpdateStatus($courier_id,'idle');
+        if( $result=='ok' ){
+            $message_text=view('messages/events/on_delivery_shift_closed_sms');
+        } else 
+        if( $result=='notactive' ){
+            $message_text=view('messages/events/on_delivery_shift_notactive_sms');
+        } else {
+            $message_text=view('messages/events/on_delivery_shift_error_sms');
+        }
+
+        $message=(object)[
+            'message_reciever_id'=>$courier->owner_id,
+            'message_transport'=>'message',
+            'message_text'=>$message_text,
+            'message_data'=>[
+                'title'=>'🚀 Смена закрыта',
+                'body'=>$message_text,
+            ]
+        ];
+
+        $sms_job=[
+            'task_name'=>"Courier Notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                ],
+        ];
+        jobCreate($sms_job);
+        // $Messenger=new \App\Libraries\Messenger();
+        // return $Messenger->itemSend($message);
+    }
+
     public function isIdle($courier_id=null,$user_id=null){
         if($courier_id){
             $this->where('courier_id',$courier_id);
@@ -165,6 +241,29 @@ class CourierModel extends Model{
             return true;
         }
         return false;
+    }
+
+    public function isCourierReady($courier_id=null){
+        $isAdmin=sudo();
+        if( $isAdmin ){
+            return true;
+        }
+        $user=session()->get('user_data');
+        $isCourier=str_contains($user->member_of_groups->group_types??'','courier');
+        if( !$isCourier ){
+            return false;
+        }
+        $this->permitWhere('r');
+        $this->join('courier_group_member_list','member_id=courier_id');
+        $this->join('courier_group_list','group_id');
+        $this->where('group_type','ready');
+        $this->where('courier_list.is_disabled','0');
+        if($courier_id){
+            $this->where('courier_id',$courier_id);
+        } else {
+            $this->where('courier_list.owner_id',$user->user_id);
+        }
+        return $this->get()->getRow('courier_id')?true:false;
     }
     
     public function itemDelete($courier_id=null,$user_id=null){
@@ -219,33 +318,11 @@ class CourierModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function isReadyCourier($courier_id=null){
-        $isAdmin=sudo();
-        if( $isAdmin ){
-            return true;
-        }
-        $user=session()->get('user_data');
-        $isCourier=str_contains($user->member_of_groups->group_types??'','courier');
-        if( !$isCourier ){
-            return false;
-        }
-        $this->permitWhere('r');
-        $this->join('courier_group_member_list','member_id=courier_id');
-        $this->join('courier_group_list','group_id');
-        $this->where('group_type','ready');
-        $this->where('courier_list.is_disabled','0');
-        if($courier_id){
-            $this->where('courier_id',$courier_id);
-        } else {
-            $this->where('courier_list.owner_id',$user->user_id);
-        }
-        return $this->get()->getRow('courier_id')?true:false;
-    }
 
     public function listJobGet( $courier_id ){
         //courier should be able to preview jobs
-        // $isReadyCourier=$this->isReadyCourier();
-        // if( !$isReadyCourier ){
+        // $isCourierReady=$this->isCourierReady();
+        // if( !$isCourierReady ){
         //     return 'notready';
         // }
         $point_distance=getenv('delivery.radius');
@@ -274,8 +351,8 @@ class CourierModel extends Model{
     }
 
     public function itemJobGet( $order_id ){
-        $isReadyCourier=$this->isReadyCourier();
-        if( !$isReadyCourier ){
+        $isCourierReady=$this->isCourierReady();
+        if( !$isCourierReady ){
             return 'notready';
         }
         $OrderModel=model("OrderModel");
@@ -291,8 +368,8 @@ class CourierModel extends Model{
     }
 
     public function itemJobStart( $order_id, $courier_id ){
-        $isReadyCourier=$this->isReadyCourier($courier_id);
-        if( !$isReadyCourier ){
+        $isCourierReady=$this->isCourierReady($courier_id);
+        if( !$isCourierReady ){
             return 'notready';
         }
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
@@ -358,13 +435,11 @@ class CourierModel extends Model{
     
     private $shiftMaximumLength=13;//at maximum notifications during 13 hours
     public function listNotify( $context ){
-
         //We should in future check the distance between store and courier!!!
 
         ///////////////////////////////////////////////////
         //CREATING READY COURIERS NOTIFICATIONS
         ///////////////////////////////////////////////////
-        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<{$this->shiftMaximumLength}");
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5,'order']);
         if( !$ready_courier_list ){
             return false;
@@ -405,16 +480,30 @@ class CourierModel extends Model{
         return false;
     }
 
+    public function listIdleShiftClose(){
+        $locationUnknownTimeoutMin=5;
+        $this->join('courier_group_member_list','member_id=courier_id');
+        $this->join('courier_group_list','group_id');
+        $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    
+        $this->whereIn('group_type',['ready']);    
+        $this->where("TIMESTAMPDIFF(MINUTE,location_list.created_at, NOW())>{$locationUnknownTimeoutMin}");
+        $this->select('courier_id');
+        $idleCouriers=$this->get()->getResult();
+        ql($this);
+        foreach($idleCouriers as $courier){
+            $this->itemShiftClose($courier->courier_id);
+        }
+    }
+
     public function hasActiveCourier( object $aroundLocation=null ){
         $this->select('courier_id');
-        $this->where("TIMESTAMPDIFF(HOUR,courier_group_member_list.created_at, NOW())<{$this->shiftMaximumLength}");
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->whereIn('group_type',['ready','busy']);
         $this->limit(1);
 
         if( $aroundLocation ){
-            $aroundLocationRadius=getenv('delivery.radius');//maybe it should be different setting?
+            $aroundLocationRadius=15000;//maybe it should be different setting?
             $location_holder=$aroundLocation->location_holder;
             $location_holder_id=$aroundLocation->location_holder_id;
             $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE is_main=1 AND location_holder='$location_holder' AND location_holder_id='$location_holder_id')");
