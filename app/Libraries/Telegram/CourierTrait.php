@@ -15,8 +15,6 @@ trait CourierTrait{
         $CourierModel=model("CourierModel");
         $jobs=$CourierModel->listJobGet($courier->courier_id);
 
-
-
         $context=[
             'courier'=>$courier,
             'user'=>$user,

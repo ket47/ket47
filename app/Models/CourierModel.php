@@ -386,6 +386,8 @@ class CourierModel extends Model{
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
         $this->transCommit();
+
+        $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
         return 'ok';
     }
 

@@ -65,9 +65,6 @@ class OrderStageScript{
             'delivery_no_courier'=>         [],
             'system_reckon'=>               []
             ],
-        
-        
-        
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
@@ -598,16 +595,8 @@ class OrderStageScript{
         $CourierModel->listNotify($context);
         return 'ok';
     }
-    
-    public function onDeliveryStart( $order_id ){
-        $CourierModel=model('CourierModel');
-        if( !$CourierModel->isCourierReady() ){
-            return 'wrong_courier_status';
-        }
-        $order=$this->OrderModel->itemGet($order_id);
-        if( !$order->images ){
-            return 'photos_must_be_made';
-        }
+
+    public function onDeliveryFound( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
@@ -635,9 +624,6 @@ class OrderStageScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
-
-
-
         $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
@@ -663,10 +649,17 @@ class OrderStageScript{
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms]]]
                 ]
         ];
-        jobCreate($notification_task);
-
-
-
+        jobCreate($notification_task);    }
+    
+    public function onDeliveryStart( $order_id ){
+        $CourierModel=model('CourierModel');
+        if( !$CourierModel->isCourierReady() ){
+            return 'wrong_courier_status';
+        }
+        $order=$this->OrderModel->itemGet($order_id);
+        if( !$order->images ){
+            return 'photos_must_be_made';
+        }
         return 'ok';
     }
     public function onDeliveryRejected( $order_id ){
