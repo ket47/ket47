@@ -141,9 +141,9 @@ class Messenger{
             return false;
         }
         $Sms=\Config\Services::sms();
-        $sms_send_ok=$Sms->send($phone_to,$message->message_text);
-        if( !$sms_send_ok ){
-            log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$sms_send_ok );
+        $result=$Sms->send($phone_to,$message->message_text);
+        if( $result!=='ok' ){
+            log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$result );
             return false;
         }
         return true;

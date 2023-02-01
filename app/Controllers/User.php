@@ -155,16 +155,9 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function signIn(){
-
-
-
-
         $user_phone=$this->request->getVar('user_phone');
         $user_pass=$this->request->getVar('user_pass');
         if( !$user_phone || !$user_pass ){
-
-            
-
             return $this->fail('empty_phone_or_pass');
         }
         $this->signOutUser();
