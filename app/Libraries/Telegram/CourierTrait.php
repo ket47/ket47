@@ -15,10 +15,12 @@ trait CourierTrait{
         $CourierModel=model("CourierModel");
         $jobs=$CourierModel->listJobGet($courier->courier_id);
 
+
+
         $context=[
             'courier'=>$courier,
             'user'=>$user,
-            'job_count'=>count($jobs)
+            'job_count'=>is_array($jobs)?count($jobs):0
         ];
         return View('messages/telegram/courierStatus',$context);
     }
