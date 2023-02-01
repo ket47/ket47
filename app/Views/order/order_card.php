@@ -206,7 +206,7 @@ $(Order.init);
 
             <div>Комментарий</div>
             <div>
-                <textarea name="order_description.<?= $order->order_id ?>"><?= $order->order_description?></textarea>
+                <textarea name="order_description.<?= $order->order_id ?>"><?= $order->order_description??''?></textarea>
             </div>
 
 

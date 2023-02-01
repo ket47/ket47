@@ -256,7 +256,7 @@ class UserModel extends Model{
             created_at,
             updated_at,
             deleted_at");
-        $user_list= $this->get()->getResult();
+        $user_list= $this->get()?->getResult();
         $UserGroupMemberModel=model('UserGroupMemberModel');
         foreach($user_list as $user){
             if($user){

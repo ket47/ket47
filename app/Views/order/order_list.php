@@ -20,7 +20,7 @@
                 </div>
                 <div><?= $order->user_name ?></div>
                 <div><?= $order->user_phone ?></div>
-                <div><?= $order?->order_description ?></div>
+                <div><?= $order?->order_description??'' ?></div>
                 <div><?= $order->stage_current_name ?></div>
                 <div><i class="fa fa-pencil" data-id="<?=$order->order_id?>" data-action="edit"></i></div>
                 <div style="grid-column: 1 / span 7;" class="item_card" id="itemCard<?=$order->order_id?>"></div>

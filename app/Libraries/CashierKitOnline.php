@@ -142,11 +142,19 @@ class CashierKitOnline{
             )
         );
         $context  = stream_context_create($options);
-        $response_text = file_get_contents($url, false, $context);
-        $response=json_decode($response_text);
-        if($response?->ResultCode!=0){
-            log_message('critical',"CashierKitOnline on Order #{$CheckNumber} api ResultCode is:".$response->ResultCode);
+        for($i=0;$i<2;$i++){
+            try{
+                $response_text = file_get_contents($url, false, $context);
+                $response=json_decode($response_text);
+                if(($response->ResultCode??'error')!=0){
+                    log_message('critical',"CashierKitOnline on Order #{$CheckNumber} api ResultCode is:".$response->ResultCode);
+                }
+                return $response;
+            }catch(\Throwable $e){
+                log_message('error',"CashierKitOnline on Order #{$CheckNumber} try #{$i} api Error".$e->getMessage());
+                sleep(2);
+                continue;
+            }
         }
-        return $response;
     }
 }

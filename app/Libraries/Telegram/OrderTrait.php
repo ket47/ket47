@@ -39,7 +39,7 @@ trait OrderTrait{
         $this->orderSend($order_id);
         $orderOpenedMessageId=session()->get('order');
         $result=$this->pinMessage($orderOpenedMessageId);
-        if( !$result['ok'] ){
+        if( !($result['ok']??null) ){
             pl($result['description'],false);
         }
     }
