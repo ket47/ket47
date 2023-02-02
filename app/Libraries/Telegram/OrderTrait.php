@@ -78,6 +78,16 @@ trait OrderTrait{
     public function orderSend(){
         $order_id=session()->get('opened_order_id');
         $order=$this->orderGet($order_id);
+
+
+        
+        if(!is_object($order)){
+            pl(['bot orderSend FAILED',$order,$_SESSION]);
+        }
+
+
+
+
         $order_html=View('messages/telegram/order',['order'=>$order]);
         $has_next_stages=false;
         foreach($order->stage_next as $stage=>$conf){

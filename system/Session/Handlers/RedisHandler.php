@@ -120,6 +120,12 @@ class RedisHandler extends BaseHandler
             return false;
         }
 
+
+
+try{
+
+
+
         $redis = new Redis();
 
         if (! $redis->connect($this->savePath['host'], ($this->savePath['host'][0] === '/' ? 0 : $this->savePath['port']), $this->savePath['timeout'])) {
@@ -133,6 +139,12 @@ class RedisHandler extends BaseHandler
 
             return true;
         }
+
+
+} catch(\Throwable $e){
+    $this->logger->error($e->getMessage().'  ENV'.json_encode($_ENV).'  SERVER'.json_encode($_SERVER));
+}
+
 
         return false;
     }
