@@ -410,7 +410,7 @@ class OrderStageScript{
         $notification_task=[
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms,$admin_sms,$admin_email]]]
                 ]
         ];
         jobCreate($notification_task);
@@ -752,7 +752,7 @@ class OrderStageScript{
         $StoreModel=model('StoreModel');
         $CourierModel=model('CourierModel');
 
-        $this->OrderModel->itemDataUpdate($order_id,(object)['is_canceled'=>1]);
+        $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'all');
@@ -797,7 +797,7 @@ class OrderStageScript{
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
 
-        $this->OrderModel->itemDataUpdate($order_id,(object)['is_canceled'=>1]);
+        $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
         
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');

@@ -40,7 +40,7 @@ trait OrderTrait{
         $orderOpenedMessageId=session()->get('order');
         $result=$this->pinMessage($orderOpenedMessageId);
         if( !($result['ok']??null) ){
-            pl($result['description'],false);
+            pl(['Tbot onOrderOpen ',$result],false);
         }
     }
     public function onOrderListGet( $list_type_id=1 ){
