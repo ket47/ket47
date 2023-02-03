@@ -789,6 +789,11 @@ class OrderStageScript{
     }
 
     public function onDeliveryNoCourier( $order_id ){
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $is_courier_found=$OrderGroupMemberModel->isMemberOf($order_id,'delivery_found');
+        if($is_courier_found){
+            return 'idle';
+        }
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
 
