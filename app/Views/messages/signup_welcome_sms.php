@@ -1,0 +1,1 @@
+<?=getenv('app.title')?>: <?=$user_name?>, добро пожаловать. Не забудьте логин <?=$user_phone?> пароль <?=$user_pass?>

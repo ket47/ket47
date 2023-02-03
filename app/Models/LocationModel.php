@@ -27,7 +27,7 @@ class LocationModel extends Model{
         'location_latitude'   => 'required',
         'location_longitude'  => 'required',
     ];
-    protected $useSoftDeletes = false;
+    protected $useSoftDeletes = true;//if user deletes adress it still available in joins
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
@@ -251,12 +251,12 @@ class LocationModel extends Model{
         return $this->db->affectedRows()?'ok':'error';
     }
     
-    public function listPurge( $olderThan=45 ){
-        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
-        $this->where('created_at<',$olderStamp);
-        $this->delete(null,true);
-        return 'ok';
-    }
+    // public function listPurge( $olderThan=45 ){
+    //     $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
+    //     $this->where('created_at<',$olderStamp);
+    //     $this->delete(null,true);
+    //     return 'ok';
+    // }
 
     public function distanceHolderGet($start_holder,$start_holder_id,$finish_holder,$finish_holder_id){
         $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE `location_holder`='$start_holder' AND `location_holder_id`='$start_holder_id')");

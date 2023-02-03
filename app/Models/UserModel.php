@@ -306,11 +306,15 @@ class UserModel extends Model{
             $PermissionModel=model('PermissionModel');
             $PermissionModel->listFillSession();
         }
+        return true;
     }
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION
     /////////////////////////////////////////////////////
     public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email){
+        if( $this->getUnverifiedUserIdByPhone($user_phone_cleared) ){
+            return 'user_phone_unverified';
+        }
         $user_data=[
             'user_phone'=>$user_phone_cleared,
             'user_name'=>$user_name,
@@ -321,7 +325,31 @@ class UserModel extends Model{
         if( $user_email && strlen($user_email)>5 ){
             $user_data['user_email']=$user_email;
         }
-        return $this->itemCreate($user_data);
+        $user_id=$this->itemCreate($user_data);
+
+
+
+
+
+
+
+
+
+        $user_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$user_id,
+            'template'=>'messages/signup_welcome_sms.php',
+            'context'=>$user_data
+        ];
+        $notification_task=[
+            'task_name'=>"signup_welcome_sms",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$user_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+        return $user_id;
     }
     
     public function signOut($user_id){

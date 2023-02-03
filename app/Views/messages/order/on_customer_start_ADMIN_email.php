@@ -4,7 +4,7 @@
         <title>Заказ №<?= $order->order_id ?> от <?= getenv('app.title') ?></title>
     </head>
     <body>
-        <h2> Возражение на заказ №<?= $order->order_id ?></h2>
+        <h2> Новый заказ №<?= $order->order_id ?></h2>
 
         <p>
             Добрый день, <?=$store->store_name?>.
@@ -15,19 +15,7 @@
             </a>
         </p>
         <p>
-            По заказу №<?= $order->order_id ?> поступило возражение от клиента. 
-        </p>
-        <p>
-            Свяжитель с Клиентом <?=$customer->user_name??'-'?> <?=$customer->user_phone??'-'?>
-        </p>
-        <p>
-            Свяжитель с Курьером <?=$courier->user_name??'-'?>  <?=$courier->user_phone??'-'?>
-        </p>
-        <p>
-            Свяжитель с Поставщиком <?=$supplier->store_name??'-'?> <?=$supplier->store_phone??'-'?>
-        </p>
-        <p>
-            Больше действий с заказом <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">в приложении</a>
+            Поступил заказ. Поиск курьера уже запущен. Больше действий с заказом <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">в приложении</a>
         </p>
 
         <?php if ($order->order_description): ?>
@@ -36,6 +24,18 @@
                 <i><?= $order->order_description ?></i>
             </p>
         <?php endif; ?>
+
+
+        <p>
+            Клиент <?=$customer->user_name??'-'?> <?=$customer->user_phone??'-'?>
+        </p>
+        <p>
+            Продавец <?=$store->store_name??'-'?> <?=$store->store_phone??'-'?>
+        </p>
+
+
+
+
         <?php if ($order->order_objection): ?>
             <h3>Проблемы с заказом</h3>
             <p>

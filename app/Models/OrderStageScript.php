@@ -102,12 +102,18 @@ class OrderStageScript{
         'admin_sanction_courier'=>[
             'system_reckon'=>               [],
             ],
-
+        'admin_recalculate'=>[
+            'system_reckon'=>               [],
+            ],
+            
 
         'system_reckon'=>[
             'system_finish'=>               [],
             'admin_supervise'=>             ['Установить статус','danger'],
             ],
+        'system_finish'=>[
+            'admin_recalculate'=>           ['Перепровести','danger'],
+        ]
     ];
 
     
@@ -119,24 +125,52 @@ class OrderStageScript{
     }
     public function onAdminSanctionCustomer( $order_id ){
         $order_data_update=(object)[
-            'sanction_customer_fee'=>1.00
+            'sanction_customer_fee'=>1,
+            'sanction_courier_fee'=>0,
+            'sanction_supplier_fee'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
     public function onAdminSanctionCourier( $order_id ){
         $order_data_update=(object)[
-            'sanction_courier_fee'=>1.00
+            'sanction_customer_fee'=>0,
+            'sanction_courier_fee'=>1,
+            'sanction_supplier_fee'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
     public function onAdminSanctionSupplier( $order_id ){
         $order_data_update=(object)[
-            'sanction_supplier_fee'=>1.00
+            'sanction_customer_fee'=>0,
+            'sanction_courier_fee'=>0,
+            'sanction_supplier_fee'=>1,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+    }
+    public function onAdminRecalculate($order_id){
+        $order_data_update=(object)[
+            'finalize_settle_supplier_done'=>0,
+            'finalize_settle_courier_done'=>0,
+            'finalize_settle_system_done'=>0,            
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+
+        $TransactionModel=model('TransactionModel');
+        $TransactionModel->where('trans_holder','order');
+        $TransactionModel->where('trans_holder_id',$order_id); 
+        $TransactionModel->delete(null,true);
+
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+
+
+
+
+
+        //pl(['onAdminRecalculate',$result],0);
+        return $result;
     }
     ////////////////////////////////////////////////
     //SYSTEM HANDLERS
@@ -150,17 +184,46 @@ class OrderStageScript{
         ];
         jobCreate($finishing_task);
 
-        $finishing_task['task_next_start_time']=time()+2*60;//SECOND TRY AFTER 2 MIN
-        jobCreate($finishing_task);
+        $finishing_task['task_next_start_time']=time()+1*60;//SECOND TRY AFTER 1 MIN
+
+
+
+
+
+
+
+
+
+
+
+        //jobCreate($finishing_task);
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
         /**
          * we should pause db transaction so API cals can be atomized
          */
+        //pl(['onSystemFinish11111'],false);
         $this->OrderModel->transComplete();
         $OrderTransactionModel=model('OrderTransactionModel');
         $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
+
+
+        //pl(['onSystemFinish',$result],false);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         $this->OrderModel->transBegin();
         return $result;
 
@@ -292,8 +355,8 @@ class OrderStageScript{
         ///////////////////////////////////////////////////
         $order=$this->OrderModel->itemGet($order_id);
         $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
+        $store=$StoreModel->itemGet($order->order_store_id);
+        $customer=$UserModel->itemGet($order->owner_id);
         $context=[
             'order'=>$order,
             'store'=>$store,
@@ -316,6 +379,28 @@ class OrderStageScript{
             'template'=>'messages/order/on_customer_start_STORE_email.php',
             'context'=>$context
         ];
+
+
+
+
+        $admin_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>-100,
+            'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
+            'context'=>$context
+        ];
+
+        $admin_email=(object)[
+            'message_transport'=>'email',
+            'message_reciever_id'=>-100,
+            'message_reciever_email'=>$store->store_email,
+            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_start_ADMIN_email.php',
+            'context'=>$context
+        ];
+
+
+
         $cust_sms=(object)[
             'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
@@ -606,18 +691,18 @@ class OrderStageScript{
         $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
         $update=(object)[
             'info_for_courier'=>json_encode([
-                'customer_location_address'=>$customerLocation->location_address,
-                'customer_location_comment'=>$customerLocation->location_comment,
-                'customer_location_latitude'=>$customerLocation->location_latitude,
-                'customer_location_longitude'=>$customerLocation->location_longitude,
+                'customer_location_address'=>$customerLocation->location_address??'',
+                'customer_location_comment'=>$customerLocation->location_comment??'',
+                'customer_location_latitude'=>$customerLocation->location_latitude??'',
+                'customer_location_longitude'=>$customerLocation->location_longitude??'',
                 'customer_phone'=>$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
 
-                'supplier_location_address'=>$supplierLocation->location_address,
-                'supplier_location_comment'=>$supplierLocation->location_comment,
-                'supplier_location_latitude'=>$supplierLocation->location_latitude,
-                'supplier_location_longitude'=>$supplierLocation->location_longitude,
+                'supplier_location_address'=>$supplierLocation->location_address??'',
+                'supplier_location_comment'=>$supplierLocation->location_comment??'',
+                'supplier_location_latitude'=>$supplierLocation->location_latitude??'',
+                'supplier_location_longitude'=>$supplierLocation->location_longitude??'',
                 'supplier_name'=>$order->store->store_name,
                 'supplier_phone'=>$order->store->store_phone,
             ])

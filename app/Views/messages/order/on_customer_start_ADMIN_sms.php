@@ -1,0 +1,1 @@
+<?=getenv('app.title')?>: <?=$reciever->user_name??'admin' ?>, вам поступил заказ №<?=$order->order_id?>

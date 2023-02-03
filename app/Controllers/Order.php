@@ -98,7 +98,6 @@ class Order extends \App\Controllers\BaseController {
         return $this->itemGet($data->order_id);
     }
 
-
     public function itemUpdate() {
         $data = $this->request->getJSON();
         if(!$data){

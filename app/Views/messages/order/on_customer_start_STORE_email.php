@@ -10,12 +10,12 @@
             Добрый день, <?=$store->store_name?>.
         </p>
         <p >
-            <a href="https://tezkel.com/#/order-<?= $order->order_id ?>">
+            <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">
                 новый заказ №<?= $order->order_id ?>.
             </a>
         </p>
         <p>
-            Мы получили заказ для вас, поэтому вам следует подготовить его. Поиск курьера уже запущен. Больше действий с заказом <a href="https://tezkel.com/#/order-<?= $order->order_id ?>">в приложении</a>
+            Мы получили заказ для вас, поэтому вам следует подготовить его. Поиск курьера уже запущен. Больше действий с заказом <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">в приложении</a>
         </p>
 
         <?php if ($order->order_description): ?>

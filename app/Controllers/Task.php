@@ -175,11 +175,12 @@ class Task extends \App\Controllers\BaseController{
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         $UserModel->systemUserLogin();
-            $OrderModel->itemStageCreate( $order_id, $new_stage, $data );
+            $result=$OrderModel->itemStageCreate( $order_id, $new_stage, $data );
         $UserModel->systemUserLogout();
     }
 
-    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){//reset stage of multiple orders
+    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
+        //reset stage of multiple orders Probably it will be better to avoid this behavior!!!
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         $UserModel->systemUserLogin();

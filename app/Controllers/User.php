@@ -144,6 +144,9 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
 
         $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email);
+        if( $new_user_id=='user_phone_unverified' ){
+            return $this->failForbidden('user_phone_unverified');
+        }
         if( $UserModel->errors() ){
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
@@ -164,6 +167,14 @@ class User extends \App\Controllers\BaseController{
         
         $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
         $UserModel=model('UserModel');
+
+
+
+
+
+
+
+
         $result=$UserModel->signIn($user_phone_cleared,$user_pass);
         if( $result=='user_not_found' ){
             return $this->failNotFound('user_not_found');
@@ -215,10 +226,6 @@ class User extends \App\Controllers\BaseController{
 
     public function signOut(){
         $this->signOutUser();
-        $courier_signout_result=$this->signOutCourier();
-        if( $courier_signout_result!='ok' ){
-            return $this->fail('courier_not_idle',409);
-        }
         if (session_status() === PHP_SESSION_ACTIVE){
             session_destroy();
         }
@@ -277,29 +284,32 @@ class User extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////
     //VERIFICATION SECTION
     ///////////////////////////////////////////////
+    public function phoneVerificationNeeded(){
+        $user_phone=$this->request->getVar('user_phone');
+        helper('phone_number');
+        $user_phone_cleared= clearPhone($user_phone);
+
+        $UserVerificationModel=model('UserVerificationModel');
+        $result=$UserVerificationModel->itemGet($user_phone_cleared);
+        if( $result=='unverified_phone_not_found' ){
+            return $this->failNotFound('unverified_phone_not_found');
+        }
+        return $this->respond('verification_needed');
+    }
+
     public function phoneVerificationSend(){
         $user_phone=$this->request->getVar('user_phone');
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
-        
-        $UserModel=model('UserModel');
-        $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone_cleared);
-        if( !$unverified_user_id ){
-            return $this->failNotFound('unverified_phone_not_found');
-        }
-        
-        helper('hash_generate');
-        $verification_code=generate_hash(4,'numeric');
-        $data=[
-            'user_id'=>$unverified_user_id,
-            'verification_type'=>'phone',
-            'verification_value'=>$verification_code
-        ];
 
         $UserVerificationModel=model('UserVerificationModel');
-        $UserVerificationModel->insert($data);
+        $result=$UserVerificationModel->itemGet($user_phone_cleared);
+        if( $result=='unverified_phone_not_found' ){
+            return $this->failNotFound('unverified_phone_not_found');
+        }
+
         $msg_data=[
-            'verification_code'=>$verification_code
+            'verification_code'=>$result
         ];
         $Sms=\Config\Services::sms();
         $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));

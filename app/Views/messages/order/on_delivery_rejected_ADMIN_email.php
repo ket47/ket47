@@ -10,7 +10,7 @@
             Добрый день, Администратор.
         </p>
         <p >
-            <a href="https://tezkel.com/#/order-<?= $order->order_id ?>">
+            <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">
                 Курьер не доставил заказ №<?= $order->order_id ?>.
             </a>
         </p>

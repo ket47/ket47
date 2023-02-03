@@ -853,7 +853,11 @@ class Telegram
             return @$this->data['inline_query']['from']['id'];
         }
 
-        return $this->data['message']['chat']['id'];
+
+        if( isset($this->data['message']['chat']['id']) ){
+            return $this->data['message']['chat']['id'];
+        }
+        pl(["Tbot ChatID() notfound",$this->data],false);
     }
 
     /// Get the message_id of the current message
