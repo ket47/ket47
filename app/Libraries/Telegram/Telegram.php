@@ -857,6 +857,10 @@ class Telegram
         if( isset($this->data['message']['chat']['id']) ){
             return $this->data['message']['chat']['id'];
         }
+        
+        if( isset($this->data['my_chat_member']['chat']['id']) ){
+            return $this->data['my_chat_member']['chat']['id'];
+        }
         pl(["Tbot ChatID() notfound",$this->data],false);
     }
 
