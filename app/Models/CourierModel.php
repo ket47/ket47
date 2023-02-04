@@ -385,6 +385,11 @@ class CourierModel extends Model{
         $courier=$this->itemGet($courier_id,'basic');
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
+        $result=$this->itemUpdateStatus($courier_id,'busy');
+        if( $result!='ok' ){
+            $this->transRollback();
+            return $result;
+        }
         $this->transCommit();
 
         $OrderModel->itemStageAdd( $order_id, 'delivery_found' );

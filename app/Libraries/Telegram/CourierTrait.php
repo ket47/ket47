@@ -82,10 +82,6 @@ trait CourierTrait{
         }
     }
     public function onCourierJobStart($order_id){
-        if( !$this->isCourierReady() ){
-            $this->sendText("Вы не готовы брать задания");
-            return false;
-        }
         $courier=$this->courierGet();
         $CourierModel=model('CourierModel');
         $result=$CourierModel->itemJobStart($order_id,$courier->courier_id);
@@ -93,7 +89,17 @@ trait CourierTrait{
             $this->onOrderOpen($order_id);
             return true;
         }
-        $this->sendText("Не удалось начать задание ".$result,'','courier_message');
+        $error=$result;
+        if($result=='notsearching'){
+            $error='Курьер уже не требуется.';
+        }
+        if($result=='notready'){
+            $error='Вы не готовы брать задания.';
+        }
+        if($result=='notactive'){
+            $error='Ваша анкета курьера не активна.';
+        }
+        $this->sendText("Не удалось начать задание! ".$error,'','courier_message');
     }
 
 
