@@ -38,10 +38,7 @@ trait OrderTrait{
         }
         $this->orderSend($order_id);
         $orderOpenedMessageId=session()->get('order');
-        $result=$this->pinMessage($orderOpenedMessageId);
-        if( !($result['ok']??null) ){
-            pl(['Tbot onOrderOpen ',$result],false);
-        }
+        $this->pinMessage($orderOpenedMessageId);
     }
     public function onOrderListGet( $list_type_id=1 ){
         $list_type=($list_type_id==1?'active_only':'system_finish');
