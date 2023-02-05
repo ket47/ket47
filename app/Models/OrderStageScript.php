@@ -845,7 +845,8 @@ class OrderStageScript{
 
     public function onDeliveryFinish( $order_id ){
         $CourierModel=model('CourierModel');
-        $CourierModel->itemUpdateStatus($courier_id,'ready');
+        $order_basic=$this->OrderModel->itemGet($order_id,'basic');
+        $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
         $PrefModel=model('PrefModel');
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
