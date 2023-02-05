@@ -243,6 +243,24 @@ class CourierModel extends Model{
         return false;
     }
 
+    public function isBusy($courier_id=null,$user_id=null){
+        if($courier_id){
+            $this->where('courier_id',$courier_id);
+        }
+        if($user_id){
+            $this->where('owner_id',$user_id);
+        }
+        $courier = $this->get()->getRow();
+        if( !$courier ){
+            return true;
+        }
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        if( $CourierGroupMemberModel->isMemberOf($courier->courier_id,'busy') ){
+            return true;
+        }
+        return false;
+    }
+
     public function isCourierReady($courier_id=null){
         $isAdmin=sudo();
         if( $isAdmin ){
