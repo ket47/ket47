@@ -440,7 +440,6 @@ class CourierModel extends Model{
         return $courier_list;  
     }
     
-    private $shiftMaximumLength=13;//at maximum notifications during 13 hours
     public function listNotify( $context ){
         //We should in future check the distance between store and courier!!!
 
