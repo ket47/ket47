@@ -682,8 +682,8 @@ class OrderStageScript{
     }
 
     public function onDeliveryFound( $order_id ){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        // $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        // $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
         $order=$this->OrderModel->itemGet($order_id);
         $LocationModel=model("LocationModel");
@@ -844,7 +844,8 @@ class OrderStageScript{
     }
 
     public function onDeliveryFinish( $order_id ){
-        //make transaction for commission of courier
+        $CourierModel=model('CourierModel');
+        $CourierModel->itemUpdateStatus($courier_id,'ready');
         $PrefModel=model('PrefModel');
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
