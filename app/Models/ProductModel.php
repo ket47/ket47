@@ -258,13 +258,14 @@ class ProductModel extends Model{
         }
         $this->filterMake( $filter );
         $this->permitWhere('r');
+        $this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->orderBy("product_final_price<>product_price",'DESC',false);
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("product_list.*,image_hash,group_id");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
         $this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id),NULL) product_options");
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
-        $this->orderBy("product_final_price",'DESC');
         $product_list= $this->get()->getResult();
         return $product_list;
     }
@@ -535,8 +536,10 @@ class ProductModel extends Model{
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
         $this->join('image_list il',"image_holder='product_group_list' AND image_holder_id=pgl.group_id AND is_main=1",'left');
         $this->groupBy('pgl.group_id,image_id');
+        $this->orderBy("{$this->table}.product_price",'DESC');
         $children_groups=$this->get()->getResult();
         $parent_groups=[];
+        $order=0;
         
         $ImageModel=model("ImageModel");
         foreach($children_groups as $child){
@@ -546,7 +549,8 @@ class ProductModel extends Model{
                 $parent_groups[$child->group_parent_id]=[
                     'group_id'=>$child->group_parent_id,
                     'group_name'=>explode('/',$child->group_path)[1],
-                    'image_hash'=>$ImageModel->get()->getRow('image_hash')
+                    'image_hash'=>$ImageModel->get()->getRow('image_hash'),
+                    'order'=>$order++
                 ];
             }
             if( $depth=='all' ){
@@ -555,5 +559,4 @@ class ProductModel extends Model{
         }
         return $parent_groups;
     }
-
 }
