@@ -682,8 +682,8 @@ class OrderStageScript{
     }
 
     public function onDeliveryFound( $order_id ){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        // $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        // $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
         $order=$this->OrderModel->itemGet($order_id);
         $LocationModel=model("LocationModel");
@@ -738,9 +738,9 @@ class OrderStageScript{
     
     public function onDeliveryStart( $order_id ){
         $CourierModel=model('CourierModel');
-        if( !$CourierModel->isCourierReady() ){
-            return 'wrong_courier_status';
-        }
+        // if( !$CourierModel->isBusy() ){
+        //     return 'wrong_courier_status';
+        // }
         $order=$this->OrderModel->itemGet($order_id);
         if( !$order->images ){
             return 'photos_must_be_made';
@@ -844,7 +844,9 @@ class OrderStageScript{
     }
 
     public function onDeliveryFinish( $order_id ){
-        //make transaction for commission of courier
+        $CourierModel=model('CourierModel');
+        $order_basic=$this->OrderModel->itemGet($order_id,'basic');
+        $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
         $PrefModel=model('PrefModel');
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB

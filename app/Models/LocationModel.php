@@ -209,6 +209,55 @@ class LocationModel extends Model{
         return $this->get()->getResult();
     }
 
+/*
+
+
+
+
+
+
+SET @courier_id:=7,@order_id=770;
+SET @prev_location:=null, @prev_date:=null;
+SET @delivery_start_at:=(SELECT ogml.created_at FROM order_group_member_list ogml JOIN order_group_list USING(group_id) WHERE member_id=@order_id AND group_type='delivery_start');
+SET @delivery_finish_at:=(SELECT ogml.created_at FROM order_group_member_list ogml JOIN order_group_list USING(group_id) WHERE member_id=@order_id AND group_type='delivery_finish');
+
+
+
+SELECT
+	location_latitude,location_longitude
+FROM (
+SELECT
+*,
+	ST_Distance_Sphere(COALESCE(@prev_location,location_point),@prev_location:=location_point) distance,
+    -TIMESTAMPDIFF(SECOND,COALESCE(@prev_date,created_at),@prev_date:=created_at) seconds
+FROM
+	location_list
+WHERE
+	location_holder='courier'
+    AND location_holder_id=@courier_id
+    AND created_at>@delivery_start_at
+    AND created_at<@delivery_finish_at
+ORDER BY created_at DESC) tt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
+
     public function distanceToUserInclude(){
         $user_id=session()->get('user_id');
         if($user_id>0){

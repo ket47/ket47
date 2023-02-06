@@ -129,7 +129,7 @@ class PromoModel extends Model{
             $this->where('is_used',0);
             $this->where('expired_at>NOW()');
         } else {
-            $this->where('promo_list.is_disabled OR is_used OR expired_at<NOW()');
+            $this->where('(promo_list.is_disabled OR is_used OR expired_at<NOW())');
             $this->orderBy('promo_order_id');
         }
         if( $mode=='count' ){

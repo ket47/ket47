@@ -351,6 +351,7 @@ class StoreModel extends Model{
         if( $permission_filter ){
             $LocationModel->where($permission_filter);
         }
+        $LocationModel->orderBy("is_working",'DESC');
         $LocationModel->orderBy("is_opened",'DESC');
         $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
         $LocationModel->where("(store_list.deleted_at IS NULL AND store_list.is_disabled=0)");

@@ -243,6 +243,24 @@ class CourierModel extends Model{
         return false;
     }
 
+    public function isBusy($courier_id=null,$user_id=null){
+        if($courier_id){
+            $this->where('courier_id',$courier_id);
+        }
+        if($user_id){
+            $this->where('owner_id',$user_id);
+        }
+        $courier = $this->get()->getRow();
+        if( !$courier ){
+            return true;
+        }
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        if( $CourierGroupMemberModel->isMemberOf($courier->courier_id,'busy') ){
+            return true;
+        }
+        return false;
+    }
+
     public function isCourierReady($courier_id=null){
         $isAdmin=sudo();
         if( $isAdmin ){
@@ -385,6 +403,11 @@ class CourierModel extends Model{
         $courier=$this->itemGet($courier_id,'basic');
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
+        $result=$this->itemUpdateStatus($courier_id,'busy');
+        if( $result!='ok' ){
+            $this->transRollback();
+            return $result;
+        }
         $this->transCommit();
 
         $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
@@ -435,7 +458,6 @@ class CourierModel extends Model{
         return $courier_list;  
     }
     
-    private $shiftMaximumLength=13;//at maximum notifications during 13 hours
     public function listNotify( $context ){
         //We should in future check the distance between store and courier!!!
 
