@@ -7,7 +7,7 @@
         <h2> Новый заказ №<?= $order->order_id ?></h2>
 
         <p>
-            Добрый день, <?=$store->store_name?>.
+            Добрый день, <?=$reciever->user_name?>.
         </p>
         <p >
             <a href="https://tezkel.com/order/order-<?= $order->order_id ?>">

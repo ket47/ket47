@@ -105,27 +105,13 @@ trait OrderStageTrait{
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
         try{
             return $this->StageScript->{$stageHandlerName}($order_id, $data);
-        } catch (\Exception $e){
+        } catch (\Throwable $e){
             log_message('error',"itemStageCreate ".$e->getMessage()."\n".json_encode($e->getTrace(),JSON_PRETTY_PRINT));
         }
         return 'error';
     }
     
     private function itemStageChangeNotify($order, $stage){
-
-
-
-
-
-
-
-        //pl(['itemStageChangeNotify',$stage],0);
-
-
-
-
-
-
         $recievers_id=$order->owner_id.','.$order->owner_ally_ids;
         $push=(object)[
             'message_transport'=>'push',

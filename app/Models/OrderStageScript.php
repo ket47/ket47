@@ -105,6 +105,8 @@ class OrderStageScript{
         'admin_recalculate'=>[
             'system_reckon'=>               [],
             ],
+        'admin_delete'=>[
+            ],
             
 
         'system_reckon'=>[
@@ -113,6 +115,7 @@ class OrderStageScript{
             ],
         'system_finish'=>[
             'admin_recalculate'=>           ['Перепровести','danger'],
+            'admin_delete'=>                ['Удалить полностью','danger'],
         ]
     ];
 
@@ -163,14 +166,28 @@ class OrderStageScript{
         $TransactionModel->where('trans_holder_id',$order_id); 
         $TransactionModel->delete(null,true);
 
-        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-
-
-
-
-
-        //pl(['onAdminRecalculate',$result],0);
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
         return $result;
+    }
+    public function onAdminDelete($order_id){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $admin_email=(object)[
+            'message_transport'=>'email',
+            'message_reciever_id'=>-100,
+            'message_subject'=>"ПОЛНОЕ УДАЛЕНИЕ ЗАКАЗА №{$order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_admin_delete_ADMIN_email.php',
+            'context'=>$order_data
+        ];
+        $notification_task=[
+            'task_name'=>"customer_start Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+        $this->OrderModel->itemDelete($order_id);
+        return 'ok';
     }
     ////////////////////////////////////////////////
     //SYSTEM HANDLERS
@@ -182,21 +199,12 @@ class OrderStageScript{
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish',$data]]
                 ]
         ];
+        if( $data['delay_sec']??0 ){
+            $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
+        }
         jobCreate($finishing_task);
-
-        $finishing_task['task_next_start_time']=time()+1*60;//SECOND TRY AFTER 1 MIN
-
-
-
-
-
-
-
-
-
-
-
-        //jobCreate($finishing_task);
+        // $finishing_task['task_next_start_time']=time()+1*60;//SECOND TRY AFTER 1 MIN DO WE NEED IT???
+        // jobCreate($finishing_task);
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
@@ -207,23 +215,6 @@ class OrderStageScript{
         $this->OrderModel->transComplete();
         $OrderTransactionModel=model('OrderTransactionModel');
         $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
-
-
-        //pl(['onSystemFinish',$result],false);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         $this->OrderModel->transBegin();
         return $result;
 
@@ -389,11 +380,9 @@ class OrderStageScript{
             'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
             'context'=>$context
         ];
-
         $admin_email=(object)[
             'message_transport'=>'email',
             'message_reciever_id'=>-100,
-            'message_reciever_email'=>$store->store_email,
             'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_start_ADMIN_email.php',
             'context'=>$context

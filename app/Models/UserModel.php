@@ -95,7 +95,8 @@ class UserModel extends Model{
             return (object)[
                 'user_id'=>-100,
                 'user_name'=>'SYSTEM',
-                'user_phone'=>'-',
+                'user_phone'=>getenv('phone_admin'),
+                'user_email'=>getenv('email_admin'),
                 'member_of_groups'=>(object)[
                     'group_types'=>'admin'
                 ],
