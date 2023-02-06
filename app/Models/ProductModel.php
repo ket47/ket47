@@ -258,13 +258,13 @@ class ProductModel extends Model{
         }
         $this->filterMake( $filter );
         $this->permitWhere('r');
-        $this->orderBy("{$this->table}.updated_at",'DESC');
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("product_list.*,image_hash,group_id");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
         $this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id),NULL) product_options");
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
+        $this->orderBy("product_final_price",'DESC');
         $product_list= $this->get()->getResult();
         return $product_list;
     }
