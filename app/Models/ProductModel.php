@@ -531,12 +531,12 @@ class ProductModel extends Model{
             $this->where('store_id',$filter['store_id']);
         }
         $this->filterMake( $filter );
-        $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash');
+        $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash, MAX(product_price) mpprice');
         $this->join('product_group_member_list pgml','member_id=product_id');
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
         $this->join('image_list il',"image_holder='product_group_list' AND image_holder_id=pgl.group_id AND is_main=1",'left');
         $this->groupBy('pgl.group_id,image_id');
-        $this->orderBy("CAST({$this->table}.product_price AS DECIMAL)",'DESC');
+        $this->orderBy("mpprice",'DESC',false);
         $children_groups=$this->get()->getResult();
         $parent_groups=[];
         $order=0;
