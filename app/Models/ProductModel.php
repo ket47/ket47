@@ -536,7 +536,7 @@ class ProductModel extends Model{
         $this->join('product_group_list pgl','pgml.group_id=pgl.group_id');
         $this->join('image_list il',"image_holder='product_group_list' AND image_holder_id=pgl.group_id AND is_main=1",'left');
         $this->groupBy('pgl.group_id,image_id');
-        $this->orderBy("{$this->table}.product_price",'DESC');
+        $this->orderBy("CAST({$this->table}.product_price AS DECIMAL)",'DESC');
         $children_groups=$this->get()->getResult();
         $parent_groups=[];
         $order=0;
