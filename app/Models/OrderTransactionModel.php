@@ -179,23 +179,25 @@ class OrderTransactionModel extends TransactionModel{
             'order_data'=>$order_data
         ];
 
-        $invoiceDescription=view('transactions/supplier_invoice',$context);
-        $invoiceTrans=(object)[
-            'trans_amount'=>$productSum,
-            'trans_role'=>'supplier->transit',
-            'trans_tags'=>"#orderInvoice",
-            'trans_description'=>$invoiceDescription,
-            'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>$order_basic->order_store_admins,
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
-        ];
-        if($invoiceTrans->trans_amount!=0){
-            $result=$this->itemCreate($invoiceTrans);
-            if( !$result ){
-                log_message('error',"Making #orderInvoice transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
-                return false;
+        if($order_data->payment_by_card??0){//if only marketplace don't do this transaction
+            $invoiceDescription=view('transactions/supplier_invoice',$context);
+            $invoiceTrans=(object)[
+                'trans_amount'=>$productSum,
+                'trans_role'=>'supplier->transit',
+                'trans_tags'=>"#orderInvoice",
+                'trans_description'=>$invoiceDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>$order_basic->order_store_admins,
+                'is_disabled'=>0,
+                'trans_holder'=>'order',
+                'trans_holder_id'=>$order_basic->order_id
+            ];
+            if($invoiceTrans->trans_amount!=0){
+                $result=$this->itemCreate($invoiceTrans);
+                if( !$result ){
+                    log_message('error',"Making #orderInvoice transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
             }
         }
 

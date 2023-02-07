@@ -30,4 +30,30 @@ class Messagesub extends \App\Controllers\BaseController{
         $result=$MessageSubModel->listGet($user_id);
         return $this->respond($result);
     }
+
+
+
+
+
+
+
+
+
+
+
+    // public function listNotify(){
+    //     $user_id=$this->request->getVar('user_id');
+    //     $Messenger=new \App\Libraries\Messenger();
+
+
+    //     $result=$Messenger->itemSend(
+    //         (object)[
+    //             'message_reciever_id'=>41,
+    //             'message_text'=>'TEst Test',
+    //             'message_transport'=>'push'
+    //         ]
+    //         );
+    //     return $this->respond($result);
+    // }
+
 }
