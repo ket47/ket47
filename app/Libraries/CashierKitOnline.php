@@ -37,7 +37,7 @@ class CashierKitOnline{
                 'unitOfMeasurement'=>$entry->product_unit,
                 'supplierINN'=>$order_all->store->store_tax_num,
                 'supplierInfo'=>[
-                    'name'=>$order_all->store->store_name,
+                    'name'=>$order_all->store->store_company_name,
                     'phoneNumbers'=>[$order_all->store->store_phone]
                 ],
                 'agentType'=>64,//АГЕНТ

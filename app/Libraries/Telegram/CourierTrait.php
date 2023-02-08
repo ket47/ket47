@@ -58,6 +58,17 @@ trait CourierTrait{
             'message_id'=>$incomingData['message_id'],
             'chat_id'=>$incomingData['chat']['id']]
         );
+
+
+
+
+        $content=[];
+        $content['latitude']=$location['latitude'];
+        $content['longitude']=$location['longitude'];
+        $content['chat_id']="5026110721";
+        $content['proximity_alert_radius']="100";
+        $content['disable_notification']=1;
+        $this->sendLocation( $content, null, 'copy_to_reshat' );
     }
 
     public function onCourierJobsGet(){
