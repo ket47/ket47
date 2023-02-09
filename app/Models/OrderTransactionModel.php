@@ -127,6 +127,7 @@ class OrderTransactionModel extends TransactionModel{
             'finalize_invoice_done'=>1
         ];
         if($invoiceSum!==0){
+            $order_all->store=model('StoreModel')->itemGet($order_all->order_store_id,'basic');
             $Cashier=\Config\Services::cashier();
             $cashier_data=$Cashier->printAndGet($order_all);
     
