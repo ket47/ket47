@@ -129,7 +129,7 @@ class PromoModel extends Model{
             $this->where('is_used',0);
             $this->where('expired_at>NOW()');
         } else {
-            $this->select("expired_at<NOW() is_expired");
+            $this->select("*,expired_at<NOW() is_expired");
             $this->where('(promo_list.is_disabled OR is_used OR expired_at<NOW())');
             $this->orderBy('promo_order_id');
         }
@@ -173,6 +173,10 @@ class PromoModel extends Model{
             $this->userNotify($inviter_user_id,'created',(object)['count'=>$promo_voucher_count,'value'=>$child_value,'promo_name'=>$child_name]);
         }
         return 'ok';
+    }
+
+    public function listPurge(){
+
     }
 
     function userNotify($user_id,$template,$promo_context){
