@@ -129,6 +129,7 @@ class PromoModel extends Model{
             $this->where('is_used',0);
             $this->where('expired_at>NOW()');
         } else {
+            $this->select("expired_at<NOW() is_expired");
             $this->where('(promo_list.is_disabled OR is_used OR expired_at<NOW())');
             $this->orderBy('promo_order_id');
         }
@@ -190,38 +191,6 @@ class PromoModel extends Model{
         $cust_sms=(object)[
             'message_reciever_id'=>$user_id,
             'message_transport'=>'message',
-            'template'=>$template_file,
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"customer Promo Notify #$user_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
-                ]
-        ];
-        jobCreate($notification_task);
-    }
-
-    private function userNotify111($user_id,$template,$promo_context){
-        $UserModel=model('UserModel');
-        $customer=$UserModel->where('user_id',$user_id)->get()->getRow();
-        unset($customer->user_pass);
-
-        $context=[
-            'promo'=>$promo_context
-        ];
-        helper('job');
-        if( $template=='activated' ){
-            $template_file="messages/promo/activated.php";
-        } else 
-        if( $template=='created' ){
-            $template_file="messages/promo/created.php";
-        } else {
-            return;
-        }
-        $cust_sms=(object)[
-            'message_reciever_phone'=>$customer->user_phone,
-            'message_transport'=>'sms',
             'template'=>$template_file,
             'context'=>$context
         ];
