@@ -19,7 +19,7 @@ class GroupManager extends \App\Controllers\BaseController {
         } else if($group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
         } else if($group_table=='trans_group_list'){
-            $GroupModel=model('TransGroupModel');
+            $GroupModel=model('AccountGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
         } else if($group_table=='location_group_list'){
@@ -43,7 +43,7 @@ class GroupManager extends \App\Controllers\BaseController {
         } else if($data->group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
         } else if($data->group_table=='trans_group_list'){
-            $GroupModel=model('TransGroupModel');
+            $GroupModel=model('AccountGroupModel');
         } else if($data->group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
         } else if($data->group_table=='location_group_list'){
@@ -71,7 +71,7 @@ class GroupManager extends \App\Controllers\BaseController {
         } else if($group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
         } else if($group_table=='trans_group_list'){
-            $GroupModel=model('TransGroupModel');
+            $GroupModel=model('AccountGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
         } else if($group_table=='location_group_list'){
@@ -98,7 +98,7 @@ class GroupManager extends \App\Controllers\BaseController {
         $OrderGroupModel=model('OrderGroupModel');
         $UserGroupModel=model('UserGroupModel');
         $CourierGroupModel=model('CourierGroupModel');
-        $TransGroupModel=model('TransGroupModel');
+        $AccountGroupModel=model('AccountGroupModel');
         $LocationGroupModel=model('LocationGroupModel');
         
         $tables=[];
@@ -125,7 +125,7 @@ class GroupManager extends \App\Controllers\BaseController {
         $tables[]=(object)[
                 'name'=>'Trans groups',
                 'type'=>'trans',
-                'entries'=>$TransGroupModel->listGet()
+                'entries'=>$AccountGroupModel->listGet()
                 ];
         $tables[]=(object)[
                 'name'=>'Courier statuses',
@@ -142,8 +142,23 @@ class GroupManager extends \App\Controllers\BaseController {
     
     public function listGet(){
         $group_table=$this->request->getVar('group_table');
-        $GroupModel=model('GroupModel');
-        $GroupModel->tableSet($group_table);
+        if($group_table=='product_group_list'){
+            $GroupModel=model('ProductGroupModel');
+        } else if($group_table=='store_group_list'){
+            $GroupModel=model('StoreGroupModel');
+        } else if($group_table=='user_group_list'){
+            $GroupModel=model('UserGroupModel');
+        } else if($group_table=='order_group_list'){
+            $GroupModel=model('OrderGroupModel');
+        } else if($group_table=='trans_group_list'){
+            $GroupModel=model('AccountGroupModel');
+        } else if($group_table=='courier_group_list'){
+            $GroupModel=model('CourierGroupModel');
+        } else if($group_table=='location_group_list'){
+            $GroupModel=model('LocationGroupModel');
+        } else if($group_table=='transaction_account_list'){
+            $GroupModel=model('AccountGroupModel');
+        }
         $group_list=$GroupModel->listGet();
         if( $GroupModel->errors() ){
             return $this->failValidationErrors(json_encode($GroupModel->errors()));
@@ -155,6 +170,9 @@ class GroupManager extends \App\Controllers\BaseController {
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
+        if(!sudo()){
+            return $this->failForbidden('forbidden');
+        }
         $image_holder_id=$this->request->getVar('image_holder_id');
         $group_table=$this->request->getVar('group_table');
         if ( !(int) $image_holder_id ) {

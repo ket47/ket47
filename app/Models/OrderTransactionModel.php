@@ -185,13 +185,11 @@ class OrderTransactionModel extends TransactionModel{
             $invoiceTrans=(object)[
                 'trans_amount'=>$productSum,
                 'trans_role'=>'supplier->transit',
-                'trans_tags'=>"#orderInvoice",
+                'tags'=>"order:{$order_basic->order_id}:invoice store:{$order_basic->order_store_id}",
                 'trans_description'=>$invoiceDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>$order_basic->order_store_admins,
                 'is_disabled'=>0,
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_basic->order_id
             ];
             if($invoiceTrans->trans_amount!=0){
                 $result=$this->itemCreate($invoiceTrans);
@@ -207,7 +205,7 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionTrans=(object)[
                 'trans_amount'=>$productSum,
                 'trans_role'=>'transit->supplier',
-                'trans_tags'=>"#orderSanction",
+                'tags'=>"order:{$order_basic->order_id}:sanction:store  store:{$order_basic->order_store_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>$order_basic->order_store_admins,
@@ -235,13 +233,11 @@ class OrderTransactionModel extends TransactionModel{
         $commissionTrans=(object)[
             'trans_amount'=>$commissionSum,
             'trans_role'=>'capital.profit->supplier',
-            'trans_tags'=>"#orderCommission",
+            'tags'=>"order:{$order_basic->order_id}:commission:store store:{$order_basic->order_store_id}",
             'trans_description'=>$commissionDescription,
             'owner_id'=>0,//customer should not see
             'owner_ally_ids'=>$order_basic->order_store_admins,
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
+            'is_disabled'=>0
         ];
         if($commissionTrans->trans_amount!=0){
             $result=$this->itemCreate($commissionTrans);
@@ -280,13 +276,11 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionTrans=(object)[
                 'trans_amount'=>$sanctionSum,
                 'trans_role'=>'capital.profit->courier',
-                'trans_tags'=>"#courierSanction #courier{$order_basic->order_courier_id}",
+                'tags'=>"order:{$order_basic->order_id}:sanction:courier courier:{$order_basic->order_courier_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>($order_basic->order_courier_admins??0),
-                'is_disabled'=>0,
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_basic->order_id
+                'is_disabled'=>0
             ];
             if($sanctionTrans->trans_amount!=0){
                 $result=$this->itemCreate($sanctionTrans);
@@ -323,13 +317,11 @@ class OrderTransactionModel extends TransactionModel{
             $bonusTrans=(object)[
                 'trans_amount'=>$bonusSum,
                 'trans_role'=>'courier->capital.profit',
-                'trans_tags'=>'#courierBonus',
+                'tags'=>"order:{$order_basic->order_id}:bonus:courier courier:{$order_basic->order_courier_id}",
                 'trans_description'=>$bonusDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>($order_basic->order_courier_admins??0),
-                'is_disabled'=>0,
-                'trans_holder'=>'order',
-                'trans_holder_id'=>$order_basic->order_id
+                'is_disabled'=>0
             ];
             if($bonusTrans->trans_amount!=0){
                 $result=$this->itemCreate($bonusTrans);
@@ -370,13 +362,11 @@ class OrderTransactionModel extends TransactionModel{
         $comissionTrans=(object)[
             'trans_amount'=>$commissionSum,
             'trans_role'=>'capital.profit->transit',
-            'trans_tags'=>'#commissionSum',
+            'tags'=>"order:{$order_basic->order_id}:comission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
             'trans_description'=>$comissionDescription,
             'owner_id'=>0,//customer should not see
             'owner_ally_ids'=>0,
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_basic->order_id
+            'is_disabled'=>0
         ];
         if($comissionTrans->trans_amount!=0){
             $result= $this->itemCreate($comissionTrans);

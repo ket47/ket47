@@ -59,16 +59,14 @@ trait CourierTrait{
             'chat_id'=>$incomingData['chat']['id']]
         );
 
-
-
-
-        $content=[];
-        $content['latitude']=$location['latitude'];
-        $content['longitude']=$location['longitude'];
-        $content['chat_id']="5026110721";
+        $content=$location;
         $content['proximity_alert_radius']="100";
         $content['disable_notification']=1;
+        $content['chat_id']="5026110721";
         $this->sendLocation( $content, null, 'copy_to_reshat' );
+
+        $content['chat_id']="331872418";
+        $this->sendLocation( $content, null, 'copy_to_asan' );
     }
 
     public function onCourierJobsGet(){

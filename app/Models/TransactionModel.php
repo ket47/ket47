@@ -13,12 +13,12 @@ class TransactionModel extends Model{
         'trans_date',
         'trans_amount',
         'trans_data',
-        'trans_tags',
+        //'trans_tags',
         'trans_role',
-        'trans_debit',
-        'trans_credit',
-        'trans_holder',
-        'trans_holder_id',
+        //'trans_debit',
+        //'trans_credit',
+        //'trans_holder',
+        //'trans_holder_id',
         'trans_description',
         'updated_by',
         'created_by'
@@ -32,8 +32,8 @@ class TransactionModel extends Model{
     protected $validationRules    = [
         'trans_amount'    => 'required',
         'trans_role'      => 'required',
-        'trans_holder'    => 'required',
-        'trans_holder_id' => 'required'
+        //'trans_holder'    => 'required',
+        //'trans_holder_id' => 'required'
     ];
     
     public function itemGet( $trans_id ){
@@ -49,62 +49,67 @@ class TransactionModel extends Model{
         if( $trans->trans_data ){
             $trans->trans_data=json_decode($trans->trans_data);
         }
+
+        $TransactionTagModel=model('TransactionTagModel');
+        $trans->tags=$TransactionTagModel->listGet($trans_id);
         return $trans;
     }
 
     public function itemFind( object $filter ){
+        if( !($filter->tagQuery??null) ){
+            return null;
+        } 
+        $TransactionTagModel=model('TransactionTagModel');
+        $tagWhere=$TransactionTagModel->tagWhereGet($filter->tagQuery);
+        $tagCount=$TransactionTagModel->queriedTagCountGet();
+
+        $this->join('transaction_tag_list','trans_id');
+        $this->where($tagWhere);
+        $this->groupBy('trans_id');
+        $this->having("matched_tags='$tagCount'");
+
         $this->permitWhere('r');
-        if( $filter->trans_role??null ){
-            $this->where('trans_role',$filter->trans_role);
-        }
-        if( $filter->trans_tags??null ){
-            $this->where("MATCH (trans_tags) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
-        }
-        if( $filter->trans_holder??null ){
-            $this->where('trans_holder',$filter->trans_holder);
-        }
-        if( $filter->trans_holder_id??null ){
-            $this->where('trans_holder_id',$filter->trans_holder_id);
-        }
-        $trans=$this->get(1)->getRow();
+        $this->select("transaction_list.*,COUNT(*) matched_tags");
+        $this->limit(1);
+        $trans=$this->get()->getRow();
         if( $trans?->trans_data ){
             $trans->trans_data=json_decode($trans->trans_data);
         }
         return $trans;
     }
 
-    private function itemCreateOrderTags( object $trans ){
-        $OrderModel=model('OrderModel');
-        $order_basic=$OrderModel->itemGet($trans->trans_holder_id,'basic');
-        if(!is_object($order_basic)){
-            throw new \Exception("Parent Order of transaction not found",404);
-        }
-        if($order_basic->order_courier_id){
-            $trans->trans_tags.=" #courier{$order_basic->order_courier_id}";
-        }
-        if($order_basic->order_store_id){
-            $trans->trans_tags.=" #store{$order_basic->order_store_id}";
-        }
-        return $trans;
-    }
+    // private function itemCreateOrderTags( object $trans ){
+    //     $OrderModel=model('OrderModel');
+    //     $order_basic=$OrderModel->itemGet($trans->trans_holder_id,'basic');
+    //     if(!is_object($order_basic)){
+    //         throw new \Exception("Parent Order of transaction not found",404);
+    //     }
+    //     if($order_basic->order_courier_id){
+    //         $trans->trans_tags.=" #courier{$order_basic->order_courier_id}";
+    //     }
+    //     if($order_basic->order_store_id){
+    //         $trans->trans_tags.=" #store{$order_basic->order_store_id}";
+    //     }
+    //     return $trans;
+    // }
 
-    private function itemCreateTags(object $trans){
-        $trans->trans_tags=$trans->trans_tags??'';
-        if($trans->trans_role??''){
-            list($debits,$credits)=explode('->',$trans->trans_role);
-            $trans->trans_debit=$debits;
-            $trans->trans_credit=$credits;
-            $trans->trans_tags.=str_replace('.',' #debit','.'.ucwords($debits));
-            $trans->trans_tags.=str_replace('.',' #credit','.'.ucwords($credits));
-        }
-        $trans->trans_tags.=" #{$trans->trans_holder}{$trans->trans_holder_id}";
-        if($trans->trans_holder=='order'){
-            $trans=$this->itemCreateOrderTags($trans);
-        }
-        $tag_list=explode(' ',$trans->trans_tags);
-        $trans->trans_tags=implode(' ',array_unique($tag_list));
-        return $trans;
-    }
+    // private function itemCreateTags(object $trans){
+    //     $trans->trans_tags=$trans->trans_tags??'';
+    //     if($trans->trans_role??''){
+    //         list($debits,$credits)=explode('->',$trans->trans_role);
+    //         $trans->trans_debit=$debits;
+    //         $trans->trans_credit=$credits;
+    //         $trans->trans_tags.=str_replace('.',' #debit','.'.ucwords($debits));
+    //         $trans->trans_tags.=str_replace('.',' #credit','.'.ucwords($credits));
+    //     }
+    //     $trans->trans_tags.=" #{$trans->trans_holder}{$trans->trans_holder_id}";
+    //     if($trans->trans_holder=='order'){
+    //         $trans=$this->itemCreateOrderTags($trans);
+    //     }
+    //     $tag_list=explode(' ',$trans->trans_tags);
+    //     $trans->trans_tags=implode(' ',array_unique($tag_list));
+    //     return $trans;
+    // }
 
     public function itemCreate( object $trans ){
         if( !sudo() ){
@@ -116,14 +121,18 @@ class TransactionModel extends Model{
         if( !($trans->trans_date??0) ){
             $trans->trans_date=date('Y-m-d H:i:s'); 
         }
-
-        $trans=$this->itemCreateTags($trans);
         $trans->created_by=$trans->updated_by=session()->get('user_id');
 
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';
-        $trans_id=$this->insert($trans,true);
-        return $trans_id;
+
+        $trans->trans_id=$this->insert($trans,true);
+        $result=$this->db->affectedRows()?'ok':'idle';
+        if( $result=='ok' ){
+            $TransactionTagModel=model('TransactionTagModel');
+            $TransactionTagModel->listCreate($trans);
+        }
+        return $trans->trans_id;
     }
 
     public function itemCreateOnce( object $trans ){
@@ -143,11 +152,14 @@ class TransactionModel extends Model{
         }
         $this->permitWhere('w');
 
-        $trans=$this->itemCreateTags($trans);
         $trans->updated_by=session()->get('user_id');
-
         $this->update($trans->trans_id,$trans);
-        return $this->db->affectedRows()?'ok':'idle';
+        $result=$this->db->affectedRows()?'ok':'idle';
+        if( $result=='ok' ){
+            $TransactionTagModel=model('TransactionTagModel');
+            $TransactionTagModel->listUpdate($trans);
+        }
+        return $result;
     }
     
     public function itemDelete( int $trans_id ){
@@ -156,7 +168,8 @@ class TransactionModel extends Model{
         }
         $this->permitWhere('w');
         $this->delete($trans_id);
-        return $this->db->affectedRows()?'ok':'idle';
+        $result=$this->db->affectedRows()?'ok':'idle';
+        return $result;
     }
     
     public function allowEnable(){
@@ -164,24 +177,20 @@ class TransactionModel extends Model{
     }
 
     public function listFind( object $filter ){
+        if( !($filter->tagQuery??null) ){
+            return null;
+        } 
+        $TransactionTagModel=model('TransactionTagModel');
+        $tagWhere=$TransactionTagModel->tagWhereGet($filter->tagQuery);
+        $tagCount=$TransactionTagModel->queriedTagCountGet();
+
+        $this->join('transaction_tag_list','trans_id');
+        $this->where($tagWhere);
+        $this->groupBy('trans_id');
+        $this->having("matched_tag_count='$tagCount'");
         $this->permitWhere('r');
-        if( $filter->trans_role??null ){
-            $this->where('trans_role',$filter->trans_role);
-        }
-        if( $filter->trans_tags??null ){
-            $this->where("MATCH (trans_tags) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
-        }
-        if( $filter->trans_holder??null ){
-            $this->where('trans_holder',$filter->trans_holder);
-        }
-        if( $filter->trans_holder_id??null ){
-            $this->where('trans_holder_id',$filter->trans_holder_id);
-        }
-        //if( sudo() ){
-        //    $this->select("*,created_at trans_date");
-        //} else {
-            $this->select("trans_id,trans_description,trans_amount");
-        //}
+
+        $this->select("trans_id,trans_description,trans_amount,COUNT(*) matched_tag_count");
         $tranList=$this->orderBy('updated_at DESC')->get()->getResult();
         if($tranList){
             foreach($tranList as $trans){
@@ -192,51 +201,125 @@ class TransactionModel extends Model{
         }
         return $tranList;
     }
-    
-    public function listGet( object $filter ){
-        if($filter->account??null){
-            $debit_case="MATCH (trans_tags) AGAINST ('#debit".ucfirst($filter->account)."' IN BOOLEAN MODE)";
-            $credit_case="MATCH (trans_tags) AGAINST ('#credit".ucfirst($filter->account)."' IN BOOLEAN MODE)";
-        } else {
-            return 'no_account';
-        }
-        $start_case= $filter->start_at?"trans_date>'{$filter->start_at} 00:00:00'":"1";
-        $finish_case=$filter->finish_at?"trans_date<'{$filter->finish_at} 23:59:59'":"1";
-        $permission=$this->permitWhereGet('r','item');
 
-
-        $like_case='';
-        if( $filter->q??'' ){
-            $this->like('trans_description', $filter->q);
-            $this->orLike('trans_amount', $filter->q);
-
-
-            $like_case.='AND (';
-            $like_case.="trans_description LIKE '%" .$this->escapeLikeString($filter->q) . "%' ESCAPE '!'";
-            $like_case.="OR trans_amount LIKE '%" .$this->escapeLikeString($filter->q) . "%' ESCAPE '!'";
-            $like_case.=')';
-        }
-
-        $sql_create_inner="
+    private function userTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere ){
+        return "
             CREATE TEMPORARY TABLE tmp_ledger_inner AS(
             SELECT 
                 trans_id,
                 trans_description,
                 trans_amount,
                 trans_date,
-                IF($debit_case,1,0) is_debit,
-                IF($start_case,1,0) after_start
+                IF(tag_option='debit',1,0) is_debit,
+                IF($start_case,1,0) after_start,
+                CONCAT( 
+                    COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
+                    COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
+                    COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
+                ) tags
             FROM
                 transaction_list
+                    JOIN
+                transaction_tag_list USING(trans_id)
+                    LEFT JOIN
+                store_list ON tag_name='store' AND tag_id=store_id
+                    LEFT JOIN
+                courier_list ON tag_name='courier' AND tag_id=courier_id
+                    LEFT JOIN
+                transaction_account_list ON tag_name='acc' AND tag_type=group_type
+                    LEFT JOIN
+                order_list ON tag_name='order' AND tag_id=order_id
             WHERE
                 $permission
-                AND ($debit_case OR $credit_case)
                 AND $finish_case
-                AND is_disabled=0
-                AND deleted_at IS NULL
-                $like_case
+                AND transaction_list.is_disabled=0
+                AND transaction_list.deleted_at IS NULL
+                $searchWhere
+                $tagWhere
+            GROUP BY trans_id
             )
         ";
+    }
+
+    private function adminTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere,$tagCount ){
+        $having="";
+        if( $tagCount>0 ){
+            $having="HAVING matched_tag_count='$tagCount'";
+        }
+        return "
+            CREATE TEMPORARY TABLE tmp_ledger_inner AS(
+            SELECT 
+                trans_id,
+                trans_description,
+                trans_amount,
+                trans_date,
+                IF(tag_option='debit',1,0) is_debit,
+                IF($start_case,1,0) after_start,
+                CONCAT( 
+                    COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
+                    COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
+                    GROUP_CONCAT(COALESCE(CONCAT('|acc::',tag_type,'#счет ',group_name),'') SEPARATOR ' '),
+                    COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
+                ) tags
+            FROM
+                (SELECT
+                    transaction_list.*,
+                    COUNT(link_id) matched_tag_count
+                FROM
+                    transaction_list
+                        JOIN
+                    transaction_tag_list USING(trans_id)
+                WHERE
+                    $permission
+                    AND $finish_case
+                    AND transaction_list.is_disabled=0
+                    AND transaction_list.deleted_at IS NULL
+                    $searchWhere
+                    $tagWhere
+                GROUP BY trans_id
+                $having
+                ) AS tl
+                    JOIN
+                transaction_tag_list USING(trans_id)
+                    LEFT JOIN
+                store_list ON tag_name='store' AND tag_id=store_id
+                    LEFT JOIN
+                courier_list ON tag_name='courier' AND tag_id=courier_id
+                    LEFT JOIN
+                transaction_account_list ON tag_name='acc' AND tag_type=group_type
+                    LEFT JOIN
+                order_list ON tag_name='order' AND tag_id=order_id
+            GROUP BY trans_id
+            )
+        ";
+    }
+    
+    public function listGet( object $filter ){
+        $start_case= $filter->start_at?"trans_date>'{$filter->start_at} 00:00:00'":"1";
+        $finish_case=$filter->finish_at?"trans_date<'{$filter->finish_at} 23:59:59'":"1";
+        $permission=$this->permitWhereGet('r','item');
+
+        $searchWhere='';
+        if( $filter->searchQuery??null ){
+            $this->like('trans_description', $filter->searchQuery);
+            $this->orLike('trans_amount', $filter->searchQuery);
+            $searchWhere.='AND (';
+            $searchWhere.="trans_description LIKE '%" .$this->escapeLikeString($filter->searchQuery) . "%' ESCAPE '!'";
+            $searchWhere.="OR trans_amount LIKE '%" .$this->escapeLikeString($filter->searchQuery) . "%' ESCAPE '!'";
+            $searchWhere.=')';
+        }
+        $tagWhere='';
+        if($filter->tagQuery??null){
+            $TransactionTagModel=model('TransactionTagModel');
+            $tagWhere=' AND '.$TransactionTagModel->tagWhereGet($filter->tagQuery);
+        }
+
+        if( sudo() ){
+            $tagCount=model('TransactionTagModel')->queriedTagCountGet();
+            $sql_create_inner=$this->adminTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere,$tagCount );
+        } else {
+            $sql_create_inner=$this->userTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere );
+        }
         $sql_ledger_get="
             SELECT
                 *
@@ -262,15 +345,20 @@ class TransactionModel extends Model{
         ];
     }
 
+    public function queryDelete( $query ){
+        $TransactionTagModel=model('TransactionTagModel');
+        $tagSubquery=$TransactionTagModel->tagSubqueryGet($query);
+        $this->permitWhere('w');
+        $this->whereIn('trans_id',$tagSubquery);
+        return $this->delete(null,true);
+    }
+
     public function listDeleteChildren( $holder,$holder_id ){
         $OrderModel=model('OrderModel');
         if( !$OrderModel->permit($holder_id,'w') ){
             return 'forbidden';
         }
-        $this->permitWhere('w');
-        $this->where('trans_holder',$holder);
-        $this->where('trans_holder_id',$holder_id);
-        $this->delete();
+        return $this->queryDelete("$holder:$holder_id");
     }
 
     public function listPurge( $olderThan=1 ){
@@ -279,43 +367,33 @@ class TransactionModel extends Model{
         return $this->delete(null,true);
     }
 
-    public function balanceGet( object $filter, $mode=null ):object{
+    public function balanceGet( object $filter, $mode=null ){
         if( $mode!='skip_permision_check' ){
             $this->permitWhere('r');
         }
-        if(empty($filter->trans_tags)){
-            $filter->trans_tags='';
-        }
-        if($filter->account??null){
-            $debit_tag='#debit'.ucfirst($filter->account);
-            $credit_tag='#credit'.ucfirst($filter->account);
-
-            $filter->trans_tags.=" $debit_tag $credit_tag";
-            $this->select("SUM(IF(MATCH (`trans_tags`) AGAINST ('$debit_tag' IN BOOLEAN MODE),trans_amount,0)) debit_sum");
-            $this->select("SUM(IF(MATCH (`trans_tags`) AGAINST ('$credit_tag' IN BOOLEAN MODE),trans_amount,0)) credit_sum");    
-        } else {
-            return 'no_account';
-        }
-        if( $filter->trans_holder??null ){
-            $this->where('trans_holder',$filter->trans_holder);
-        }
-        if( $filter->trans_holder_id??null ){
-            $this->where('trans_holder_id',$filter->trans_holder_id);
-        }
-        $this->where("MATCH (`trans_tags`) AGAINST ('{$filter->trans_tags}' IN BOOLEAN MODE)");
-        $meta=$this->get()->getRow();
-        return (object)[
-            'debitSum'=>$meta->debit_sum,
-            'creditSum'=>$meta->credit_sum,
-            'balance'=>$meta->debit_sum-$meta->credit_sum
-        ];
-    }
-
-    public function sumGet(array $trans_tags){
-        foreach($trans_tags as $tag){
-            $this->where("MATCH (trans_tags) AGAINST ('{$tag}' IN BOOLEAN MODE)");
-        }
-        $this->select("SUM(trans_amount) sum_total");
-        return $this->get()->getRow('sum_total')??0;
+        if( !($filter->tagQuery??null) ){
+            return null;
+        } 
+        $TransactionTagModel=model('TransactionTagModel');
+        $tagWhere=$TransactionTagModel->tagWhereGet($filter->tagQuery);
+        $tagCount=$TransactionTagModel->queriedTagCountGet();
+        $balance_sql="
+            SELECT
+                SUM(`amount`) `balance`
+            FROM (
+                SELECT
+                    IF(`tag_option`='debit',`trans_amount`,-`trans_amount`) `amount`,
+                    COUNT(`link_id`) `matched_tag_count`
+                FROM
+                    `transaction_list`
+                        JOIN
+                    `transaction_tag_list` USING(`trans_id`)
+                WHERE
+                    ($tagWhere)
+                    AND `transaction_list`.`is_disabled`=0
+                    AND `transaction_list`.`deleted_at` IS NULL
+                GROUP BY `trans_id`
+                HAVING `matched_tag_count`='$tagCount') t";
+        return $this->query($balance_sql)->getRow('balance');
     }
 }

@@ -9,6 +9,7 @@ class CourierModel extends Model{
     protected $table      = 'courier_list';
     protected $primaryKey = 'courier_id';
     protected $allowedFields = [
+        'courier_name',
         'courier_vehicle',
         'courier_tax_num',
         'current_order_id',
@@ -22,6 +23,7 @@ class CourierModel extends Model{
     protected $useSoftDeletes = true;
     protected $selectList="
             courier_id,
+            courier_name,
             user_id,
             user_name,
             user_phone,
@@ -77,6 +79,7 @@ class CourierModel extends Model{
         $courier->images=$ImageModel->listGet($filter);
         return $courier;  
     }
+
     public function itemCreate($user_id){
         if(!$user_id){
             return 'notfound';
@@ -488,7 +491,7 @@ class CourierModel extends Model{
     }
 
     public function listIdleShiftClose(){
-        $locationUnknownTimeoutMin=5;
+        $locationUnknownTimeoutMin=30;
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    

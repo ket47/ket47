@@ -161,10 +161,12 @@ class OrderStageScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
 
+        // $TransactionModel->where('trans_holder','order');
+        // $TransactionModel->where('trans_holder_id',$order_id); 
+        // $TransactionModel->delete(null,true);
+
         $TransactionModel=model('TransactionModel');
-        $TransactionModel->where('trans_holder','order');
-        $TransactionModel->where('trans_holder_id',$order_id); 
-        $TransactionModel->delete(null,true);
+        $TransactionModel->queryDelete("order:$order_id");
 
         $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
         return $result;

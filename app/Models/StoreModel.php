@@ -135,11 +135,10 @@ class StoreModel extends Model{
          */
         $TransactionModel=model('TransactionModel');
         $filter=(object)[
-            'trans_tags'=>" +#store{$store_id}",
-            'account'=>'supplier',
+            'tagQuery'=>"acc::supplier store:{$store_id}"
         ];
-        $storeAccount=$TransactionModel->balanceGet($filter,'skip_permision_check');
-        if($storeAccount->balance<0){
+        $storeBalance=$TransactionModel->balanceGet($filter,'skip_permision_check');
+        if($storeBalance<0){
             return 0;
         }
         return 1;     

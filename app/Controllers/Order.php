@@ -344,6 +344,10 @@ class Order extends \App\Controllers\BaseController {
         $checkoutData = $this->request->getJSON();
         $OrderModel = model('OrderModel');
         $order = $OrderModel->itemGet($checkoutData->order_id,'basic');
+        $order_data=$OrderModel->itemDataGet($checkoutData->order_id);
+        if($order_data->payment_card_fixate_id??0){
+            return $this->failResourceExists('payment_already_done');
+        }
         if ($order === 'forbidden' || !$checkoutData->order_id??0 || !$checkoutData->tariff_id??0 ) {
             return $this->failForbidden();
         }
@@ -444,8 +448,7 @@ class Order extends \App\Controllers\BaseController {
             ];
         }
         $filter=(object)[
-            'trans_holder'=>'order',
-            'trans_holder_id'=>$order_id
+            'tagQuery'=>"order:{$order_id}"
         ];
         $meta->transactions=$TransactionModel->listFind($filter);
         return $this->respond($meta);

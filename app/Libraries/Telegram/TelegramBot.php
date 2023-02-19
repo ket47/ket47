@@ -169,12 +169,12 @@ class TelegramBot{
         if($content['message_id']??null){
             $result=$this->Telegram->editMessageLiveLocation($content);
         } else {
-            $user=$this->userGet();
-            $result=$this->sendHTML("Here is location of".$user->user_name);
-            if($result['result']['message_id']){
-                //session()->set($permanent_message_name.'reply_to',$result['result']['message_id']??null);
-                //$content['reply_to_message_id']=$result['result']['message_id'];
-            }
+            //$user=$this->userGet();
+            //$result=$this->sendHTML("Here is location of".$user->user_name);
+            // if($result['result']['message_id']){
+            //     //session()->set($permanent_message_name.'reply_to',$result['result']['message_id']??null);
+            //     //$content['reply_to_message_id']=$result['result']['message_id'];
+            // }
             $result=$this->Telegram->sendLocation($content);
         }
         if( $permanent_message_name ){

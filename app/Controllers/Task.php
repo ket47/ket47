@@ -95,7 +95,7 @@ class Task extends \App\Controllers\BaseController{
         if( $timerNotExpired ){
             return false;
         }
-        $predis->setEx('couriershifttimer',5*60,1);//5 min
+        $predis->setEx('couriershifttimer',30*60,1);//30 min
         
         $CourierModel=model('CourierModel');
         $UserModel=model('UserModel');

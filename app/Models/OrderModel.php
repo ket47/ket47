@@ -79,6 +79,11 @@ class OrderModel extends Model{
         $EntryModel=model('EntryModel');
         $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
+
+        // $CourierModel=model('CourierModel'); I THINK IT IS BETTER IDEA TO WRITE THIS TO ORDER DATA
+        // $CourierModel->join('image_list',"image_holder='courier' AND image_holder_id=courier_id AND is_main=1",'left');
+        // $CourierModel->select('courier_id,courier_name,image_hash');
+
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
         $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num');
         $UserModel->select('user_id,user_name,user_phone,user_email');
@@ -89,7 +94,7 @@ class OrderModel extends Model{
         
         $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
         $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//$UserModel->itemGet($order->owner_id,'basic');permission issue for other parties
-        $order->courier=    [];//$CourierModel->itemGet($order->order_courier_id,'basic');
+        //$order->courier=    $CourierModel->where('courier_id',$order->order_courier_id)->get()->getRow();
         $order->is_writable=$this->permit($order_id,'w');
         
         if( sudo() ){
