@@ -18,21 +18,17 @@ class MessageSubModel extends Model{
         if(!$user_id || $user_id<1){
             return 'forbidden';//if notauthorized then login form kicks on
         }
-        $is_registered=$this->where('sub_registration_id',$registration_id)->get()->getRow('sub_registration_id');
-        if($is_registered){
-            return 'ok';
-        }
+        // $is_registered=$this->where('sub_registration_id',$registration_id)->get()->getRow('sub_registration_id');
+        // if($is_registered){
+        //     return 'ok';
+        // }
         $sub=[
             'sub_user_id'=>$user_id,
             'sub_registration_id'=>$registration_id,
             'sub_type'=>$type,
             'sub_device'=>$user_agent
         ];
-        try{
-            $this->insert($sub);
-        } catch(\Exception $e){
-            return 'duplicate';
-        }
+        $this->ignore()->insert($sub);
         return $this->affectedRows()>0?'ok':'idle';
     }
 

@@ -9,49 +9,20 @@ if(getenv('CI_ENVIRONMENT')!=='development'){
 
 class TestController extends \App\Controllers\BaseController{
     use ResponseTrait;
-
-    public function trans(){
-        $trans=(object)[
-            'trans_id'=>123,
-            'trans_amount'=>333.33,
-            'trans_role'=>'capital.profit->supplier',
-            'trans_tags'=>"#orderCommission",
-            'trans_links'=>'store:25 type::orderComission courier:6 customer:45',
-            'trans_description'=>'test test test',
-            'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>'-100,-1',
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>333
-        ];
+    
+    public function push(){
 
 
 
+        $Messenger=new \App\Libraries\Messenger;
 
-
-
-        $TransactionHolderModel=model('TransactionHolderModel');
-        $TransactionHolderModel->itemLink($trans->trans_id,$trans);
-    }
-    public function del(){
-
-
-
-        $trans=(object)[
-            'trans_id'=>123,
-            'trans_amount'=>333.33,
-            'trans_role'=>'capital.profit->supplier',
-            'trans_tags'=>"#orderCommission",
-            'trans_links'=>'store:25 type::orderComission courier:6 customer:45',
-            'trans_description'=>'test test test',
-            'owner_id'=>0,//customer should not see
-            'owner_ally_ids'=>'-100,-1',
-            'is_disabled'=>0,
-            'trans_holder'=>'order',
-            'trans_holder_id'=>333
-        ];
-        $TransactionModel=model('TransactionModel');
-
-        $TransactionModel->itemCreate($trans);
+        echo $Messenger->itemSend((object)[
+            'message_reciever_id'=>41,
+            'message_transport'=>'push',
+            'message_text'=>'TETSTST TSET',
+            'message_link'=>getenv('app.frontendUrl'),
+            'message_tag'=>'#order',
+            'message_subject'=>'The title of notification'
+        ]);
     }
 }

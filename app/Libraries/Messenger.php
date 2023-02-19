@@ -154,23 +154,23 @@ class Messenger{
             return false;
         }
         if( !isset($message->message_data) ){
-            $message->message_data=[
-                'title'=>$message->message_subject??'',
-                'body'=>$message->message_text??'',
-                'link'=>$message->message_link??'',
-                'tag'=>$message->message_tag??'',
-                'icon'=>'/img/icons/monochrome.png'
-            ];
+            $message->message_data=(object)[];
         }
+        $message->message_data->title=$message->message_data->title??$message->message_subject??'';
+        $message->message_data->body=$message->message_data->body??$message->message_text??'';
+        $message->message_data->link=$message->message_data->link??$message->message_link??getenv('app.frontendUrl');
+        $message->message_data->tag=$message->message_data->tag??$message->message_tag??'';
+        $message->message_data->icon=$message->message_data->icon??'/img/icons/monochrome.png';
+
         $pushsent=false;
         $FirePush = new \App\Libraries\FirePush();
         foreach($message->reciever->subscriptions as $sub){
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
                 'data'=>$message->message_data,
-                'title'=>$message->message_subject??'',
-                'body'=>$message->message_text??'',
-                'link'=>$message->message_link??'',
+                //'title'=>$message->message_subject??'',
+                //'body'=>$message->message_text??'',
+                //'link'=>$message->message_link??'',
             ]);
             if($result){
                 $pushsent=true;
