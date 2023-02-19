@@ -11,6 +11,10 @@
 <div  style="padding: 5px">
     <div style="display: grid;grid-template-columns:1fr 1fr">
         <div style="display:grid;grid-template-columns:1fr 2fr" class="card_form">
+            <div>Имя</div>
+            <div>
+                <input type="text" name="courier_name.<?=$courier->courier_id?>" value="<?=$courier->courier_name?>"/>
+            </div>
             <div>Транспорт</div>
             <div>
                 <input type="text" name="courier_vehicle.<?=$courier->courier_id?>" value="<?=$courier->courier_vehicle?>"/>
