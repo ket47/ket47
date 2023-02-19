@@ -80,30 +80,30 @@ class Transaction extends \App\Controllers\BaseController{
 
         $TransactionModel=model('TransactionModel');
 
-        $trans_list=$TransactionModel->get(5000)->getResult();
-        foreach($trans_list as $trans){
-            $tags=" {$trans->trans_holder}:{$trans->trans_holder_id}";
+        // $trans_list=$TransactionModel->get(5000)->getResult();
+        // foreach($trans_list as $trans){
+        //     $tags=" {$trans->trans_holder}:{$trans->trans_holder_id}";
 
-            if($trans->trans_role=='money.account->supplier'){
-                $trans->trans_role='capital.account->supplier';
-            }
+        //     if($trans->trans_role=='money.account->supplier'){
+        //         $trans->trans_role='capital.account->supplier';
+        //     }
 
-            preg_match_all('/#([^\d#-]+)(\d+)/',$trans->trans_tags, $output_array);
-            foreach($output_array[1] as $i=>$v){
-                $id=(int)$output_array[2][$i];
-                if(!$id){
-                    continue;
-                }
-                $tags.=" {$v}:{$id}";
-            }
+        //     preg_match_all('/#([^\d#-]+)(\d+)/',$trans->trans_tags, $output_array);
+        //     foreach($output_array[1] as $i=>$v){
+        //         $id=(int)$output_array[2][$i];
+        //         if(!$id){
+        //             continue;
+        //         }
+        //         $tags.=" {$v}:{$id}";
+        //     }
             
-            $trans->tags=$tags;
-            $trans->trans_holder=null;
-            $trans->trans_holder_id=null;
-            $trans->trans_tags=null;
+        //     $trans->tags=$tags;
+        //     $trans->trans_holder=null;
+        //     $trans->trans_holder_id=null;
+        //     $trans->trans_tags=null;
 
-            $TransactionModel->itemUpdate($trans);
-        }
+        //     $TransactionModel->itemUpdate($trans);
+        // }
 
 
 

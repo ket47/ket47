@@ -253,7 +253,7 @@ class TransactionModel extends Model{
                 trans_description,
                 trans_amount,
                 trans_date,
-                IF(tag_option='debit',1,0) is_debit,
+                is_debit,
                 IF($start_case,1,0) after_start,
                 CONCAT( 
                     COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
@@ -264,6 +264,7 @@ class TransactionModel extends Model{
             FROM
                 (SELECT
                     transaction_list.*,
+                    IF(tag_option = 'debit', 1, 0) is_debit,
                     COUNT(link_id) matched_tag_count
                 FROM
                     transaction_list
@@ -277,8 +278,7 @@ class TransactionModel extends Model{
                     $searchWhere
                     $tagWhere
                 GROUP BY trans_id
-                $having
-                ) AS tl
+                $having) AS tl
                     JOIN
                 transaction_tag_list USING(trans_id)
                     LEFT JOIN
