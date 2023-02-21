@@ -449,6 +449,10 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
+
+        $CourierModel=model('CourierModel');
+        $CourierModel->itemUpdateStatus($order->order_courier_id,'ready');
+
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
@@ -546,6 +550,9 @@ class OrderStageScript{
         jobCreate($notification_task);
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+
+        $CourierModel=model('CourierModel');
+        $CourierModel->itemUpdateStatus($order->order_courier_id,'ready');
 
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
@@ -776,6 +783,8 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
+
+        $CourierModel->itemUpdateStatus($order->order_courier_id,'ready');
         return 'ok';
     }
 

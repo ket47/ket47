@@ -184,7 +184,7 @@ class OrderTransactionModel extends TransactionModel{
             $invoiceDescription=view('transactions/supplier_invoice',$context);
             $invoiceTrans=(object)[
                 'trans_amount'=>$productSum,
-                'trans_role'=>'supplier->transit',
+                'trans_role'=>'supplier->site',
                 'tags'=>"order:{$order_basic->order_id}:invoice store:{$order_basic->order_store_id}",
                 'trans_description'=>$invoiceDescription,
                 'owner_id'=>0,//customer should not see
@@ -204,7 +204,7 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionDescription=view('transactions/supplier_sanction',$context);
             $sanctionTrans=(object)[
                 'trans_amount'=>$productSum,
-                'trans_role'=>'transit->supplier',
+                'trans_role'=>'site->supplier',
                 'tags'=>"order:{$order_basic->order_id}:sanction:store  store:{$order_basic->order_store_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
@@ -232,7 +232,7 @@ class OrderTransactionModel extends TransactionModel{
         $commissionDescription=view('transactions/supplier_commission',$context);
         $commissionTrans=(object)[
             'trans_amount'=>$commissionSum,
-            'trans_role'=>'capital.profit->supplier',
+            'trans_role'=>'profit->supplier',
             'tags'=>"order:{$order_basic->order_id}:commission:store store:{$order_basic->order_store_id}",
             'trans_description'=>$commissionDescription,
             'owner_id'=>0,//customer should not see
@@ -275,7 +275,7 @@ class OrderTransactionModel extends TransactionModel{
     
             $sanctionTrans=(object)[
                 'trans_amount'=>$sanctionSum,
-                'trans_role'=>'capital.profit->courier',
+                'trans_role'=>'profit->courier',
                 'tags'=>"order:{$order_basic->order_id}:sanction:courier courier:{$order_basic->order_courier_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
@@ -316,7 +316,7 @@ class OrderTransactionModel extends TransactionModel{
     
             $bonusTrans=(object)[
                 'trans_amount'=>$bonusSum,
-                'trans_role'=>'courier->capital.profit',
+                'trans_role'=>'courier->profit',
                 'tags'=>"order:{$order_basic->order_id}:bonus:courier courier:{$order_basic->order_courier_id}",
                 'trans_description'=>$bonusDescription,
                 'owner_id'=>0,//customer should not see
@@ -358,18 +358,18 @@ class OrderTransactionModel extends TransactionModel{
             'order_basic'=>$order_basic,
             'order_data'=>$order_data
         ];
-        $comissionDescription=view('transactions/system_comission',$context);
-        $comissionTrans=(object)[
+        $commissionDescription=view('transactions/system_commission',$context);
+        $commissionTrans=(object)[
             'trans_amount'=>$commissionSum,
-            'trans_role'=>'capital.profit->transit',
-            'tags'=>"order:{$order_basic->order_id}:comission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
-            'trans_description'=>$comissionDescription,
+            'trans_role'=>'profit->site',
+            'tags'=>"order:{$order_basic->order_id}:commission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
+            'trans_description'=>$commissionDescription,
             'owner_id'=>0,//customer should not see
             'owner_ally_ids'=>0,
             'is_disabled'=>0
         ];
-        if($comissionTrans->trans_amount!=0){
-            $result= $this->itemCreate($comissionTrans);
+        if($commissionTrans->trans_amount!=0){
+            $result= $this->itemCreate($commissionTrans);
             if( !$result ){
                 log_message('error',"Making #commissionSum transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
                 return false;

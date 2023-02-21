@@ -253,8 +253,11 @@ class TransactionModel extends Model{
                 trans_description,
                 trans_amount,
                 trans_date,
-                is_debit,
+                trans_role,
                 IF($start_case,1,0) after_start,
+                SUM( 
+					IF( tag_type IN('site','profit'),  IF(tag_option='credit',1,-1),0)
+                ) amount_sign,
                 CONCAT( 
                     COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
                     COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
@@ -264,7 +267,6 @@ class TransactionModel extends Model{
             FROM
                 (SELECT
                     transaction_list.*,
-                    IF(tag_option = 'debit', 1, 0) is_debit,
                     COUNT(link_id) matched_tag_count
                 FROM
                     transaction_list
@@ -329,10 +331,10 @@ class TransactionModel extends Model{
         ";
         $sql_meta_get="
             SELECT
-                SUM(IF(after_start AND is_debit,trans_amount,0)) sum_debit,
-                SUM(IF(after_start AND NOT is_debit,trans_amount,0)) sum_credit,
-                SUM(IF(NOT after_start,IF(is_debit,trans_amount,-trans_amount),0)) sum_start,
-                SUM(IF(is_debit,trans_amount,-trans_amount)) sum_finish
+                SUM(IF(after_start AND amount_sign<0,trans_amount,0)) sum_debit,
+                SUM(IF(after_start AND amount_sign>0,trans_amount,0)) sum_credit,
+                SUM(IF(NOT after_start,amount_sign*trans_amount,0)) sum_start,
+                SUM(amount_sign*trans_amount) sum_finish
             FROM
                 tmp_ledger_inner
         ";

@@ -174,7 +174,6 @@ class User extends \App\Controllers\BaseController{
 
 
 
-
         $result=$UserModel->signIn($user_phone_cleared,$user_pass);
         if( $result=='user_not_found' ){
             return $this->failNotFound('user_not_found');
@@ -193,12 +192,24 @@ class User extends \App\Controllers\BaseController{
             if( !$user ){
                 return $this->fail('user_data_fetch_error');
             }
+            $this->signInMetric( $user->user_id );
             session()->set('user_id',$user->user_id);
             session()->set('user_data',$user);
             $this->signInCourier($user->user_id);
             return $this->respond($user->user_id);
         }
         return $this->fail($result);
+    }
+
+    private function signInMetric( $user_id ){
+        $metric_id=$this->request->getPost('metric_id');
+        if($metric_id){
+            $MetricModel=model('MetricModel');
+            $MetricModel->itemUpdate((object)[
+                'metric_id'=>$metric_id,
+                'user_id'=>$user_id
+            ]);
+        }
     }
 
     private function signInCourier($user_id){

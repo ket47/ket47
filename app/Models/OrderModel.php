@@ -344,7 +344,7 @@ class OrderModel extends Model{
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);
         }
-        $this->orderBy('order_list.updated_at','DESC');
+        $this->orderBy('order_list.created_at','DESC');
         return $this->get()->getResult();
     }
 

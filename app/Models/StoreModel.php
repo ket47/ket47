@@ -139,7 +139,7 @@ class StoreModel extends Model{
         ];
         $storeBalance=$TransactionModel->balanceGet($filter,'skip_permision_check');
         if($storeBalance<0){
-            return 0;
+            //return 0; until bug is fixed
         }
         return 1;     
     }

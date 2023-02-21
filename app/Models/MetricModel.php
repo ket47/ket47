@@ -31,8 +31,12 @@ class MetricModel extends Model{
         return $this->insert($metric,true);
     }
     
-    public function itemUpdate(){
-        return false;
+    public function itemUpdate( $metric ){
+        if( empty($metric->courier_id) ){
+            return 'noid';
+        }
+        $this->update($metric->courier_id,$metric);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete(){
