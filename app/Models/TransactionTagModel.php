@@ -96,7 +96,7 @@ class TransactionTagModel extends Model{
     public function tagWhereGet($tagQuery){
         $this->queriedTagCount=0;
         $where=[];
-        $tag=array_unique(explode(' ',$tagQuery));
+        $tag=array_unique(explode(' ',trim($tagQuery)));
         foreach( $tag as $chunk ){
             if( str_contains($chunk,':') ){
                 $parsed_tag=$this->tagParse($chunk);
