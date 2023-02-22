@@ -202,98 +202,51 @@ class TransactionModel extends Model{
         return $tranList;
     }
 
-    private function userTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere ){
-        return "
-            CREATE TEMPORARY TABLE tmp_ledger_inner AS(
-            SELECT 
-                trans_id,
-                trans_description,
-                trans_amount,
-                trans_date,
-                IF(tag_option='debit',1,0) is_debit,
-                IF($start_case,1,0) after_start,
-                CONCAT( 
-                    COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
-                    COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
-                    COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
-                ) tags
-            FROM
-                transaction_list
-                    JOIN
-                transaction_tag_list USING(trans_id)
-                    LEFT JOIN
-                store_list ON tag_name='store' AND tag_id=store_id
-                    LEFT JOIN
-                courier_list ON tag_name='courier' AND tag_id=courier_id
-                    LEFT JOIN
-                transaction_account_list ON tag_name='acc' AND tag_type=group_type
-                    LEFT JOIN
-                order_list ON tag_name='order' AND tag_id=order_id
-            WHERE
-                $permission
-                AND $finish_case
-                AND transaction_list.is_disabled=0
-                AND transaction_list.deleted_at IS NULL
-                $searchWhere
-                $tagWhere
-            GROUP BY trans_id
-            )
+    private function userTagSqlGet(){
+        $tag_select_sql=",
+        CONCAT( 
+            COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
+            COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
+            COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
+        ) tags";
+        $tag_table_sql="
+            transaction_tag_list ttl USING(trans_id)
+                LEFT JOIN
+            store_list ON ttl.tag_name='store' AND ttl.tag_id=store_id
+                LEFT JOIN
+            courier_list ON ttl.tag_name='courier' AND ttl.tag_id=courier_id
+                LEFT JOIN
+            order_list ON ttl.tag_name='order' AND ttl.tag_id=order_id
         ";
+        return [
+            'select'=>$tag_select_sql,
+            'table'=>$tag_table_sql
+        ];
     }
 
-    private function adminTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere,$tagCount ){
-        $having="";
-        if( $tagCount>0 ){
-            $having="HAVING matched_tag_count='$tagCount'";
-        }
-        return "
-            CREATE TEMPORARY TABLE tmp_ledger_inner AS(
-            SELECT 
-                trans_id,
-                trans_description,
-                trans_amount,
-                trans_date,
-                trans_role,
-                IF($start_case,1,0) after_start,
-                SUM( 
-					IF( tag_type IN('site','profit'),  IF(tag_option='credit',1,-1),0)
-                ) amount_sign,
-                CONCAT( 
-                    COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
-                    COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
-                    GROUP_CONCAT(COALESCE(CONCAT('|acc::',tag_type,'#счет ',group_name),'') SEPARATOR ' '),
-                    COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
-                ) tags
-            FROM
-                (SELECT
-                    transaction_list.*,
-                    COUNT(link_id) matched_tag_count
-                FROM
-                    transaction_list
-                        JOIN
-                    transaction_tag_list USING(trans_id)
-                WHERE
-                    $permission
-                    AND $finish_case
-                    AND transaction_list.is_disabled=0
-                    AND transaction_list.deleted_at IS NULL
-                    $searchWhere
-                    $tagWhere
-                GROUP BY trans_id
-                $having) AS tl
-                    JOIN
-                transaction_tag_list USING(trans_id)
-                    LEFT JOIN
-                store_list ON tag_name='store' AND tag_id=store_id
-                    LEFT JOIN
-                courier_list ON tag_name='courier' AND tag_id=courier_id
-                    LEFT JOIN
-                transaction_account_list ON tag_name='acc' AND tag_type=group_type
-                    LEFT JOIN
-                order_list ON tag_name='order' AND tag_id=order_id
-            GROUP BY trans_id
-            )
+    private function adminTagSqlGet(){
+        $tag_select_sql=",
+        CONCAT( 
+            GROUP_CONCAT(COALESCE(CONCAT('|acc::',tag_type,'#счет ',group_name),'') SEPARATOR ' '),
+            COALESCE(MAX(CONCAT('|store:',tag_id,'#продавец ',store_name)),''),
+            COALESCE(MAX(CONCAT('|courier:',tag_id,'#курьер ',courier_name)),''),
+            COALESCE(MAX(CONCAT('|order:',tag_id,'#заказ ',order_id)),'')
+        ) tags";
+        $tag_table_sql="
+            transaction_tag_list ttl USING(trans_id)
+                LEFT JOIN
+            transaction_account_list ON tag_name='acc' AND tag_type=group_type
+                LEFT JOIN
+            store_list ON ttl.tag_name='store' AND ttl.tag_id=store_id
+                LEFT JOIN
+            courier_list ON ttl.tag_name='courier' AND ttl.tag_id=courier_id
+                LEFT JOIN
+            order_list ON ttl.tag_name='order' AND ttl.tag_id=order_id
         ";
+        return [
+            'select'=>$tag_select_sql,
+            'table'=>$tag_table_sql
+        ];
     }
     
     public function listGet( object $filter ){
@@ -317,17 +270,55 @@ class TransactionModel extends Model{
         }
 
         if( sudo() ){
-            $tagCount=model('TransactionTagModel')->queriedTagCountGet();
-            $sql_create_inner=$this->adminTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere,$tagCount );
+            $tag_sql=$this->adminTagSqlGet();
         } else {
-            $sql_create_inner=$this->userTransTableGet( $start_case,$permission,$finish_case,$searchWhere,$tagWhere );
+            $tag_sql=$this->userTagSqlGet();
         }
+
+        $having="";
+        $tagCount=model('TransactionTagModel')->queriedTagCountGet();
+        if( $tagCount>0 ){
+            $having="HAVING matched_tag_count='$tagCount'";
+        }
+        $sql_create_inner="
+            CREATE TEMPORARY TABLE tmp_ledger_inner AS(
+                SELECT
+                    tl.*
+                    {$tag_sql['select']}
+                FROM
+                (SELECT
+                    trans_id,
+                    trans_description,
+                    trans_amount,
+                    trans_date,
+                    trans_role,
+                    IF($start_case,1,0) after_start,
+                    SUM(IF(tag_name='acc',IF(tag_option='debit',-1,1),0)) amount_sign,
+                    COUNT(link_id) matched_tag_count
+                FROM
+                    transaction_list
+                        JOIN
+                    transaction_tag_list USING(trans_id)
+                WHERE
+                    $permission
+                    $searchWhere
+                    $tagWhere
+                    AND $finish_case
+                    AND transaction_list.is_disabled=0
+                    AND transaction_list.deleted_at IS NULL
+                GROUP BY trans_id
+                $having) AS tl
+                    JOIN
+                {$tag_sql['table']}
+                GROUP BY trans_id
+                ORDER BY trans_date DESC
+            )
+        ";
         $sql_ledger_get="
             SELECT
                 *
             FROM
                 tmp_ledger_inner
-            ORDER BY trans_date DESC
         ";
         $sql_meta_get="
             SELECT

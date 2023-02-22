@@ -96,7 +96,7 @@ class TransactionTagModel extends Model{
     public function tagWhereGet($tagQuery){
         $this->queriedTagCount=0;
         $where=[];
-        $tag=explode(' ',$tagQuery);
+        $tag=array_unique(explode(' ',$tagQuery));
         foreach( $tag as $chunk ){
             if( str_contains($chunk,':') ){
                 $parsed_tag=$this->tagParse($chunk);
@@ -108,7 +108,7 @@ class TransactionTagModel extends Model{
                     if( $field=='tag_id' ){
                         $value=(int)$value;
                     }
-                    $and_case[]="`$field`='$value'";
+                    $and_case[]="`transaction_tag_list`.`$field`='$value'";
                 }
                 $where[]='('.implode(' AND ',$and_case).')';
                 $this->queriedTagCount++;

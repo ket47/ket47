@@ -63,9 +63,6 @@ class Transaction extends \App\Controllers\BaseController{
 
     public function listGet(){
         $filter=(object)[
-            'trans_holder'      =>$this->request->getVar('trans_holder'),
-            'trans_holder_id'   =>$this->request->getVar('trans_holder_id'),
-            'trans_tags'        =>$this->request->getVar('trans_tags'),
             'start_at'          =>$this->request->getVar('start_at'),
             'finish_at'         =>$this->request->getVar('finish_at'),
             'tagQuery'          =>$this->request->getVar('tagQuery'),
@@ -79,34 +76,6 @@ class Transaction extends \App\Controllers\BaseController{
         }
 
         $TransactionModel=model('TransactionModel');
-
-        // $trans_list=$TransactionModel->get(5000)->getResult();
-        // foreach($trans_list as $trans){
-        //     $tags=" {$trans->trans_holder}:{$trans->trans_holder_id}";
-
-        //     if($trans->trans_role=='money.account->supplier'){
-        //         $trans->trans_role='capital.account->supplier';
-        //     }
-
-        //     preg_match_all('/#([^\d#-]+)(\d+)/',$trans->trans_tags, $output_array);
-        //     foreach($output_array[1] as $i=>$v){
-        //         $id=(int)$output_array[2][$i];
-        //         if(!$id){
-        //             continue;
-        //         }
-        //         $tags.=" {$v}:{$id}";
-        //     }
-            
-        //     $trans->tags=$tags;
-        //     $trans->trans_holder=null;
-        //     $trans->trans_holder_id=null;
-        //     $trans->trans_tags=null;
-
-        //     $TransactionModel->itemUpdate($trans);
-        // }
-
-
-
         $result=$TransactionModel->listGet($filter);
         if($result=='no_account'){
             return $this->fail($result);

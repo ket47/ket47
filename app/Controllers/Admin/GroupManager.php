@@ -150,14 +150,14 @@ class GroupManager extends \App\Controllers\BaseController {
             $GroupModel=model('UserGroupModel');
         } else if($group_table=='order_group_list'){
             $GroupModel=model('OrderGroupModel');
-        } else if($group_table=='trans_group_list'){
-            $GroupModel=model('AccountGroupModel');
         } else if($group_table=='courier_group_list'){
             $GroupModel=model('CourierGroupModel');
         } else if($group_table=='location_group_list'){
             $GroupModel=model('LocationGroupModel');
         } else if($group_table=='transaction_account_list'){
             $GroupModel=model('AccountGroupModel');
+            $GroupModel->where('group_type IS NOT NULL');
+            $GroupModel->where('group_type<>""');
         }
         $group_list=$GroupModel->listGet();
         if( $GroupModel->errors() ){

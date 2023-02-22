@@ -183,6 +183,7 @@ class OrderTransactionModel extends TransactionModel{
         if($order_data->payment_by_card??0){//if only marketplace don't do this transaction
             $invoiceDescription=view('transactions/supplier_invoice',$context);
             $invoiceTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
                 'trans_amount'=>$productSum,
                 'trans_role'=>'supplier->site',
                 'tags'=>"order:{$order_basic->order_id}:invoice store:{$order_basic->order_store_id}",
@@ -203,8 +204,9 @@ class OrderTransactionModel extends TransactionModel{
         if($order_data->sanction_supplier_fee??0){
             $sanctionDescription=view('transactions/supplier_sanction',$context);
             $sanctionTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
                 'trans_amount'=>$productSum,
-                'trans_role'=>'site->supplier',
+                'trans_role'=>'site.sanction->supplier',
                 'tags'=>"order:{$order_basic->order_id}:sanction:store  store:{$order_basic->order_store_id}",
                 'trans_description'=>$sanctionDescription,
                 'owner_id'=>0,//customer should not see
@@ -231,6 +233,7 @@ class OrderTransactionModel extends TransactionModel{
         $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;    
         $commissionDescription=view('transactions/supplier_commission',$context);
         $commissionTrans=(object)[
+            'trans_date'=>$order_basic->updated_at,
             'trans_amount'=>$commissionSum,
             'trans_role'=>'profit->supplier',
             'tags'=>"order:{$order_basic->order_id}:commission:store store:{$order_basic->order_store_id}",
@@ -274,6 +277,7 @@ class OrderTransactionModel extends TransactionModel{
             $sanctionDescription=view('transactions/courier_sanction',$context);
     
             $sanctionTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
                 'trans_amount'=>$sanctionSum,
                 'trans_role'=>'profit->courier',
                 'tags'=>"order:{$order_basic->order_id}:sanction:courier courier:{$order_basic->order_courier_id}",
@@ -315,6 +319,7 @@ class OrderTransactionModel extends TransactionModel{
             $bonusDescription=view('transactions/courier_bonus',$context);
     
             $bonusTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
                 'trans_amount'=>$bonusSum,
                 'trans_role'=>'courier->profit',
                 'tags'=>"order:{$order_basic->order_id}:bonus:courier courier:{$order_basic->order_courier_id}",
@@ -360,6 +365,7 @@ class OrderTransactionModel extends TransactionModel{
         ];
         $commissionDescription=view('transactions/system_commission',$context);
         $commissionTrans=(object)[
+            'trans_date'=>$order_basic->updated_at,
             'trans_amount'=>$commissionSum,
             'trans_role'=>'profit->site',
             'tags'=>"order:{$order_basic->order_id}:commission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
