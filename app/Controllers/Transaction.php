@@ -77,9 +77,6 @@ class Transaction extends \App\Controllers\BaseController{
 
         $TransactionModel=model('TransactionModel');
         $result=$TransactionModel->listGet($filter);
-        if($result=='no_account'){
-            return $this->fail($result);
-        }
         return $this->respond($result);
     }
     

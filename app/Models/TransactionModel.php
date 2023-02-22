@@ -13,12 +13,7 @@ class TransactionModel extends Model{
         'trans_date',
         'trans_amount',
         'trans_data',
-        //'trans_tags',
         'trans_role',
-        //'trans_debit',
-        //'trans_credit',
-        //'trans_holder',
-        //'trans_holder_id',
         'trans_description',
         'updated_by',
         'created_by'
@@ -32,8 +27,6 @@ class TransactionModel extends Model{
     protected $validationRules    = [
         'trans_amount'    => 'required',
         'trans_role'      => 'required',
-        //'trans_holder'    => 'required',
-        //'trans_holder_id' => 'required'
     ];
     
     public function itemGet( $trans_id ){
@@ -66,10 +59,10 @@ class TransactionModel extends Model{
         $this->join('transaction_tag_list','trans_id');
         $this->where($tagWhere);
         $this->groupBy('trans_id');
+        $this->select("transaction_list.*,COUNT(link_id) matched_tags");
         $this->having("matched_tags='$tagCount'");
 
         $this->permitWhere('r');
-        $this->select("transaction_list.*,COUNT(*) matched_tags");
         $this->limit(1);
         $trans=$this->get()->getRow();
         if( $trans?->trans_data ){
@@ -77,39 +70,6 @@ class TransactionModel extends Model{
         }
         return $trans;
     }
-
-    // private function itemCreateOrderTags( object $trans ){
-    //     $OrderModel=model('OrderModel');
-    //     $order_basic=$OrderModel->itemGet($trans->trans_holder_id,'basic');
-    //     if(!is_object($order_basic)){
-    //         throw new \Exception("Parent Order of transaction not found",404);
-    //     }
-    //     if($order_basic->order_courier_id){
-    //         $trans->trans_tags.=" #courier{$order_basic->order_courier_id}";
-    //     }
-    //     if($order_basic->order_store_id){
-    //         $trans->trans_tags.=" #store{$order_basic->order_store_id}";
-    //     }
-    //     return $trans;
-    // }
-
-    // private function itemCreateTags(object $trans){
-    //     $trans->trans_tags=$trans->trans_tags??'';
-    //     if($trans->trans_role??''){
-    //         list($debits,$credits)=explode('->',$trans->trans_role);
-    //         $trans->trans_debit=$debits;
-    //         $trans->trans_credit=$credits;
-    //         $trans->trans_tags.=str_replace('.',' #debit','.'.ucwords($debits));
-    //         $trans->trans_tags.=str_replace('.',' #credit','.'.ucwords($credits));
-    //     }
-    //     $trans->trans_tags.=" #{$trans->trans_holder}{$trans->trans_holder_id}";
-    //     if($trans->trans_holder=='order'){
-    //         $trans=$this->itemCreateOrderTags($trans);
-    //     }
-    //     $tag_list=explode(' ',$trans->trans_tags);
-    //     $trans->trans_tags=implode(' ',array_unique($tag_list));
-    //     return $trans;
-    // }
 
     public function itemCreate( object $trans ){
         if( !sudo() ){
