@@ -226,7 +226,10 @@ class TransactionModel extends Model{
         $tagWhere='';
         if($filter->tagQuery??null){
             $TransactionTagModel=model('TransactionTagModel');
-            $tagWhere=' AND '.$TransactionTagModel->tagWhereGet($filter->tagQuery);
+            $tagCase=$TransactionTagModel->tagWhereGet($filter->tagQuery);
+            if($tagCase){
+                $tagWhere=' AND '.$tagCase;
+            }
         }
 
         if( sudo() ){
@@ -274,6 +277,7 @@ class TransactionModel extends Model{
                 ORDER BY trans_date DESC
             )
         ";
+        log_message('error',$sql_create_inner);
         $sql_ledger_get="
             SELECT
                 *
