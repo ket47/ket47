@@ -164,12 +164,6 @@ class Messenger{
 
         $pushsent=false;
         $FirePush = new \App\Libraries\FirePush();
-
-
-
-        pl($message->reciever->subscriptions,false);
-
-
         foreach($message->reciever->subscriptions as $sub){
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,

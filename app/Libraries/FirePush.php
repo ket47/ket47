@@ -25,7 +25,10 @@ class FirePush{
             $message->notification->setBody($push->body);
         }
         //$message->webpush->notification->icon=getenv('firebase.icon');
-        //$message->webpush->fcm_options->link='http://localhost:8100/#/order-999';
+        $message->webpush->fcm_options->link=$push->data->link??'';
+
+
+        $push->data->vibrate='[200,100,200]';
         $message->data->fill((array)$push->data??[]);
         $request = new Request($this->serviceAccount);
         try{

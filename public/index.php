@@ -4,7 +4,7 @@ function handleCors(){
         return 'fromCli';
     }
     foreach (getallheaders() as $name => $value) {
-        if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
+        if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || getenv('CI_ENVIRONMENT')=='development' || str_contains($value, 'localhost')) ){
             header("Access-Control-Allow-Origin: $value");
             break;
         }
@@ -18,7 +18,7 @@ function handleCors(){
         die();
     }
 }
-handleCors();
+
 // Check PHP version.
 $minPhpVersion = '7.4'; // If you update this, don't forget to update `spark`.
 if (version_compare(PHP_VERSION, $minPhpVersion, '<')) {
@@ -59,7 +59,7 @@ require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstra
 // Load environment settings from .env files into $_SERVER and $_ENV
 require_once SYSTEMPATH . 'Config/DotEnv.php';
 (new CodeIgniter\Config\DotEnv(ROOTPATH))->load();
-
+handleCors();
 /*
  * ---------------------------------------------------------------
  * GRAB OUR CODEIGNITER INSTANCE

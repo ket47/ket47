@@ -1,1 +1,1 @@
-Статус <?= $stage_current_name?>
+Новый статус <?= $stage_current_name?>

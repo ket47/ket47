@@ -112,6 +112,7 @@ trait OrderStageTrait{
     }
     
     private function itemStageChangeNotify($order, $stage){
+        $order=$this->itemGet($order->order_id,'basic');
         $recievers_id=$order->owner_id.','.$order->owner_ally_ids;
         $push=(object)[
             'message_transport'=>'push',
@@ -120,7 +121,7 @@ trait OrderStageTrait{
                 'topic'=>'pushStageChanged',
                 'order_id'=>$order->order_id,
                 'orderActiveCount'=>$this->listCountGet(),
-                'stage'=>$stage,
+                'stage'=>$order->stage_current,
                 'title'=>view('messages/order/stage_changed_title',(array)$order),
                 'body' =>view('messages/order/stage_changed_body',(array)$order),
                 'tag'  =>'orderStage'

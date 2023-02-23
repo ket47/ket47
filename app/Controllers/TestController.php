@@ -20,9 +20,13 @@ class TestController extends \App\Controllers\BaseController{
             'message_reciever_id'=>41,
             'message_transport'=>'push',
             'message_text'=>'TETSTST TSET',
-            'message_link'=>getenv('app.frontendUrl'),
-            'message_tag'=>'#order',
-            'message_subject'=>'The title of notification'
+            'message_subject'=>'The title of notification',
+            'message_data'=>(object)[
+                //'badge'=>'https://tezkel.com/img/icons/monochrome.png',
+                'tag'=>'order',
+                //'vibrate'=>'[200,100,200]',
+                'link'=>'https://tezkel.com/order/order-850'
+            ]
         ]);
     }
 }
