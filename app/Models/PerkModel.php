@@ -41,17 +41,6 @@ class PerkModel extends Model{
 
     private function storePerksGet($store_id){//temporary function
         $perks=[];
-        $StoreGroupMemberModel=model('StoreGroupMemberModel');
-        $StoreGroupMemberModel->where('group_type','halal');
-        $StoreGroupMemberModel->select('image_hash');
-        $StoreGroupMemberModel->join('image_list',"image_holder='store_group_list' AND image_holder_id=group_id");
-        $groups=$StoreGroupMemberModel->memberOfGroupsListGet($store_id);
-        if($groups[0]??null){
-            $perks[]=[
-                'perk_label'=>'',
-                'image_hash'=>$groups[0]->image_hash
-            ];
-        }
         $ProductModel=model('ProductModel');
         $ProductModel->select("ROUND(`product_promo_price`/`product_price`*100-100) product_discount");
         $ProductModel->where("IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW()");
@@ -61,6 +50,19 @@ class PerkModel extends Model{
             $perks[]=[
                 'perk_label'=>$product->product_discount.'%',
                 'image_hash'=>$product->image_hash
+            ];
+        }
+
+        
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $StoreGroupMemberModel->where('group_type','halal');
+        $StoreGroupMemberModel->select('image_hash');
+        $StoreGroupMemberModel->join('image_list',"image_holder='store_group_list' AND image_holder_id=group_id");
+        $groups=$StoreGroupMemberModel->memberOfGroupsListGet($store_id);
+        if($groups[0]??null){
+            $perks[]=[
+                'perk_label'=>'',
+                'image_hash'=>$groups[0]->image_hash
             ];
         }
         return $perks;
