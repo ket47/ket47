@@ -236,8 +236,8 @@ class StoreModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function itemDisable( $store_id, $is_disabled ){
-        if( !$this->permit($store_id,'w','disabled') ){
+    public function itemDisable( $store_id, $is_disabled, $checkPermission=true ){
+        if( $checkPermission && !$this->permit($store_id,'w','disabled') ){
             return 'forbidden';
         }
         $this->allowedFields[]='is_disabled';
@@ -357,6 +357,10 @@ class StoreModel extends Model{
         $store_list=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
         if( !is_array($store_list) ){
             return 'not_found';
+        }
+        $PerkModel=model('PerkModel');
+        foreach($store_list as $store){
+            $store->perks=$PerkModel->listGet('store',$store->store_id);
         }
         return $store_list;
     }

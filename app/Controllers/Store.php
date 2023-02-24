@@ -118,6 +118,9 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemUpdateGroup($store_id,$group_id,$is_joined);
         if( $result==='ok' ){
+            if( !sudo() ){
+                $StoreModel->itemDisable($store_id,1,false);
+            }
             return $this->respondUpdated($result);
         }
         if( $result==='forbidden' ){
