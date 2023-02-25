@@ -66,7 +66,9 @@ class Messenger{
                 'user_name'=>"Администратор",
                 'user_phone'=>getenv('phone_admin'),
                 'user_email'=>getenv('email_admin'),
-                'user_data'=>(object)[]
+                'user_data'=>(object)[
+                    'telegramChatId'=>getenv('telegram.adminChatId')
+                ]
             ];
         }
         if( !$user_id || $user_id<1){

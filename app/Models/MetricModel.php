@@ -4,8 +4,6 @@ use CodeIgniter\Model;
 
 class MetricModel extends Model{
     
-    use FilterTrait;
-    
     protected $table      = 'metric_list';
     protected $primaryKey = 'metric_id';
     protected $allowedFields = [
@@ -44,7 +42,10 @@ class MetricModel extends Model{
     }
     
     public function listGet(){
-        return false;
+        if(!sudo()){
+            return [];
+        }
+        return $this->get()->getResult();
     }
     
     public function listCreate(){

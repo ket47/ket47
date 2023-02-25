@@ -154,6 +154,13 @@ class User extends \App\Controllers\BaseController{
             $PromoModel=model('PromoModel');
             $PromoModel->listCreate($new_user_id,$inviter_user_id??0);
         }
+        
+        $Messenger=new \App\Libraries\Messenger;
+        $Messenger->itemSend((object)[
+            'message_reciever_id'=>-100,
+            'message_transport'=>'telegram',
+            'message_text'=>"Новый пользователь: $user_name",
+        ]);
         return $this->respondCreated($new_user_id);
     }
     

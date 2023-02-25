@@ -13,6 +13,7 @@ class TelegramBot{
     use CourierTrait;
     use OrderTrait;
     use SupplierTrait;
+    use SystemTrait;
 
     private $commandButtonMap=[
         '/orderlist'=>"Активные заказы"
@@ -115,6 +116,9 @@ class TelegramBot{
         $this->Telegram=$Telegram;
         $type=$Telegram->getUpdateType();
         $chat_id=$this->Telegram->ChatID();
+
+
+        w([$type,$chat_id]);
         $this->sessionSetup($chat_id);
 
         $handler="on".ucfirst($type);
@@ -252,7 +256,8 @@ class TelegramBot{
         $supplierStatusHTML=$this->supplierStatusGet();
         $menu_2col=array_merge(
             $this->buttonInlineRowBuild( $this->orderButtons ),
-            $this->buttonInlineRowBuild( $this->courierButtons )
+            $this->buttonInlineRowBuild( $this->courierButtons ),
+            $this->buttonInlineRowBuild( $this->systemButtons )
         );
         $menu_1col=array_merge(
             $this->buttonInlineRowBuild( $this->supplierButtonsGet() )
@@ -324,6 +329,13 @@ class TelegramBot{
             return true;
         }
         $telegramChatId=session()->get('chat_id');
+        if($telegramChatId==getenv('telegram.adminChatId')){
+            $PermissionModel=model('PermissionModel');
+            $PermissionModel->listFillSession();
+            session()->set('user_id',-100);
+            session()->set('user_data',null);
+            return true;
+        }
         $UserModel=model("UserModel");
         $UserModel->where("JSON_EXTRACT(user_data,\"$.telegramChatId\")='$telegramChatId'")->select('user_id');
         $user_id=$UserModel->get()->getRow('user_id');

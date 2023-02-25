@@ -1,5 +1,5 @@
 
-🏃<b>Курьер <?=$user->user_name?></b>
+🛵<b>Курьер <?=$user->user_name?></b>
 <pre>ТС         </pre><?=$courier->courier_vehicle??'не указан'?> 
 <pre>ИНН        </pre><?=$courier->courier_tax_num??'не указан'?> 
 <pre>Статус     </pre><b><u><?= ($courier->status_type=='idle')?"ОТБОЙ 💤":($courier->status_type=='ready'?"ГОТОВ 🚦":"ЗАНЯТ 🚴")?></u></b> 
