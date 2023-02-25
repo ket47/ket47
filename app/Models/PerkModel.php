@@ -49,7 +49,8 @@ class PerkModel extends Model{
         foreach($promo_prod_list as $product){
             $perks[]=[
                 'perk_label'=>$product->product_discount.'%',
-                'image_hash'=>$product->image_hash
+                'image_hash'=>$product->image_hash,
+                'slot'=>'perk'
             ];
         }
 
@@ -62,7 +63,8 @@ class PerkModel extends Model{
         if($groups[0]??null){
             $perks[]=[
                 'perk_label'=>'',
-                'image_hash'=>$groups[0]->image_hash
+                'image_hash'=>$groups[0]->image_hash,
+                'slot'=>'slider'
             ];
         }
         return $perks;
