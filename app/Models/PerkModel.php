@@ -50,7 +50,7 @@ class PerkModel extends Model{
             $perks[]=[
                 'perk_label'=>$product->product_discount.'%',
                 'image_hash'=>$product->image_hash,
-                'slot'=>'perk'
+                'slot'=>'slider'
             ];
         }
 
@@ -64,7 +64,7 @@ class PerkModel extends Model{
             $perks[]=[
                 'perk_label'=>'',
                 'image_hash'=>$groups[0]->image_hash,
-                'slot'=>'slider'
+                'slot'=>'perk'
             ];
         }
         return $perks;
