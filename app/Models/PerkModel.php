@@ -40,11 +40,15 @@ class PerkModel extends Model{
     }
 
     private function storePerksGet($store_id){//temporary function
+
+        $has_promo_perk=false;
+
         $perks=[];
         $ProductModel=model('ProductModel');
         $ProductModel->select("ROUND(`product_promo_price`/`product_price`*100-100) product_discount");
         $ProductModel->where("IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW()");
         $ProductModel->where("image_hash IS NOT NULL");
+        $ProductModel->orderBy("product_discount");
         $promo_prod_list=$ProductModel->listGet(['store_id'=>$store_id,'limit'=>3]);
         foreach($promo_prod_list as $product){
             $perks[]=[
@@ -52,6 +56,15 @@ class PerkModel extends Model{
                 'perk_title'=>$product->product_name,
                 'image_hash'=>$product->image_hash,
                 'slot'=>'slider'
+            ];
+            $has_promo_perk=true;
+        }
+
+        if($has_promo_perk){
+            $perks[]=[
+                'perk_label'=>'',
+                'image_url'=>'promo.png',
+                'slot'=>'perk'
             ];
         }
 
