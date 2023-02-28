@@ -10,16 +10,12 @@ trait SystemTrait{
     }
 
     private function isAdmin(){
-        if( session()->get('user_id')!=-100 ){
-            return false;
-        }
-
         $user=$this->userGet();
         $isAdmin=str_contains($user->member_of_groups->group_types??'','admin');
-        if( !$isAdmin ){
-            return false;
+        if( $isAdmin ){
+            return true;
         }
-        return true;
+        return false;
     }
 
     private function onSystemMetrics(){

@@ -21,7 +21,15 @@ class UserVerificationModel extends Model{
     
     public function phoneVerify( $user_phone, $verification_code ){
         $this->clearVerifications();
+        helper('phone_number');
+        $user_phone_cleared= clearPhone($user_phone);
+
         $UserModel=model('UserModel');
+        $user=$UserModel->where('user_phone',$user_phone_cleared);
+        if( $user->user_phone_verified==1 ){
+            return 'verification_completed';
+        }
+        
         $unverified_user_id=$UserModel->getUnverifiedUserIdByPhone($user_phone);
         $verification=$this->where('user_id',$unverified_user_id)->where('verification_value',$verification_code)->get()->getRow();
         if( !$verification ){

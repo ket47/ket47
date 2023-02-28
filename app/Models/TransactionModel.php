@@ -277,7 +277,6 @@ class TransactionModel extends Model{
                 ORDER BY trans_date DESC
             )
         ";
-        log_message('error',$sql_create_inner);
         $sql_ledger_get="
             SELECT
                 *

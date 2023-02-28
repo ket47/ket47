@@ -352,8 +352,10 @@ class StoreModel extends Model{
         }
         $LocationModel->orderBy("is_working",'DESC');
         $LocationModel->orderBy("is_opened",'DESC');
+        $LocationModel->groupBy("store_id");
         $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
         $LocationModel->where("(store_list.deleted_at IS NULL AND store_list.is_disabled=0)");
+        $LocationModel->where("(location_list.deleted_at IS NULL AND location_list.is_disabled=0)");
         $store_list=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
         if( !is_array($store_list) ){
             return 'not_found';
