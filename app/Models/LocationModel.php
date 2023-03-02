@@ -74,6 +74,11 @@ class LocationModel extends Model{
         return 'idle';
     }
 
+    public function itemTemporaryCreate( $location_latitude, $location_longitude ){
+        $this->query("SET @center_point=POINT('$location_latitude','$location_longitude')");
+        return -100;
+    }
+
     public function itemAdd($data){
         $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
         $data['owner_id']=session()->get('user_id');
@@ -209,6 +214,16 @@ class LocationModel extends Model{
         return $this->get()->getResult();
     }
 
+    public function listCountGet($filter){
+        $this->permitWhere('r');
+        $this->where('is_disabled',0);
+        $this->where('deleted_at IS NULL');
+        $this->where('location_holder',$filter['location_holder']);
+        $this->where('location_holder_id',$filter['location_holder_id']);
+        $this->select("COUNT(*) location_count");
+        return $this->get()->getRow('location_count');
+    }
+
 /*
 
 
@@ -308,11 +323,13 @@ ORDER BY created_at DESC) tt
     // }
 
     public function distanceHolderGet($start_holder,$start_holder_id,$finish_holder,$finish_holder_id){
-        $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE `location_holder`='$start_holder' AND `location_holder_id`='$start_holder_id')");
+        $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE `location_holder`='$start_holder' AND `location_holder_id`='$start_holder_id' AND deleted_at IS NULL LIMIT 1)");
         $this->select("ST_Distance_Sphere(@start_point,location_point) distance");
         $this->where('location_holder',$finish_holder);
         $this->where('location_holder_id',$finish_holder_id);
         $this->where('is_main',1);
+        $this->where('is_disabled',0);
+        $this->where('deleted_at IS NULL');
         return $this->get()->getRow('distance');
     }
     
@@ -324,7 +341,9 @@ ORDER BY created_at DESC) tt
     }
     
     public function distanceListGet( int $center_location_id, float $point_distance, string $point_holder ){
-        $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
+        if($center_location_id>0){//If location_id<0 use temporary point
+            $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
+        }
         $this->select("
             location_id,
             location_holder_id,

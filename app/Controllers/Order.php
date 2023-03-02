@@ -211,6 +211,10 @@ class Order extends \App\Controllers\BaseController {
             'store',$order->order_store_id,
             'user',$order->owner_id
         );
+        $bulkResponse->Location_count=$LocationModel->listCountGet([
+            'location_holder'=>'user',
+            'location_holder_id'=>$order->owner_id
+        ]);
         $bulkResponse->Promo_itemLinkGet=$PromoModel->itemLinkGet(
             $order_id
         );

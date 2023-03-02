@@ -331,7 +331,12 @@ class StoreModel extends Model{
     }
 
     public function listNearGet($filter){
-        if( !$filter['location_id'] ){
+        $location_id=$filter['location_id']??null;
+        $LocationModel=model('LocationModel');
+        if( !$location_id && $filter['location_latitude'] && $filter['location_longitude'] ){
+            $location_id=$LocationModel->itemTemporaryCreate($filter['location_latitude'],$filter['location_longitude']);
+        }
+        if( !$location_id ){
             return 'location_required'; 
         }
         $weekday=date('N')-1;
@@ -341,7 +346,7 @@ class StoreModel extends Model{
         $delivery_radius=getenv('delivery.radius');
 
         $permission_filter=$this->permitWhereGet('r','item');
-        $LocationModel=model('LocationModel');
+        
         $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,is_working");
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
         $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
@@ -356,7 +361,7 @@ class StoreModel extends Model{
         $LocationModel->where("(is_primary=0 OR is_primary IS NULL)");
         $LocationModel->where("(store_list.deleted_at IS NULL AND store_list.is_disabled=0)");
         $LocationModel->where("(location_list.deleted_at IS NULL AND location_list.is_disabled=0)");
-        $store_list=$LocationModel->distanceListGet( $filter['location_id'], $delivery_radius, 'store' );
+        $store_list=$LocationModel->distanceListGet( $location_id, $delivery_radius, 'store' );
         if( !is_array($store_list) ){
             return 'not_found';
         }

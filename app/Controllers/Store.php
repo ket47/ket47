@@ -36,9 +36,11 @@ class Store extends \App\Controllers\BaseController{
     }
 
     public function listNearGet(){
-        $location_id=$this->request->getVar('location_id');
+        $location_id=$this->request->getPost('location_id');
+        $location_latitude=$this->request->getPost('location_latitude');
+        $location_longitude=$this->request->getPost('location_longitude');
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
+        $result=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]);
         if( !is_array($result) ){
             return $this->failNotFound($result);
         }

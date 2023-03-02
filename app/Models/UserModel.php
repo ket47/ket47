@@ -92,6 +92,8 @@ class UserModel extends Model{
             return $this->itemGetGuest();
         }
         if( $user_id==-100 ){
+            $default_location=model('LocationModel')->itemMainGet('default_location','-1');
+            $default_location->is_default=1;
             return (object)[
                 'user_id'=>-100,
                 'user_name'=>'SYSTEM',
@@ -100,7 +102,7 @@ class UserModel extends Model{
                 'member_of_groups'=>(object)[
                     'group_types'=>'admin'
                 ],
-                'location_main'=>model('LocationModel')->itemMainGet('default_location','-1')
+                'location_main'=>$default_location
             ];
         }
         if( $this->itemCache[$mode.$user_id]??0 ){
@@ -141,6 +143,7 @@ class UserModel extends Model{
     private function itemGetGuest(){
         $LocationModel=model('LocationModel');
         $default_location=$LocationModel->itemMainGet('default_location','-1');
+        $default_location->is_default=1;
         return (object)[
             'user_id'=>-1,
             'user_name'=>'Guest',
