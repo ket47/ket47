@@ -236,7 +236,7 @@ class OrderModel extends Model{
         $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM courier_list WHERE order_courier_id=courier_id) courier_owners");
         //$this->select("owner_id");,$all_owners->owner_id
         $all_owners=$this->getWhere(['order_id'=>$order_id])->getRow();
-        $owners=array_unique(explode(',',"0,$all_owners->store_owners,$all_owners->courier_owners"),SORT_NUMERIC);
+        $owners=array_map('trim',array_unique(explode(',',"0,$all_owners->store_owners,$all_owners->courier_owners"),SORT_NUMERIC));
         array_shift($owners);
         $owner_list=implode(',',$owners);
 
@@ -245,12 +245,9 @@ class OrderModel extends Model{
                 order_list ol
                     LEFT JOIN
                 order_entry_list el USING(order_id)
-                    LEFT JOIN
-                transaction_list tl ON trans_holder_id=order_id AND trans_holder='order'
             SET
                 ol.owner_ally_ids='$owner_list',
-                el.owner_ally_ids='$owner_list',
-                tl.owner_ally_ids='$owner_list'
+                el.owner_ally_ids='$owner_list'
             WHERE
                 ol.order_id='$order_id'";
         $this->query($sql);
