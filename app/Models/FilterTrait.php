@@ -34,6 +34,7 @@ trait FilterTrait{
                 // }
                 $words=[];
                 foreach($clues as $clue){
+                    //$clue=trim($clue);
                     if( !$clue || $clue==' ' ){
                         continue;
                     }

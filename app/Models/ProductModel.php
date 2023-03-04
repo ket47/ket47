@@ -195,8 +195,12 @@ class ProductModel extends Model{
         }
         $this->permitWhere('r');
         $this->where('product_parent_id',$product_parent_id);
-        $this->select('product_id,product_code,product_name,product_option,image_hash,product_list.deleted_at,(product_id=product_parent_id) is_parent');
-        $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
+        $this->where("product_option IS NOT NULL");
+        $this->where("product_option <>''");
+        
+        $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
+        $this->select('product_id,product_code,product_name,product_option,product_list.deleted_at,(product_id=product_parent_id) is_parent');
+        //$this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');image_hash,
         $this->orderBy('is_parent','DESC');
         if($mode=='active_only'){
             $this->where("product_list.deleted_at IS NULL AND product_list.is_disabled=0 AND (product_price>0 OR product_promo_price>0 OR product_net_price>0)");
@@ -264,9 +268,21 @@ class ProductModel extends Model{
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("product_list.*,image_hash,group_id");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
-        $this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id),NULL) product_options");
+        //$this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(DISTINCT product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id AND is_disabled=0 AND deleted_at IS NULL),NULL) product_options");
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $product_list= $this->get()->getResult();
+        foreach($product_list as $product){
+            if($product->product_parent_id==$product->product_id){
+                $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
+                $this->select("product_id,product_option");
+                $this->where("is_disabled","0");
+                $this->where("deleted_at IS NULL");
+                $this->where("product_option IS NOT NULL");
+                $this->where("product_option <>''");
+                $this->where("product_parent_id",$product->product_id);
+                $product->options=$this->get()->getResult();
+            }
+        }
         return $product_list;
     }
     
