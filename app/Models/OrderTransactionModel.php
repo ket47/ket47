@@ -163,6 +163,8 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderFinalizeSettleCustomer($order_basic,$order_data){
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemOrderUse($order_basic->order_id);
         return true;
     }
     

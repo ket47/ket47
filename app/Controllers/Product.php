@@ -12,6 +12,7 @@ class Product extends \App\Controllers\BaseController{
             'is_disabled'=>$this->request->getVar('is_disabled'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
+            'offset'=>$this->request->getVar('offset'),
             'limit'=>$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
             'group_id'=>$this->request->getVar('group_id'),
@@ -26,6 +27,9 @@ class Product extends \App\Controllers\BaseController{
 
     public function listGroupGet(){
         $ProductGroupModel=model('ProductGroupModel');
+        $ProductGroupModel->select("IF(group_parent_id=0,1,0) is_parent");
+        $ProductGroupModel->orderBy('is_parent DESC',false);
+        $ProductGroupModel->where('group_name<>""');
         $result=$ProductGroupModel->listGet();
         return $this->respond($result);
     }

@@ -88,6 +88,7 @@ class Task extends \App\Controllers\BaseController{
         model("StoreModel")->listPurge($trashed_days);
         model("OrderModel")->listPurge(-1);
         model("UserModel")->listPurge($trashed_days);
+        model("CourierModel")->listPurge();
     }
 
     private function taskShiftClose($predis){

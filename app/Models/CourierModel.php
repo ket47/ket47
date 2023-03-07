@@ -271,6 +271,9 @@ class CourierModel extends Model{
     }
     
     public function itemDelete($courier_id=null,$user_id=null){
+        if(!sudo()){
+            return 'forbidden';
+        }
         $can_delete=$this->isIdle($courier_id,$user_id);
         if( !$can_delete ){
             return 'invalid_status';
@@ -488,6 +491,12 @@ class CourierModel extends Model{
     
     public function listUpdate(){
         return false;
+    }
+
+    public function listPurge( $olderThan=1 ){
+        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
+        $this->where('deleted_at<',$olderStamp);
+        return $this->delete(null,true);
     }
 
     public function listIdleShiftClose(){

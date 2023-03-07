@@ -121,6 +121,7 @@ class ProductModel extends Model{
         if( !$permission_granted ){
             return 'forbidden';
         }
+        $product->is_disabled=1;
         $product->owner_id=session()->get('user_id');
         $product->owner_ally_ids=$store->owner_ally_ids;
         $this->allowedFields[]='is_disabled';

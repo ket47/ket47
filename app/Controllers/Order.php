@@ -232,7 +232,7 @@ class Order extends \App\Controllers\BaseController {
     private function deliveryNotReadyNotify($store_id){
         $already_sent=session()->get('deliveryNotReadyNotified-'.$store_id);
         if($already_sent){
-            return;
+            //return;
         }
         session()->set('deliveryNotReadyNotified-'.$store_id,1);
         $StoreModel=model('StoreModel');
@@ -242,7 +242,7 @@ class Order extends \App\Controllers\BaseController {
         ];
         $admin_email=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
+            'message_transport'=>'telegram',
             'message_subject'=>"Нет доступного курьера для продавца {$context['store']->store_name}",
             'template'=>'messages/events/on_delivery_not_found_email.php',
             'context'=>$context
@@ -464,6 +464,7 @@ class Order extends \App\Controllers\BaseController {
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
+            'offset'=>$this->request->getVar('offset'),
             'limit'=>$this->request->getVar('limit'),
             'user_role'=>$this->request->getVar('user_role'),
             'order_store_id'=>$this->request->getVar('order_store_id'),
