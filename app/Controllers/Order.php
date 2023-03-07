@@ -232,7 +232,7 @@ class Order extends \App\Controllers\BaseController {
     private function deliveryNotReadyNotify($store_id){
         $already_sent=session()->get('deliveryNotReadyNotified-'.$store_id);
         if($already_sent){
-            //return;
+            return;
         }
         session()->set('deliveryNotReadyNotified-'.$store_id,1);
         $StoreModel=model('StoreModel');

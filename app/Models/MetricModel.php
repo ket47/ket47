@@ -30,10 +30,10 @@ class MetricModel extends Model{
     }
     
     public function itemUpdate( $metric ){
-        if( empty($metric->courier_id) ){
+        if( empty($metric->metric_id) ){
             return 'noid';
         }
-        $this->update($metric->courier_id,$metric);
+        $this->update($metric->metric_id,$metric);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
