@@ -71,7 +71,9 @@ class PromoModel extends Model{
         $this->update(null,['is_disabled'=>0]);
         
         $activated_promo=$this->where('promo_activator_id',$promo_activator_id)->get()->getRow();
-        $this->userNotify($activated_promo->owner_id,'activated',(object)['promo_name'=>$activated_promo->promo_name]);
+        if($activated_promo->owner_id??0){
+            $this->userNotify($activated_promo->owner_id,'activated',(object)['promo_name'=>$activated_promo->promo_name]);
+        }
     }
 
     private function itemOrderApply($order_id,$promo_value){

@@ -216,7 +216,6 @@ class User extends \App\Controllers\BaseController{
                 'metric_id'=>$metric_id,
                 'user_id'=>$user_id
             ]);
-            ql($MetricModel);
         }
     }
 
