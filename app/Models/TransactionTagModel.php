@@ -3,10 +3,6 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class TransactionTagModel extends Model{
-    
-    use PermissionTrait;
-    use FilterTrait;
-    
     protected $table      = 'transaction_tag_list';
     protected $primaryKey = 'link_id';
     protected $allowedFields = [

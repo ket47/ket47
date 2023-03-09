@@ -51,6 +51,7 @@ class OrderStageScript{
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_corrected'=>          ['Изменить'],
+            'supplier_action_take_photo'=>  ['Сфотографировать'],
             'delivery_no_courier'=>         [],
             ],
         'supplier_corrected'=>[
@@ -685,6 +686,8 @@ class OrderStageScript{
 
         $order=$this->OrderModel->itemGet($order_id);
         $LocationModel=model("LocationModel");
+        $CourierModel=model('CourierModel');
+        $courier=$CourierModel->itemGet($order->order_courier_id);
         $supplierLocation=$LocationModel->itemGet($order->order_start_location_id);
         $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
         $update=(object)[
@@ -703,7 +706,12 @@ class OrderStageScript{
                 'supplier_location_longitude'=>$supplierLocation->location_longitude??'',
                 'supplier_name'=>$order->store->store_name,
                 'supplier_phone'=>$order->store->store_phone,
-            ])
+            ]),
+            'info_for_customer'=>json_encode([
+                'courier_name'=>$courier->courier_name,
+                //'courier_phone'=>$courier->user_phone,
+                'courier_image_hash'=>$courier->images[0]->image_hash??''
+            ]),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 

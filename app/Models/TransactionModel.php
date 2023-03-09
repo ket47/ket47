@@ -214,6 +214,7 @@ class TransactionModel extends Model{
         $finish_case=$filter->finish_at?"trans_date<'{$filter->finish_at} 23:59:59'":"1";
         $permission=$this->permitWhereGet('r','item');
 
+        $TransactionTagModel=model('TransactionTagModel');
         $searchWhere='';
         if( $filter->searchQuery??null ){
             $this->like('trans_description', $filter->searchQuery);
@@ -225,7 +226,6 @@ class TransactionModel extends Model{
         }
         $tagWhere='';
         if($filter->tagQuery??null){
-            $TransactionTagModel=model('TransactionTagModel');
             $tagCase=$TransactionTagModel->tagWhereGet($filter->tagQuery);
             if($tagCase){
                 $tagWhere=' AND '.$tagCase;
@@ -239,7 +239,7 @@ class TransactionModel extends Model{
         }
 
         $having="";
-        $tagCount=model('TransactionTagModel')->queriedTagCountGet();
+        $tagCount=$TransactionTagModel->queriedTagCountGet();
         if( $tagCount>0 ){
             $having="HAVING matched_tag_count='$tagCount'";
         }

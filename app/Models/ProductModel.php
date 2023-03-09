@@ -85,7 +85,7 @@ class ProductModel extends Model{
         }
         $product_parent_id=($product->product_parent_id?$product->product_parent_id:$product->product_id);
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
-        $ProductGroupMemberModel->tableSet('product_group_member_list');
+        //$ProductGroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
         $product->is_writable=$this->permit($product_id,'w');
         $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product_parent_id);
@@ -101,9 +101,25 @@ class ProductModel extends Model{
         if($product->product_parent_id??null){
             $product->options=$this->itemOptionGet( $product->product_parent_id, 'active_only' );
         }
+        $product->store=$this->itemStoreMetaGet($product->store_id);
         return $product;
     }
     
+    private function itemStoreMetaGet($store_id){
+        $StoreModel=model('StoreModel');
+        $ImageModel=model('ImageModel');
+
+        $StoreModel->select('store_id,store_name');
+        $StoreModel->where('store_id',$store_id);
+        $store=$StoreModel->get()->getRow();
+
+        $store->avatar=$ImageModel->listGet([
+            'image_holder'=>'store_avatar',
+            'image_holder_id'=>$store_id
+        ]);
+        return $store;
+    }
+
     public function itemCreate( $product ){
         if( !$product ){
             return 'error_empty';
