@@ -27,6 +27,9 @@ class Reaction extends \App\Controllers\BaseController{
         if($result=='forbidden'){
             return $this->failForbidden($result);
         }
+        if($result=='notfound'){
+            return $this->failNotFound($result);
+        }
         return $this->respondCreated($result);
     }
     

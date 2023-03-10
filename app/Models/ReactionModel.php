@@ -66,8 +66,8 @@ class ReactionModel extends Model{
         $EntryModel->limit(1);
         $EntryModel->select('entry_id,product_id');
         $entry=$EntryModel->get()->getRow();
-        $entry_id=$entry->entry_id;
-        $product_id=$entry->product_id;
+        $entry_id=$entry->entry_id??0;
+        $product_id=$entry->product_id??0;
 
         if( !$entry_id || !$product_id ){
             return null;
@@ -77,7 +77,6 @@ class ReactionModel extends Model{
         $ProductModel->where('product_id',$product_id);
         $ProductModel->select('store_id');
         $store_id=$ProductModel->get()->getRow('store_id');
-
         if( !$store_id ){
             return null;
         }
@@ -95,13 +94,9 @@ class ReactionModel extends Model{
             return 'forbidden';
         }
         $tagQuery=$this->itemTagsExpand($tagQuery);
-
-
-
-
-
-
-
+        if(!$tagQuery){
+            return 'notfound';
+        }
         $ReactionTagModel=model('ReactionTagModel');
 
         $this->allowedFields[]='owner_id';
@@ -115,8 +110,12 @@ class ReactionModel extends Model{
         }
 
         $this->transStart();
-            $ReactionTagModel->listCreate($tagQuery);
             $reaction_id=$this->insert($reaction,true);
+            $tags_created=$ReactionTagModel->listCreate($reaction_id,$tagQuery);
+            if($tags_created=='ok'){
+                $this->transRollback();
+                return 'notfound';
+            }
         $this->transComplete();
         return $reaction_id;
     }
