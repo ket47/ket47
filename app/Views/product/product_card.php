@@ -76,7 +76,7 @@
 
             <div>Создан</div>
             <div>
-                <input type="date" readonly="readonly" name="created_at.<?= $product->product_id ?>.date" value="<?php $date_time = explode(' ', $product->created_at); echo $date_time[0] ?? ''?>"/>
+                <input type="date" readonly="readonly" name="created_at.<?= $product->product_id ?>.date" value="<?php $date_time = explode(' ', $product?->created_at); echo $date_time[0] ?? ''?>"/>
                 <input type="time" readonly="readonly" name="created_at.<?= $product->product_id ?>.time" value="<?php echo $date_time[1] ?? '' ?>"/>
             </div>
 

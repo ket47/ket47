@@ -85,7 +85,8 @@ class OrderModel extends Model{
         // $CourierModel->select('courier_id,courier_name,image_hash');
 
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
-        $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num');
+        $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num,image_hash');
+        $StoreModel->join('image_list','image_holder="store_avatar" AND image_holder_id=store_id','left');
         $UserModel->select('user_id,user_name,user_phone,user_email');
         $order->stage_next= $this->itemStageNextGet($order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);

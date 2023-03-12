@@ -112,7 +112,7 @@ class ReactionModel extends Model{
         $this->transStart();
             $reaction_id=$this->insert($reaction,true);
             $tags_created=$ReactionTagModel->listCreate($reaction_id,$tagQuery);
-            if($tags_created=='ok'){
+            if($tags_created!=='ok'){
                 $this->transRollback();
                 return 'notfound';
             }

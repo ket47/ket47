@@ -135,7 +135,7 @@ trait CourierTrait{
         if( !$isCourier ){
             return false;
         }
-        return true;
+        return $this->courierGet()?1:0;
     }
     private function isCourierReady(){
         if( !$this->isCourier() ){
