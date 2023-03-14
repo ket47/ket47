@@ -52,6 +52,7 @@ class PerkModel extends Model{
         $promo_prod_list=$ProductModel->listGet(['store_id'=>$store_id,'limit'=>3]);
         foreach($promo_prod_list as $product){
             $perks[]=[
+                'product_id'=>$product->product_id,
                 'perk_label'=>$product->product_discount.'%',
                 'perk_title'=>$product->product_name,
                 'image_hash'=>$product->image_hash,
