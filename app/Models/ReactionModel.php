@@ -61,7 +61,7 @@ class ReactionModel extends Model{
 
         $EntryModel->join('reaction_tag_list','tag_name="entry" AND tag_id=entry_id','left');
         $EntryModel->where('owner_id',$owner_id);
-        $EntryModel->where('link_id IS NULL');
+        //$EntryModel->where('link_id IS NULL');
         $EntryModel->orderBy('updated_at');
         $EntryModel->limit(1);
         $EntryModel->select('entry_id,product_id');
@@ -154,4 +154,43 @@ class ReactionModel extends Model{
         return false;
     }
     
+
+
+
+
+
+    public function entryListGet($filter){
+        $owner_id=session()->get('user_id');
+        $EntryModel=model('EntryModel');
+
+        $EntryModel->join('product_list','product_id');
+        $EntryModel->join('image_list','image_holder_id=product_id AND image_holder="product"','left');
+        $EntryModel->join('reaction_tag_list','tag_name="entry" AND tag_id=entry_id','left');
+        $EntryModel->join('reaction_list','reaction_id=member_id','left');
+
+
+        $EntryModel->where('order_entry_list.owner_id',$owner_id);
+        $EntryModel->orderBy('order_entry_list.updated_at DESC');
+
+
+        if($filter['target_type']=='product'){//how about reactiong on done orders???
+            $select="product_id AS target_id,
+            entry_id,
+            entry_text,
+            order_entry_list.updated_at,
+            image_hash,
+            reaction_is_like,
+            reaction_is_dislike,
+            reaction_comment";
+            $EntryModel->where('product_id',$filter['target_id']);
+            $EntryModel->select($select);
+        }
+
+        
+
+
+        
+
+        return $EntryModel->get()->getResult();
+    }
 }

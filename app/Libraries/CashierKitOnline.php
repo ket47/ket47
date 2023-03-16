@@ -109,7 +109,7 @@ class CashierKitOnline{
 
     public function printAndGet($order_all){
         $response=$this->print($order_all);
-        if( $response->ResultCode!=0 ){
+        if( !isset($response->ResultCode) || $response->ResultCode!=0 ){
             pl(["KIT ONLINE CHECK PRINT FAILED",$response],false);
             return $response;
         }
@@ -142,7 +142,7 @@ class CashierKitOnline{
             )
         );
         $context  = stream_context_create($options);
-        for($i=0;$i<2;$i++){
+        for($i=0;$i<5;$i++){
             try{
                 $response_text = file_get_contents($url, false, $context);
                 $response=json_decode($response_text);

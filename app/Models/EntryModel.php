@@ -171,6 +171,7 @@ class EntryModel extends Model{
         ROUND(entry_quantity*entry_price,2) entry_sum,
         image_hash,
         product_unit,
+        product_weight,
         product_quantity,
         product_quantity_min,
         product_quantity_reserved,
