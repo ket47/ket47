@@ -265,19 +265,6 @@ class OrderStageScript{
             'order_sum_product'=>$order_sum_product
         ]);
         ////////////////////////////////////////////////
-        //LOCATION FIXATION SECTION
-        ////////////////////////////////////////////////
-        $LocationModel=model('LocationModel');
-        try{
-            $order_update=[
-                'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
-                'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
-            ];
-            $this->OrderModel->update($order_id,$order_update);
-        } catch (\Exception $e){
-            return 'address_not_set';
-        }
-        ////////////////////////////////////////////////
         //RESET SECTION
         ////////////////////////////////////////////////
         $PrefModel=model('PrefModel');
@@ -325,6 +312,20 @@ class OrderStageScript{
         if( !empty($order_data->payment_by_card) && empty($order_data->payment_card_fixate_sum) ){
             return 'payment_by_card_missing';
         }
+        $order=$this->OrderModel->itemGet($order_id);
+        ////////////////////////////////////////////////
+        //LOCATION FIXATION SECTION
+        ////////////////////////////////////////////////
+        $LocationModel=model('LocationModel');
+        try{
+            $order_update=[
+                'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
+                'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
+            ];
+            $this->OrderModel->update($order_id,$order_update);
+        } catch (\Exception $e){
+            return 'address_not_set';
+        }
         ///////////////////////////////////////////////////
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
@@ -347,7 +348,6 @@ class OrderStageScript{
         ///////////////////////////////////////////////////
         //CREATING STAGE NOTIFICATIONS
         ///////////////////////////////////////////////////
-        $order=$this->OrderModel->itemGet($order_id);
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
