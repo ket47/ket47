@@ -37,13 +37,22 @@ class Reaction extends \App\Controllers\BaseController{
         $reaction_id=$this->request->getVar('reaction_id');
         $is_like=$this->request->getVar('is_like');
         $is_dislike=$this->request->getVar('is_dislike');
+        $comment=$this->request->getVar('comment',FILTER_SANITIZE_SPECIAL_CHARS);
 
-        $ReactionModel=model('ReactionModel');
-        $result=$ReactionModel->itemUpdate((object)[
-            'reaction_is_like'=>$is_like,
-            'reaction_is_dislike'=>$is_dislike,
+        $reaction=(object)[
             'reaction_id'=>$reaction_id
-        ]);
+        ];
+        if($is_like){
+            $reaction->reaction_is_like=$is_like;
+        }
+        if($is_dislike){
+            $reaction->reaction_is_dislike=$is_dislike;
+        }
+        if($comment!==null){
+            $reaction->reaction_comment=$comment;
+        }
+        $ReactionModel=model('ReactionModel');
+        $result=$ReactionModel->itemUpdate($reaction);
         return $this->respondUpdated($result);
     }
     
@@ -58,11 +67,13 @@ class Reaction extends \App\Controllers\BaseController{
         $offset=$this->request->getVar('offset');
         $limit=$this->request->getVar('limit');
         $tagQuery=$this->request->getVar('tagQuery');
+        $commentsOnly=$this->request->getVar('commentsOnly');
 
         $filter=[
             'offset'=>$offset,
             'limit'=>$limit,
-            'tagQuery'=>$tagQuery
+            'tagQuery'=>$tagQuery,
+            'commentsOnly'=>$commentsOnly
         ];
         $ReactionModel=model('ReactionModel');
         $result=$ReactionModel->listGet($filter);

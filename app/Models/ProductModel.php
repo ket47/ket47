@@ -87,6 +87,8 @@ class ProductModel extends Model{
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
         //$ProductGroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
+        $ReactionModel=model('ReactionModel');
+
         $product->is_writable=$this->permit($product_id,'w');
         $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product_parent_id);
         $filter=[
@@ -102,6 +104,10 @@ class ProductModel extends Model{
             $product->options=$this->itemOptionGet( $product->product_parent_id, 'active_only' );
         }
         $product->store=$this->itemStoreMetaGet($product->store_id);
+
+
+
+        $product->reactionSummary=$ReactionModel->summaryGet("product:$product_id");
         return $product;
     }
     

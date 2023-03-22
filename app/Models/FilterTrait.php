@@ -52,10 +52,10 @@ trait FilterTrait{
             }
         }
         if( $filter['offset'] ){
-            $this->offset($filter['offset']);
+            $this->offset((int)$filter['offset']);
         }
         if( $filter['limit'] ){
-            $this->limit($filter['limit']);
+            $this->limit((int)$filter['limit']);
         }
         if( $filter['order'] ){
             $this->orderBy($filter['order'],'ASC');

@@ -12,12 +12,13 @@ class ReactionModel extends Model{
     protected $allowedFields = [
         'reaction_is_like',
         'reaction_is_dislike',
+        'reaction_comment',
+        'sealed_at',
         ];
 
     protected $useSoftDeletes = true;
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
+    protected $useTimestamps = true;
+    protected $autoSealingTimeout="1 DAY";
     
     
     public function itemGet( int $reaction_id ){
@@ -26,11 +27,6 @@ class ReactionModel extends Model{
         return $this->get()->getRow();
     }
     
-
-
-
-
-
     private function itemTagsExpand($tagQuery){
         $expandedTagQuery='';
         $ReactionTagModel=model('ReactionTagModel');
@@ -84,11 +80,6 @@ class ReactionModel extends Model{
         return " product:$product_id entry:$entry_id store:$store_id";
     }
 
-
-
-
-
-
     public function itemCreate( object $reaction, string $tagQuery ){
         if( !$this->permit(null,'w') ){
             return 'forbidden';
@@ -108,6 +99,7 @@ class ReactionModel extends Model{
         if($reaction->reaction_is_dislike??0){
             $reaction->reaction_is_like=0;
         }
+        $reaction->sealed_at= date('Y-m-d H:i:s', strtotime("+{$this->autoSealingTimeout}"));
 
         $this->transStart();
             $reaction_id=$this->insert($reaction,true);
@@ -128,18 +120,51 @@ class ReactionModel extends Model{
         if($reaction->reaction_is_dislike??0){
             $reaction->reaction_is_like=0;
         }
+        if( isset($reaction->reaction_comment) && $reaction->reaction_comment=='' ){
+            $reaction->reaction_comment=null;
+        }
+        
+        $this->where('sealed_at>NOW()');
         $this->update($reaction->reaction_id,$reaction);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete($reaction_id){
         $this->permitWhere('w');
-        $this->delete($reaction_id);
+        $this->delete($reaction_id,true);//should we permanently delete???
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function listGet( string $tagQuery ){
-        return false;
+    public function listGet( array $filter ){
+        if(!$filter['tagQuery']){
+            return 'notags';
+        }
+        $this->filterMake($filter);
+
+        $user_id=session()->get('user_id');
+        $ReactionTagModel=model('ReactionTagModel');
+        $where=$ReactionTagModel->tagWhereGet($filter['tagQuery']);
+        $this->join('reaction_tag_list','member_id=reaction_id');
+        $this->join('user_list','reaction_list.owner_id=user_id');
+        $this->orderBy("`reaction_list`.`owner_id`='{$user_id}'","DESC",false);
+        $this->orderBy('`reaction_list`.`created_at`', 'DESC');
+        $this->where($where);
+        if($filter['commentsOnly']??0){
+            $this->where("reaction_comment IS NOT NULL");
+        }
+        $this->select("(SELECT 
+                image_hash
+            FROM
+                image_list
+                    JOIN
+                reaction_tag_list 
+                    ON image_holder = 'product' AND tag_name='product' AND image_holder_id = tag_id
+            WHERE
+                member_id=reaction_id) image_hash");
+        $this->select('reaction_comment,user_name');
+
+        $result=$this->get()->getResult();
+        return $result;
     }
     
     public function listCreate(){
@@ -154,10 +179,26 @@ class ReactionModel extends Model{
         return false;
     }
     
+    public function summaryGet($tagQuery){
+        $ReactionTagModel=model('ReactionTagModel');
+        $where=$ReactionTagModel->tagWhereGet($tagQuery);
+        $this->where($where);
+        $user_id=session()->get('user_id');
 
-
-
-
+        $select="
+            SUM(reaction_is_like) sum_is_like,
+            SUM(reaction_comment IS NOT NULL) sum_comment,
+            MAX(reaction_comment) last_comment,
+            MAX(IF(`owner_id`='{$user_id}',reaction_is_like,0)) reaction_is_like,
+            MAX(IF(`owner_id`='{$user_id}',reaction_is_dislike,0)) reaction_is_dislike
+        ";
+        $this->select($select);
+        $this->join('reaction_tag_list','member_id=reaction_id');
+        $this->orderBy("`owner_id`='{$user_id}'","DESC",false);
+        $this->orderBy('created_at', 'DESC');
+        $result=$this->get()->getRow();
+        return $result;
+    }
 
     public function entryListGet($filter){
         $owner_id=session()->get('user_id');
@@ -168,29 +209,23 @@ class ReactionModel extends Model{
         $EntryModel->join('reaction_tag_list','tag_name="entry" AND tag_id=entry_id','left');
         $EntryModel->join('reaction_list','reaction_id=member_id','left');
 
-
         $EntryModel->where('order_entry_list.owner_id',$owner_id);
         $EntryModel->orderBy('order_entry_list.updated_at DESC');
-
-
         if($filter['target_type']=='product'){//how about reactiong on done orders???
-            $select="product_id AS target_id,
+            $select="
+            product_id AS target_id,
             entry_id,
             entry_text,
             order_entry_list.updated_at,
             image_hash,
+            IFNULL(sealed_at<NOW(),0) is_sealed,
+            reaction_id,
             reaction_is_like,
             reaction_is_dislike,
             reaction_comment";
             $EntryModel->where('product_id',$filter['target_id']);
             $EntryModel->select($select);
         }
-
-        
-
-
-        
-
         return $EntryModel->get()->getResult();
     }
 }
