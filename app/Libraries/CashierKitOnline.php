@@ -5,7 +5,7 @@ class CashierKitOnline{
 
     public function print($order_all){
         $Check=[
-            'CheckId'=>$order_all->order_id,
+            'CheckId'=>'#'.$order_all->order_id,
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
             'CalculationType'=>'1',
             'Sum'=>$order_all->order_sum_total*100,
