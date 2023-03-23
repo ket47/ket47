@@ -17,6 +17,7 @@ class Store extends \App\Controllers\BaseController{
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'limit'=>$this->request->getVar('limit'),
+            'offset'=>$this->request->getVar('offset'),
             'owner_id'=>$this->request->getVar('owner_id'),
             'owner_ally_ids'=>$this->request->getVar('owner_ally_ids'),
             'order'=>$this->request->getVar('order'),
