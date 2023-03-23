@@ -568,6 +568,10 @@ class ProductModel extends Model{
     public function groupTreeGet($filter,$depth='all'){
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
+            if($this->permit($filter['store_id'],'w')){
+                $filter['is_disabled']=1;
+                $filter['is_deleted']=1;
+            }
         }
         $this->filterMake( $filter );
         $this->select('pgl.group_id,pgl.group_parent_id,pgl.group_name,pgl.group_path,image_hash, MAX(product_price) mpprice');
