@@ -2,10 +2,10 @@
 namespace App\Libraries;
 class CashierKitOnline{
     private $url_api = "https://api.kit-invest.ru/WebService.svc/";
-
+    private $checkNumPrefix="#";
     public function print($order_all){
         $Check=[
-            'CheckId'=>'#'.$order_all->order_id,
+            'CheckId'=>$this->checkNumPrefix.$order_all->order_id,
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
             'CalculationType'=>'1',
             'Sum'=>$order_all->order_sum_total*100,
@@ -73,7 +73,7 @@ class CashierKitOnline{
             ],
             'Check'=>$Check
         ];
-        $response=$this->apiExecute($order_all->order_id,'SendCheck',$data);
+        $response=$this->apiExecute($this->checkNumPrefix.$order_all->order_id,'SendCheck',$data);
         if($response){
             //$response->Check=$Check;
         }
@@ -117,7 +117,7 @@ class CashierKitOnline{
         while($atempt_count>0){
             $atempt_count--;
             sleep(2);
-            $response->Registration=$this->statusGet($order_all->order_id);
+            $response->Registration=$this->statusGet($this->checkNumPrefix.$order_all->order_id);
             if($response->Registration->ResultCode!=0){
                 continue;
             }
