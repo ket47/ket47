@@ -595,7 +595,7 @@ class OrderStageScript{
                 'order'=>$order,
             ];
             $cust_sms=(object)[
-                'message_transport'=>'push',
+                'message_transport'=>'message',
                 'message_reciever_id'=>$order->owner_id,
                 'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
                 'context'=>$context

@@ -126,6 +126,7 @@ class UserModel extends Model{
         $user->location_main=$LocationModel->itemMainGet('user', $user_id);
         if(!$user->location_main){
             $user->location_main=$LocationModel->itemMainGet('default_location','-1');
+            $user->location_main->is_default=1;
         }
         if( $mode=='full' ){
             $CourierModel=model('CourierModel');

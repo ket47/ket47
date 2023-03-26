@@ -568,7 +568,8 @@ class ProductModel extends Model{
     public function groupTreeGet($filter,$depth='all'){
         if($filter['store_id']??0){
             $this->where('store_id',$filter['store_id']);
-            if($this->permit($filter['store_id'],'w')){
+            $StoreModel=model('StoreModel');
+            if($StoreModel->permit($filter['store_id'],'w')){
                 $filter['is_disabled']=1;
                 $filter['is_deleted']=1;
             }
