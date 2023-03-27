@@ -45,7 +45,16 @@ class Store extends \App\Controllers\BaseController{
         if( !is_array($result) ){
             return $this->failNotFound($result);
         }
-        return $this->respond($result);
+
+        $StoreModel=model('StoreModel');
+        $totalCount=$StoreModel->select('COUNT(*) totalCount')->get()->getRow('totalCount');
+        $hiddenCount=$totalCount-count($result);
+
+        $response=[
+            'store_list'=>$result,
+            'hidden_count'=>$hiddenCount
+        ];
+        return $this->respond($response);
     }
     public function primaryNearGet(){
         $location_id=$this->request->getVar('location_id');
