@@ -4,6 +4,7 @@ trait SystemTrait{
     private $systemButtons=[
         ['isAdmin',  'onSystemMetricsDay',      "📲 Метрика день"],
         ['isAdmin',  'onSystemMetricsWeek',     "📲 Метрика нед."],
+        ['isAdmin',  'onSystemMetricsMonth',    "📲 Метрика мес."],
         ['isAdmin',  'onSystemRegistrations',   "👦🏻 Регистрации"],
     ];
     public function systemButtonsGet(){
@@ -24,6 +25,9 @@ trait SystemTrait{
     private function onSystemMetricsWeek(){
         $this->onSystemMetrics( "WEEK" );
     }
+    private function onSystemMetricsMonth(){
+        $this->onSystemMetrics( "MONTH" );
+    }
     private function onSystemMetrics( $interval ){
         if(!$this->isAdmin()){
             return false;
@@ -31,11 +35,19 @@ trait SystemTrait{
         $MetricModel=model('MetricModel');
         $MetricModel->limit(20);
         $MetricModel->join('metric_media_list','come_media_id=media_tag','left');
-        $MetricModel->select('come_referrer,come_media_id,media_name,COUNT(*) metric_count');
-        $MetricModel->groupBy('CONCAT(come_referrer,"||",come_media_id)');
+        $MetricModel->select('come_media_id,media_name,COUNT(*) metric_count');
+        $MetricModel->groupBy('come_media_id');
         $MetricModel->where("created_at between date_sub(now(),INTERVAL 1 $interval) and now()");
         $MetricModel->orderBy('metric_count DESC');
         $metrics=$MetricModel->listGet();
+
+        $MetricModel->limit(20);
+        $MetricModel->select('come_referrer,COUNT(*) metric_count');
+        $MetricModel->groupBy('come_referrer');
+        $MetricModel->where("created_at between date_sub(now(),INTERVAL 1 $interval) and now()");
+        $MetricModel->orderBy('metric_count DESC');
+        $refferrers=$MetricModel->listGet();
+        
         $MetricModel->where("created_at between date_sub(now(),INTERVAL 1 $interval) and now()");
         $MetricModel->groupBy('device_platform');
         $MetricModel->select('device_platform,COUNT(*) metric_count');
@@ -43,6 +55,7 @@ trait SystemTrait{
         $devices=$MetricModel->listGet();
 
         $context=[
+            'refferrer_list'=>$refferrers,
             'coming_list'=>$metrics,
             'device_list'=>$devices
         ];
