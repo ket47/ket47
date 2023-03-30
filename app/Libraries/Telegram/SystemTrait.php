@@ -68,9 +68,11 @@ trait SystemTrait{
             return false;
         }
         $UserModel=model('UserModel');
-        $UserModel->orderBy('created_at DESC')->limit(10);
+        $UserModel->orderBy('user_list.created_at DESC')->limit(30);
+        $UserModel->join('metric_list','user_id','left');
+        $UserModel->join('metric_media_list','come_media_id=media_tag','left');
 
-        $users=$UserModel->listGet();
+        $users=$UserModel->get()->getResult();
 
         $context=[
             'user_list'=>$users

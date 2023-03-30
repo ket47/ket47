@@ -154,6 +154,8 @@ class User extends \App\Controllers\BaseController{
             $PromoModel=model('PromoModel');
             $PromoModel->listCreate($new_user_id,$inviter_user_id??0);
         }
+
+        $this->signInMetric( $new_user_id );
         
         $Messenger=new \App\Libraries\Messenger;
         $Messenger->itemSend((object)[
