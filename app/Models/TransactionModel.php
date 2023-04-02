@@ -75,7 +75,7 @@ class TransactionModel extends Model{
         if( !sudo() ){
             return 0;
         }
-        if( $trans->trans_amount==0 ){
+        if( $trans?->trans_amount==0 ){
             return -1;
         }
         if( !($trans->trans_date??0) ){

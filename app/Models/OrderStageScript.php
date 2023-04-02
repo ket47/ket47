@@ -570,7 +570,7 @@ class OrderStageScript{
                 'customer_location_comment'=>$customerLocation->location_comment,
                 'customer_location_latitude'=>$customerLocation->location_latitude,
                 'customer_location_longitude'=>$customerLocation->location_longitude,
-                'customer_phone'=>$order->customer->user_phone,
+                'customer_phone'=>'+'.$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
             ];
@@ -696,7 +696,7 @@ class OrderStageScript{
                 'customer_location_comment'=>$customerLocation->location_comment??'',
                 'customer_location_latitude'=>$customerLocation->location_latitude??'',
                 'customer_location_longitude'=>$customerLocation->location_longitude??'',
-                'customer_phone'=>$order->customer->user_phone,
+                'customer_phone'=>'+'.$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
 
@@ -705,7 +705,7 @@ class OrderStageScript{
                 'supplier_location_latitude'=>$supplierLocation->location_latitude??'',
                 'supplier_location_longitude'=>$supplierLocation->location_longitude??'',
                 'supplier_name'=>$order->store->store_name,
-                'supplier_phone'=>$order->store->store_phone,
+                'supplier_phone'=>'+'.$order->store->store_phone,
             ]),
             'info_for_customer'=>json_encode([
                 'courier_name'=>$courier->courier_name,
