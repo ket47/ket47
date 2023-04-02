@@ -339,6 +339,14 @@ class StoreModel extends Model{
         if( !$location_id ){
             return 'location_required'; 
         }
+        if( $filter['limit']??0 ){
+            $LocationModel->limit($filter['limit']);
+        }
+        if( $filter['offset']??0 ){
+            $LocationModel->offset($filter['offset']);
+        }
+
+
         $weekday=date('N')-1;
         $nextweekday=date('N')%7;
         $dayhour=date('H');

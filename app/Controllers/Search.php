@@ -12,7 +12,7 @@ class Search extends \App\Controllers\BaseController{
         $query=$this->request->getVar('query');
 
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
+        $result=$StoreModel->listNearGet(['location_id'=>$location_id,'limit'=>5]);
         if( !is_array($result) ){
             return $this->fail($result);
         }
