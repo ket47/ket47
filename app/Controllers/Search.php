@@ -12,7 +12,7 @@ class Search extends \App\Controllers\BaseController{
         $query=$this->request->getVar('query');
 
         $StoreModel=model('StoreModel');
-        $result=$StoreModel->listNearGet(['location_id'=>$location_id,'limit'=>5]);
+        $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
         if( !is_array($result) ){
             return $this->fail($result);
         }
@@ -24,6 +24,7 @@ class Search extends \App\Controllers\BaseController{
     private function listStoreProductsGet( $query,$store_list ){
         $matched_stores=[];
         $ProductModel=model('ProductModel');
+        $limit=5;
         foreach($store_list as $store){
             $filter=[
                 'name_query'=>$query,
@@ -36,6 +37,9 @@ class Search extends \App\Controllers\BaseController{
             $store->matches=$ProductModel->listGet($filter);
             if($store->matches){
                 $matched_stores[]=$store;
+                if(--$limit<1){
+                    break;
+                }
             }
         }
         return $matched_stores;
