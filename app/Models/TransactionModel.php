@@ -231,6 +231,10 @@ class TransactionModel extends Model{
                 $tagWhere=' AND '.$tagCase;
             }
         }
+        $limit='';
+        if($filter->limit??null){
+            $limit="LIMIT {$filter->limit} OFFSET {$filter->offset}";
+        }
 
         if( sudo() ){
             $tag_sql=$this->adminTagSqlGet();
@@ -270,7 +274,9 @@ class TransactionModel extends Model{
                     AND transaction_list.is_disabled=0
                     AND transaction_list.deleted_at IS NULL
                 GROUP BY trans_id
-                $having) AS tl
+                $having
+                $limit
+                ) AS tl
                     JOIN
                 {$tag_sql['table']}
                 GROUP BY trans_id

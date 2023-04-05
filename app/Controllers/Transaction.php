@@ -67,6 +67,8 @@ class Transaction extends \App\Controllers\BaseController{
             'finish_at'         =>$this->request->getVar('finish_at'),
             'tagQuery'          =>$this->request->getVar('tagQuery'),
             'searchQuery'       =>$this->request->getVar('searchQuery'),
+            'limit'             =>(int)$this->request->getVar('limit'),
+            'offset'            =>(int)$this->request->getVar('offset'),
         ];
         $start = date_create($filter->start_at);
         $finish = date_create($filter->finish_at);
