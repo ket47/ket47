@@ -275,7 +275,6 @@ class TransactionModel extends Model{
                     AND transaction_list.deleted_at IS NULL
                 GROUP BY trans_id
                 $having
-                $limit
                 ) AS tl
                     JOIN
                 {$tag_sql['table']}
@@ -288,6 +287,7 @@ class TransactionModel extends Model{
                 *
             FROM
                 tmp_ledger_inner
+            $limit
         ";
         $sql_meta_get="
             SELECT
