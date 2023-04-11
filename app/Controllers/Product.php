@@ -17,11 +17,13 @@ class Product extends \App\Controllers\BaseController{
             'store_id'=>$this->request->getVar('store_id'),
             'group_id'=>$this->request->getVar('group_id'),
         ];
+        $grouptree_include=$this->request->getVar('grouptree_include');
         $ProductModel=model('ProductModel');
-        $product_list=$ProductModel->listGet($filter);
-        $data=[
-            'product_list' => $product_list
-            ];
+
+        $data['product_list']=$ProductModel->listGet($filter);
+        if( $grouptree_include ){
+            $data['group_tree']=$ProductModel->groupTreeGet(['store_id'=>$filter['store_id']]);
+        }
         return $this->respond($data);
     }
 
@@ -275,11 +277,6 @@ class Product extends \App\Controllers\BaseController{
     /////////////////////////////////////////////////////
     public function groupTreeGet(){
         $filter=[
-//            'name_query'=>$this->request->getVar('name_query'),
-//            'name_query_fields'=>$this->request->getVar('name_query_fields'),
-//            'is_disabled'=>$this->request->getVar('is_disabled'),
-//            'is_deleted'=>$this->request->getVar('is_deleted'),
-//            'is_active'=>$this->request->getVar('is_active'),
             'limit'=>'100',
             'store_id'=>$this->request->getVar('store_id'),
         ];
@@ -287,15 +284,4 @@ class Product extends \App\Controllers\BaseController{
         $group_list=$ProductModel->groupTreeGet($filter);
         return $this->respond($group_list);
     }
-
-    // public function groupListGet(){
-    //     $group_parent_id=$this->request->getVar('group_parent_id');
-    //     $ProductGroupModel=model('ProductGroupModel');
-
-    //     if($group_parent_id!=null){
-    //         $ProductGroupModel->where('group_parent_id',$group_parent_id);
-    //     }
-    //     $group_list=$ProductGroupModel->listGet();
-    //     return $this->respond($group_list);
-    // }
 }
