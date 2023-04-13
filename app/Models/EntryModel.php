@@ -12,6 +12,7 @@ class EntryModel extends Model{
     protected $allowedFields = [
         'entry_quantity',
         'entry_comment',
+        'entry_discount',
         ];
 
     protected $useSoftDeletes = false;
@@ -31,16 +32,18 @@ class EntryModel extends Model{
     
     
     private function itemEditAllow( $order ){
-        if( !($order->user_role??null) ){
-            return false;
-        }
-        if( $order->user_role=='customer' && $order->stage_current=='customer_cart' ){
+        return $this->itemAtCard($order) || $this->itemAtCorrection($order);
+    }
+
+    private function itemAtCorrection( $order ){
+        if( ($order->user_role??null) && in_array($order->user_role,['supplier','admin']) && $order->stage_current=='supplier_corrected' ){
             return true;
         }
-        if( $order->user_role=='supplier' && $order->stage_current=='supplier_corrected' ){
-            return true;
-        }
-        if( $order->user_role=='admin' && in_array($order->stage_current,['supplier_corrected','customer_cart']) ){
+        return false;
+    }
+
+    private function itemAtCard( $order ){
+        if( ($order->user_role??null) && in_array($order->user_role,['customer','admin']) && $order->stage_current=='customer_cart' ){
             return true;
         }
         return false;
@@ -99,18 +102,10 @@ class EntryModel extends Model{
             return 'noentryid';
         }
         $this->permitWhere('w');
-        $stock_check_sql="SELECT 
-                product_quantity,
-                entry_comment,
-                order_id,
-                is_counted
-            FROM
-                order_entry_list
-                    JOIN
-                product_list USING (product_id)
-            WHERE
-                entry_id = '{$entry->entry_id}'";
-        $stock=$this->query($stock_check_sql)->getRow();
+        $this->join('product_list','product_id');
+        $this->select("product_quantity,entry_comment,entry_price,entry_quantity,order_id,is_counted");
+        $this->where('entry_id',$entry->entry_id);
+        $stock=$this->get()->getRow();
         if( !$stock ){
             return 'noentryid';
         }
@@ -119,6 +114,14 @@ class EntryModel extends Model{
         $order_basic=$OrderModel->itemGet($stock->order_id,'basic');
         if( !$this->itemEditAllow( $order_basic ) ){
             return 'forbidden_at_this_stage';
+        }
+        if( ($entry->entry_discount??null) ){
+            if(!$this->itemAtCorrection( $order_basic )){
+                return 'forbidden_at_this_stage';
+            }
+            if( $entry->entry_discount<0 || $entry->entry_discount> ($stock->entry_price*$stock->entry_quantity) ){
+                return 'invalid_discount_value';
+            }
         }
         // if( $stock->is_counted && isset($entry->entry_quantity) && $entry->entry_quantity>$stock->product_quantity){
         //     $entry->entry_comment= preg_replace('/\[.+\]/u', '', $stock->entry_comment);
@@ -168,6 +171,7 @@ class EntryModel extends Model{
         entry_text,
         entry_quantity,
         entry_price,
+        entry_discount,
         ROUND(entry_quantity*entry_price,2) entry_sum,
         image_hash,
         product_unit,
@@ -191,7 +195,7 @@ class EntryModel extends Model{
     
     public function listSumGet( $order_id ){
         $this->permitWhere('r');
-        $this->select("SUM(ROUND(entry_quantity*entry_price,2)) order_sum_product");
+        $this->select("SUM(ROUND(entry_quantity*entry_price,2)-IFNULL(entry_discount,0)) order_sum_product");
         $this->where('order_id',$order_id);
         $this->where('deleted_at IS NULL');
         return $this->get()->getRow('order_sum_product');
@@ -200,6 +204,10 @@ class EntryModel extends Model{
     public function listSumUpdate( $order_id ){
         $OrderModel=model('OrderModel');
         $order_sum_product=$this->listSumGet($order_id);
+
+        ql($this);
+
+
         $OrderModel->itemUpdate((object)[
             'order_id'=>$order_id,
             'order_sum_product'=>$order_sum_product

@@ -40,13 +40,13 @@ class Entry extends \App\Controllers\BaseController{
         if( $result==='forbidden_at_this_stage' ){
             return $this->failForbidden($result);
         }
-        if( $result==='noentryid' ){
+        if( $result==='noentryid' || $result==='invalid_discount_value' ){
             return $this->fail($result);
         }
         if( $EntryModel->errors() ){
             return $this->failValidationErrors( $EntryModel->errors() );
         }
-        if( $result=='ok' && isset($entry->entry_quantity) ){
+        if( $result=='ok' && ( isset($entry->entry_quantity) || isset($entry->entry_discount) ) ){
             if(!isset($entry->order_id)){
                 $entry->order_id=$EntryModel->where('entry_id',$entry->entry_id)->get()->getRow('order_id');
             }
