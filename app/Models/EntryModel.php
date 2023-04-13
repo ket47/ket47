@@ -32,7 +32,7 @@ class EntryModel extends Model{
     
     
     private function itemEditAllow( $order ){
-        return $this->itemAtCard($order) || $this->itemAtCorrection($order);
+        return $this->itemAtCart($order) || $this->itemAtCorrection($order);
     }
 
     private function itemAtCorrection( $order ){
@@ -42,7 +42,7 @@ class EntryModel extends Model{
         return false;
     }
 
-    private function itemAtCard( $order ){
+    private function itemAtCart( $order ){
         if( ($order->user_role??null) && in_array($order->user_role,['customer','admin']) && $order->stage_current=='customer_cart' ){
             return true;
         }
