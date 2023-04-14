@@ -74,10 +74,6 @@ class LocationModel extends Model{
         return 'idle';
     }
 
-    public function itemTemporaryCreate( $location_latitude, $location_longitude ){
-        $this->query("SET @center_point=POINT('$location_latitude','$location_longitude')");
-        return -100;
-    }
 
     public function itemAdd($data){
         $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
@@ -340,8 +336,13 @@ ORDER BY created_at DESC) tt
         return $this->get()->getRow('distance');
     }
     
+    public function itemTemporaryCreate( $location_latitude, $location_longitude ){
+        $this->query("SET @center_point=POINT('$location_latitude','$location_longitude')");
+        return -100;
+    }
+
     public function distanceListGet( int $center_location_id, float $point_distance, string $point_holder ){
-        if($center_location_id>0){//If location_id<0 use temporary point
+        if($center_location_id>0){//If location_id<0 use temporary point from itemTemporaryCreate
             $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
         }
         $this->select("

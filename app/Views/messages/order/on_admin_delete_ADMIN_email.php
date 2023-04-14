@@ -22,10 +22,10 @@
             <p>Чека нет</p>
         <?php endif; ?>
 
-        <?php if ($payment_card_confirm_sum>0): ?>
+        <?php if (!empty($payment_card_confirm_sum)): ?>
             <h3 style="color:red">Остаток оплаты покупателя <?=$payment_card_confirm_sum?></h3>
             <p>
-                Номер трансакции: <?=$payment_card_fixate_id?>
+                Номер трансакции: <?=$payment_card_fixate_id??'-'?>
             </p>
         <?php else: ?>
             <p>Остатка оплаты нет</p>
