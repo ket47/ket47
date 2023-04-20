@@ -349,8 +349,8 @@ class OrderModel extends Model{
 
     public function listCountGet(){
         $this->permitWhere('r');
-        $this->whereNotIn('ogl.group_type',['system_finish']);//
-        $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer' OR `ogl`.`group_type`<>'customer_cart'");
+        $this->whereNotIn('ogl.group_type',['system_finish','customer_deleted']);//
+        //$this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer' OR `ogl`.`group_type`<>'customer_cart'");
         $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
 
         $this->itemUserRoleCalc();
