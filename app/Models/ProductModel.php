@@ -218,16 +218,15 @@ class ProductModel extends Model{
         }
         $this->permitWhere('r');
         $this->where('product_parent_id',$product_parent_id);
-        $this->where("product_option IS NOT NULL");
-        $this->where("product_option <>''");
-        
+
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
-        $this->select('product_id,product_code,product_name,product_option,product_list.deleted_at,(product_id=product_parent_id) is_parent');
-        //$this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');image_hash,
+        $this->select('product_id,product_code,product_name,product_option,image_hash,product_list.deleted_at,(product_id=product_parent_id) is_parent');
+        $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->orderBy('is_parent','DESC');
         if($mode=='active_only'){
-            $this->where("product_list.deleted_at IS NULL AND product_list.is_disabled=0 AND (product_price>0 OR product_promo_price>0 OR product_net_price>0)");
+            $this->where("product_list.deleted_at IS NULL AND product_list.is_disabled=0");
         }
+        // $this->where("product_option IS NOT NULL AND product_option <>'' OR product_id=product_parent_id");        
         return $this->get()->getResult();
     }
 

@@ -451,8 +451,13 @@ class OrderStageScript{
         ];
         jobCreate($notification_task);
 
-        $CourierModel=model('CourierModel');
-        $CourierModel->itemUpdateStatus($order->order_courier_id,'ready');
+        $courier_freeing_task=[
+            'task_name'=>"free the courier",
+            'task_programm'=>[
+                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[[$order->order_courier_id,'ready']]]
+                ]
+        ];
+        jobCreate($courier_freeing_task);
 
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
@@ -683,6 +688,7 @@ class OrderStageScript{
     public function onDeliveryFound( $order_id ){
         // $OrderGroupMemberModel=model('OrderGroupMemberModel');
         // $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        helper('phone_number');
 
         $order=$this->OrderModel->itemGet($order_id);
         $LocationModel=model("LocationModel");
@@ -696,7 +702,7 @@ class OrderStageScript{
                 'customer_location_comment'=>$customerLocation->location_comment??'',
                 'customer_location_latitude'=>$customerLocation->location_latitude??'',
                 'customer_location_longitude'=>$customerLocation->location_longitude??'',
-                'customer_phone'=>'+'.$order->customer->user_phone,
+                'customer_phone'=>'+'.clearPhone($order->customer->user_phone),
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
 
@@ -705,7 +711,7 @@ class OrderStageScript{
                 'supplier_location_latitude'=>$supplierLocation->location_latitude??'',
                 'supplier_location_longitude'=>$supplierLocation->location_longitude??'',
                 'supplier_name'=>$order->store->store_name,
-                'supplier_phone'=>'+'.$order->store->store_phone,
+                'supplier_phone'=>'+'.clearPhone($order->store->store_phone),
             ]),
             'info_for_customer'=>json_encode([
                 'courier_name'=>$courier->courier_name,

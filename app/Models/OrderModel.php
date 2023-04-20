@@ -318,8 +318,9 @@ class OrderModel extends Model{
         }
         if($filter['order_group_type']??null){
             if($filter['order_group_type']=='active_only'){
+                $user_id=session()->get('user_id');
                 $this->where('ogl.group_type<>','system_finish');
-                $this->having("`ogl`.`group_type`='customer_cart' AND user_role='customer'OR `ogl`.`group_type`<>'customer_cart'");
+                $this->where("`ogl`.`group_type`='customer_cart' AND order_list.owner_id='$user_id' OR `ogl`.`group_type`<>'customer_cart'");
                 $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
             } else {
                 $firstChar=substr($filter['order_group_type'],0,1);
