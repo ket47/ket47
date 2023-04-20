@@ -454,7 +454,7 @@ class OrderStageScript{
         $courier_freeing_task=[
             'task_name'=>"free the courier",
             'task_programm'=>[
-                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[[$order->order_courier_id,'ready']]]
+                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
                 ]
         ];
         jobCreate($courier_freeing_task);

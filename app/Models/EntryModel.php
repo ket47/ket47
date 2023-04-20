@@ -204,10 +204,6 @@ class EntryModel extends Model{
     public function listSumUpdate( $order_id ){
         $OrderModel=model('OrderModel');
         $order_sum_product=$this->listSumGet($order_id);
-
-        ql($this);
-
-
         $OrderModel->itemUpdate((object)[
             'order_id'=>$order_id,
             'order_sum_product'=>$order_sum_product
