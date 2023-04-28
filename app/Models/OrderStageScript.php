@@ -451,13 +451,15 @@ class OrderStageScript{
         ];
         jobCreate($notification_task);
 
-        $courier_freeing_task=[
-            'task_name'=>"free the courier",
-            'task_programm'=>[
-                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
-                ]
-        ];
-        jobCreate($courier_freeing_task);
+        if($order->order_courier_id){
+            $courier_freeing_task=[
+                'task_name'=>"free the courier",
+                'task_programm'=>[
+                        ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
+                    ]
+            ];
+            jobCreate($courier_freeing_task);
+        }
 
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
@@ -557,8 +559,15 @@ class OrderStageScript{
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
-        $CourierModel=model('CourierModel');
-        $CourierModel->itemUpdateStatus($order->order_courier_id,'ready');
+        if($order->order_courier_id){
+            $courier_freeing_task=[
+                'task_name'=>"free the courier",
+                'task_programm'=>[
+                        ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
+                    ]
+            ];
+            jobCreate($courier_freeing_task);
+        }
 
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
