@@ -38,7 +38,7 @@ class Token extends \App\Controllers\BaseController{
             $token_device=$agent->getPlatform()." ".$agent->getBrowser()." ".$agent->getMobile();
             $new_token=$TokenModel->itemCreate($owner_id,$token_holder,$token_holder_id,$token_device);
             $result=$TokenModel->itemGet($new_token['token_id']);
-            $result->token_hash_raw=$new_token->token_hash_raw;
+            $result->token_hash_raw=$new_token['token_hash_raw'];
         }
         return $this->respond($result);
     }
