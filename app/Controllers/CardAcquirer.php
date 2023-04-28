@@ -52,6 +52,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 break;
             case 'partly canceled':
             case 'waiting':
+                $this->log_message('error', "paymentStatusSet $incomingStatus->status; Waiting what?");
+                return $this->failValidationErrors('waiting');
+                break;
+            case 'not authorized':
+                $this->log_message('error', "paymentStatusSet $incomingStatus->status; Not enough money?");
+                return $this->failValidationErrors('not_authorized');
                 break;
             default:
                 $this->log_message('error', "paymentStatusSet $incomingStatus->status; wrong_status");
@@ -95,7 +101,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
     public function paymentLinkGet(){
         $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
-        if($Acquirer->statusGet($order_id,'beforepayment')){
+        $paymentStatus=$Acquirer->statusGet($order_id,'beforepayment');
+
+
+        pl($paymentStatus,false);
+
+        if( isset($paymentStatus->status) && $paymentStatus->status=='Authorized' ){
             return $this->fail('already_payed');
         }
         $result=$this->orderValidate($order_id);
