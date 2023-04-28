@@ -40,6 +40,8 @@ class ProductModel extends Model{
         'product_price'    => 'numeric',
         //'product_promo_price'    => 'numeric',
     ];
+    public $itemCreateAsDisabled=false;
+    public $itemImageCreateAsDisabled=false;
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -143,15 +145,56 @@ class ProductModel extends Model{
         if( !$permission_granted ){
             return 'forbidden';
         }
-        $product->is_disabled=1;
+        if( $this->itemCreateAsDisabled ){
+            $product->is_disabled=1;
+        }
         $product->owner_id=session()->get('user_id');
         $product->owner_ally_ids=$store->owner_ally_ids;
-        $this->allowedFields[]='is_disabled';
+        $this->allowedFields[]='is_disabled';//if run many times allowedFields will contain duplicated values
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';
-        return $this->insert($product);
+        if( isset($product->product_quantity) && !isset($product->product_quantity_expire_at) ){
+            $expiration_timeout=8;//8 hours
+            $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
+        }
+        $product_id=$this->insert($product,true);
+
+        if($product->product_image_url??null){
+            $this->itemCreateImage($product_id,$product->product_image_url);
+        }
+        if($product->product_category_name??null){
+            $this->itemCreateCategory($product_id,$product->product_category_name);
+        }
+        return $product_id;
     }
-    
+
+    private function itemCreateImage($product_id,$source){
+        $image_data=[
+            'image_holder'=>'product',
+            'image_holder_id'=>$product_id
+        ];
+        $image_hash=$this->imageCreate($image_data);
+
+        if( $image_hash && $image_hash!=='limit_exeeded' ){
+            jobCreate([
+                'task_name'=>"Image download",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Utils','method'=>'fileDownloadImage','arguments'=>[$source,$image_hash]]
+                    ]
+            ]);
+        }
+    }
+
+    private function itemCreateCategory($product_id,$product_category_name){
+        $ProductGroupModel=model('ProductGroupModel');
+        $ProductGroupModel->where('group_name',$product_category_name);
+        $ProductGroupModel->where('group_parent_id<>0');
+        $group_id=$ProductGroupModel->get()->getRow('group_id');
+        if($group_id){
+            $this->itemUpdateGroup($product_id,$group_id,true);
+        }
+    }
+
     public function itemUpdate( $product ){
         if( !$product || !isset($product->product_id) ){
             return 'error_empty';
@@ -175,7 +218,7 @@ class ProductModel extends Model{
             return 'not_found';
         }
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
-        $ProductGroupMemberModel->tableSet('product_group_member_list');
+        //$ProductGroupMemberModel->tableSet('product_group_member_list');
         $leave_other_groups=true;
         $ok=$ProductGroupMemberModel->itemUpdate( $product_id, $group_id, $is_joined, $leave_other_groups );
         if( $ok ){
@@ -308,107 +351,20 @@ class ProductModel extends Model{
         return $product_list;
     }
     
-    public function listCreate( $store_id, $colconfig ){
-        //ANALYSE MADE PREVIOUS SO NO NEED TO DOUBLE CHECK
-        $StoreModel=model('StoreModel');
-        $permission_granted=$StoreModel->permit($store_id,'w');
-        if( !$permission_granted ){
-            return 'forbidden';
+    public function listCreate( $store_id, $productList ){
+        foreach($productList as $product){
+            $product->store_id=$store_id;
+            $this->itemCreate($product);
         }
-        $ownerFilter=$this->permitWhereGet('w','item');
-        $target_col_list="store_id,owner_id,owner_ally_ids,is_disabled";
-        $src_col_list="$store_id,owner_id,owner_ally_ids,1";
-        $delimeter=',';
+    }
 
-        $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];
-        foreach($colconfig as $target=>$src){
-            if(in_array($target, $skip_cols)){
-                continue;
-            }
-            $src_col_list.=$delimeter.$src;
-            $target_col_list.=$delimeter.$target;
+    public function listUpdate( $store_id, $productList ){
+        foreach($productList as $product){
+            $product->store_id=$store_id;
+            $this->itemUpdate($product);
         }
-        $sql="
-            INSERT INTO product_list ($target_col_list) SELECT
-                $src_col_list
-            FROM
-                imported_list il
-            WHERE
-                il.holder='store' 
-                AND il.holder_id='$store_id'
-                AND il.action='add'
-                AND $ownerFilter
-            ";
-        $this->query($sql);
-        if( $this->db->affectedRows()>0 ){
-            $clear_imported_sql="
-                UPDATE
-                    imported_list il
-                SET
-                    `action`='done'
-                WHERE
-                    il.holder='store' 
-                    AND il.holder_id='$store_id'
-                    AND il.action='add'
-                    AND $ownerFilter
-                ";
-            $this->query($clear_imported_sql);
-            return 'ok';
-        }
-        return 'idle';
     }
     
-    public function listUpdate( $holder,$store_id,$colconfig ){
-        //ANALYSE MADE PREVIOUS SO NO NEED TO DOUBLE CHECK
-        $StoreModel=model('StoreModel');
-        $permission_granted=$StoreModel->permit($store_id,'w');
-        if( !$permission_granted ){
-            return 'forbidden';
-        }
-        $ownerFilter=$this->permitWhereGet('w','item');
-        $set="pl.store_id=$store_id,pl.deleted_at=NULL,pl.product_quantity_updated_at=NOW()";
-        $delimeter=',';
-
-        $skip_cols=['product_action_price','product_action_start','product_action_finish','product_categories'];
-        foreach($colconfig as $target=>$src){
-            if(in_array($target, $skip_cols)){
-                continue;
-            }
-            $set.="$delimeter pl.$target=il.$src";
-        }
-        $sql="
-            UPDATE
-                product_list pl
-                    JOIN 
-                (SELECT * FROM
-                    imported_list il 
-                WHERE
-                    il.holder='store' 
-                    AND il.holder_id='$store_id'
-                    AND il.action='update'
-                    AND $ownerFilter) il ON pl.product_id=il.target_id
-            SET
-                $set
-            ";
-        $this->query($sql);
-        $clear_imported_sql="
-            UPDATE
-                imported_list il
-            SET
-                `action`='done'
-            WHERE
-                il.holder='store' 
-                AND il.holder_id='$store_id'
-                AND il.action='update'
-                AND $ownerFilter
-            ";
-        $this->query($clear_imported_sql);
-        if( $this->db->affectedRows()>0 ){
-            return 'ok';
-        }
-        return 'idle';
-    }
-
     public function listUpdateValidity(int $store_id=null,int $product_id=null){
         if( !$store_id && !$product_id ){
             return false;
@@ -497,7 +453,9 @@ class ProductModel extends Model{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function imageCreate( $data ){
-        $data['is_disabled']=1;
+        if( $this->itemImageCreateAsDisabled ){
+            $data['is_disabled']=1;
+        }
         $data['owner_id']=session()->get('user_id');
         if( $this->permit($data['image_holder_id'], 'w') ){
             $ImageModel=model('ImageModel');

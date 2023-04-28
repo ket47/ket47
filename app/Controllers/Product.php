@@ -202,7 +202,8 @@ class Product extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);                if( $result!==true ){
+                $result=$this->fileSaveImage($image_holder_id,$file);
+                if( $result!==true ){
                     return $this->fail($result);
                 }
             }

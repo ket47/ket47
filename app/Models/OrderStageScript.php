@@ -53,9 +53,10 @@ class OrderStageScript{
             'supplier_corrected'=>          ['Изменить'],
             'supplier_action_take_photo'=>  ['Сфотографировать'],
             'delivery_no_courier'=>         [],
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
             ],
         'supplier_corrected'=>[
-            'supplier_finish'=>             ['Завершить подготовку','success'],
+            'supplier_start'=>              ['Сохранить изменения','success'],
             'supplier_action_add'=>         ['Добавить товар'],
             'delivery_no_courier'=>         [],
             ],
@@ -69,7 +70,6 @@ class OrderStageScript{
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
-            'delivery_action_call_customer'=>['Позвонить клиенту'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger'],
             'delivery_rejected'=>           [],
             ],

@@ -385,13 +385,29 @@ class UserModel extends Model{
             return 'user_is_deleted';
         }
 
+        $this->signInInit( $user );
+        return 'ok' ;
+    }
+
+    private function signInInit( object $user ){
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
         $this->protect(false)
                 ->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
         $this->protect(true);
         session()->set('user_id',$user->user_id);
-        return 'ok' ;
+    }
+
+    public function signInByToken(string $token_hash, string $holder=null){
+        $TokenModel=model('TokenModel');
+        $token_data=$TokenModel->itemAuth($token_hash, $holder);
+        if($token_data && $token_data->owner_id){
+            session()->set('token_data',$token_data);
+            $user=$this->where('user_id',$token_data->owner_id)->get()->getRow();
+            $this->signInInit( $user );
+            return 'ok';
+        }
+        return 'token_not_found';//token_hash not found
     }
     
     public function getSignedUser(){

@@ -14,30 +14,21 @@ class ImporterModel extends Model{
         'owner_id',
         'holder',
         'holder_id',
+        'holder_data_hash',
         'target',
-        'external_id'
+        'target_external_id',
+        'action',
+        'updated_at'
     ];
 
     protected $useSoftDeletes = false;
     protected $user_id=-1;
     
-    public function __construct(\CodeIgniter\Database\ConnectionInterface &$db = null, \CodeIgniter\Validation\ValidationInterface $validation = null) {
-        parent::__construct($db, $validation);
-        $UserModel=model('UserModel');
-        $this->user_id=session()->get('user_id');
-        $user=$UserModel->itemGet($this->user_id);
-        if( !isset($user->member_of_groups->group_types) || !str_contains($user->member_of_groups->group_types, 'supplier') ){
-            http_response_code(403);
-            die('User must be member of Supplier group');
-        }
-    }
-    
-    
     public function itemGet(){
         return false;
     }
     
-    public function itemCreate( $item, $holder, $holder_id, $target, $external_id=null ){
+    public function itemCreate( $item, $holder, $holder_id, $target, $target_external_id=null ){
         $set=[];
         foreach($item as $i=>$value){
             $num=$i+1;
@@ -51,16 +42,21 @@ class ImporterModel extends Model{
         }
         $set['holder']=$holder;
         $set['holder_id']=$holder_id;
+        $set['holder_data_hash']=md5(implode('|',$item));//prevent reinserting same products
         $set['target']=$target;
-        $set['owner_id']=$this->user_id;
-        if( $external_id ){
-            $set['external_id']=$external_id;
+        $set['owner_id']=session()->get('user_id');
+        if( $target_external_id ){
+            $set['target_external_id']=$target_external_id;
         }
-        try{
-            $this->insert($set);
-        } catch( \Exception $e ){
-            $this->where('external_id',$external_id);
-            $this->update(null,$set);
+
+
+        $row_id=$this->ignore()->insert($set,true);
+        if(!$row_id){
+            $this->where('holder',$set['holder']);
+            $this->where('holder_id',$set['holder_id']);
+            $this->where('holder_data_hash',$set['holder_data_hash']);
+            $this->set('updated_at','NOW()',false);
+            $this->update();            
         }
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -80,7 +76,7 @@ class ImporterModel extends Model{
         return false;
     }
     
-    public function listGet( $filter ){
+    public function listGet( $filter=[] ){
         $this->filterMake($filter);
         $this->permitWhere('r');
         $this->orderBy("action='add'","DESC");
@@ -89,8 +85,11 @@ class ImporterModel extends Model{
         return $this->get()->getResult();
     }
     
-    public function listCreate(){
-        return false;
+    public function listCreate( array $itemList, string $holder, int $holder_id, string $target, int $external_id_index=null ){
+        foreach ($itemList as $item){
+            $external_id=$item[$external_id_index]??null;
+            $this->itemCreate( $item, $holder, $holder_id, $target, $external_id );
+        }
     }
     
     public function listUpdate(){
@@ -102,49 +101,103 @@ class ImporterModel extends Model{
         $this->delete($ids,true);
         return $this->db->affectedRows()>0?'ok':'idle';
     }
-    
-    
-    public function listAnalyse( $holder_id,$target,$colconfig ){
+
+    public function listAnalyse( $holder_id, $target, $colconfig ){
         if( $target==='product' ){
             return $this->productListAnalyse( $holder_id,$colconfig );
         }
+    }
+
+    public $itemCreateAsDisabled=true;
+    public function listImport( string $holder, int $holder_id, string $target, object $colconfig){
+        $this->listAnalyse( $holder_id, $target, $colconfig );
+        $this->importCreate($holder,$holder_id,$target,$colconfig);
+        $this->importUpdate($holder,$holder_id,$target,$colconfig);
+        $this->importDelete($holder,$holder_id,$target);
     }
     ///////////////////////////////////////////
     //IMPORT SECTION
     ///////////////////////////////////////////
     public function importCreate($holder,$holder_id,$target,$colconfig){
-        if($target=='product'){
-            $this->productListAnalyse( $holder_id,$colconfig );
-            $ProductModel=model('ProductModel');
-            return $ProductModel->listCreate($holder_id,$colconfig);
+        $select_list=['id'];
+        foreach($colconfig as $trg=>$src){
+            $select_list []= "{$src} {$trg}";
         }
+        $this->select(implode(',',$select_list));
+        $this->where('action','add');
+        $this->where('holder',$holder);
+        $this->where('holder_id',$holder_id);
+        $this->permitWhere('r');
+        $listToCreate=$this->get()->getResult();
+        if(!$listToCreate){
+            return;//no products to add
+        }
+        if($target==='product'){
+            $ProductModel=model('ProductModel');
+            $ProductModel->itemCreateAsDisabled=$this->itemCreateAsDisabled;
+            $ProductModel->itemImageCreateAsDisabled=$this->itemCreateAsDisabled;
+            $ProductModel->listCreate($holder_id,$listToCreate);
+        }
+        foreach($listToCreate as $item){
+            $update_ids[]=$item->id;
+        }
+        $this->update($update_ids,['action'=>'done']);
     }
     
     public function importUpdate($holder,$holder_id,$target,$colconfig){
-        if($target=='product'){
-            $ProductModel=model('ProductModel');
-            return $ProductModel->listUpdate($holder,$holder_id,$colconfig);
+        $select_list=['target_id product_id','id'];
+        foreach($colconfig as $trg=>$src){
+            $select_list []= "{$src} {$trg}";
         }
-    }
-    public function importDelete($holder,$holder_id,$target,$colconfig){
-        if($target=='product'){
+        $this->select(implode(',',$select_list));
+        $this->where('action','update');
+        $this->where('holder',$holder);
+        $this->where('holder_id',$holder_id);
+        $this->permitWhere('r');
+        $listToUpdate=$this->get()->getResult();
+        if(!$listToUpdate){
+            return;//no products to update
+        }
+        if($target==='product'){
             $ProductModel=model('ProductModel');
-            $id_list=$this->productListAnalyseAbsent($holder_id,$colconfig,'id_list');
-            $product_ids= explode(',', $id_list);
-            return $ProductModel->listDelete($product_ids);
+            $ProductModel->listUpdate($holder_id,$listToUpdate);
+        }
+        foreach($listToUpdate as $item){
+            $update_ids[]=$item->id;
+        }
+        $this->update($update_ids,['action'=>'done']);
+    }
+    public function importDelete($holder,$holder_id,$target){
+        if($target=='product'){
+            $this->select('target_id,id');
+            $this->where('action','delete');
+            $this->where('holder',$holder);
+            $this->where('holder_id',$holder_id);
+            $this->permitWhere('r');
+            $listToDelete=$this->get()->getResult();
+            if(!$listToDelete){
+                return;//no products to delete
+            }
+            foreach($listToDelete as $item){
+                $il_delete_ids[]=$item->id;
+                $pl_delete_ids[]=$item->target_id;
+            }
+            $this->delete($il_delete_ids,true);
+            $ProductModel=model('ProductModel');
+            return $ProductModel->listDelete($pl_delete_ids);
         }
     }
     ///////////////////////////////////////////
     //PRODUCT SECTION
     ///////////////////////////////////////////
-    private function productListAnalyseRequiredIsAbsent($colconfig){
+    private function productColValidate($colconfig){
         $has_pname=false;
         $has_pquantity=false;
         $has_pprice=false;
         foreach( $colconfig as $field=>$col ){
-            $has_pname= $field=='product_name' ?true:$has_pname;
-            $has_pquantity= $field=='product_quantity' || $field=='is_counted' ?true:$has_pquantity;
-            $has_pprice= $field=='product_price' ?true:$has_pprice;
+            $has_pname      |= $field=='product_name';
+            $has_pquantity  |= $field=='product_quantity' || $field=='is_counted';
+            $has_pprice     |= $field=='product_price';
         }
         if( !$has_pname || !$has_pprice || !$has_pquantity ){
             return true;
@@ -152,13 +205,8 @@ class ImporterModel extends Model{
         return false;
     }
     
-    private function productListAnalyse( $store_id,$colconfig ){
-        $StoreModel=model('StoreModel');
-        $permission_granted=$StoreModel->permit($store_id,'w');
-        if( !$permission_granted ){
-            return 'forbidden';
-        }
-        if( $this->productListAnalyseRequiredIsAbsent($colconfig) ){
+    private function productListAnalyse( $store_id, $colconfig ){
+        if( $this->productColValidate($colconfig) ){
             return 'no_required_fields';
         }
         if( isset($colconfig->product_code) ){
@@ -169,61 +217,28 @@ class ImporterModel extends Model{
             $join_on_dst='product_name';            
         }
         
-        $owner_id=$this->user_id;
-        //ANALYSE FOR SKIP UPDATE ADD
+        $owner_id=session()->get('user_id');
+        $delete_older_than=date('Y-m-d H:i:s',strtotime('- 10 minute'));
         $sql="
             UPDATE
                 imported_list il
                     LEFT JOIN
                 product_list pl ON pl.$join_on_dst=il.$join_on_src AND pl.store_id='$store_id'
             SET
+                pl.deleted_at=null,
                 il.target_id=product_id,
-                il.action=IF(product_id,'update',IF(LENGTH(`$colconfig->product_name`)>10 AND (`$colconfig->product_quantity`>0 OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add','skip'))
+                il.action=
+                    IF(il.updated_at<'$delete_older_than','delete',
+                    IF(product_id,'update',
+                    IF(LENGTH(`{$colconfig->product_name}`)>5 AND (`{$colconfig->product_quantity}`>0 OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add',
+                    'skip'
+                )))
             WHERE
                 il.owner_id='{$owner_id}'
+                AND il.holder='store'
                 AND il.holder_id='$store_id'
-                AND (il.action <> 'done' OR il.action IS NULL)
+                AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
             ";
         $this->query($sql);
-        
-        $this->select("COUNT(*) row_count,`action`")
-                ->where('owner_id',$owner_id)
-                ->where('holder','store')
-                ->where('holder_id',$store_id)
-                ->groupBy('`action`');
-        
-        $analysed=$this->get()->getResult();
-        //ANALYSE FOR DELETE
-        $analysed[]=['row_count'=>$this->productListAnalyseAbsent($store_id,$colconfig,'row_count'),'action'=>'delete'];
-        return $analysed;
-    }
-    
-    private function productListAnalyseAbsent($store_id,$colconfig=null,$get='row_count'){
-        if( isset($colconfig->product_code) ){
-            $join_on_src=$colconfig->product_code;
-            $join_on_dst='product_code';
-        } else {
-            $join_on_src=$colconfig->product_name;
-            $join_on_dst='product_name';            
-        }
-        if($get=='row_count'){
-            $select='COUNT(*) row_count';
-        }
-        if($get=='id_list'){
-            $select='GROUP_CONCAT(pl.product_id) id_list';
-        }
-        $sql="
-            SELECT
-                $select
-            FROM
-                product_list pl
-                    LEFT JOIN
-                imported_list il ON pl.$join_on_dst=il.$join_on_src AND il.holder='store' AND il.holder_id='$store_id'
-            WHERE
-                pl.owner_id='$this->user_id'
-                AND il.id IS NULL
-                AND pl.deleted_at IS NULL
-            ";
-        return $this->query($sql)->getRow($get);
     }
 }

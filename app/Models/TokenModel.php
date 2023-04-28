@@ -55,7 +55,7 @@ class TokenModel extends Model{
         return $this->limit(1)->get()->getRow();
     }
 
-    public function itemAuth($token_hash,$token_holder){
+    public function itemAuth($token_hash,$token_holder=null){
         if($token_holder){
             $this->where('token_holder',$token_holder);
         }

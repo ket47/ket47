@@ -208,9 +208,9 @@
                 {field:"product_weight",name:"Вес кг"},
                 {field:"product_unit",name:"Единица"},
                 {field:"product_categories",name:"Категории"},
-                {field:"product_action_price",name:"Акция Цена"},
-                {field:"product_action_start",name:"Акция Начало"},
-                {field:"product_action_finish",name:"Акция Конец"},
+                {field:"product_promo_price",name:"Акция Цена"},
+                {field:"product_promo_start",name:"Акция Начало"},
+                {field:"product_promo_finish",name:"Акция Конец"},
                 {field:"is_counted",name:"Учет остатков?"},
             ],
             init:function(){
