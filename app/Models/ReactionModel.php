@@ -161,7 +161,7 @@ class ReactionModel extends Model{
                     ON image_holder = 'product' AND tag_name='product' AND image_holder_id = tag_id
             WHERE
                 member_id=reaction_id) image_hash");
-        $this->select('reaction_comment,user_name');
+        $this->select('reaction_comment,reaction_is_like,user_name');
 
         $result=$this->get()->getResult();
         return $result;

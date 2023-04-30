@@ -206,7 +206,7 @@ class ImageModel extends Model{
     }
     
     public function listPurge( $olderThan=1, $limit=100 ){
-        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
+        $olderStamp= new \CodeIgniter\I18n\Time($olderThan." hours");
         $this->where('deleted_at<',$olderStamp);
         $list_to_purge=$this->select('image_id')->limit($limit)->get()->getResult();
         foreach( $list_to_purge as $item_to_purge ){
