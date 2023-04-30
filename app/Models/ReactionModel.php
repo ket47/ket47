@@ -202,14 +202,20 @@ class ReactionModel extends Model{
 
     public function entryListGet($filter){
         $owner_id=session()->get('user_id');
-        $EntryModel=model('EntryModel');
+        $supplier_finish_group_id=8;
+        /**
+         * supplier finish suitable for marketplace and delivery
+         */
 
+        $EntryModel=model('EntryModel');
+        $EntryModel->join('order_group_member_list','order_entry_list.order_id=order_group_member_list.member_id');
         $EntryModel->join('product_list','product_id');
         $EntryModel->join('image_list','image_holder_id=product_id AND image_holder="product"','left');
         $EntryModel->join('reaction_tag_list','tag_name="entry" AND tag_id=entry_id','left');
-        $EntryModel->join('reaction_list','reaction_id=member_id','left');
+        $EntryModel->join('reaction_list','reaction_id=reaction_tag_list.member_id','left');
 
         $EntryModel->where('order_entry_list.owner_id',$owner_id);
+        $EntryModel->where('group_id',$supplier_finish_group_id);
         $EntryModel->orderBy('order_entry_list.updated_at DESC');
         if($filter['target_type']=='product'){//how about reactiong on done orders???
             $select="
