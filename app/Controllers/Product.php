@@ -58,6 +58,10 @@ class Product extends \App\Controllers\BaseController{
         if( $result==='notfound' ){
             return $this->failNotFound($result);
         }
+        if($result){
+            $ReactionModel=model('ReactionModel');
+            $result->reactionSummary=$ReactionModel->summaryGet("product:$product_id");
+        }
         return $this->respond($result);
     }
     

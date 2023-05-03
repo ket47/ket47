@@ -89,7 +89,6 @@ class ProductModel extends Model{
         $ProductGroupMemberModel=model('ProductGroupMemberModel');
         //$ProductGroupMemberModel->tableSet('product_group_member_list');
         $ImageModel=model('ImageModel');
-        $ReactionModel=model('ReactionModel');
 
         $product->is_writable=$this->permit($product_id,'w');
         $product->member_of_groups=$ProductGroupMemberModel->memberOfGroupsGet($product_parent_id);
@@ -109,7 +108,7 @@ class ProductModel extends Model{
 
 
 
-        $product->reactionSummary=$ReactionModel->summaryGet("product:$product_id");
+
         return $product;
     }
     

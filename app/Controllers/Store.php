@@ -80,6 +80,8 @@ class Store extends \App\Controllers\BaseController{
         if( $result==='notfound' ){
             return $this->failNotFound($result);
         }
+        $ReactionModel=model('ReactionModel');
+        $result->reactionSummary=$ReactionModel->summaryGet("store:$store_id");
         return $this->respond($result);
     }
 

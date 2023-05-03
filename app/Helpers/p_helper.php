@@ -5,7 +5,7 @@ function p( $object ){
     print '<pre>';
     print_r($object);die;
 }
-function pl( $object, $die=true ){
+function pl( $object, $die=false ){
     log_message('error','PL HELPER '.json_encode($object,JSON_UNESCAPED_UNICODE));
     if($die)
         die();
