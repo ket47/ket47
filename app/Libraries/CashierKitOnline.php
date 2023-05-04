@@ -28,6 +28,9 @@ class CashierKitOnline{
             if($entry->entry_quantity==0){
                 continue;
             }
+            if( $entry->entry_discount>0 && $entry->entry_discount<$entry->entry_price ){
+                $entry->entry_price-=$entry->entry_discount;
+            }
             $Check['Subjects'][]=[
                 'SubjectName'=>$entry->entry_text,
                 'Price'=>round($entry->entry_price*100*$discount_modifier),

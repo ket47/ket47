@@ -224,6 +224,7 @@ class ReactionModel extends Model{
 
 
         if($result){
+            $this->where('reaction_comment IS NOT NULL');
             $this->where($where);
             $this->select('reaction_comment');
             $this->join('reaction_tag_list','member_id=reaction_id');
