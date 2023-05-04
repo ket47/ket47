@@ -290,11 +290,6 @@ class ReactionModel extends Model{
             $EntryModel->limit((int)$filter['limit']);
         }
         $result=$EntryModel->get()->getResult();
-        
-        pl($filter);
-        ql($this);
-
-
         return $result;
     }
 }

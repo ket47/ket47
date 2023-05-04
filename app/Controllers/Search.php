@@ -9,7 +9,7 @@ class Search extends \App\Controllers\BaseController{
 
     public function listGet(){
         $location_id=$this->request->getVar('location_id');
-        $query=$this->request->getVar('query');
+        $query=trim($this->request->getVar('query'));
 
         $StoreModel=model('StoreModel');
         $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
@@ -35,7 +35,7 @@ class Search extends \App\Controllers\BaseController{
             ];
             $ProductModel->where('(validity<>0 OR validity IS NULL)');
             $store->matches=$ProductModel->listGet($filter);
-            if($store->matches){
+            if($store->matches || mb_stripos($store->store_name,$query)!==false ){
                 $matched_stores[]=$store;
                 if(--$limit<1){
                     break;
