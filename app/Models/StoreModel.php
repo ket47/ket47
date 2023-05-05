@@ -93,7 +93,7 @@ class StoreModel extends Model{
         if($distanceToUserInclude){
             $LocationModel->distanceToUserInclude();
         }
-        $this->tariffRuleDeliveryCostGet( $store_id );
+        $store->delivery_cost=$this->tariffRuleDeliveryCostGet( $store_id );
         $store->locations=$LocationModel->listGet($filter_loc);
         $filter=[
             'image_holder'=>'store',
@@ -259,7 +259,7 @@ class StoreModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function tariffRuleListGet( $store_id ){
+    public function tariffRuleListGet( $store_id ){//this function is messy OMG
         $this->permitWhere('r');
         $this->join('tariff_member_list','store_id');
         $this->join('tariff_list','tariff_id');
@@ -273,9 +273,10 @@ class StoreModel extends Model{
         return $this->get()->getResult();
     }
 
-    public function tariffRuleDeliveryCostGet( $store_id ){
+    public function tariffRuleDeliveryCostGet( $store_id ){//this function is messy OMG
         $this->limit(1);
         $this->select('IF(delivery_cost>0,delivery_cost,store_delivery_cost) order_sum_delivery');
+        $this->where('delivery_allow',1);
         $delivery_option=$this->tariffRuleListGet($store_id);
         if( isset($delivery_option[0]) ){
             return $delivery_option[0]->order_sum_delivery;

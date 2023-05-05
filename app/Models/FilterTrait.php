@@ -27,7 +27,7 @@ trait FilterTrait{
         if( !empty($filter['name_query']) && !empty($filter['name_query_fields']) ){
             $cases=[];
             $fields= explode(',', $filter['name_query_fields']);
-            $clues=explode(' ',$filter['name_query']);
+            $clues=  explode(' ', trim($filter['name_query']));
             foreach( $fields as $field ){
                 // if( !in_array($field,$this->allowedFields) ){  WHY HAVE I DONE THIS? IS THERE A GOOD REASON?
                 //     continue;
@@ -35,7 +35,7 @@ trait FilterTrait{
                 $words=[];
                 foreach($clues as $clue){
                     //$clue=trim($clue);
-                    if( !$clue || $clue==' ' ){
+                    if( !$clue || $clue=='' || $clue==' ' ){
                         continue;
                     }
                     $not='';
@@ -45,7 +45,9 @@ trait FilterTrait{
                     }
                     $words[]="{$table}$field $not LIKE '%".$this->escapeLikeString(trim($clue))."%' ESCAPE '!'";
                 }
-                $cases[]=implode(' AND ',$words);
+                if( $words ){
+                    $cases[]=implode(' AND ',$words);
+                }
             }
             if( $cases ){
                 $this->where('('.implode(' OR ', $cases).')');
