@@ -93,7 +93,7 @@ class StoreModel extends Model{
         if($distanceToUserInclude){
             $LocationModel->distanceToUserInclude();
         }
-        $store->delivery_cost=$this->tariffRuleDeliveryCostGet( $store_id );
+        $this->tariffRuleDeliveryCostGet( $store_id );
         $store->locations=$LocationModel->listGet($filter_loc);
         $filter=[
             'image_holder'=>'store',

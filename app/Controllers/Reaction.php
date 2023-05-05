@@ -81,13 +81,13 @@ class Reaction extends \App\Controllers\BaseController{
     public function itemListGet(){
         $offset=$this->request->getPost('offset');
         $limit=$this->request->getPost('limit');
-        $search_query=$this->request->getPost('search_query');
+        $name_query=$this->request->getPost('name_query');
         $target_type=$this->request->getPost('target_type');
         $target_id=$this->request->getPost('target_id');
         $filter=[
             'offset'=>$offset,
             'limit'=>$limit,
-            'search_query'=>$search_query,
+            'name_query'=>$name_query,
             'target_type'=>$target_type,
             'target_id'=>$target_id
         ];

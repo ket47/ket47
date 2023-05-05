@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 trait FilterTrait{
-    protected  function filterMake( $filter=null, $use_model_table=true ){
+    public function filterMake( $filter=null, $use_model_table=true ){
         if( !$filter ){
             return null;
         }

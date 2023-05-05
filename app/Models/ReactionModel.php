@@ -283,12 +283,8 @@ class ReactionModel extends Model{
             $EntryModel->where('store_id',$filter['target_id']);
             $EntryModel->select($select);
         }
-        if( $filter['offset'] ){
-            $EntryModel->offset((int)$filter['offset']);
-        }
-        if( $filter['limit'] ){
-            $EntryModel->limit((int)$filter['limit']);
-        }
+        $filter['name_query_fields']="entry_text";
+        $EntryModel->filterMake($filter);
         $result=$EntryModel->get()->getResult();
         return $result;
     }
