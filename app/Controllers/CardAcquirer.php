@@ -103,9 +103,6 @@ class Cardacquirer extends \App\Controllers\BaseController{
         $Acquirer=\Config\Services::acquirer();
         $paymentStatus=$Acquirer->statusGet($order_id,'beforepayment');
 
-
-        pl($paymentStatus,false);
-
         if( isset($paymentStatus->status) && $paymentStatus->status=='Authorized' ){
             return $this->fail('already_payed');
         }

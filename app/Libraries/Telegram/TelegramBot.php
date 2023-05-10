@@ -144,14 +144,15 @@ class TelegramBot{
 
     public function sendNotification($ChatID,$html,$options=null){
         session()->set('chat_id',$ChatID);//Dont use incoming session !!!
-        $opts=null;
+        $opts=[];
         if( $options->buttons??null ){
             $menu=array_merge(
                 $this->buttonInlineRowBuild( $options->buttons )
             );
-            $opts=[
-                'reply_markup' => $this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=true),
-            ];
+            $opts['reply_markup']=$this->Telegram->buildInlineKeyBoard(array_chunk($menu,2), $onetime=true);
+        }
+        if( $options->disable_web_page_preview??null ){
+            $opts['disable_web_page_preview']=1;
         }
         return $this->sendHTML($html,$opts);
     }

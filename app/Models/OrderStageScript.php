@@ -353,6 +353,7 @@ class OrderStageScript{
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
             'order'=>$order,
+            'order_data'=>$order_data,
             'store'=>$store,
             'customer'=>$customer
         ];
@@ -378,7 +379,7 @@ class OrderStageScript{
 
 
         $admin_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram',
             'message_reciever_id'=>-100,
             'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
             'context'=>$context

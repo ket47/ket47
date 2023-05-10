@@ -140,10 +140,6 @@ class Task extends \App\Controllers\BaseController{
             }
             if( $command->model??0 ){
                 $Class=model($command->model);
-                /**
-                 * since we are in worker mysql can go away so we need to reconnect
-                 * $Class->db->reconnect();
-                 */
             } else if( $command->controller??0 ){
                 $Class=new $command->controller($this->request, $this->response, $this->logger);
             } else if( $command->library??0 ){

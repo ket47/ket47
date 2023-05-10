@@ -103,7 +103,7 @@ trait CourierTrait{
             $error='Курьер уже не требуется.';
         }
         if($result=='notready'){
-            $error='Вы не готовы брать задания.';
+            $error='Ваш статус или ЗАНЯТ или ОТБОЙ.';
         }
         if($result=='notactive'){
             $error='Ваша анкета курьера не активна.';

@@ -8,8 +8,9 @@ class PosifloraWorm extends \App\Controllers\BaseController{
     use ResponseTrait;
 
     private $categories=[];
-    private $bouquets=[];
+    private $bouquets=null;
     private $productList=[];
+    private $prods;
 
     private function bouquetListGet(){
         try{
