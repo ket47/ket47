@@ -2,6 +2,6 @@
 
 Покупатель <?=$customer->user_name??'-'?> <?=$customer->user_phone??'-'?> <?=$customer->location_main->location_address??'-'?>
 
-<?php if($order_data->delivery_by_courier):?>
+<?php if($order_data->delivery_by_courier??0):?>
 🛵Доставка курьером
 <?php endif; ?>

@@ -138,9 +138,9 @@ class CourierModel extends Model{
         if( !$this->permit($courier_id,'w') ){
             return 'forbidden';
         }
-        $this->select("(is_disabled=1 OR deleted_at IS NOT NULL) notactive");
-        $notactive=$this->where('courier_id',$courier_id)->get()->getRow('notactive');
-        if( $notactive && $group_type!='idle' ){
+        $this->select("(is_disabled=0 AND deleted_at IS NULL) is_active");
+        $is_active=$this->where('courier_id',$courier_id)->get()->getRow('is_active');
+        if( !$is_active && $group_type!='idle' ){
             return 'notactive';
         }
         $CourierGroupMemberModel=model('CourierGroupMemberModel');

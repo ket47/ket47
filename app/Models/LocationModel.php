@@ -337,8 +337,11 @@ ORDER BY created_at DESC) tt
     }
     
     public function itemTemporaryCreate( $location_latitude, $location_longitude ){
-        $this->query("SET @center_point=POINT('$location_latitude','$location_longitude')");
-        return -100;
+        if( is_numeric($location_latitude) && abs($location_latitude)<=90 && is_numeric($location_longitude) && abs($location_longitude)<=180 ){
+            $this->query("SET @center_point:=POINT('$location_latitude','$location_longitude')");
+            return -100;
+        }
+        return 0;
     }
 
     public function distanceListGet( int $center_location_id, float $point_distance, string $point_holder ){

@@ -1061,6 +1061,9 @@ class Telegram
     /// Get the number of updates
     public function UpdateCount()
     {
+        if( !isset($this->updates['result']) ){
+            return 0;
+        }
         return count($this->updates['result']);
     }
 

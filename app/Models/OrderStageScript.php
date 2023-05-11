@@ -90,6 +90,7 @@ class OrderStageScript{
 
         'admin_supervise'=>[
             'system_finish'=>               ['Проблема решена','success'],
+            'supplier_corrected'=>          ['Исправить заказ'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
             'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
@@ -588,6 +589,7 @@ class OrderStageScript{
                 'customer_phone'=>'+'.$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
+                'customer_pickup'=>$order_data->pickup_by_customer,
             ];
         }
         if($order_data->payment_card_fixate_sum??0){
@@ -868,9 +870,12 @@ class OrderStageScript{
     }
 
     public function onDeliveryFinish( $order_id ){
-        $CourierModel=model('CourierModel');
         $order_basic=$this->OrderModel->itemGet($order_id,'basic');
-        $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
+        if($order_basic->order_courier_id){//if stage changed by admin skip this
+            $CourierModel=model('CourierModel');
+            $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
+        }
+
         $PrefModel=model('PrefModel');
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
