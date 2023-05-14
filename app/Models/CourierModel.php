@@ -352,7 +352,7 @@ class CourierModel extends Model{
         $LocationModel->join('order_group_member_list ogml','member_id=order_id');
         $LocationModel->join('order_group_list ogl','group_id');
         $LocationModel->where('group_type','delivery_search');
-        $LocationModel->where('TIMESTAMPDIFF(HOUR,order_list.created_at,NOW())<4');//only 3 hours
+        $LocationModel->where('TIMESTAMPDIFF(HOUR,order_list.created_at,NOW())<7');//only 3 hours
 
         $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
         if( !is_array($job_list) ){

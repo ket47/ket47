@@ -577,7 +577,7 @@ class OrderStageScript{
     public function onSupplierStart($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=[];
-        if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
+        if( isset($order_data->delivery_by_store) ){
             $order=$this->OrderModel->itemGet($order_id);
             $LocationModel=model("LocationModel");
             $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
@@ -589,8 +589,10 @@ class OrderStageScript{
                 'customer_phone'=>'+'.$order->customer->user_phone,
                 'customer_name'=>$order->customer->user_name,
                 'customer_email'=>$order->customer->user_email,
-                'customer_pickup'=>$order_data->pickup_by_customer,
             ];
+        }
+        if($order_data->pickup_by_customer??0){
+            $info_for_supplier['pickup_by_customer']=$order_data->pickup_by_customer;
         }
         if($order_data->payment_card_fixate_sum??0){
             $info_for_supplier['payment_card_fixate_sum']=$order_data->payment_card_fixate_sum;
