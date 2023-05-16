@@ -577,7 +577,7 @@ class OrderStageScript{
     public function onSupplierStart($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=[];
-        if( isset($order_data->delivery_by_store) ){
+        if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
             $order=$this->OrderModel->itemGet($order_id);
             $LocationModel=model("LocationModel");
             $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
@@ -591,6 +591,7 @@ class OrderStageScript{
                 'customer_email'=>$order->customer->user_email,
             ];
         }
+        $info_for_supplier['tariff_info']=view('order/supplier_tariff_info.php',['order_data'=>$order_data]);
         if($order_data->pickup_by_customer??0){
             $info_for_supplier['pickup_by_customer']=$order_data->pickup_by_customer;
         }
