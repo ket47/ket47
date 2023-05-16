@@ -4,7 +4,12 @@ namespace App\Controllers\Api;
 
 class ICExchange extends \App\Controllers\BaseController
 {
-    private $max_product_count=100;
+    private $max_product_count=150;
+    private $max_exec_time=300;
+    private $start_time=0;
+    private $filename_subfolder;
+    private $dir;
+
     public function __construct(){
         $this->dir = WRITEPATH . 'uploads/';
 
@@ -23,6 +28,14 @@ class ICExchange extends \App\Controllers\BaseController
         $token_holder = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : "";
 		$token_hash = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : "";
         $TokenModel=model('TokenModel');
+
+        if( str_contains($token_holder,'-') ){
+            /**
+             * user name can contain token_holder_id separated by hyphen -
+             */
+            list($token_holder,$token_holder_id)=explode('-',$token_holder);
+        }
+
         $token_data=$TokenModel->itemAuth($token_hash,$token_holder);
         //log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
         if(!$token_data){
