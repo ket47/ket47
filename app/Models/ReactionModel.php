@@ -265,7 +265,12 @@ class ReactionModel extends Model{
             reaction_is_like,
             reaction_is_dislike,
             reaction_comment";
-            $EntryModel->where('product_id',$filter['target_id']);
+            if($filter['target_id']){
+                /**
+                 * if target_id is not specified then get all
+                 */
+                $EntryModel->where('product_id',$filter['target_id']);
+            }
             $EntryModel->select($select);
         }
         if($filter['target_type']=='store'){
