@@ -27,7 +27,6 @@ class ICExchange extends \App\Controllers\BaseController
     private function authenticateByToken(){
         $token_holder = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : "";
 		$token_hash = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : "";
-        $TokenModel=model('TokenModel');
 
         if( str_contains($token_holder,'-') ){
             /**
@@ -36,19 +35,17 @@ class ICExchange extends \App\Controllers\BaseController
             list($token_holder,$token_holder_id)=explode('-',$token_holder);
         }
 
-        $token_data=$TokenModel->itemAuth($token_hash,$token_holder);
-        //log_message('error','1C auth '.$token_holder.$token_hash.json_encode($token_data));
-        if(!$token_data){
+        $UserModel=model('UserModel');
+        $ok=$UserModel->signInByToken($token_hash,$token_holder);
+        if($ok!=='ok'){
             http_response_code(401);
             die('fail');
         }
-        $token_data->token_hash='';
-        session()->set('auth_token_data',$token_data);
-        session()->set('user_id',$token_data->owner_id);
+        //log_message('error','1C auth '.$token_holder.$token_hash);
     }
 
     private function prepareSubfolder(){
-        $token_data=session()->get('auth_token_data');
+        $token_data=session()->get('token_data');
         $filename_prefix=$token_data->token_holder.'-'.$token_data->token_holder_id;
         $this->filename_subfolder=$this->dir.'ic_exchange/'.$filename_prefix.'/';
         if( !is_dir($this->filename_subfolder) ){
@@ -135,7 +132,7 @@ class ICExchange extends \App\Controllers\BaseController
             $filename=$this->filename_subfolder.$filename_ic;
         }
 
-        $holder_id=session()->get('auth_token_data')?->token_holder_id;
+        $holder_id=session()->get('token_data')?->token_holder_id;
         $ICExchangeProductModel=new ICExchangeProductModel();
 
         if (str_contains($filename,'import')) {
@@ -346,7 +343,7 @@ class ICExchange extends \App\Controllers\BaseController
     }
 
     private function saleQuery(){
-        $store_id=session()->get('auth_token_data')?->token_holder_id;
+        $store_id=session()->get('token_data')?->token_holder_id;
         $filter=[
             'order_store_id'=>$store_id,
         ];
