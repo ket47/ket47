@@ -41,7 +41,7 @@ class ICExchange extends \App\Controllers\BaseController
             http_response_code(401);
             die('fail');
         }
-        //log_message('error','1C auth '.$token_holder.$token_hash);
+        log_message('error','1C auth '.$token_holder.$token_hash);
     }
 
     private function prepareSubfolder(){
@@ -79,7 +79,21 @@ class ICExchange extends \App\Controllers\BaseController
                 if($v=='..'||$v=='.'){
                     continue;
                 }
-                is_dir($v)?rmdir($v):unlink($v);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                //is_dir($v)?rmdir($v):unlink($v);
             }
         }
         unset($_SESSION['last_1c_imported_variant_num']);
@@ -119,7 +133,21 @@ class ICExchange extends \App\Controllers\BaseController
             $zip->extractTo($this->filename_subfolder);
             $zip->close();
             echo 'success';
-            unlink($filename);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //unlink($filename);
         } else {
             echo 'failure';
         }
@@ -210,7 +238,22 @@ class ICExchange extends \App\Controllers\BaseController
             print "success";
             unset($_SESSION['last_1c_imported_variant_num']);
         }
-        unlink($filename);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        //unlink($filename);
     }
 
 
@@ -230,7 +273,18 @@ class ICExchange extends \App\Controllers\BaseController
                 if($v=='..'||$v=='.'){
                     continue;
                 }
-                is_dir($v)?rmdir($v):unlink($v);
+
+
+
+
+
+
+
+
+
+
+
+                //is_dir($v)?rmdir($v):unlink($v);
             }
         }
         print "zip=no\n";
