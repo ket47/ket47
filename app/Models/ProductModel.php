@@ -40,7 +40,7 @@ class ProductModel extends Model{
         'product_price'    => 'numeric',
         //'product_promo_price'    => 'numeric',
     ];
-    public $itemCreateAsDisabled=false;
+    public $itemCreateAsDisabled=true;
     public $itemImageCreateAsDisabled=false;
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
