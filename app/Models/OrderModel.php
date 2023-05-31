@@ -20,7 +20,6 @@ class OrderModel extends Model{
         'order_sum_product',
         'order_sum_delivery',
         'order_sum_tax',
-        'order_sum_promo',
         'order_sum_total',
         'order_description',
         'order_objection',
@@ -30,6 +29,10 @@ class OrderModel extends Model{
     ];
     protected $useSoftDeletes = true;
     protected $order_tariff=null;
+
+    public function fieldUpdateAllow($field){
+        $this->allowedFields[]=$field;
+    }
     
     private function itemUserRoleCalc(){
         $user_id=session()->get('user_id')??-1;

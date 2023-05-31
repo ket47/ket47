@@ -130,6 +130,13 @@ class EntryModel extends Model{
         // }
         $this->update($entry->entry_id,$entry);
         $result=$this->db->affectedRows()>0?'ok':'idle';
+
+
+        if($order_basic->order_stock_status=='reserved'){
+            $this->listStockReserve($order_basic->order_store_id);
+        }
+
+        
         return $result;
     }
     

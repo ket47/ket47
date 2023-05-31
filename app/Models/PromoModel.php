@@ -52,6 +52,15 @@ class PromoModel extends Model{
         return false;
     }
 
+    public function itemOrderDisable( $order_id, $is_disabled ){
+        $promo=$this->where('promo_order_id',$order_id)->get()->getRow();
+        if( !$promo ){
+            return 'idle';
+        }
+        $this->permitWhere('w');
+        $this->update($promo->promo_id,['is_disabled'=>$is_disabled?1:0]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
 
     public function itemOrderUse($order_id){
         $promo=$this->where('promo_order_id',$order_id)->get()->getRow();
@@ -60,7 +69,7 @@ class PromoModel extends Model{
         }
         $this->transBegin();
         $this->permitWhere('w');
-        $this->update($promo->promo_id,['is_used'=>1]);
+        $this->update($promo->promo_id,['is_used'=>1,'is_disabled'=>0]);
 
         $this->itemActivate($promo->promo_id);
         $this->transCommit();
@@ -85,6 +94,7 @@ class PromoModel extends Model{
             'order_sum_promo'=>$promo_value
         ];
         $OrderModel=model('OrderModel');
+        $OrderModel->fieldUpdateAllow('order_sum_promo');
         $OrderModel->itemUpdate($order);
     }
 

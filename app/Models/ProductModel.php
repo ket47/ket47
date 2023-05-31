@@ -105,10 +105,6 @@ class ProductModel extends Model{
             $product->options=$this->itemOptionGet( $product->product_parent_id, 'active_only' );
         }
         $product->store=$this->itemStoreMetaGet($product->store_id);
-
-
-
-
         return $product;
     }
     

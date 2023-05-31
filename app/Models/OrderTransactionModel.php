@@ -153,13 +153,19 @@ class OrderTransactionModel extends TransactionModel{
 
     private function orderFinalizeSettle($order_basic,$order_data){//Calculate profits, interests etc
         if( isset($order_data->order_is_canceled) ){
-            return true;
+            return $this->orderFinalizeCancel($order_basic,$order_data);
         }
         return 
            $this->orderFinalizeSettleCustomer($order_basic,$order_data)
         && $this->orderFinalizeSettleSupplier($order_basic,$order_data)
         && $this->orderFinalizeSettleCourier($order_basic,$order_data)
         && $this->orderFinalizeSettleSystem($order_basic,$order_data);
+    }
+
+    private function orderFinalizeCancel($order_basic,$order_data){
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemOrderDisable($order_basic->order_id,0);
+        return true;
     }
 
     private function orderFinalizeSettleCustomer($order_basic,$order_data){

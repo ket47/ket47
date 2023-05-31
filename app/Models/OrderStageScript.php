@@ -347,6 +347,11 @@ class OrderStageScript{
         ];
         jobCreate($stage_reset_task);
         ///////////////////////////////////////////////////
+        //LOCKING PROMOUTION
+        ///////////////////////////////////////////////////
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemOrderDisable($order_id,1);
+        ///////////////////////////////////////////////////
         //CREATING STAGE NOTIFICATIONS
         ///////////////////////////////////////////////////
         $StoreModel->itemCacheClear();
