@@ -27,7 +27,6 @@ class TelegramBot{
         $text=$this->commandButtonMap[$text]??$text;
         $is_known_command=$this->buttonExecute($text);
         if(!$is_known_command){
-            pl();
             //$this->sendMainMenu();
         }
     }
@@ -146,9 +145,9 @@ class TelegramBot{
     }
 
 
-    public function sendNotification($ChatID,$html,$options=null){
+    public function sendNotification($ChatID,$content,$options=null){
         session()->set('chat_id',$ChatID);//Dont use incoming session !!!
-        $opts=[];
+        $opts=(array)$options->opts??[];
         if( $options->buttons??null ){
             $menu=array_merge(
                 $this->buttonInlineRowBuild( $options->buttons )
@@ -158,7 +157,12 @@ class TelegramBot{
         if( $options->disable_web_page_preview??null ){
             $opts['disable_web_page_preview']=1;
         }
-        return $this->sendHTML($html,$opts);
+        if( $options->is_location??null ){
+            $content=$opts;
+            $content['chat_id']=$ChatID;
+            return $this->sendLocation($content,$opts);
+        }
+        return $this->sendHTML($content,$opts);
     }
     public function sendText( $text, $opts=null, $permanent_message_name=null ){
         return $this->sendMessage(['text'=>$text],$opts, $permanent_message_name);

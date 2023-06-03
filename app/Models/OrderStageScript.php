@@ -519,6 +519,23 @@ class OrderStageScript{
     }
 
     public function onCustomerFinish( $order_id ){
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        $cust_sms=(object)[
+            'message_reciever_id'=>$order->owner_id,
+            'message_transport'=>'message',
+            'template'=>'messages/order/leave_comment.php',
+            'context'=>[]
+        ];
+        $timeout_min=30;
+        $next_start_time=time()+$timeout_min*60;
+        $notification_task=[
+            'task_name'=>"delivery_notfound Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
+                ],
+            'task_next_start_time'=>$next_start_time
+        ];
+        jobCreate($notification_task);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
     
