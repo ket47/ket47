@@ -147,7 +147,7 @@ class TelegramBot{
 
     public function sendNotification($ChatID,$content,$options=null){
         session()->set('chat_id',$ChatID);//Dont use incoming session !!!
-        $opts=(array)$options->opts??[];
+        $opts=(array)($options->opts??[]);
         if( $options->buttons??null ){
             $menu=array_merge(
                 $this->buttonInlineRowBuild( $options->buttons )
