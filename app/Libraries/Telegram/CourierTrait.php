@@ -62,6 +62,10 @@ trait CourierTrait{
         $content=$location;
         $content['proximity_alert_radius']="100";
         $content['disable_notification']=1;
+        $content['reply_markup']=$this->Telegram->buildInlineKeyBoard([[
+            $this->Telegram->buildInlineKeyboardButton("Курьер: {$courier->courier_name}",'',"onNoop")
+        ]]);
+
         $content['chat_id']="5026110721";
         $this->sendLocation( $content, null, 'copy_to_reshat' );
 

@@ -27,7 +27,8 @@ class TelegramBot{
         $text=$this->commandButtonMap[$text]??$text;
         $is_known_command=$this->buttonExecute($text);
         if(!$is_known_command){
-            $this->sendMainMenu();
+            pl();
+            //$this->sendMainMenu();
         }
     }
     public function onContact(){
@@ -61,13 +62,16 @@ class TelegramBot{
             return false;
         }
         $command=explode('-',$callbackQuery);
+        if( substr($command[0],0,2)!=='onNoop' ){
+            return true;
+        }
         if( substr($command[0],0,2)!=='on' ){
-            pl("calback query forbidden must begin with 'on' {$command[0]}($command[1])");
+            pl("calback query forbidden must begin with 'on' ".implode($command));
         }
         if( method_exists($this,$command[0]) ){
             return $this->{$command[0]}(...explode(',',$command[1]));
         }
-        pl("calback query not executed {$command[0]}($command[1])",0);
+        pl("calback query not executed ".implode($command),0);
     }
     public function onPhoto(){
         $photo=$this->Telegram->IncomingData()['photo']??null;
@@ -168,18 +172,9 @@ class TelegramBot{
         if( $permanent_message_name ){
             $content['message_id']=session()->get($permanent_message_name);
         }
-        // if(session()->get($permanent_message_name.'reply_to')){
-        //     $content['reply_to_message_id']=session()->get($permanent_message_name.'reply_to');
-        // }
         if($content['message_id']??null){
             $result=$this->Telegram->editMessageLiveLocation($content);
         } else {
-            //$user=$this->userGet();
-            //$result=$this->sendHTML("Here is location of".$user->user_name);
-            // if($result['result']['message_id']){
-            //     //session()->set($permanent_message_name.'reply_to',$result['result']['message_id']??null);
-            //     //$content['reply_to_message_id']=$result['result']['message_id'];
-            // }
             $result=$this->Telegram->sendLocation($content);
         }
         if( $permanent_message_name ){

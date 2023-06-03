@@ -143,7 +143,7 @@ class Messenger{
             return false;
         }
         $Sms=\Config\Services::sms();
-        $result=$Sms->send($phone_to,$message->message_text);
+        $result=$Sms->send($phone_to,strip_tags($message->message_text));
         if( $result!=='ok' ){
             log_message('error', "Cant send sms to {$phone_to}:". json_encode($message).$result );
             return false;
@@ -159,7 +159,7 @@ class Messenger{
             $message->message_data=(object)[];
         }
         $message->message_data->title=$message->message_data->title??$message->message_subject??'';
-        $message->message_data->body=$message->message_data->body??$message->message_text??'';
+        $message->message_data->body=strip_tags($message->message_data->body??$message->message_text??'');
         $message->message_data->link=$message->message_data->link??$message->message_link??getenv('app.frontendUrl');
         $message->message_data->tag=$message->message_data->tag??$message->message_tag??'';
         $message->message_data->icon=$message->message_data->icon??'/img/icons/monochrome.png';

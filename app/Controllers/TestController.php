@@ -16,8 +16,8 @@ class TestController extends \App\Controllers\BaseController{
 
         $Messenger=new \App\Libraries\Messenger;
         $Messenger->itemSend((object)[
-            'message_reciever_id'=>-100,
-            'message_transport'=>'telegram',
+            'message_reciever_id'=>41,
+            'message_transport'=>'push',
             'message_text'=>'user signin',
         ]);
     }
