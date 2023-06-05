@@ -64,7 +64,7 @@ class TelegramBot{
             return false;
         }
         $command=explode('-',$callbackQuery);
-        if( substr($command[0],0,2)!=='onNoop' ){
+        if( substr($command[0],0,2)=='onNoop' ){
             return true;
         }
         if( substr($command[0],0,2)!=='on' ){
