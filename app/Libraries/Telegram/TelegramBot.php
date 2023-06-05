@@ -24,6 +24,9 @@ class TelegramBot{
         if($text=='/signout'){
             return $this->userSignOut();
         }
+        if($text=='/start'){
+            return $this->sendMainMenu();
+        }
         $text=$this->commandButtonMap[$text]??$text;
         $is_known_command=$this->buttonExecute($text);
         if(!$is_known_command){
