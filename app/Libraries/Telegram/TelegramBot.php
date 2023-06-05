@@ -27,6 +27,11 @@ class TelegramBot{
         if($text=='/start'){
             return $this->sendMainMenu();
         }
+        if($text=='/orderlist'){
+            if( method_exists($this,'onOrderListGet') ){
+                return $this->{'onOrderListGet'}(1);
+            }
+        }
         $text=$this->commandButtonMap[$text]??$text;
         $is_known_command=$this->buttonExecute($text);
         if(!$is_known_command){

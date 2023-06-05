@@ -381,45 +381,45 @@ class StoreModel extends Model{
 
 
 
-        if(!count($store_list)){
-            /**
-             * user out of range notify
-             */
-            $opts=[
-                'disable_notification'=>1,
-            ];
-            if( $filter['location_latitude'] && $filter['location_longitude'] ){
-                $opts['longitude']=$filter['location_longitude'];
-                $opts['latitude']=$filter['location_latitude'];
-            } else
-            if( $location_id ){
-                $location=$LocationModel->itemGet($location_id);
-                $opts['longitude']=$location->location_longitude;
-                $opts['latitude']=$location->location_latitude;
-            }
+        // if(!count($store_list)){
+        //     /**
+        //      * user out of range notify
+        //      */
+        //     $opts=[
+        //         'disable_notification'=>1,
+        //     ];
+        //     if( $filter['location_latitude'] && $filter['location_longitude'] ){
+        //         $opts['longitude']=$filter['location_longitude'];
+        //         $opts['latitude']=$filter['location_latitude'];
+        //     } else
+        //     if( $location_id ){
+        //         $location=$LocationModel->itemGet($location_id);
+        //         $opts['longitude']=$location->location_longitude;
+        //         $opts['latitude']=$location->location_latitude;
+        //     }
 
 
 
-            $user_data=session()->get('user_data');
-            $outofrange_sms=(object)[
-                'message_transport'=>'message',
-                'message_reciever_id'=>-100,
-                'telegram_options'=>[
-                    'buttons'=>[['',"onNoop",'⚡'.($user_data->user_name??'').' далеко']],
-                    'is_location'=>1,
-                    'opts'=>$opts
-                ],
-                'template'=>'messages/events/on_user_outofrange.php',
-                'context'=>[]
-            ];
-            $notification_task=[
-                'task_name'=>"outofrange",
-                'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$outofrange_sms]]]
-                    ]
-            ];
-            jobCreate($notification_task);
-        }
+        //     $user_data=session()->get('user_data');
+        //     $outofrange_sms=(object)[
+        //         'message_transport'=>'message',
+        //         'message_reciever_id'=>-100,
+        //         'telegram_options'=>[
+        //             'buttons'=>[['',"onNoop",'⚡'.($user_data->user_name??'').' далеко']],
+        //             'is_location'=>1,
+        //             'opts'=>$opts
+        //         ],
+        //         'template'=>'messages/events/on_user_outofrange.php',
+        //         'context'=>[]
+        //     ];
+        //     $notification_task=[
+        //         'task_name'=>"outofrange",
+        //         'task_programm'=>[
+        //                 ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$outofrange_sms]]]
+        //             ]
+        //     ];
+        //     jobCreate($notification_task);
+        // }
 
 
 
