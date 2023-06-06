@@ -47,7 +47,7 @@ class UserModel extends Model{
         ],
         'user_email'    => [
             //'label' =>'user_email',
-            'rules' =>'if_exist|valid_email|is_unique[user_list.user_email]',
+            'rules' =>'if_exist|permit_empty|valid_email|is_unique[user_list.user_email]',
             'errors'=>[
                 'valid_email'=>'invalid',
                 'is_unique'=>'notunique'
@@ -82,6 +82,9 @@ class UserModel extends Model{
             $data['data']['user_pass'] = password_hash($data['data']['user_pass'],PASSWORD_BCRYPT);
         }
         return $data;
+    }
+    public function fieldUpdateAllow($field){
+        $this->allowedFields[]=$field;
     }
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
@@ -272,8 +275,8 @@ class UserModel extends Model{
     }
     
     public function listPurge( $olderThan=7 ){
-        $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
-        $this->where('deleted_at<',$olderStamp);
+        $olderStamp= new \CodeIgniter\I18n\Time(($olderThan)." hours");
+        $this->where('deleted_at>',$olderStamp);
         return $this->delete(null,true);
     }
 
@@ -378,11 +381,11 @@ class UserModel extends Model{
         if( !$user->user_phone_verified ){
             return 'user_phone_unverified';
         }
-        if( $user->is_disabled ){
-            return 'user_is_disabled';
-        }
         if( $user->deleted_at ){
             return 'user_is_deleted';
+        }
+        if( $user->is_disabled ){
+            return 'user_is_disabled';
         }
 
         $this->signInInit( $user );

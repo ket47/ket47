@@ -107,12 +107,30 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function itemDelete(){
-        $user_id=$this->request->getVar('user_id');
+        $user_id=$this->request->getPost('user_id');
+        $user_pass=$this->request->getPost('user_pass');
+
         $UserModel=model('UserModel');
+        $user_pass_hash=$UserModel->where('user_id',$user_id)->get()->getRow('user_pass');
+        if( !password_verify($user_pass,$user_pass_hash) ){
+            return $this->failForbidden('wrong pass');
+        }
+
+        $UserModel->transStart();
+        $UserModel->fieldUpdateAllow('is_disabled');
+        $user=(object)[
+            'user_id'=>$user_id,
+            'user_name'=>'удаленный пользователь',
+            'user_email'=>null,
+            'is_disabled'=>1
+        ];
+        $UserModel->itemUpdate($user);
         $ok=$UserModel->itemDelete($user_id);
-        if( $UserModel->errors() ){
+        if( !$ok || $UserModel->errors() ){
+            $UserModel->transRollback();
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
+        $UserModel->transComplete();
         return $this->respondDeleted($ok);        
     }
     
