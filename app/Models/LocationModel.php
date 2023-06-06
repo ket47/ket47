@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use CodeIgniter\Model;
+use Throwable;
 
 class LocationModel extends Model{
     
@@ -348,15 +349,19 @@ ORDER BY created_at DESC) tt
         if($center_location_id>0){//If location_id<0 use temporary point from itemTemporaryCreate
             $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
         }
-        $this->select("
-            location_id,
-            location_holder_id,
-            location_address,
-            location_list.updated_at,
-            ST_Distance_Sphere(@center_point,location_point) distance");
-        $this->where('location_holder',$point_holder);
-        $this->having('distance<=',$point_distance);
-        $this->orderBy('distance');
-        return $this->get()->getResult();
+        try{
+            $this->select("
+                location_id,
+                location_holder_id,
+                location_address,
+                location_list.updated_at,
+                ST_Distance_Sphere(@center_point,location_point) distance");
+            $this->where('location_holder',$point_holder);
+            $this->having('distance<=',$point_distance);
+            $this->orderBy('distance');
+            return $this->get()->getResult();
+        }catch(Throwable $e){
+            return [];
+        }
     }
 }
