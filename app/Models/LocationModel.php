@@ -52,7 +52,7 @@ class LocationModel extends Model{
             return 'limit_exeeded';
         }
         $this->set($data);
-        $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
+        $this->set('location_point',"POINT({$data['location_longitude']},{$data['location_latitude']})",false);
         $this->insert();
         $location_id=$this->getInsertID();
         
@@ -84,7 +84,7 @@ class LocationModel extends Model{
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $this->set($data);
-        $this->set('location_point',"POINT({$data['location_latitude']},{$data['location_longitude']})",false);
+        $this->set('location_point',"POINT({$data['location_longitude']},{$data['location_latitude']})",false);
         $this->insert();
         $location_id=$this->getInsertID();
         return $location_id?'ok':'idle';
@@ -339,7 +339,7 @@ ORDER BY created_at DESC) tt
     
     public function itemTemporaryCreate( $location_latitude, $location_longitude ){
         if( is_numeric($location_latitude) && abs($location_latitude)<=90 && is_numeric($location_longitude) && abs($location_longitude)<=180 ){
-            $this->query("SET @center_point:=POINT('$location_latitude','$location_longitude')");
+            $this->query("SET @center_point:=POINT('$location_longitude','$location_latitude')");
             return -100;
         }
         return 0;
