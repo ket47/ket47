@@ -1,0 +1,1 @@
+UPDATE location_list SET location_point=POINT(location_longitude,location_latitude)
