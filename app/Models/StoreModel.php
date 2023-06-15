@@ -549,11 +549,16 @@ class StoreModel extends Model{
                 image_list ils ON ils.image_holder_id=store_id AND ils.image_holder='store'
                     LEFT JOIN
                 image_list ilp ON ilp.image_holder_id=product_id AND ilp.image_holder='product'
+                    LEFT JOIN
+                transaction_tag_list ttl ON tag_name='store' AND tag_id=sl.store_id
+                    LEFT JOIN
+                transaction_list tl ON ttl.trans_id=tl.trans_id AND trans_role IN ('site->supplier','supplier->site','profit->supplier')
             SET
                 sl.owner_ally_ids='$owner_list',
                 pl.owner_ally_ids='$owner_list',
                 ils.owner_ally_ids='$owner_list',
-                ilp.owner_ally_ids='$owner_list'
+                ilp.owner_ally_ids='$owner_list',
+                tl.owner_ally_ids='$owner_list'
             WHERE
                 sl.store_id='$store_id'";
         $this->query($sql);

@@ -97,6 +97,15 @@ class OrderModel extends Model{
         $order->entries=    $EntryModel->listGet($order_id);
         
         $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
+
+
+        /**
+         * Temporary fix to comply with old api
+         */
+        $dayHour=date('H');
+        $deliveryByCourierMinimal=($dayHour>='20' || $dayHour<'10')?1000:200;
+        $order->store->store_minimal_order=max($order->store->store_minimal_order,$deliveryByCourierMinimal);
+
         $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//$UserModel->itemGet($order->owner_id,'basic');permission issue for other parties
         //$order->courier=    $CourierModel->where('courier_id',$order->order_courier_id)->get()->getRow();
         $order->is_writable=$this->permit($order_id,'w');

@@ -15,13 +15,13 @@ class OrderStageScript{
         'customer_cart'=>[
             'customer_deleted'=>            ['Удалить','danger'],
             'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Продолжить'],
+            'customer_action_confirm'=>     ['Оформить'],
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
             'customer_cart'=>               ['Изменить','light'],
             'customer_start'=>              [],
-            'customer_action_checkout'=>    ['Продолжить'],
+            'customer_action_checkout'=>    ['Оформить'],
             ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
@@ -207,8 +207,8 @@ class OrderStageScript{
             $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
         }
         jobCreate($finishing_task);
-        // $finishing_task['task_next_start_time']=time()+1*60;//SECOND TRY AFTER 1 MIN DO WE NEED IT???
-        // jobCreate($finishing_task);
+        $finishing_task['task_next_start_time']=time()+3*60;//SECOND TRY AFTER 3 MIN DO WE NEED IT???
+        jobCreate($finishing_task);
         return 'ok';
     }
     public function onSystemFinish( $order_id ){

@@ -352,7 +352,7 @@ class CourierModel extends Model{
         $LocationModel->join('order_group_member_list ogml','member_id=order_id');
         $LocationModel->join('order_group_list ogl','group_id');
         $LocationModel->where('group_type','delivery_search');
-        $LocationModel->where('TIMESTAMPDIFF(HOUR,order_list.created_at,NOW())<7');//only 3 hours
+        $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
 
         $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
         if( !is_array($job_list) ){
@@ -558,10 +558,11 @@ class CourierModel extends Model{
     }
 
     public function hasActiveCourier( object $aroundLocation=null ){
-        $this->select('courier_id');
+        $this->select('group_type');
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->whereIn('group_type',['ready','busy']);
+        $this->orderBy('group_type','DESC');//if exists ready first
         $this->limit(1);
 
         if( $aroundLocation ){
@@ -572,7 +573,7 @@ class CourierModel extends Model{
             $this->where("ST_Distance_Sphere(@start_point,location_point)<='$aroundLocationRadius'");
             $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");
         }
-        return $this->get()->getRow()?1:0;
+        return $this->get()->getRow('group_type')??0;
     }
     
     /////////////////////////////////////////////////////

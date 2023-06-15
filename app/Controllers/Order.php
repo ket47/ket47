@@ -218,6 +218,7 @@ class Order extends \App\Controllers\BaseController {
         //     'location_holder'=>'user',
         //     'location_holder_id'=>$order->owner_id
         // ]);
+        
         $bulkResponse->Promo_itemLinkGet=$PromoModel->itemLinkGet(
             $order_id
         );
@@ -290,6 +291,7 @@ class Order extends \App\Controllers\BaseController {
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,
                     'order_sum_delivery'=>(int)$tariff->delivery_cost,
+                    'order_sum_minimal'=>$this->itemSumMinimalGet('delivery_by_courier'),
                     'deliveryByCourier'=>1,
                     'deliveryIsReady'=>$deliveryIsReady,
                     'deliveryByStore'=>0,
@@ -310,6 +312,7 @@ class Order extends \App\Controllers\BaseController {
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
                         'order_sum_delivery'=>(int)$store->store_delivery_cost,
+                        'order_sum_minimal'=>$store->store_minimal_order,
                         'deliveryByCourier'=>0,
                         'deliveryByStore'=>1,
                         'pickupByCustomer'=>0,
@@ -348,6 +351,14 @@ class Order extends \App\Controllers\BaseController {
             $result=$deliveryOptions;
         }
         return $result;
+    }
+
+    private function itemSumMinimalGet( $mode='delivery_by_courier' ){
+        $dayHour=date('H');
+        if($mode=='delivery_by_courier'){
+            return ($dayHour>='20' || $dayHour<'10')?1000:200;
+        }
+        return 0;
     }
 
     public function itemCheckoutDataSet(){

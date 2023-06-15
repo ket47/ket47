@@ -18,12 +18,17 @@ class Transaction extends \App\Controllers\BaseController{
     }
 
     public function itemCreate(){
-        $data = $this->request->getJSON();
-        if(!$data){
-            return $this->fail('malformed_request');
-        }
+        $trans=(object)[
+            'tags'=>$this->request->getPost('tags'),
+
+            'trans_date'=>$this->request->getPost('trans_date'),
+            'trans_amount'=>$this->request->getPost('trans_amount'),
+            'trans_role'=>$this->request->getPost('trans_role'),
+            'trans_description'=>$this->request->getPost('trans_description'),
+            'is_disabled'=>$this->request->getPost('is_disabled')
+        ];
         $TransactionModel=model('TransactionModel');
-        $result = $TransactionModel->itemCreate($data);
+        $result = $TransactionModel->itemCreate($trans);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
@@ -31,14 +36,23 @@ class Transaction extends \App\Controllers\BaseController{
     }
 
     public function itemUpdate(){
-        $data = $this->request->getJSON();
-        if(!$data){
-            return $this->fail('malformed_request');
-        }
+        $trans=(object)[
+            'tags'=>$this->request->getPost('tags'),
+
+            'trans_id'=>$this->request->getPost('trans_id'),
+            'trans_date'=>$this->request->getPost('trans_date'),
+            'trans_amount'=>$this->request->getPost('trans_amount'),
+            'trans_role'=>$this->request->getPost('trans_role'),
+            'trans_description'=>$this->request->getPost('trans_description'),
+            'is_disabled'=>$this->request->getPost('is_disabled')
+        ];
         $TransactionModel=model('TransactionModel');
-        $result = $TransactionModel->itemUpdate($data);
+        $result = $TransactionModel->itemUpdate($trans);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
+        }
+        if($result != 'ok'){
+            return $this->fail($result);
         }
         return $this->respondUpdated($result);
     }
@@ -70,12 +84,12 @@ class Transaction extends \App\Controllers\BaseController{
             'limit'             =>(int)$this->request->getVar('limit'),
             'offset'            =>(int)$this->request->getVar('offset'),
         ];
-        $start = date_create($filter->start_at);
-        $finish = date_create($filter->finish_at);
-        $interval = date_diff($start, $finish)->format('%a');
-        if($interval>92){
-            return $this->fail("large_interval");
-        }
+        // $start = date_create($filter->start_at);
+        // $finish = date_create($filter->finish_at);
+        // $interval = date_diff($start, $finish)->format('%a');
+        // if($interval>92){
+        //     return $this->fail("large_interval");
+        // }
 
         $TransactionModel=model('TransactionModel');
         $result=$TransactionModel->listGet($filter);

@@ -18,7 +18,7 @@ class Talk extends \App\Controllers\BaseController{
         $subject=$this->request->getPost('subject',FILTER_SANITIZE_SPECIAL_CHARS);
         $body=$this->request->getPost('body',FILTER_SANITIZE_SPECIAL_CHARS);
 
-        if( !in_array($type,['outofrange']) ){
+        if( !in_array($type,['outofrange','suggest_new_store']) ){
             return $this->failNotFound();
         }
         if( session()->get('inquiryTypeOnce'.$type) ){
@@ -55,8 +55,22 @@ class Talk extends \App\Controllers\BaseController{
             ];
             $messages=[$admin_sms,$admin_email];
         }
-
-
+        if( $type=='suggest_new_store' ){
+            $admin_sms=(object)[
+                'message_transport'=>'telegram',
+                'message_reciever_id'=>-100,
+                'template'=>'messages/talk/suggest_new_store_inquiry_ADMIN_sms.php',
+                'context'=>$context
+            ];
+            $admin_email=(object)[
+                'message_transport'=>'email',
+                'message_reciever_id'=>-100,
+                'message_subject'=>"Запрос на добавление продавцов от ".getenv('app.title'),
+                'template'=>'messages/talk/suggest_new_store_inquiry_ADMIN_email.php',
+                'context'=>$context
+            ];
+            $messages=[$admin_sms,$admin_email];
+        }
 
         $notification_task=[
             'task_name'=>"Inquiry send",

@@ -376,6 +376,7 @@ class UserModel extends Model{
             return 'user_not_found';//user_phone not found
         }
         if( !password_verify($user_pass, $user->user_pass) ){
+            pl($user);
             return 'user_pass_wrong';//password wrong
         }
         if( !$user->user_phone_verified ){

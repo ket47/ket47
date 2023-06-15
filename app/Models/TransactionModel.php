@@ -75,7 +75,7 @@ class TransactionModel extends Model{
         if( !sudo() ){
             return 0;
         }
-        if( $trans?->trans_amount==0 ){
+        if( !($trans->trans_amount??0) ){
             return -1;
         }
         if( !($trans->trans_date??0) ){
@@ -86,13 +86,26 @@ class TransactionModel extends Model{
         $this->allowedFields[]='owner_id';
         $this->allowedFields[]='owner_ally_ids';
 
-        $trans->trans_id=$this->insert($trans,true);
-        $result=$this->db->affectedRows()?'ok':'idle';
-        if( $result=='ok' ){
-            $TransactionTagModel=model('TransactionTagModel');
-            $TransactionTagModel->listCreate($trans);
+        $trans_id=$this->insert($trans,true);
+        if( !$trans_id ){
+            return 0;
         }
-        return $trans->trans_id;
+        $TransactionTagModel=model('TransactionTagModel');
+        $TransactionTagModel->listCreate( $trans_id, $trans->tags, $trans->trans_role );
+        if( empty($trans->owner_ally_ids) ){//if allys not set copy them from parent object
+            $this->itemOwnerAllysUpdate( $trans_id );
+        }
+        return $trans_id;
+    }
+
+    /**
+     * copy owner_ally_ids from parent object (store or courier)
+     */
+    private function itemOwnerAllysUpdate( $trans_id ){
+        $TransactionTagModel=model('TransactionTagModel');
+        $parent_owner_ally_ids=$TransactionTagModel->parentOwnerAllysGet($trans_id);
+        $this->allowedFields[]='owner_ally_ids';
+        return $this->update($trans_id,['owner_ally_ids'=>$parent_owner_ally_ids]);
     }
 
     public function itemCreateOnce( object $trans ){
@@ -115,9 +128,13 @@ class TransactionModel extends Model{
         $trans->updated_by=session()->get('user_id');
         $this->update($trans->trans_id,$trans);
         $result=$this->db->affectedRows()?'ok':'idle';
-        if( $result=='ok' ){
-            $TransactionTagModel=model('TransactionTagModel');
-            $TransactionTagModel->listUpdate($trans);
+        if( $result!='ok' ){
+            return $result;
+        }
+        $TransactionTagModel=model('TransactionTagModel');
+        $TransactionTagModel->listUpdate($trans);
+        if( empty($trans->owner_ally_ids) ){//if allys not set copy them from parent object
+            $this->itemOwnerAllysUpdate( $trans->trans_id );
         }
         return $result;
     }
@@ -228,7 +245,7 @@ class TransactionModel extends Model{
         if($filter->tagQuery??null){
             $tagCase=$TransactionTagModel->tagWhereGet($filter->tagQuery);
             if($tagCase){
-                $tagWhere=' AND '.$tagCase;
+                $tagWhere=" AND ($tagCase)";
             }
         }
         $limit='';
@@ -260,7 +277,7 @@ class TransactionModel extends Model{
                     trans_date,
                     trans_role,
                     IF($start_case,1,0) after_start,
-                    SUM(IF(tag_name='acc',IF(tag_option='debit',-1,1),0)) amount_sign,
+                    SUM(IF(tag_name='acc',IF(tag_option='credit',-1,1),0)) amount_sign,
                     COUNT(link_id) matched_tag_count
                 FROM
                     transaction_list
@@ -279,26 +296,33 @@ class TransactionModel extends Model{
                     JOIN
                 {$tag_sql['table']}
                 GROUP BY trans_id
-                ORDER BY trans_date DESC
+                ORDER BY trans_date DESC,trans_id DESC
             )
         ";
+        pl($sql_create_inner);
         $sql_ledger_get="
             SELECT
                 *
             FROM
                 tmp_ledger_inner
+            WHERE
+                $start_case
+            AND $finish_case
             $limit
         ";
         $sql_meta_get="
             SELECT
-                SUM(IF(after_start AND amount_sign<0,trans_amount,0)) sum_debit,
-                SUM(IF(after_start AND amount_sign>0,trans_amount,0)) sum_credit,
+                SUM(IF(after_start AND amount_sign>0,trans_amount,0)) sum_debit,
+                SUM(IF(after_start AND amount_sign<0,trans_amount,0)) sum_credit,
                 SUM(IF(NOT after_start,amount_sign*trans_amount,0)) sum_start,
                 SUM(amount_sign*trans_amount) sum_finish
             FROM
                 tmp_ledger_inner
         ";
         $this->query($sql_create_inner);
+
+        //ql($this);
+
         $ledger =$this->query($sql_ledger_get)->getResult();
         $meta   =$this->query($sql_meta_get)->getRow();
         return [

@@ -216,7 +216,7 @@ class User extends \App\Controllers\BaseController{
         }
         if( $result=='ok' ){
             $user=$UserModel->getSignedUser();
-            if( !$user ){
+            if( empty($user->user_id) ){
                 return $this->fail('user_data_fetch_error');
             }
             $this->signInMetric( $user->user_id );

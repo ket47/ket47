@@ -33,6 +33,14 @@ class TransactionTagModel extends Model{
     public function itemDelete(){
         return false;
     }
+
+    public function parentOwnerAllysGet($trans_id){
+        $this->join('store_list',"tag_name='store' AND tag_id=store_id",'left');
+        $this->join('courier_list',"tag_name='courier' AND tag_id=courier_id",'left');
+        $this->where('trans_id',$trans_id);
+        $this->select("CONCAT_WS(',',GROUP_CONCAT(store_list.owner_ally_ids), GROUP_CONCAT(courier_list.owner_ally_ids)) parent_owner_ally_ids");
+        return $this->get()->getRow('parent_owner_ally_ids');
+    }
     
     public function listGet( $trans_id ){
         $this->where('trans_id',$trans_id);
@@ -44,11 +52,9 @@ class TransactionTagModel extends Model{
         return $this->get()->getResult();
     }
     
-    private function listCreateTags( $trans ){
-        $tags=$trans->tags??'';
-        $tag_list=explode(' ',$tags);
-        if($trans->trans_role??''){
-            list($debits,$credits)=explode('->',$trans->trans_role);
+    private function listCreateAccountTags(array $tag_list, string $trans_role){
+        if($trans_role??''){
+            list($debits,$credits)=explode('->',$trans_role);
             $debits_list=explode('.',$debits);
             $credits_list=explode('.',$credits);
             foreach($debits_list as $acc_code){
@@ -61,14 +67,15 @@ class TransactionTagModel extends Model{
         return $tag_list;
     }
 
-    public function listCreate( object $trans ){
-        $tag_list=$this->listCreateTags($trans);
+    public function listCreate( int $trans_id, string $tags, string $trans_role ){
+        $tag_list=explode(' ',$tags);
+        $tag_list=$this->listCreateAccountTags($tag_list,$trans_role);
         foreach($tag_list as $tag){
             $parsed_tag=$this->tagParse($tag);
             if(!$parsed_tag->tag_name){
                 continue;
             }
-            $parsed_tag->trans_id=$trans->trans_id;
+            $parsed_tag->trans_id=$trans_id;
             $this->ignore()->insert($parsed_tag);
         }
         return $this->db->affectedRows()?'ok':'idle';
@@ -76,7 +83,7 @@ class TransactionTagModel extends Model{
     
     public function listUpdate( object $trans ){
         $this->listDelete($trans->trans_id);
-        return $this->listCreate( $trans );
+        return $this->listCreate( $trans->trans_id, $trans->tags, $trans->trans_role );
     }
     
     public function listDelete($trans_id){
