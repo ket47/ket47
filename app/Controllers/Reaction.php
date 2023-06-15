@@ -47,7 +47,7 @@ class Reaction extends \App\Controllers\BaseController{
         $ReactionModel=model('ReactionModel');
         $reaction=$ReactionModel->itemByTagGet($tagQuery);
         if( empty($reaction->reaction_comment) ){
-            //return;
+            return;
         }
 
         $StoreModel=model('StoreModel');
@@ -75,7 +75,6 @@ class Reaction extends \App\Controllers\BaseController{
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms]]]
                 ]
         ];
-        pl($notification_task);
         jobCreate($notification_task);
     }
     
