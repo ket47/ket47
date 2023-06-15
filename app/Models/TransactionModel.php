@@ -299,7 +299,6 @@ class TransactionModel extends Model{
                 ORDER BY trans_date DESC,trans_id DESC
             )
         ";
-        pl($sql_create_inner);
         $sql_ledger_get="
             SELECT
                 *

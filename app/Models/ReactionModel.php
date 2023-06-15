@@ -153,7 +153,7 @@ class ReactionModel extends Model{
         $this->where('reaction_comment',null);
         $this->itemDelete($reaction->reaction_id);
         
-        return $this->db->affectedRows()?'ok':'idle';
+        return $result;
     }
     
     public function itemDelete($reaction_id){

@@ -39,7 +39,44 @@ class Reaction extends \App\Controllers\BaseController{
         if($result=='notfound'){
             return $this->failNotFound($result);
         }
+        $this->onCommentSupplierNotify($tagQuery);
         return $this->respondCreated($result);
+    }
+
+    private function onCommentSupplierNotify( $tagQuery ){
+        $ReactionModel=model('ReactionModel');
+        $reaction=$ReactionModel->itemByTagGet($tagQuery);
+        if( empty($reaction->reaction_comment) ){
+            //return;
+        }
+
+        $StoreModel=model('StoreModel');
+        $StoreModel->join('reaction_tag_list','tag_name="store" AND tag_id=store_id');
+        $StoreModel->where('member_id',$reaction->reaction_id);
+
+        $ProductModel=model('ProductModel');
+        $ProductModel->join('reaction_tag_list','tag_name="product" AND tag_id=product_id');
+        $ProductModel->where('member_id',$reaction->reaction_id);
+
+        $context['user']=session()->get('user_data');
+        $context['reaction']=$reaction;
+        $context['store']=$StoreModel->select('store_name,owner_ally_ids')->get()->getRow();
+        $context['product']=$ProductModel->select('product_name,product_id')->get()->getRow();
+
+        $reaction_sms=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>"-100,{$context['store']->owner_ally_ids}",//
+            'template'=>'messages/events/on_customer_reaction_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"Comment event",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms]]]
+                ]
+        ];
+        pl($notification_task);
+        jobCreate($notification_task);
     }
     
     public function itemDelete(){
