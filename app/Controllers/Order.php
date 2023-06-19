@@ -199,6 +199,7 @@ class Order extends \App\Controllers\BaseController {
         $PromoModel=model('PromoModel');
         $OrderModel=model('OrderModel');
         $UserCardModel=model('UserCardModel');
+        $StoreModel=model('StoreModel');
 
         $bulkResponse=(object)[];
         $bulkResponse->Store_deliveryOptions=$this->itemDeliveryOptionsGet(
@@ -211,6 +212,8 @@ class Order extends \App\Controllers\BaseController {
             'store',$order->order_store_id,
             'user',$order->owner_id
         );
+        $bulkResponse->Store_preparationTime=$StoreModel->itemGet($order->order_store_id,'basic')->store_time_preparation??0;
+
         if($bulkResponse->Location_distanceHolderGet>getenv('delivery.radius')){
             return $this->fail('too_far');
         }

@@ -174,13 +174,6 @@ class User extends \App\Controllers\BaseController{
         }
 
         $this->signInMetric( $new_user_id );
-        
-        $Messenger=new \App\Libraries\Messenger;
-        $Messenger->itemSend((object)[
-            'message_reciever_id'=>-100,
-            'message_transport'=>'telegram',
-            'message_text'=>"Новый пользователь: $user_name",
-        ]);
         return $this->respondCreated($new_user_id);
     }
     
@@ -194,13 +187,6 @@ class User extends \App\Controllers\BaseController{
         
         $user_phone_cleared= '7'.substr(preg_replace('/[^\d]/', '', $user_phone),-10);
         $UserModel=model('UserModel');
-
-
-
-
-
-
-
         $result=$UserModel->signIn($user_phone_cleared,$user_pass);
         if( $result=='user_not_found' ){
             return $this->failNotFound('user_not_found');

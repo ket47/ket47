@@ -29,7 +29,7 @@ class Talk extends \App\Controllers\BaseController{
         if( $user_id ){
             $user=model('UserModel')->itemGet($user_id);
             if($user){
-                $from="{$user->user_name} +{$user->user_phone} {$user->user_email}";
+                $from="{$user->user_name} +{$user->user_phone} ".($user->user_email??'');
             }
         }
         $context=[

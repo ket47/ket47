@@ -106,6 +106,9 @@ class Messenger{
             //log_message('error','Email cant be send: no email address');
             return false;
         }
+        if(getenv('test.emailMock')==1){
+            return true;
+        }
         $email = \Config\Services::email();
         $config=[
             'SMTPHost'=>getenv('email_server'),

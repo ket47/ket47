@@ -177,7 +177,7 @@ class AcquirerUniteller{
             'Password'=>getenv('uniteller.password'),
             'Format'=>'1',
             'ShopOrderNumber'=>getenv('uniteller.orderPreffix').$order_id,
-            'S_FIELDS'=>'OrderNumber;Status;Total;BillNumber;CardType;CardNumber'
+            'S_FIELDS'=>'OrderNumber;Status;Total;BillNumber;CardType;CardNumber;need_confirm;'
         ];
         $context  = stream_context_create([
             'http' => [
@@ -191,7 +191,8 @@ class AcquirerUniteller{
         if(!$result){
             return null;
         }
-        $response=explode(';',$result);
+        $rows=str_getcsv($result,"\n");
+        $response=str_getcsv($rows[0],";");
         $order_id=str_replace(getenv('uniteller.orderPreffix'),'',$response[0]);
         return (object)[
             'order_id'=>$order_id,
@@ -200,6 +201,7 @@ class AcquirerUniteller{
             'billNumber'=>$response[3],
             'cardType'=>$response[4],
             'cardNumber'=>$response[5],
+            'needConfirm'=>$response[6],
         ];
     }
 
@@ -291,7 +293,7 @@ class AcquirerUniteller{
             'Login'=>getenv('uniteller.login'),
             'Password'=>getenv('uniteller.password'),
             'Format'=>'1',
-            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
+            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber;'
         ];
         $context  = stream_context_create([
             'http' => [
@@ -301,10 +303,38 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'confirm/', false, $context);
+        //pl([getenv('uniteller.gateway').'confirm/'.http_build_query($request),$request,$result],false);
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
         if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE confirm UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
+
+
+
+            $paymentStatus=$this->statusGet($order_basic->order_id);
+
+
+            //maybe get status and return as a valid here???
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             return null;
         }
         return (object)[

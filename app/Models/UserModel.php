@@ -340,22 +340,33 @@ class UserModel extends Model{
 
 
 
-
-
-
         $user_sms=(object)[
-            'message_transport'=>'message',
             'message_reciever_id'=>$user_id,
+            'message_transport'=>'message',
             'template'=>'messages/signup_welcome_sms.php',
             'context'=>$user_data
+        ];
+        $admin_sms=(object)[
+            'message_reciever_id'=>-100,
+            'message_transport'=>'telegram',
+            'message_text'=>"Новый пользователь: $user_name",
         ];
         $notification_task=[
             'task_name'=>"signup_welcome_sms",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$user_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$user_sms,$admin_sms]]]
                 ]
         ];
         jobCreate($notification_task);
+
+        $phoneverify_by_call=[
+            'task_name'=>"check if user verified",
+            'task_programm'=>[
+                ['model'=>'UserModel','method'=>'verifyByCallNeeded','arguments'=>[$user_id]]
+            ],
+            'task_next_start_time'=>time()+15*60//15 min
+        ];
+        jobCreate($phoneverify_by_call);
 
         return $user_id;
     }
@@ -376,7 +387,6 @@ class UserModel extends Model{
             return 'user_not_found';//user_phone not found
         }
         if( !password_verify($user_pass, $user->user_pass) ){
-            pl($user);
             return 'user_pass_wrong';//password wrong
         }
         if( !$user->user_phone_verified ){
@@ -420,7 +430,7 @@ class UserModel extends Model{
     
     public function getUnverifiedUserIdByPhone($user_phone_cleared){
         $this->where('user_phone',$user_phone_cleared);
-        $this->where('user_phone_verified IS NULL OR user_phone_verified=0');
+        $this->where('(user_phone_verified IS NULL OR user_phone_verified=0)');
         $user_id = $this->get()->getRow('user_id');
         return $user_id;
     }
@@ -432,6 +442,31 @@ class UserModel extends Model{
             return 'verification_completed';
         }
         return 'verification_error';
+    }
+
+    public function verifyByCallNeeded($user_id){
+        $this->systemUserLogin();
+        $this->where('(user_phone_verified IS NULL OR user_phone_verified=0)');
+        $user=$this->itemGet($user_id,'basic');
+        $this->systemUserLogout();
+
+        if(!$user){//user verified no call needed
+            return false;
+        }
+
+        $sms=(object)[
+            'message_reciever_id'=>-100,
+            'message_transport'=>'telegram',
+            'template'=>"messages/events/on_user_call_verification_needed_sms.php",
+            'context'=>['user'=>$user]
+        ];
+        $notification_task=[
+            'task_name'=>"Unverified notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
     }
     
     public function passRecoveryCheckPhone($user_phone,$user_name){

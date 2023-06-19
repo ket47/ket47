@@ -152,6 +152,9 @@ class ProductModel extends Model{
             $expiration_timeout=8;//8 hours
             $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
         }
+        if( isset($product->product_weight) ){
+            $product->product_weight=(float) str_replace(',','.',$product->product_weight);
+        }
         $product_id=$this->insert($product,true);
 
         if($product->product_image_url??null){

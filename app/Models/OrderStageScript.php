@@ -15,13 +15,13 @@ class OrderStageScript{
         'customer_cart'=>[
             'customer_deleted'=>            ['Удалить','danger'],
             'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Оформить'],
+            'customer_action_confirm'=>     ['Продолжить'],
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
             'customer_cart'=>               ['Изменить','light'],
             'customer_start'=>              [],
-            'customer_action_checkout'=>    ['Оформить'],
+            'customer_action_checkout'=>    ['Продолжить'],
             ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
