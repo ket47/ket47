@@ -14,11 +14,15 @@ class TestController extends \App\Controllers\BaseController{
 
 
 
-        $Messenger=new \App\Libraries\Messenger;
-        $Messenger->itemSend((object)[
-            'message_reciever_id'=>41,
-            'message_transport'=>'push',
-            'message_text'=>'user signin',
-        ]);
+        // $Messenger=new \App\Libraries\Messenger;
+        // $Messenger->itemSend((object)[
+        //     'message_reciever_id'=>41,
+        //     'message_transport'=>'push',
+        //     'message_subject'=>'test title',
+        //     'message_text'=>'user signin '.rand(100,999),
+        // ]);
+
+
+        // header("Refresh:5");
     }
 }

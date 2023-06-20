@@ -18,6 +18,7 @@ class FirePush{
     public function sendPush( $push, $atempt=1 ){
         $message = new Message();
         $message->setTarget(new Token($push->token));
+
         if($push->title??null){
             $message->notification->setTitle($push->title);
         }

@@ -173,9 +173,9 @@ class Messenger{
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
                 'data'=>$message->message_data,
-                //'title'=>$message->message_subject??'',
-                //'body'=>$message->message_text??'',
-                //'link'=>$message->message_link??'',
+                'title'=>$message->message_data->title,
+                'body'=>$message->message_data->body,
+                'link'=>$message->message_data->link,
             ]);
             if($result){
                 $pushsent=true;
