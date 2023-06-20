@@ -413,6 +413,19 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
+
+        $store_preparation_time=$store->store_time_preparation??30;
+        $timer_supplier_overdue=time()+$store_preparation_time*60*1.2;//preparation time +20%
+        $stage_reset_task=[
+            'task_name'=>"Notify user that supplier overdue order #$order_id",
+            'task_programm'=>[
+                    ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'OrderModel','method'=>'itemStageAdd','arguments'=>[$order_id,'supplier_overdue']],
+                    ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ],
+            'task_next_start_time'=>$timer_supplier_overdue
+        ];
+        jobCreate($stage_reset_task);
         return 'ok';
     }
 
@@ -462,12 +475,13 @@ class OrderStageScript{
             $courier_freeing_task=[
                 'task_name'=>"free the courier",
                 'task_programm'=>[
-                        ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
+                    ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                    ['model'=>'UserModel','method'=>'systemUserLogout'],
                     ]
             ];
             jobCreate($courier_freeing_task);
         }
-
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
@@ -665,6 +679,58 @@ class OrderStageScript{
          */
         return 'ok';
     }
+
+    public function onSupplierOverdue( $order_id  ){
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        if( !in_array($order->stage_current,['customer_start','supplier_start','supplier_corrected']) ){
+            return 'idle';
+        }
+        $StoreModel=model('StoreModel');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $context=[
+            'order'=>$order,
+            'store'=>$store
+        ];
+        $customer_sms=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>$order->owner_id,
+            'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
+            'context'=>$context
+        ];
+        $store_sms=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'template'=>'messages/order/on_supplier_overdue_STORE_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"supplier_overdue Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$customer_sms,$store_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+    }
+
+    private function onSupplierFinishPrepTimeUpdate( $order_id, $store_id ){
+        $StoreModel=model('StoreModel');
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+
+        $OrderGroupMemberModel->where('group_type','customer_start');
+        $stages=$OrderGroupMemberModel->memberOfGroupsListGet($order_id);
+        if(!$stages){
+            return 'idle';
+        }
+        $actual_prep_time=round( (time()-strtotime($stages[0]->created_at))/60 );
+        $store_prep_time=$StoreModel->itemGet($store_id,'basic')->store_time_preparation??30;
+        $delta=$actual_prep_time-$store_prep_time;
+        $corrected_prep_time=$store_prep_time+round($delta/2);
+        return $StoreModel->itemUpdate((object)[
+            'store_id'=>$store_id,
+            'store_time_preparation'=>$corrected_prep_time
+        ]);
+    }
+
     public function onSupplierFinish( $order_id ){
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $order_data=$this->OrderModel->itemDataGet($order_id);
@@ -682,6 +748,8 @@ class OrderStageScript{
         }
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'commited');
+
+        $this->onSupplierFinishPrepTimeUpdate( $order_id, $order->order_store_id );
 
         if( !isset($order_data->delivery_by_courier) ){
             return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
@@ -783,7 +851,8 @@ class OrderStageScript{
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms]]]
                 ]
         ];
-        jobCreate($notification_task);    }
+        jobCreate($notification_task);
+    }
     
     public function onDeliveryStart( $order_id ){
         $CourierModel=model('CourierModel');
