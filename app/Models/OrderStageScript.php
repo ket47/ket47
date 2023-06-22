@@ -692,7 +692,7 @@ class OrderStageScript{
             'store'=>$store
         ];
         $customer_sms=(object)[
-            'message_transport'=>'telegram',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
             'context'=>$context

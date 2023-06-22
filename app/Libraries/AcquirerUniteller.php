@@ -308,33 +308,6 @@ class AcquirerUniteller{
         $response=str_getcsv($rows[1],";");
         if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE confirm UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
-
-
-
-            $paymentStatus=$this->statusGet($order_basic->order_id);
-
-
-            //maybe get status and return as a valid here???
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             return null;
         }
         return (object)[
