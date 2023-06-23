@@ -46,9 +46,16 @@ trait OrderStageTrait{
         $OrderGroupModel=model('OrderGroupModel');
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
 
+        $this->transBegin();
+        $handled=$this->itemStageHandle( $order_id, $stage, $data );
+        if($handled!=='ok'){
+            $this->transRollback();
+            return $handled;
+        }
         $group=$OrderGroupModel->select('group_id')->itemGet(null,$stage);
         $OrderGroupMemberModel->joinGroup($order_id,$group->group_id);
-        return $this->itemStageHandle( $order_id, $stage, $data );
+        $this->transCommit();
+        return $handled;
     }
 
     private $itemStageUnconfirmedGroupId=null;

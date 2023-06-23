@@ -403,8 +403,7 @@ class CourierModel extends Model{
         }
         $this->transCommit();
 
-        $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
-        return 'ok';
+        return $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
     }
 
     public function itemJobTrack($order_id){

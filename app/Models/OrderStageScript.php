@@ -710,6 +710,7 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
+        return 'ok';
     }
 
     private function onSupplierFinishPrepTimeUpdate( $order_id, $store_id ){
@@ -852,6 +853,7 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
+        return 'ok';
     }
     
     public function onDeliveryStart( $order_id ){
