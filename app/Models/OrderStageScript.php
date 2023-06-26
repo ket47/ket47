@@ -476,6 +476,7 @@ class OrderStageScript{
                 'task_name'=>"free the courier",
                 'task_programm'=>[
                     ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
                     ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
                     ['model'=>'UserModel','method'=>'systemUserLogout'],
                     ]
@@ -594,14 +595,15 @@ class OrderStageScript{
                 ]
         ];
         jobCreate($notification_task);
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
         if($order->order_courier_id){
             $courier_freeing_task=[
                 'task_name'=>"free the courier",
                 'task_programm'=>[
-                        ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']]
+                    ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
+                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                    ['model'=>'UserModel','method'=>'systemUserLogout'],
                     ]
             ];
             jobCreate($courier_freeing_task);
