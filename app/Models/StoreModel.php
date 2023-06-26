@@ -356,10 +356,15 @@ class StoreModel extends Model{
 
         $permission_filter=$this->permitWhereGet('r','item');
         
+
+        $LocationModel->select("GROUP_CONCAT(group_type) member_of_groups");
         $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,is_working");
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
         $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
         $LocationModel->join('store_list','store_id=location_holder_id');
+        $LocationModel->join('store_group_member_list sgml','store_id=member_id','left');
+        $LocationModel->join('store_group_list sgl','sgl.group_id=sgml.group_id','left');
+        
         $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
         if( $permission_filter ){
             $LocationModel->where($permission_filter);
