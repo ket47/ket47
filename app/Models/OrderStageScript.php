@@ -795,6 +795,11 @@ class OrderStageScript{
 
     public function onDeliveryFound( $order_id ){
         // $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        // $was_searching=$OrderGroupMemberModel->isMemberOf($order_id,'delivery_search');
+        // if( !$was_searching ){
+        //     return '';
+        // }
+        // $OrderGroupMemberModel=model('OrderGroupMemberModel');
         // $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         helper('phone_number');
 

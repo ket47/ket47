@@ -134,3 +134,5 @@ nb-configuration.xml
 /spark
 /writable/
 /system/
+
+app/Controllers/TestController.php

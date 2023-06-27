@@ -450,7 +450,7 @@ class UserModel extends Model{
         $user=$this->itemGet($user_id,'basic');
         $this->systemUserLogout();
 
-        if(!$user){//user verified no call needed
+        if( !isset($user->user_id) ){//user verified no call needed
             return false;
         }
 

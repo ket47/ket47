@@ -158,9 +158,7 @@ class Messenger{
         if( !count($message->reciever->subscriptions??[]) ){
             return false;
         }
-        if( !isset($message->message_data) ){
-            $message->message_data=(object)[];
-        }
+        $message->message_data??=(object)[];
         $message->message_data->title=$message->message_data->title??$message->message_subject??'';
         $message->message_data->body=strip_tags($message->message_data->body??$message->message_text??'');
         $message->message_data->link=$message->message_data->link??$message->message_link??getenv('app.frontendUrl');
