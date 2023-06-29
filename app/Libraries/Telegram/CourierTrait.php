@@ -66,11 +66,8 @@ trait CourierTrait{
             $this->Telegram->buildInlineKeyboardButton("Курьер: {$courier->courier_name}",'',"onNoop")
         ]]);
 
-        $content['chat_id']="5026110721";
-        $this->sendLocation( $content, null, 'copy_to_reshat' );
-
-        $content['chat_id']="331872418";
-        $this->sendLocation( $content, null, 'copy_to_asan' );
+        $content['chat_id']=getenv("telegram.adminChatId");
+        $this->sendLocation( $content, null, 'copy_to_admin' );
     }
 
     public function onCourierJobsGet(){
