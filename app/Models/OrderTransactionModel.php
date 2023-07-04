@@ -143,6 +143,7 @@ class OrderTransactionModel extends TransactionModel{
         ];
         if($invoiceSum!==0){
             $order_all->store=model('StoreModel')->itemGet($order_all->order_store_id,'basic');
+            $order_all->print_delivery_as_agent=$order_data->delivery_by_store??0;
             $Cashier=\Config\Services::cashier();
             $cashier_data=$Cashier->printAndGet($order_all);
     
@@ -276,14 +277,6 @@ class OrderTransactionModel extends TransactionModel{
                 log_message('error',"Making #orderCommission transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
                 return false;
             }
-        }else{
-
-            /**
-             * delete me
-             */
-            pl([
-                "$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100"
-            ]);
         }
 
 

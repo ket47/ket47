@@ -53,7 +53,7 @@ class CashierKitOnline{
             $order_sum_calculated+=round($entry->entry_price*100*$discount_modifier)*$entry->entry_quantity;
         }
         if($order_all->order_sum_delivery>0){
-            $Check['Subjects'][]=[
+            $delivery_row=[
                 'SubjectName'=>'Услуга доставки заказа',
                 'Price'=>$order_all->order_sum_delivery*100,
                 'Quantity'=>1,
@@ -61,6 +61,19 @@ class CashierKitOnline{
                 'GoodsAttribute'=>4,//Service
                 'unitOfMeasurement'=>"шт",
             ];
+            if($order_all->print_delivery_as_agent){
+                $delivery_row['supplierINN']=$order_all->store->store_tax_num;
+                $delivery_row['supplierInfo']=[
+                    'name'=>$order_all->store->store_company_name,
+                    'phoneNumbers'=>[$order_all->store->store_phone]
+                ];
+                $delivery_row['agentType']=64;
+                $delivery_row['agentInfo']=[
+                    //'paymentAgentOperation'=>getenv('kitonline.paymentAgentOperation'),
+                    'paymentAgentPhoneNumbers'=>[getenv('kitonline.paymentAgentPhoneNumbers')]
+                ];
+            }
+            $Check['Subjects'][]=$delivery_row;
 
             $order_sum_calculated+=round($order_all->order_sum_delivery*100);
         }

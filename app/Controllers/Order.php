@@ -400,7 +400,10 @@ class Order extends \App\Controllers\BaseController {
             }
         } else
         if( $checkoutData->deliveryByStore??0 ){
+            $StoreModel=model('StoreModel');
+            $store=$StoreModel->itemGet($order->order_store_id);
             $order_data->delivery_by_store=1;
+            $order_data->delivery_by_store_cost=$store->store_delivery_cost??0;
             $PromoModel=model('PromoModel');
             $PromoModel->itemUnLink($checkoutData->order_id);
         } else
