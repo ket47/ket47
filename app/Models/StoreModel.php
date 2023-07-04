@@ -259,7 +259,7 @@ class StoreModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function tariffRuleListGet( $store_id ){//this function is messy OMG
+    public function tariffRuleListGet( $store_id, $tariff_order_mode ){//this function is messy OMG
         $this->permitWhere('r');
         $this->join('tariff_member_list','store_id');
         $this->join('tariff_list','tariff_id');
@@ -268,7 +268,11 @@ class StoreModel extends Model{
         $this->where('finish_at>=NOW()');
         $this->where('tariff_list.is_disabled',0);
         $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
-        $this->orderBy("delivery_allow DESC");
+        if( $tariff_order_mode=='delivery_by_courier_first' ){
+            $this->orderBy("delivery_allow DESC");
+        } else {
+            $this->orderBy("delivery_allow ASC");
+        }
         $this->orderBy("card_allow DESC");
         return $this->get()->getResult();
     }
@@ -277,7 +281,7 @@ class StoreModel extends Model{
         $this->limit(1);
         $this->select('IF(delivery_cost>0,delivery_cost,store_delivery_cost) order_sum_delivery');
         $this->where('delivery_allow',1);
-        $delivery_option=$this->tariffRuleListGet($store_id);
+        $delivery_option=$this->tariffRuleListGet($store_id,'delivery_by_courier_first');
         if( isset($delivery_option[0]) ){
             return $delivery_option[0]->order_sum_delivery;
         }

@@ -281,16 +281,22 @@ class Order extends \App\Controllers\BaseController {
         if(!$StoreModel->itemIsReady($store_id)){
             return 'not_ready';
         }
-        
+
+        $tariff_order_mode='delivery_by_courier_first';
+        $deliveryIsReady=$this->deliveryIsReady($store_id);
+        if(!$deliveryIsReady){
+            $tariff_order_mode='delivery_by_courier_last';
+        }
         $store=$StoreModel->itemGet($store_id,'basic');
-        $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id);
+        $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id,$tariff_order_mode);
+
         if(!$storeTariffRuleList){
             return 'no_tariff';
         }
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
-                $deliveryIsReady=$this->deliveryIsReady($store_id);
+                
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,
                     'order_sum_delivery'=>(int)$tariff->delivery_cost,
