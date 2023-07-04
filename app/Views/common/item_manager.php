@@ -112,7 +112,7 @@
             ItemList.reload();
         },
         val:function( $input ){
-            return $input.attr('type')==='checkbox'?($input.is(':checked')?$input.val():0):$input.val();
+            return $input.attr('type')==='checkbox'?($input.is(':checked')?1:0):$input.val();
         },
         reloadItem:function(<?=$item_name?>_id){
             ItemList.loadItem(ItemList.itemCardId);           
