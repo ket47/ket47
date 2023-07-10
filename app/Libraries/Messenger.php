@@ -163,7 +163,7 @@ class Messenger{
         $message->message_data->body=strip_tags($message->message_data->body??$message->message_text??'');
 
         $pushsent=false;
-        $FirePush = new \App\Libraries\FirePush();
+        $FirePush = new \App\Libraries\FirePushKreait();
         foreach($message->reciever->subscriptions as $sub){
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
