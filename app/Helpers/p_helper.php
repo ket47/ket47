@@ -1,9 +1,11 @@
 <?php
 
-function p( $object ){
+function p( $object, $die=true  ){
     header("Content-Type:text/plain");
     print '<pre>';
-    print_r($object);die;
+    print_r($object);
+    if($die)
+        die();
 }
 function pl( $object, $die=false ){
     if(is_array($object) || is_object($object)){

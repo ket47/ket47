@@ -159,21 +159,17 @@ class Messenger{
             return false;
         }
         $message->message_data??=(object)[];
-        $message->message_data->title=$message->message_data->title??$message->message_subject??'';
+        $message->message_data->title??=$message->message_subject??'';
         $message->message_data->body=strip_tags($message->message_data->body??$message->message_text??'');
-        $message->message_data->link=$message->message_data->link??$message->message_link??getenv('app.frontendUrl');
-        $message->message_data->tag=$message->message_data->tag??$message->message_tag??'';
-        $message->message_data->icon=$message->message_data->icon??'/img/icons/monochrome.png';
 
         $pushsent=false;
         $FirePush = new \App\Libraries\FirePush();
         foreach($message->reciever->subscriptions as $sub){
             $result=$FirePush->sendPush((object)[
                 'token'=>$sub->sub_registration_id,
-                'data'=>$message->message_data,
                 'title'=>$message->message_data->title,
                 'body'=>$message->message_data->body,
-                'link'=>$message->message_data->link,
+                'data'=>$message->message_data,
             ]);
             if($result){
                 $pushsent=true;

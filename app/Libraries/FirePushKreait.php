@@ -2,10 +2,7 @@
 namespace App\Libraries;
 
 use Kreait\Firebase\Factory;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Exception\Messaging;
-use Kreait\Firebase\Messaging\Notification;
-use Kreait\Firebase\Messaging\ApnsConfig;
+use Kreait\Firebase\Messaging\RawMessageFromArray;
 
 class FirePushKreait{
     private $messaging;
@@ -16,40 +13,52 @@ class FirePushKreait{
             ->createMessaging();
     }
 
-
-    public function sendPush( $push, $atempt=1 ){
+    public function sendPush( $push ){
+        $push->data??=[];
+        $push->data['title']=$push->title;
+        $push->data['body']=$push->body;
         $msg=[
-            'notification' => [
-                'title' => $push->title,
-                'body' => $push->body,
-                'image' => $push->image??'',
+            'data' => $push->data,
+            'android' => [
+                'notification' => [
+                    'title' => $push->title,
+                    'body' => $push->body,
+                ],
             ],
-            'data' => $push->data??[],
-            'apns'=>[],
+            'apns' => [
+                'payload' => [
+                    'aps' => [
+                        'alert' => [
+                            'title' => $push->title,
+                            'body' => $push->body,
+                        ],
+                    ],
+                ],
+            ],
         ];
+        if( $msg['data']['sound']??'' ){
+            $msg['apns']['payload']['aps']['sound']=$msg['data']['sound'];
+            $msg['apns']['headers']['apns-priority']='10';
 
-        if($push->data['tag']??''){
-            $msg['apns']['headers']['apns-collapse-id']=$push->data['tag'];
-            $msg['collapse_key']=$push->data['tag'];
-            $msg['notification']['tag']=$push->data['tag'];
+            $msg['android']['notification']['sound']=$msg['data']['sound'];
+            $msg['android']['priority']='high';
         }
-
-        if($push->data['link']??''){
-            $msg['notification']['link']=$push->data['link'];
+        if( $push->data['tag']??'' ){
+            $msg['apns']['headers']['apns-collapse-id']=$push->data['tag'];//ios
+            $msg['collapse_key']=$push->data['tag'];//android
         }
-        $message = CloudMessage::fromArray($msg)->withDefaultSounds();
-        if( is_array($push->token) ){
-            $deviceTokens=$push->token;
-        } else {
-            $deviceTokens=[$push->token];
+        $message = new RawMessageFromArray($msg);
+        try{
+            $deviceTokens=is_array($push->token)?$push->token:[$push->token];
+            $report = $this->messaging->sendMulticast($message, $deviceTokens);
+            $invalidTargets=array_merge($report->unknownTokens(),$report->invalidTokens());
+            if( $invalidTargets ){
+                $MessageSubModel=model('MessageSubModel');
+                $MessageSubModel->whereIn('sub_registration_id',$invalidTargets)->delete();
+            }
+            return $report->successes()->count()?1:0;
+        }catch( \Throwable $e  ){
+            return 0;
         }
-        $report = $this->messaging->sendMulticast($message, $deviceTokens);
-        $invalidTargets=array_merge($report->unknownTokens(),$report->invalidTokens());
-        if( $invalidTargets ){
-            $MessageSubModel=model('MessageSubModel');
-            $MessageSubModel->whereIn('sub_registration_id',$invalidTargets)->delete();
-        }
-        return $report->successes()->count()?1:0;
     }
-
 }
