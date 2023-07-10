@@ -14,7 +14,7 @@ class FirePushKreait{
     }
 
     public function sendPush( $push ){
-        $push->data??=[];
+        $push->data=(array)$push->data??[];
         $push->data['title']=$push->title;
         $push->data['body']=$push->body;
         $msg=[
