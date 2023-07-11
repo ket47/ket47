@@ -828,7 +828,12 @@ class OrderStageScript{
             ]),
             'info_for_customer'=>json_encode([
                 'courier_name'=>$courier->courier_name,
-                //'courier_phone'=>$courier->user_phone,
+                'courier_phone'=>$courier->user_phone,
+                'courier_image_hash'=>$courier->images[0]->image_hash??''
+            ]),
+            'info_for_supplier'=>json_encode([
+                'courier_name'=>$courier->courier_name,
+                'courier_phone'=>'+'.clearPhone($courier->user_phone),
                 'courier_image_hash'=>$courier->images[0]->image_hash??''
             ]),
         ];
