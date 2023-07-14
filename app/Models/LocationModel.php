@@ -11,6 +11,7 @@ class LocationModel extends Model{
     protected $table      = 'location_list';
     protected $primaryKey = 'location_id';
     protected $allowedFields = [
+        'location_prev_id',
         'location_holder',
         'location_holder_id',
         'location_order',
@@ -75,12 +76,13 @@ class LocationModel extends Model{
         return 'idle';
     }
 
-
     public function itemAdd($data){
+        $location_prev_id=$this->itemMainIdGet( $data['location_holder'], $data['location_holder_id'] );
         $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
         $data['owner_id']=session()->get('user_id');
         $data['is_disabled']=0;
         $data['is_main']=1;
+        $data['location_prev_id']=$location_prev_id;
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $this->set($data);
@@ -97,6 +99,14 @@ class LocationModel extends Model{
         $this->permitWhere('w');
         $this->update($data->location_id,$data);
         return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemMainIdGet($location_holder, $location_holder_id){
+        $this->where('location_holder',$location_holder);
+        $this->where('location_holder_id',$location_holder_id);
+        $this->where('location_list.is_main',1);
+        $this->select('location_id');
+        return $this->get()->getRow('location_id');
     }
 
     public function itemMainGet($location_holder, $location_holder_id){

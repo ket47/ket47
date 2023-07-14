@@ -212,7 +212,7 @@ class CourierModel extends Model{
         }
 
         $message=(object)[
-            'message_reciever_id'=>$courier->owner_id,
+            'message_reciever_id'=>"$courier->owner_id,-100",
             'message_transport'=>'message',
             'message_text'=>$message_text,
             'message_data'=>[
@@ -495,14 +495,21 @@ class CourierModel extends Model{
     /**
      * Creates message send job from array of contexts
      *  @param array $context_list list of contexts containing courier and job info
+     * 
+     * 
+     * 
+     * 
+     * 
+     * should rewrite so jobs will be sent only if job is still not taken!!!
      */
 
     private function listNotifyCreate( array $context_list ){
-        $messages=[];
+        $notification_time_gap=60;//1min between notifications
+        $notification_index=0;
         foreach($context_list as $context){
             $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;
             $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
-            $messages[]=(object)[
+            $message=(object)[
                         'message_reciever_id'=>$reciever_id,
                         'message_transport'=>'message',
                         'message_text'=>$message_text,
@@ -517,14 +524,17 @@ class CourierModel extends Model{
                             'disable_web_page_preview'=>1,
                         ],
                     ];
+            $next_start_time=time()+$notification_index*$notification_time_gap;
+            $sms_job=[
+                'task_name'=>"Courier Notify Order",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                    ],
+                'task_next_start_time'=>$next_start_time
+            ];
+            jobCreate($sms_job);
+            $notification_index++;
         }
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
-                ],
-        ];
-        jobCreate($sms_job);
         return true;
     }
 
