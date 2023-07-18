@@ -71,6 +71,16 @@ class Messenger{
                 ]
             ];
         }
+        if( $user_id==-50 ){//system user==courier
+            return (object)[
+                'user_name'=>"Курьер",
+                'user_phone'=>getenv('phone_admin'),
+                'user_email'=>getenv('email_admin'),
+                'user_data'=>(object)[
+                    'telegramChatId'=>getenv('telegram.courierChatId')
+                ]
+            ];
+        }
         if( !$user_id || $user_id<1){
             return (object)[];
         }

@@ -170,20 +170,21 @@ class CourierModel extends Model{
         }
         $result=$this->itemUpdateStatus($courier_id,'ready');
         if( $result=='ok' ){
-            $message_text=view('messages/events/on_delivery_shift_opened_sms');
-        } else 
+            $CourierShiftModel=model('CourierShiftModel');
+            return $CourierShiftModel->itemOpen($courier_id,$courier->owner_id);
+        }
+
         if( $result=='notactive' ){
             $message_text=view('messages/events/on_delivery_shift_notactive_sms');
         } else {
             $message_text=view('messages/events/on_delivery_shift_error_sms');
         }
-
         $message=(object)[
             'message_reciever_id'=>$courier->owner_id,
-            'message_transport'=>'message',
+            'message_transport'=>'telegram',
             'message_text'=>$message_text,
             'message_data'=>[
-                'title'=>'🚀 Смена открыта',
+                'title'=>'Смена не открыта',
                 'body'=>$message_text,
             ]
         ];
@@ -203,20 +204,45 @@ class CourierModel extends Model{
         }
         $result=$this->itemUpdateStatus($courier_id,'idle');
         if( $result=='ok' ){
-            $message_text=view('messages/events/on_delivery_shift_closed_sms');
-        } else 
+            $CourierShiftModel=model('CourierShiftModel');
+            return $CourierShiftModel->itemClose($courier_id,$courier->owner_id);
+        }
+
         if( $result=='notactive' ){
             $message_text=view('messages/events/on_delivery_shift_notactive_sms');
         } else {
             $message_text=view('messages/events/on_delivery_shift_error_sms');
         }
-
         $message=(object)[
-            'message_reciever_id'=>"$courier->owner_id,-100",
-            'message_transport'=>'message',
+            'message_reciever_id'=>$courier->owner_id,
+            'message_transport'=>'telegram',
             'message_text'=>$message_text,
             'message_data'=>[
-                'title'=>'💤 Смена закрыта',
+                'title'=>'Смена не закрыта',
+                'body'=>$message_text,
+            ]
+        ];
+        $sms_job=[
+            'task_name'=>"Courier Shift opened msg send",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                ],
+        ];
+        jobCreate($sms_job);
+    }
+
+    private function itemShiftStaleNotify($courier_id,$loc_last_updated){
+        $courier=$this->itemGet($courier_id,'basic');
+        if( !is_object($courier) ){
+            return false;
+        }
+        $message_text=view('messages/events/on_delivery_shift_stale_sms',['courier'=>$courier,'loc_last_updated'=>$loc_last_updated]);
+        $message=(object)[
+            'message_reciever_id'=>"$courier->owner_id",
+            'message_transport'=>'telegram',
+            'message_text'=>$message_text,
+            'message_data'=>[
+                'title'=>'📡 Координаты не обновляются',
                 'body'=>$message_text,
             ]
         ];
@@ -228,8 +254,6 @@ class CourierModel extends Model{
                 ],
         ];
         jobCreate($sms_job);
-        // $Messenger=new \App\Libraries\Messenger();
-        // return $Messenger->itemSend($message);
     }
 
     public function isIdle($courier_id=null,$user_id=null){
@@ -553,16 +577,22 @@ class CourierModel extends Model{
     }
 
     public function listIdleShiftClose(){
-        $locationUnknownTimeoutMin=30;
+        $locationUnknownTimeoutMin=10;
+        $shiftCloseMin=30;
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    
-        $this->whereIn('group_type',['ready']);    
-        $this->where("TIMESTAMPDIFF(MINUTE,location_list.created_at, NOW())>{$locationUnknownTimeoutMin}");
         $this->select('courier_id');
+        $this->select("TIMESTAMPDIFF(MINUTE,location_list.updated_at, NOW()) loc_last_updated",false);
+        $this->whereIn('group_type',['ready']);
+        $this->having("loc_last_updated>{$locationUnknownTimeoutMin}");
         $idleCouriers=$this->get()->getResult();
         foreach($idleCouriers as $courier){
-            $this->itemShiftClose($courier->courier_id);
+            if( $courier->loc_last_updated>=$shiftCloseMin ){
+                $this->itemShiftClose($courier->courier_id);
+                continue;
+            }
+            $this->itemShiftStaleNotify($courier->courier_id,$courier->loc_last_updated);
         }
     }
 

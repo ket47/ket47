@@ -2,8 +2,8 @@
 namespace App\Libraries\Telegram;
 trait CourierTrait{
     private $courierButtons=[
-        ['isCourierReady',  'onCourierJobsGet',   "\xF0\x9F\x94\x8D Список заданий"],
-        ['isCourierReady',  'onCourierSetIdle',   "\xE2\x9D\x8C Завершить смену"],
+        ['isCourierReady',  'onCourierJobsGet',   "🔍 Список заданий"],
+        ['isCourierReady',  'onCourierSetIdle',   "🛑 Завершить смену"],
     ];
 
     public function courierStatusGet(){

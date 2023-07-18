@@ -77,12 +77,16 @@ class LocationModel extends Model{
     }
 
     public function itemAdd($data){
-        $location_prev_id=$this->itemMainIdGet( $data['location_holder'], $data['location_holder_id'] );
+        $distanceThreshold=20;//20m
+        $distanceToMainPoint=$this->itemMainDistanceFromGet( $data['location_holder'], $data['location_holder_id'],$data['location_longitude'],$data['location_latitude'] );
+        if( $distanceToMainPoint && $distanceToMainPoint->span_length<$distanceThreshold ){
+            return $this->itemMainRefresh($distanceToMainPoint->location_id);
+        }
         $this->itemMainReset( $data['location_holder'], $data['location_holder_id'] );
+        $data['location_prev_id']=$distanceToMainPoint->location_id??0;//linking current point to previous to build route
         $data['owner_id']=session()->get('user_id');
         $data['is_disabled']=0;
         $data['is_main']=1;
-        $data['location_prev_id']=$location_prev_id;
         $this->allowedFields[]='is_disabled';
         $this->allowedFields[]='owner_id';
         $this->set($data);
@@ -101,12 +105,13 @@ class LocationModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function itemMainIdGet($location_holder, $location_holder_id){
+    public function itemMainDistanceFromGet( $location_holder, $location_holder_id, $location_longitude, $location_latitude ){
         $this->where('location_holder',$location_holder);
         $this->where('location_holder_id',$location_holder_id);
         $this->where('location_list.is_main',1);
         $this->select('location_id');
-        return $this->get()->getRow('location_id');
+        $this->select("ST_Distance_Sphere(location_point,POINT({$location_longitude}, {$location_latitude})) span_length");
+        return $this->get()->getRow();
     }
 
     public function itemMainGet($location_holder, $location_holder_id){
@@ -159,6 +164,18 @@ class LocationModel extends Model{
         $this->orderBy('location_address');
         $this->limit(1);
         $this->set(['is_main'=>1]);
+        $this->update();
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    /**
+     * refreshes main point, sets updated_at to current time stamp
+     */
+    private function itemMainRefresh($location_id){
+        $this->allowedFields[]='updated_at';
+        $this->permitWhere('w');
+        $this->set('updated_at','NOW()',false);
+        $this->where('location_id',$location_id);
         $this->update();
         return $this->db->affectedRows()?'ok':'idle';
     }
@@ -231,54 +248,19 @@ class LocationModel extends Model{
         return $this->get()->getRow('location_count');
     }
 
-/*
-
-
-
-
-
-
-SET @courier_id:=7,@order_id=770;
-SET @prev_location:=null, @prev_date:=null;
-SET @delivery_start_at:=(SELECT ogml.created_at FROM order_group_member_list ogml JOIN order_group_list USING(group_id) WHERE member_id=@order_id AND group_type='delivery_start');
-SET @delivery_finish_at:=(SELECT ogml.created_at FROM order_group_member_list ogml JOIN order_group_list USING(group_id) WHERE member_id=@order_id AND group_type='delivery_finish');
-
-
-
-SELECT
-	location_latitude,location_longitude
-FROM (
-SELECT
-*,
-	ST_Distance_Sphere(COALESCE(@prev_location,location_point),@prev_location:=location_point) distance,
-    -TIMESTAMPDIFF(SECOND,COALESCE(@prev_date,created_at),@prev_date:=created_at) seconds
-FROM
-	location_list
-WHERE
-	location_holder='courier'
-    AND location_holder_id=@courier_id
-    AND created_at>@delivery_start_at
-    AND created_at<@delivery_finish_at
-ORDER BY created_at DESC) tt
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*/
+    /**
+     * calculates route length by chaining location points
+     */
+    public function routeLengthGet( string $location_holder, int $location_holder_id, string $start_at, string $finish_at ){
+        $this->permitWhere('r');
+        $this->where("location_list.created_at>='$start_at'");
+        $this->where("location_list.created_at<='$finish_at'");
+        $this->where('location_list.location_holder',$location_holder);
+        $this->where('location_list.location_holder_id',$location_holder_id);
+        $this->select("SUM(ST_Distance_Sphere(location_list.location_point,loc_prev.location_point)) route_length");
+        $this->join('location_list loc_prev','loc_prev.location_id=location_list.location_prev_id');
+        return $this->get()->getRow('route_length');
+    }
 
     public function distanceToUserInclude(){
         $user_id=session()->get('user_id');
