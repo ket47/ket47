@@ -363,11 +363,7 @@ class Order extends \App\Controllers\BaseController {
     }
 
     private function itemSumMinimalGet( $mode='delivery_by_courier' ){
-        $dayHour=date('H');
-        if($mode=='delivery_by_courier'){
-            return ($dayHour>='20' || $dayHour<'10')?1000:200;
-        }
-        return 0;
+        return 200;
     }
 
     public function itemCheckoutDataSet(){
