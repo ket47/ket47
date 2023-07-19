@@ -528,7 +528,7 @@ class CourierModel extends Model{
      */
 
     private function listNotifyCreate( array $context_list ){
-        $notification_time_gap=60;//1min between notifications
+        $notification_time_gap=3*60;//1min between notifications
         $notification_index=0;
         foreach($context_list as $context){
             $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;
@@ -577,7 +577,7 @@ class CourierModel extends Model{
     }
 
     public function listIdleShiftClose(){
-        $locationUnknownTimeoutMin=10;
+        $locationUnknownTimeoutMin=15;
         $shiftCloseMin=30;
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
@@ -585,7 +585,7 @@ class CourierModel extends Model{
         $this->select('courier_id');
         $this->select("TIMESTAMPDIFF(MINUTE,location_list.updated_at, NOW()) loc_last_updated",false);
         $this->whereIn('group_type',['ready']);
-        $this->having("loc_last_updated>{$locationUnknownTimeoutMin}");
+        $this->having("loc_last_updated>={$locationUnknownTimeoutMin}");
         $idleCouriers=$this->get()->getResult();
         foreach($idleCouriers as $courier){
             if( $courier->loc_last_updated>=$shiftCloseMin ){
