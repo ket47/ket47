@@ -77,7 +77,7 @@ class LocationModel extends Model{
     }
 
     public function itemAdd($data){
-        $distanceThreshold=20;//20m
+        $distanceThreshold=25;//20m
         $distanceToMainPoint=$this->itemMainDistanceFromGet( $data['location_holder'], $data['location_holder_id'],$data['location_longitude'],$data['location_latitude'] );
         if( $distanceToMainPoint && $distanceToMainPoint->span_length<$distanceThreshold ){
             return $this->itemMainRefresh($distanceToMainPoint->location_id);

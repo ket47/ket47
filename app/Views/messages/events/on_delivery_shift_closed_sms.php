@@ -1,4 +1,4 @@
-🛑🛑🛑🛑🛑🛑🛑🛑🛑🛑
+🏁🏁🏁🏁🏁🏁🏁🏁🏁🏁
 <b><?=$courier->courier_name?></b>, ваша смена закрыта. 
 
 <pre>Начало  </pre><b><?=$shift->created_at?></b>
