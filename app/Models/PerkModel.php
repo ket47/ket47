@@ -53,6 +53,8 @@ class PerkModel extends Model{
         foreach($promo_prod_list as $product){
             $perks[]=[
                 'product_id'=>$product->product_id,
+                'product_price'=>$product->product_price,
+                'product_final_price'=>$product->product_final_price,
                 'perk_label'=>$product->product_discount.'%',
                 'perk_title'=>$product->product_name,
                 'image_hash'=>$product->image_hash,
