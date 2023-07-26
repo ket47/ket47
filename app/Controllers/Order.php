@@ -380,6 +380,7 @@ class Order extends \App\Controllers\BaseController {
         if ($order === 'notfound') {
             return $this->failNotFound();
         }
+
         $TariffMemberModel=model('TariffMemberModel');
         $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
         if(!$tariff){
@@ -438,6 +439,16 @@ class Order extends \App\Controllers\BaseController {
 
         if( $checkoutData->storeCorrectionAllow??0 ){
             $order_data->store_correction_allow=1;
+        }
+        /**
+         * Check if order is already not in confirmed state (for example returned to cart stage automatically)
+         * If not - try to make confirmed
+         */
+        if( $order->stage_current!='customer_confirmed' ){
+            $result=$OrderModel->itemStageCreate($order->order_id,'customer_confirmed');
+            if( $result!='ok' ){
+                return $this->fail('wrong_stage');
+            }
         }
         $OrderModel->itemDataDelete($checkoutData->order_id);
         $result=$OrderModel->itemDataUpdate($checkoutData->order_id,$order_data);

@@ -16,6 +16,7 @@ class OrderStageScript{
             'customer_deleted'=>            ['Удалить','danger'],
             'customer_confirmed'=>          [],
             'customer_action_confirm'=>     ['Продолжить'],
+            'customer_action_add'=>         ['Добавить к заказу','medium','outline'],
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
@@ -25,8 +26,8 @@ class OrderStageScript{
             ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
-            'customer_rejected'=>           ['Отменить заказ','danger']
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
+            'customer_rejected'=>           ['Отменить заказ','danger','clear']
             ],
         'customer_rejected'=>[
             'system_reckon'=>               []
@@ -53,7 +54,7 @@ class OrderStageScript{
             'supplier_corrected'=>          ['Изменить'],
             'supplier_action_take_photo'=>  ['Сфотографировать'],
             'delivery_no_courier'=>         [],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             ],
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения','success'],
@@ -70,7 +71,7 @@ class OrderStageScript{
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать'],
-            'delivery_action_rejected'=>    ['Отказаться от доставки','danger'],
+            'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
             ],
         
@@ -113,11 +114,11 @@ class OrderStageScript{
 
         'system_reckon'=>[
             'system_finish'=>               [],
-            'admin_supervise'=>             ['Установить статус','danger'],
+            'admin_supervise'=>             ['Установить статус','danger','outline'],
             ],
         'system_finish'=>[
-            'admin_recalculate'=>           ['Перепровести','danger'],
-            'admin_delete'=>                ['Удалить полностью','danger'],
+            'admin_recalculate'=>           ['Перепровести','danger','outline'],
+            'admin_delete'=>                ['Удалить полностью','danger','outline'],
         ]
     ];
 
@@ -242,12 +243,38 @@ class OrderStageScript{
             if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) ){
                 return 'already_payed';//already payed so refuse to reset to cart
             }
+            if( $this->isAwaitingPayment($order_id) ){
+                return 'awaiting_payment';
+            }
         }
         //$this->OrderModel->itemUnDelete($order_id); seems to be unnecessary
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
         //$this->OrderModel->update($order_id,['order_sum_product'=>0]);in this case serious bug
         return 'ok';
+    }
+
+    private function isAwaitingPayment($order_id){
+        $now=time();
+        $await_payment_until=null;
+        $user_id=session()->get('user_id');
+        if( $user_id==-100 ){//System user autoreset system
+            $orderData=$this->OrderModel->itemDataGet($order_id);
+            $await_payment_until=$orderData->await_payment_until??null;
+        }
+        if( $await_payment_until && $await_payment_until>$now ){
+            $stage_reset_task=[
+                'task_name'=>"customer_confirmed Rollback #$order_id",
+                'task_programm'=>[
+                        ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
+                    ],
+                'is_singlerun'=>1,
+                'task_next_start_time'=>$await_payment_until
+            ];
+            jobCreate($stage_reset_task);
+            return true;
+        }
+        return false;
     }
     
     public function onCustomerConfirmed( $order_id ){
@@ -366,6 +393,9 @@ class OrderStageScript{
         $store_sms=(object)[
             'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'long.wav'
+            ],
             'telegram_options'=>[
                 'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
             ],
@@ -447,8 +477,11 @@ class OrderStageScript{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'medium.wav'
+            ],
             'telegram_options'=>[
                 'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
             ],
@@ -585,6 +618,9 @@ class OrderStageScript{
         $cust_sms=(object)[
             'message_reciever_id'=>$order->owner_id,
             'message_transport'=>'message',
+            'message_data'=>(object)[
+                'sound'=>'medium.wav'
+            ],
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];

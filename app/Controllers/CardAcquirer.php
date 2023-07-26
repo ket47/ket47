@@ -112,6 +112,9 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
+
+        $await_payment_timeout=time()+6*60;//6min
+        $OrderModel->itemDataUpdate($order_id,(object)['await_payment_until'=>$await_payment_timeout]);
         return $Acquirer->linkGet($order_all);
     }
 
