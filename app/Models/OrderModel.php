@@ -20,7 +20,7 @@ class OrderModel extends Model{
         'order_sum_product',
         'order_sum_delivery',
         'order_sum_tax',
-        'order_sum_total',
+        'order_sum_total',//is this good idea???
         'order_description',
         'order_objection',
         'order_stock_status',
@@ -168,13 +168,16 @@ class OrderModel extends Model{
         $new_order=[
             'owner_id'=>$user_id,
             'order_store_id'=>$store_id,
-            'order_store_admins'=>$store_owners_all,
+            //'order_store_admins'=>$store_owners_all,
             'order_sum_delivery'=>$order_sum_delivery??0,//IF null then there is no delivery
             'order_data'=>'{}',
         ];
         $this->allowedFields[]='order_data';
         $order_id=$this->insert($new_order,true);
-        $this->itemUpdateOwners($order_id);
+        /**
+         * not updating owners so store will not see order at this stage 
+         */
+        //$this->itemUpdateOwners($order_id);
         $this->itemStageCreate( $order_id, 'customer_cart' );
         return $order_id;
     }

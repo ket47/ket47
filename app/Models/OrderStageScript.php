@@ -355,6 +355,10 @@ class OrderStageScript{
             return 'address_not_set';
         }
         ///////////////////////////////////////////////////
+        //COPYING STORE OWNERS TO ORDER OWNERS
+        ///////////////////////////////////////////////////
+        $this->OrderModel->itemUpdateOwners($order_id);
+        ///////////////////////////////////////////////////
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
         if( !empty($order_data->delivery_by_courier) ){
