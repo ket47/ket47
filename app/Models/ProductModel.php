@@ -325,6 +325,7 @@ class ProductModel extends Model{
         }
         $this->filterMake( $filter );
         $this->permitWhere('r');
+        $this->orderBy("image_hash",'DESC');
         $this->orderBy("{$this->table}.updated_at",'DESC');
         $this->orderBy("product_final_price<>product_price",'DESC',false);
         $this->join('product_group_member_list','member_id=product_id','left');
@@ -377,9 +378,9 @@ class ProductModel extends Model{
                 1
                 *IF(product_price>0,1,0)
                 *IF(CHAR_LENGTH(product_name)>=5,1,0)
-                *IF(image_id IS NOT NULL,1,0)
                 *(
-                50
+                30
+                +IF(image_id IS NOT NULL,20,0)
                 +IF(CHAR_LENGTH(product_description)>=30,10,0)
                 +IF(CHAR_LENGTH(product_code)>=3,10,0)
                 +IF(CHAR_LENGTH(product_unit)>=1,10,0)
