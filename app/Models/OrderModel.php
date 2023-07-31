@@ -168,7 +168,7 @@ class OrderModel extends Model{
         $new_order=[
             'owner_id'=>$user_id,
             'order_store_id'=>$store_id,
-            //'order_store_admins'=>$store_owners_all,
+            'order_store_admins'=>$store_owners_all,
             'order_sum_delivery'=>$order_sum_delivery??0,//IF null then there is no delivery
             'order_data'=>'{}',
         ];
