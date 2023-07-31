@@ -37,6 +37,11 @@ trait CourierTrait{
     }
 
     public function onCourierUpdateLocation($location){
+        $lastUpdateMsg=session()->get('lastLocationUpdateMessage');
+        if($lastUpdateMsg && ($lastUpdateMsg['updated_at']??0)>time()-30){
+            //to many requests
+            return false;
+        }
         if( $this->isCourierIdle() ){
             $this->courierSetReady();
         }
@@ -56,7 +61,9 @@ trait CourierTrait{
         $incomingData=$this->Telegram->IncomingData();
         session()->set('lastLocationUpdateMessage',[
             'message_id'=>$incomingData['message_id'],
-            'chat_id'=>$incomingData['chat']['id']]
+            'chat_id'=>$incomingData['chat']['id'],
+            'updated_at'=>time()
+            ]
         );
 
         $content=$location;

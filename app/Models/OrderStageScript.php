@@ -624,13 +624,18 @@ class OrderStageScript{
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];
+        $cour_sms=(object)[
+            'message_reciever_id'=>$order->order_courier_admins,
+            'message_transport'=>'telegram',
+            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
+            'context'=>$context
+        ];
         $notification_task=[
             'task_name'=>"supplier_rejected Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms]]]
                 ]
         ];
-        jobCreate($notification_task);
 
         if($order->order_courier_id){
             $courier_freeing_task=[
@@ -644,7 +649,7 @@ class OrderStageScript{
             ];
             jobCreate($courier_freeing_task);
         }
-
+        jobCreate($notification_task);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
