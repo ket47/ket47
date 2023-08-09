@@ -57,7 +57,6 @@ class Mailing extends \App\Controllers\BaseController{
         $MailingModel=model('MailingModel');
         $result=$MailingModel->itemStart($mailing_id);
         
-        $MailingModel=model('MailingModel');
         $mailing=$MailingModel->itemGet($mailing_id);
         if(!$mailing){
             return $this->failNotFound('notfound');
@@ -101,7 +100,7 @@ class Mailing extends \App\Controllers\BaseController{
 
 
 
-        
+
         if($result=='ok'){
             return $this->respond($result);
         }

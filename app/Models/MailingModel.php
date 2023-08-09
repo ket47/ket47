@@ -40,7 +40,7 @@ class MailingModel extends SecureModel{
         $images=$ImageModel->listGet(['image_holder'=>'mailing','image_holder_id'=>$mailing_id]);
 
         if($images[0]->image_hash??null){
-            $mailing->image=getenv('app.backendUrl')."/image/get.php/{$images[0]->image_hash}.1000.1000.webp";
+            $mailing->image=getenv('app.backendUrl')."image/get.php/{$images[0]->image_hash}.1000.1000.webp";
         }
         $mailing->user_filter=json_decode($mailing->user_filter);
         return $mailing;
@@ -51,7 +51,7 @@ class MailingModel extends SecureModel{
             return 'forbidden';
         }
         try{
-            return $this->insert($mailing,true);
+            return $this->ignore()->insert($mailing,true);
         } catch(\Exception $e){
             return $e->getMessage();
         }
@@ -89,7 +89,7 @@ class MailingModel extends SecureModel{
         foreach($reciever_list as $reciever){
             $message=[
                 'mailing_id'=>$mailing_id,
-                'user_id'=>$reciever['user_id'],
+                'reciever_id'=>$reciever['user_id'],
                 'willsend_at'=>$mailing->start_at,
             ];
             $MailingMessageModel->itemCreate($message);
