@@ -31,12 +31,16 @@ class Task extends \App\Controllers\BaseController{
         $this->timedJobDo($predis);
 
         while(time() < $start_time + $time_limit){
-            $job = $predis->blPop('queue.priority.normal',4);
-            if(!$job || !$job[1]){
+            $job_chunk = $predis->blPop('queue.priority.normal',4);
+            $job=$job_chunk[1]??null;
+            if(!$job){
+                $job = $predis->lPop('queue.priority.low');
+            }
+            if(!$job){
                 echo ".";
                 continue;
             }
-            $task= json_decode($job[1]);
+            $task= json_decode($job);
             if( !$task ){
                 echo "\nInvalid job syntax: ".json_last_error_msg();
             }
