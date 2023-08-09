@@ -30,7 +30,7 @@ class MailingMessageModel extends SecureModel{
             return 'forbidden';
         }
         try{
-            return $this->insert($message,true);
+            return $this->ignore()->insert($message,true);
         } catch(\Exception $e){
             return $e->getMessage();
         }
@@ -81,7 +81,7 @@ class MailingMessageModel extends SecureModel{
                 'reciever_id'=>$user->reciever_id,
                 'mailing_id'=>$mailing_id
             ];
-            $this->insert($message);
+            $this->ignore()->insert($message);
         }
         return true;
     }
