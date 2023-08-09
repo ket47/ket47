@@ -37,10 +37,10 @@ class MailingModel extends SecureModel{
             return null;
         }
         $ImageModel=model('ImageModel');
-        $images=$ImageModel->listGet(['image_holder'=>'mailing','image_holder_id'=>$mailing_id]);
+        $mailing->images=$ImageModel->listGet(['image_holder'=>'mailing','image_holder_id'=>$mailing_id]);
 
-        if($images[0]->image_hash??null){
-            $mailing->image=getenv('app.backendUrl')."image/get.php/{$images[0]->image_hash}.1000.1000.webp";
+        if($mailing->images[0]->image_hash??null){
+            $mailing->image=getenv('app.backendUrl')."image/get.php/{$mailing->images[0]->image_hash}.1000.1000.webp";
         }
         $mailing->user_filter=json_decode($mailing->user_filter);
         return $mailing;
