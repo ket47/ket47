@@ -1,7 +1,7 @@
 CREATE TABLE `mailing_list` (
   `mailing_id` int NOT NULL AUTO_INCREMENT,
   `user_filter` json DEFAULT NULL,
-  `subject_template` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `subject_template` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `text_template` text COLLATE utf8mb4_bin,
   `transport` varchar(45) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `sound` varchar(45) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
