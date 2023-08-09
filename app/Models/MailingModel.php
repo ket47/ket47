@@ -39,7 +39,7 @@ class MailingModel extends SecureModel{
         $ImageModel=model('ImageModel');
         $images=$ImageModel->listGet(['image_holder'=>'mailing','image_holder_id'=>$mailing_id]);
 
-        if($images[0]->image_hash){
+        if($images[0]->image_hash??null){
             $mailing->image=getenv('app.backendUrl')."/image/get.php/{$images[0]->image_hash}.1000.1000.webp";
         }
         $mailing->user_filter=json_decode($mailing->user_filter);

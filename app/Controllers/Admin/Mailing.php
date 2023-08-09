@@ -56,15 +56,7 @@ class Mailing extends \App\Controllers\BaseController{
         $mailing_id=$this->request->getPost('mailing_id');
         $MailingModel=model('MailingModel');
         $result=$MailingModel->itemStart($mailing_id);
-        if($result=='ok'){
-            return $this->respond($result);
-        }
-        return $this->fail($result);
-    }
-
-    public function itemSendBatch(){
-        $mailing_id=$this->request->getVar('mailing_id');
-
+        
         $MailingModel=model('MailingModel');
         $mailing=$MailingModel->itemGet($mailing_id);
         if(!$mailing){
@@ -106,6 +98,14 @@ class Mailing extends \App\Controllers\BaseController{
             ];
             jobCreate($mailing_task);
         }
+
+
+
+        
+        if($result=='ok'){
+            return $this->respond($result);
+        }
+        return $this->fail($result);
     }
 
     public function listGet(){
