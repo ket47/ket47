@@ -56,7 +56,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('waiting');
                 break;
             case 'not authorized':
-                $this->log_message('error', "paymentStatusSet $incomingStatus->status; Not enough money?");
+                $this->log_message('error', " order_id:#$incomingStatus->order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
                 return $this->failValidationErrors('not_authorized');
                 break;
             default:

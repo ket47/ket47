@@ -13,10 +13,10 @@ class OrderStageScript{
         //     'customer_cart'=>               ['Восстановить'],
         //     ],
         'customer_cart'=>[
-            'customer_deleted'=>            ['Удалить','danger'],
             'customer_confirmed'=>          [],
-            'customer_action_confirm'=>     ['Продолжить'],
-            'customer_action_add'=>         ['Добавить к заказу','medium','outline'],
+            'customer_action_confirm'=>     ['Перейти к оформлению'],
+            'customer_action_add'=>         ['Добавить товар','medium','outline'],
+            'customer_deleted'=>            ['Удалить','danger','clear'],
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[

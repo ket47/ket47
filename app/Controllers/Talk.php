@@ -7,9 +7,6 @@ class Talk extends \App\Controllers\BaseController{
 
     use ResponseTrait;
 
-
-
-
     public function inquiryCreate(){
         $user_id=$this->request->getPost('user_id');
 
