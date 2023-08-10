@@ -51,7 +51,7 @@ class Task extends \App\Controllers\BaseController{
                 }
                 continue;
             }
-            echo "\nJob {$task->task_name} Started at ".date('H:i:s')." result=";
+            echo "\nJob {($task->task_name??'-')} Started at ".date('H:i:s')." result=";
             print_r( $this->itemExecute( $task ) );
             echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is job
