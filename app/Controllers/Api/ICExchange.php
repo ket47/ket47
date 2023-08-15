@@ -41,7 +41,7 @@ class ICExchange extends \App\Controllers\BaseController
             http_response_code(401);
             die('fail');
         }
-        log_message('error','1C auth '.$token_holder.$token_hash);
+        //log_message('error','1C auth '.$token_holder.$token_hash);
     }
 
     private function prepareSubfolder(){
@@ -379,7 +379,7 @@ class ICExchange extends \App\Controllers\BaseController
 			$date = new \DateTime($order->created_at);
             $store_commission_sum=$order->order_sum_total*(1- ($store->store_commission??0)/100);
             $payment_method = "Перечисление на расчетный счет";
-            $delivery_method = "Tezkel Экспресс доставка";
+            $delivery_method = "Tezkel";
             $order_comment=$order->order_description."\n".$order->order_objection."\n-------------------\n"."Услуги доставки: ".$store_commission_sum;
 
             $doc = $xml->addChild ("Документ");

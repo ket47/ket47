@@ -197,7 +197,7 @@ class OrderModel extends Model{
         $order->updated_by=session()->get('user_id');
         $this->update($order->order_id,$order);
         $update_result=$this->db->affectedRows()>0?'ok':'idle';
-        if( $this->in_object($order,['owner_id','owner_ally_ids','order_store_id','order_courier_id']) ){
+        if( $this->in_object($order,['owner_id','owner_ally_ids','order_courier_id']) ){//,'order_store_id'   not updating owners so store will not see order at this stage 
             $this->itemUpdateOwners($order->order_id);
         }
         return $update_result;

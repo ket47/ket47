@@ -45,7 +45,7 @@ class Task extends \App\Controllers\BaseController{
                 echo "\nInvalid job syntax: ".json_last_error_msg();
             }
             if( isset($task->task_next_start_time) && $task->task_next_start_time>time() ){
-                $final_count=$predis->rPush('queue.priority.normal', $job[1]);
+                $final_count=$predis->rPush('queue.priority.normal', $job);
                 if( $final_count<2 ){
                     sleep(1);//if only one timed job is left wait 1 sec
                 }
