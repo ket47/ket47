@@ -197,7 +197,6 @@ class Order extends \App\Controllers\BaseController {
 
         $LocationModel=model('LocationModel');
         $PromoModel=model('PromoModel');
-        $OrderModel=model('OrderModel');
         $UserCardModel=model('UserCardModel');
         $StoreModel=model('StoreModel');
 
@@ -268,8 +267,13 @@ class Order extends \App\Controllers\BaseController {
             'location_holder'=>'store',
             'location_holder_id'=>$store_id
         ];
-        $CourierModel=model('CourierModel');
-        $hasActiveCourier= $CourierModel->hasActiveCourier($aroundLocation);
+        if( date("H:i")>'22:50' ){//at 23:00 all orders are rejected. 10 for payment timeout
+            $hasActiveCourier=false;
+        }
+        else {
+            $CourierModel=model('CourierModel');
+            $hasActiveCourier= $CourierModel->hasActiveCourier($aroundLocation);            
+        }
         if( !$hasActiveCourier ){
             $this->deliveryNotReadyNotify($store_id);
         }
