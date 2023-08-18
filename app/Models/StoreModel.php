@@ -267,6 +267,7 @@ class StoreModel extends Model{
         $this->where('start_at<=NOW()');
         $this->where('finish_at>=NOW()');
         $this->where('tariff_list.is_disabled',0);
+        $this->where('order_allow',1);
         $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
         if( $tariff_order_mode=='delivery_by_courier_first' ){
             $this->orderBy("delivery_allow DESC");

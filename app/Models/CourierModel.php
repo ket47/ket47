@@ -135,6 +135,9 @@ class CourierModel extends Model{
     }
 
     public function itemUpdateStatus($courier_id,$group_type){
+        if(!$courier_id){
+            return 'notfound';
+        }
         if( !$this->permit($courier_id,'w') ){
             return 'forbidden';
         }
@@ -628,13 +631,64 @@ class CourierModel extends Model{
 
         if( $aroundLocation ){
             $aroundLocationRadius=15000;//maybe it should be different setting?
-            $location_holder=$aroundLocation->location_holder;
-            $location_holder_id=$aroundLocation->location_holder_id;
-            $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE is_main=1 AND location_holder='$location_holder' AND location_holder_id='$location_holder_id')");
+            if( isset($aroundLocation->location_id) ){
+                $location_holder=$aroundLocation->location_holder;
+                $location_holder_id=$aroundLocation->location_holder_id;
+                $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE location_id='{$aroundLocation->location_id}')");
+            } else {
+                $location_holder=$aroundLocation->location_holder;
+                $location_holder_id=$aroundLocation->location_holder_id;
+                $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE is_main=1 AND location_holder='$location_holder' AND location_holder_id='$location_holder_id')");
+            }
             $this->where("ST_Distance_Sphere(@start_point,location_point)<='$aroundLocationRadius'");
             $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");
         }
         return $this->get()->getRow('group_type')??0;
+    }
+
+    public function deliveryIsReady( object $aroundLocation){
+        if( date("H:i")>'22:50' ){//at 23:00 all orders are rejected. 10 for payment timeout
+            $hasActiveCourier=false;
+        }
+        else {
+            $hasActiveCourier= $this->hasActiveCourier($aroundLocation);
+        }
+        if( !$hasActiveCourier ){
+            $this->deliveryNotReadyNotify($aroundLocation);
+        }
+        return $hasActiveCourier;
+    }
+    
+    private function deliveryNotReadyNotify($aroundLocation){
+        $already_sent_key="deliveryNotReadyNotified-{$aroundLocation->location_holder}{$aroundLocation->location_holder_id}";
+        $already_sent=session()->get($already_sent_key);
+        if($already_sent){
+            return;
+        }
+        session()->set($already_sent_key,1);
+
+        if($aroundLocation->location_holder=='store'){
+            $StoreModel=model('StoreModel');
+            $store=$StoreModel->itemGet($aroundLocation->location_holder_id);
+        }
+        $context=[
+            'store'=>$store??null,
+            'customer'=>session()->get('user_data'),
+        ];
+        $admin_email=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'telegram',
+            'message_subject'=>"Нет доступного курьера",
+            'template'=>'messages/events/on_delivery_not_found_email.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"delivery_not_found Notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
+                ]
+        ];
+        jobCreate($notification_task);
     }
     
     /////////////////////////////////////////////////////

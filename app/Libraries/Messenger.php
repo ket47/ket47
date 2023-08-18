@@ -152,7 +152,7 @@ class Messenger{
     private function itemSendSms( $message ){
         $phone_to=$message->message_reciever_phone??$message->reciever->user_phone??'';
         if(!$phone_to){
-            log_message('error','Sms cant be send: no phone number');
+            pl(['Sms cant be send: no phone number',$message]);
             return false;
         }
         $Sms=\Config\Services::sms();

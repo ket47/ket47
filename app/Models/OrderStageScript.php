@@ -481,8 +481,8 @@ class OrderStageScript{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'push',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_transport'=>'message',
+            'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'medium.wav'
             ],
@@ -500,26 +500,31 @@ class OrderStageScript{
             'template'=>'messages/order/on_customer_rejected_STORE_email.php',
             'context'=>$context
         ];
+        $cour_sms=(object)[
+            'message_reciever_id'=>$order->order_courier_admins,
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_customer_rejected_COUR_sms.php',
+            'context'=>$context
+        ];
         $notification_task=[
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cour_sms]]]
                 ]
         ];
-        jobCreate($notification_task);
 
-        if($order->order_courier_id){
-            $courier_freeing_task=[
-                'task_name'=>"free the courier",
-                'task_programm'=>[
-                    ['model'=>'UserModel','method'=>'systemUserLogin'],
-                    ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
-                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
-                    ['model'=>'UserModel','method'=>'systemUserLogout'],
-                    ]
-            ];
-            jobCreate($courier_freeing_task);
-        }
+        $courier_freeing_task=[
+            'task_name'=>"free the courier",
+            'task_programm'=>[
+                ['model'=>'UserModel','method'=>'systemUserLogin'],
+                ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
+                ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ]
+        ];
+
+        jobCreate($courier_freeing_task);
+        jobCreate($notification_task);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
         
@@ -612,8 +617,17 @@ class OrderStageScript{
             'store'=>$store,
             'customer'=>$customer
         ];
+        $store_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'medium.wav'
+            ],
+            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
+            'context'=>$context
+        ];
         $store_email=(object)[
-            'message_reciever_id'=>($store->owner_id??0).','.($store->owner_ally_ids??0),
+            'message_reciever_id'=>($store->owner_id??0).',-100,'.($store->owner_ally_ids??0),
             'message_transport'=>'email',
             'message_subject'=>"Отмена Заказа №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_supplier_rejected_STORE_email.php',
@@ -630,29 +644,29 @@ class OrderStageScript{
         ];
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'telegram',
-            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
+            'message_transport'=>'message',
+            'template'=>'messages/order/on_supplier_rejected_COUR_sms.php',
             'context'=>$context
         ];
         $notification_task=[
             'task_name'=>"supplier_rejected Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms,$store_sms]]]
                 ]
         ];
 
-        if($order->order_courier_id){
-            $courier_freeing_task=[
-                'task_name'=>"free the courier",
-                'task_programm'=>[
-                    ['model'=>'UserModel','method'=>'systemUserLogin'],
-                    ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
-                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
-                    ['model'=>'UserModel','method'=>'systemUserLogout'],
-                    ]
-            ];
-            jobCreate($courier_freeing_task);
-        }
+
+        $courier_freeing_task=[
+            'task_name'=>"free the courier",
+            'task_programm'=>[
+                ['model'=>'UserModel','method'=>'systemUserLogin'],
+                ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
+                ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ]
+        ];
+
+        jobCreate($courier_freeing_task);
         jobCreate($notification_task);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }

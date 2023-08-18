@@ -197,7 +197,6 @@ class Order extends \App\Controllers\BaseController {
 
         $LocationModel=model('LocationModel');
         $PromoModel=model('PromoModel');
-        $UserCardModel=model('UserCardModel');
         $StoreModel=model('StoreModel');
 
         $bulkResponse=(object)[];
@@ -230,54 +229,10 @@ class Order extends \App\Controllers\BaseController {
             'count'
         );
         if( getenv('uniteller.recurrentAllow') ){
+            $UserCardModel=model('UserCardModel');
             $bulkResponse->bankCard=$UserCardModel->itemMainGet();
         }
         return $this->respond($bulkResponse);
-    }
-
-    private function deliveryNotReadyNotify($store_id){
-        $already_sent=session()->get('deliveryNotReadyNotified-'.$store_id);
-        if($already_sent){
-            return;
-        }
-        session()->set('deliveryNotReadyNotified-'.$store_id,1);
-        $StoreModel=model('StoreModel');
-        $context=[
-            'store'=>$StoreModel->itemGet($store_id),
-            'customer'=>session()->get('user_data'),
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'telegram',
-            'message_subject'=>"Нет доступного курьера для продавца {$context['store']->store_name}",
-            'template'=>'messages/events/on_delivery_not_found_email.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"delivery_not_found Notify",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
-                ]
-        ];
-        jobCreate($notification_task);
-    }
-
-    private function deliveryIsReady($store_id){
-        $aroundLocation=(object)[
-            'location_holder'=>'store',
-            'location_holder_id'=>$store_id
-        ];
-        if( date("H:i")>'22:50' ){//at 23:00 all orders are rejected. 10 for payment timeout
-            $hasActiveCourier=false;
-        }
-        else {
-            $CourierModel=model('CourierModel');
-            $hasActiveCourier= $CourierModel->hasActiveCourier($aroundLocation);            
-        }
-        if( !$hasActiveCourier ){
-            $this->deliveryNotReadyNotify($store_id);
-        }
-        return $hasActiveCourier;
     }
 
     private function itemDeliveryOptionsGet( $store_id ){
@@ -287,7 +242,12 @@ class Order extends \App\Controllers\BaseController {
         }
 
         $tariff_order_mode='delivery_by_courier_first';
-        $deliveryIsReady=$this->deliveryIsReady($store_id);
+        $lookForCourierAroundLocation=(object)[
+            'location_holder'=>'store',
+            'location_holder_id'=>$store_id
+        ];
+        $CourierModel=model('CourierModel');
+        $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
         if(!$deliveryIsReady){
             $tariff_order_mode='delivery_by_courier_last';
         }
@@ -402,7 +362,13 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_by_courier=1;
             $order_data->delivery_fee=$tariff->delivery_fee;
             $order_data->delivery_cost=$tariff->delivery_cost;
-            if( !$this->deliveryIsReady($order->order_store_id) ){
+            $CourierModel=model('CourierModel');
+            $lookForCourierAroundLocation=(object)[
+                'location_holder'=>'store',
+                'location_holder_id'=>$order->order_store_id
+            ];
+            $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
+            if( !$deliveryIsReady ){
                 return $this->fail('no_delivery');
             }
         } else
