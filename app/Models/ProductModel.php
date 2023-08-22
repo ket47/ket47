@@ -198,9 +198,12 @@ class ProductModel extends Model{
             return 'error_empty';
         }
         $this->permitWhere('w');
-        if( isset($product->product_quantity) && !isset($product->product_quantity_expire_at) ){
-            $expiration_timeout=8;//8 hours
-            $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
+        // if( isset($product->product_quantity) && !isset($product->product_quantity_expire_at) ){
+        //     $expiration_timeout=8;//8 hours
+        //     $product->product_quantity_expire_at=date("Y-m-d H:i:s",time()+60*60*$expiration_timeout);
+        // }
+        if($product->product_category_name??null){
+            $this->itemCreateCategory($product->product_id,$product->product_category_name);
         }
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
