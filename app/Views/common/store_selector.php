@@ -12,14 +12,18 @@
     .item_disabled{
         background-color: #ddd;
     }
-    .found_store_list div{
+    .found_store_list{
+        height:250px;
+        overflow: scroll;
+    }
+    .found_store_list>div{
         display:inline-block;
         border-radius:5px;
         background-color:#eee;
         padding:5px;
         margin:5px;
         cursor:pointer;
-        width: 100px;
+        width: 150px;
     }
     .selected_store{
         font-weight:bold;
@@ -57,7 +61,7 @@
             }
             var name_query=$('.store_search_bar input').val();
             var name_query_fields='store_name';
-            var limit=20;
+            var limit=60;
             var filter={
                 name_query,
                 name_query_fields,
@@ -76,8 +80,10 @@
                 let html='';
                 for(let store of store_list){
                     html+=`<div data-store_id="${store.store_id}">
-                                <img src="/image/get.php/${store.image_hash}.100.100.webp" alt=""><br>
+                                <div data-store_id="${store.store_id}" style="background:url(/image/get.php/${store.image_hash}.150.150.webp) no-repeat;height:50px"></div>
+                                <div data-store_id="${store.store_id}" style="height:50px;overflow:hidden">
                                 ${store.store_name||'-'}
+                                </div>
                             </div>`;
                 }
                 $('.found_store_list').html(html);

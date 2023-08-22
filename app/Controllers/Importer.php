@@ -39,6 +39,8 @@ class Importer extends \App\Controllers\BaseController{
             'name_query_fields'=>$this->request->getVar('name_query_fields'),
             'limit'=>$this->request->getVar('limit'),
             'offset'=>$this->request->getVar('offset'),
+            'holder'=>$this->request->getPost('holder'),
+            'holder_id'=>$this->request->getPost('holder_id')
         ];
         $ImporterModel=model('ImporterModel');
         $rows=$ImporterModel->listGet($filter);

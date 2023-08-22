@@ -2,8 +2,8 @@
 <?=view('common/store_selector',['use_all_stores'=>0,'owned_stores_only'=>0, 'store_click_handler'=>'
         ImportList.table.loadrequest.holder="store";
         ImportList.table.loadrequest.holder_id=store_id;
-        ImportList.listAnalyse();
-        //ImportList.table.reload();
+        //ImportList.listGet();
+        ImportList.table.reload();
         '])?>
 <?=$html_before??'' ?>
 <style>
@@ -109,6 +109,18 @@
                 }
             });
         },
+        // listGet:function(){
+        //     let request={
+        //         target:'product',
+        //         holder:ImportList.table.loadrequest.holder,
+        //         holder_id:ImportList.table.loadrequest.holder_id
+        //     };
+        //     return $.post('/Importer/listGet',request).done((response,status)=>{
+        //         if( status==='success' ){
+        //             ImportList.listAnalyseRenderButtons(response);
+        //         }
+        //     });
+        // },
         listAnalyse:function(){
             let selectors=ImportList.table.colconfigGet();
             if( selectors.dublicate_reseted ){
@@ -291,6 +303,7 @@
                 this.loadingcompleted=false;
                 $(".import_table_row").remove();
                 this.loadmore();
+                ImportList.listAnalyse()
             },
             loadmorecheck:function(){
                 if(  isElementInViewport( $("#import_table_loader") ) ) {
@@ -304,6 +317,8 @@
                 this.inprogress=true;
                 this.loadrequest.limit=30;
                 this.loadrequest.offset=this.loadoffset;
+                this.loadrequest.holder=ImportList.table.loadrequest.holder;
+                this.loadrequest.holder_id=ImportList.table.loadrequest.holder_id;
                 $.post('/Importer/listGet',this.loadrequest,'json').done(function(list){
                     ImportList.table.inprogress=false;
                     ImportList.table.loadoffset+=list.length+1;
@@ -415,7 +430,8 @@
 <div style="padding: 20px;">
     
     <div>
-        <div style="background-color:#ddd" class="action_button" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> | 
+        <div style="background-color:#ddd" class="action_button" onclick='$("#importlist_uploader").click()'><span class="fa fa-upload"></span> Загрузить файл XLSX</div> |
+        <div style="background-color:#ddd" class="action_button" onclick='ImportList.listAnalyse()'>Анализ</div> | 
         <div id="import_table_actions" style="display: inline-block"></div>
     </div>
     

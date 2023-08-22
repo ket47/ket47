@@ -78,6 +78,14 @@ class ImporterModel extends Model{
     
     public function listGet( $filter=[] ){
         $this->filterMake($filter);
+
+        if($filter['holder']){
+            $this->where('holder',$filter['holder']);
+        }
+        if($filter['holder_id']){
+            $this->where('holder_id',$filter['holder_id']);
+        }
+
         $this->permitWhere('r');
         $this->orderBy("action='add'","DESC");
         $this->orderBy("action='update'","DESC");
@@ -240,5 +248,45 @@ class ImporterModel extends Model{
                 AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
             ";
         $this->query($sql);
+        
+        $this->select("COUNT(*) row_count,`action`")
+                ->where('owner_id',$owner_id)
+                ->where('holder','store')
+                ->where('holder_id',$store_id)
+                ->groupBy('`action`');
+        
+        $analysed=$this->get()->getResult();
+        //ANALYSE FOR DELETE
+        $analysed[]=['row_count'=>$this->productListAnalyseAbsent($store_id,$colconfig,'row_count'),'action'=>'delete'];
+        return $analysed;
+    }
+    
+    private function productListAnalyseAbsent($store_id,$colconfig=null,$get='row_count'){
+        if( isset($colconfig->product_code) ){
+            $join_on_src=$colconfig->product_code;
+            $join_on_dst='product_code';
+        } else {
+            $join_on_src=$colconfig->product_name;
+            $join_on_dst='product_name';            
+        }
+        if($get=='row_count'){
+            $select='COUNT(*) row_count';
+        }
+        if($get=='id_list'){
+            $select='GROUP_CONCAT(pl.product_id) id_list';
+        }
+        $sql="
+            SELECT
+                $select
+            FROM
+                product_list pl
+                    LEFT JOIN
+                imported_list il ON pl.$join_on_dst=il.$join_on_src AND il.holder='store' AND il.holder_id='$store_id'
+            WHERE
+                pl.owner_id='$this->user_id'
+                AND il.id IS NULL
+                AND pl.deleted_at IS NULL
+            ";
+        return $this->query($sql)->getRow($get);
     }
 }
