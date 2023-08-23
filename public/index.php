@@ -4,7 +4,7 @@ function handleCors(){
         return 'fromCli';
     }
     foreach (getallheaders() as $name => $value) {
-        if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || getenv('CI_ENVIRONMENT')=='development' || str_contains($value, 'localhost')) ){
+        if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || getenv('CI_ENVIRONMENT')=='development' || str_contains($value, 'localhost') || str_contains($value, '192.168.0.')) ){
             header("Access-Control-Allow-Origin: $value");
             break;
         }
