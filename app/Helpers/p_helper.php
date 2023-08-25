@@ -9,7 +9,7 @@ function p( $object, $die=true  ){
 }
 function pl( $object, $die=false ){
     if(is_array($object) || is_object($object)){
-        log_message('error','PL HELPER '.json_encode($object,JSON_UNESCAPED_UNICODE));
+        log_message('error','PL HELPER '.json_encode($object,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     } else {
         log_message('error','PL HELPER '.$object);
     }

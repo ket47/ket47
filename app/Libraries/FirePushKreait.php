@@ -23,6 +23,8 @@ class FirePushKreait{
                 'notification' => [
                     'title' => $push->title,
                     'body' => $push->body,
+                    'image'=>$push->data['image']??null,
+                    'icon'=>$push->data['icon']??null,
                 ],
             ],
             'apns' => [
@@ -40,8 +42,18 @@ class FirePushKreait{
             $msg['apns']['payload']['aps']['sound']=$msg['data']['sound'];
             $msg['apns']['headers']['apns-priority']='10';
 
-            $msg['android']['notification']['sound']=$msg['data']['sound'];
-            $msg['android']['priority']='high';
+            if(str_contains($msg['data']['sound'],'long')){
+                //$msg['android']['notification']['sound']='longsound';
+                $msg['android']['notification']['channelId']='com.tezkel.urgent';
+            }
+            if(str_contains($msg['data']['sound'],'medium')){
+                //$msg['android']['notification']['sound']='mediumsound';
+                $msg['android']['notification']['channelId']='com.tezkel.high';
+            }
+            if(str_contains($msg['data']['sound'],'short')){
+                //$msg['android']['notification']['sound']='shortsound';
+                $msg['android']['notification']['channelId']='com.tezkel.normal';
+            }
         }
         if( $push->data['tag']??'' ){
             $msg['apns']['headers']['apns-collapse-id']=$push->data['tag'];//ios
