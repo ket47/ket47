@@ -18,7 +18,7 @@ class TestController extends \App\Controllers\BaseController{
                 //'fXF3H6KOobooZA-1h_Ttc0:APA91bGeqZyCTWxqV42R5-ez-c5GfSC7WcyXUpmCc6g-WBuAGPrZNtGD8edMNEwXpzGfn-kvwZVn_xfJVEquRJ0iUYMheJ_NJlW9YohUFjpvNmuSYwasOV55xpow4esoMH8aXMCc3qsZ',//ff
                 //'c8aL3e93u7QEvPUU8tfZfW:APA91bFK-oKAhRY3j0JNId8Kwg8bWywW0GAstUGZcLOC2Nd0E63RmVoVWfgSx2Y2e-qm7FtpQUslFBsqDI92Ib3Fjyp_QYh7H0FZy6DCZDOK26yp0R5RCJGswlpGkspbJXhuRrm0zUmv',//edge
                 //'dbkB1s8n-kXNicm-IYBu9l:APA91bGCiCyCWviixtMusgf0AhDQWXx5GQItwcFs9JxSvpHGp0byVbpMaxXk3Miuwh9JUiFUcFsq1pR1c8-Drgnm6j1QTnxOeTHTAgjPK6qSN43BkgWfFw_a_Kc4tPpyxUuGi6n1Os1Y',//ios
-                'dOhEdNawTfGqfQSB-QQ9ML:APA91bGAemzY63OOORYrsZdmBbpy5Y-19Hjio7W_ocfel7zYf0J-GB5C_huT9_DRXGe5Y7f9mOfYjSJq3946vf4G8jayNq2lKRfzPB2ODUDnL0yC0O0Ki3s-37F8rXNuzvrxnbh534X9',//android
+                'czGFueSwQUGspDaZlVe57V:APA91bGN9fNP71OXmooco4AQBguhqy-5GCBeIygjEzdk5nS9Ep1NZhIpfWrCd_lI9K2E9PZx5Hb4ATsEj6dVW7RMuW-9KfKnhE1Av-H6dGnrG3ZSoJiNtuxjLkbbplhaqjs9dbZzUrct',//android
                 //'e3fOaaxrBblDF60jjF_N0n:APA91bERvrB4GmB5mjvO-OVvs-ynFpMZ3uX4_vjPOWi6lTDTizVWDsjPQc4lC9_v2TBLsOwyw7THOFLv9T9AWzLLatFFOHS5pVnJCr54PS3vMYLLGoCKjSeVzh6tQqD7x09kbcJWrW_d'
             ],
             'title'=>'TeSt PuSh😀😀😀😀',
@@ -28,16 +28,16 @@ class TestController extends \App\Controllers\BaseController{
                  'tag'=>'#orderStatus',
                  'image'=>'https://api.tezkel.com/image/get.php/fafa5407eaf897fd8b2d378e6c011f42.600.600.jpg',
                  'icon'=>'default_notification_icon',
-                 //'sound'=>'long.wav',
+                 'sound'=>'long.wav',
 
-                 'topic'=>'pushStageChanged',
-                 'order_id'=>2457,
-                 'orderActiveCount'=>55,
-                 'stage'=>'customer_start',
+                //  'topic'=>'pushStageChanged',
+                //  'order_id'=>2457,
+                //  'orderActiveCount'=>55,
+                //  'stage'=>'customer_start',
             ],
         ]);
 
-        header("Refresh:5");
+        header("Refresh:15");
         echo $result;
     }
 }

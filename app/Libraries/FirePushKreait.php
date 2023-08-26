@@ -25,6 +25,7 @@ class FirePushKreait{
                     'body' => $push->body,
                     'image'=>$push->data['image']??null,
                     'icon'=>$push->data['icon']??null,
+                    'click_action'=>'NOTIF_ACTIVATE'
                 ],
             ],
             'apns' => [
@@ -37,21 +38,24 @@ class FirePushKreait{
                     ],
                 ],
             ],
+            'webpush'=>[]
         ];
         if( $msg['data']['sound']??'' ){
             $msg['apns']['payload']['aps']['sound']=$msg['data']['sound'];
             $msg['apns']['headers']['apns-priority']='10';
 
+            $msg['android']["priority"]='high';
+            $msg['webpush']["headers"]["Urgency"]='high';
             if(str_contains($msg['data']['sound'],'long')){
-                //$msg['android']['notification']['sound']='longsound';
+                $msg['android']['notification']['sound']='longsound';//backward compability
                 $msg['android']['notification']['channelId']='com.tezkel.urgent';
             }
             if(str_contains($msg['data']['sound'],'medium')){
-                //$msg['android']['notification']['sound']='mediumsound';
+                $msg['android']['notification']['sound']='mediumsound';//backward compability
                 $msg['android']['notification']['channelId']='com.tezkel.high';
             }
             if(str_contains($msg['data']['sound'],'short')){
-                //$msg['android']['notification']['sound']='shortsound';
+                $msg['android']['notification']['sound']='shortsound';//backward compability
                 $msg['android']['notification']['channelId']='com.tezkel.normal';
             }
         }
