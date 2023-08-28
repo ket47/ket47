@@ -35,28 +35,22 @@ class Messenger{
             $message->message_text=$this->itemRender($message);
         }
         //log_message('error',json_encode($message,JSON_UNESCAPED_UNICODE));
-        switch( $message->message_transport ){
-            case 'email':
-                return $this->itemSendEmail($message);
-                break;
-            case 'message':
-                return $this->itemSendMessage($message);
-                break;
-            case 'sms':
-                return $this->itemSendSms($message);
-                break;
-            case 'telegram':
-                return $this->itemSendTelegram($message);
-                break;
-            // case 'viber':
-            //     return $this->itemSendViber($message);
-            //     break;
-            case 'push':
-                return $this->itemSendPush($message);
-                break;
-            default:
-                log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));
+        if( str_contains($message->message_transport,'email') ){
+            return $this->itemSendEmail($message);
         }
+        if( str_contains($message->message_transport,'message') ){
+            return $this->itemSendMessage($message);
+        }
+        if( str_contains($message->message_transport,'sms') ){
+            return $this->itemSendSms($message);
+        }
+        if( str_contains($message->message_transport,'telegram') ){
+            return $this->itemSendTelegram($message);
+        }
+        if( str_contains($message->message_transport,'push') ){
+            return $this->itemSendPush($message);
+        }
+        log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));
     }
     
     private $reciever_cache=null;

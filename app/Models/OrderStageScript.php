@@ -35,7 +35,7 @@ class OrderStageScript{
         
         'customer_disputed'=>[
             'customer_finish'=>             ['Отказаться от спора','success'],
-            'customer_action_take_photo'=>  ['Сфотографировать заказ'],
+            'customer_action_take_photo'=>  ['Сфотографировать заказ','medium','outline'],
             'admin_supervise'=>             ['Решить спор','danger'],
             ],
         'customer_finish'=>[
@@ -51,26 +51,26 @@ class OrderStageScript{
             ],
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
-            'supplier_corrected'=>          ['Изменить'],
-            'supplier_action_take_photo'=>  ['Сфотографировать'],
+            'supplier_corrected'=>          ['Изменить','medium','clear'],
+            'supplier_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'delivery_no_courier'=>         [],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             ],
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения','success'],
-            'supplier_action_add'=>         ['Добавить товар'],
+            'supplier_action_add'=>         ['Добавить товар','medium','outline'],
             'delivery_no_courier'=>         [],
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
-            'supplier_corrected'=>          ['Изменить'],
+            'supplier_corrected'=>          ['Изменить','medium','clear'],
             'delivery_start'=>              ['Начать доставку','success'],
             'delivery_no_courier'=>         [],
             'system_reckon'=>               []
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
-            'delivery_action_take_photo'=>  ['Сфотографировать'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
             ],
@@ -395,7 +395,7 @@ class OrderStageScript{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'long.wav'
@@ -435,7 +435,7 @@ class OrderStageScript{
 
 
         $cust_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
@@ -502,7 +502,10 @@ class OrderStageScript{
         ];
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
+            'message_data'=>(object)[
+                'sound'=>'medium.wav'
+            ],
             'template'=>'messages/order/on_customer_rejected_COUR_sms.php',
             'context'=>$context
         ];
@@ -637,7 +640,7 @@ class OrderStageScript{
             'message_reciever_id'=>$order->owner_id,
             'message_transport'=>'message',
             'message_data'=>(object)[
-                'sound'=>'medium.wav'
+                'sound'=>'short.wav'
             ],
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
@@ -645,6 +648,9 @@ class OrderStageScript{
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
             'message_transport'=>'message',
+            'message_data'=>(object)[
+                'sound'=>'short.wav'
+            ],
             'template'=>'messages/order/on_supplier_rejected_COUR_sms.php',
             'context'=>$context
         ];
@@ -714,6 +720,9 @@ class OrderStageScript{
             $cust_sms=(object)[
                 'message_transport'=>'message',
                 'message_reciever_id'=>$order->owner_id,
+                'message_data'=>(object)[
+                    'sound'=>'short.wav'
+                ],
                 'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
                 'context'=>$context
             ];
@@ -753,13 +762,13 @@ class OrderStageScript{
             'store'=>$store
         ];
         $customer_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'telegram',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_supplier_overdue_STORE_sms.php',
             'context'=>$context
@@ -907,12 +916,12 @@ class OrderStageScript{
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_delivery_found_STORE_sms.php',
             'context'=>$context
