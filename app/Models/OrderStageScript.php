@@ -943,7 +943,7 @@ class OrderStageScript{
         // }
         $order=$this->OrderModel->itemGet($order_id);
         if( !$order->images ){
-            return 'photos_must_be_made';
+            //return 'photos_must_be_made';
         }
         return 'ok';
     }
