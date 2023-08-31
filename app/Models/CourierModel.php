@@ -104,6 +104,24 @@ class CourierModel extends Model{
             $courier_id=$this->insert($courier,true);
             $this->itemUpdateStatus($courier_id,'idle');
         $this->transCommit();
+
+        
+        $courier=$this->itemGet($courier_id);
+        $admin_sms=(object)[
+            'message_reciever_id'=>-100,
+            'message_transport'=>'telegram',
+            'context'=>$courier,
+            'template'=>'messages/events/on_courier_registration_sms.php',
+        ];
+        $notification_task=[
+            'task_name'=>"signup_welcome_sms",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+
         return $courier_id;
     }
     
