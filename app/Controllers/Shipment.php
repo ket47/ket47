@@ -8,6 +8,9 @@ class Shipment extends \App\Controllers\BaseController{
     use ResponseTrait;
     
     public function itemGet(){
+        if( !(session()->get('user_id')>-1) ){
+            return $this->failUnauthorized('unauthorized');
+        }
         $ship_id=$this->request->getPost('ship_id');
         $ShipmentModel=model('ShipmentModel');
         $result=$ShipmentModel->itemGet($ship_id);
@@ -138,6 +141,10 @@ class Shipment extends \App\Controllers\BaseController{
             $bulkResponse->bankCard=$UserCardModel->itemMainGet();
         }
         return $this->respond($bulkResponse);
+    }
+
+    public function itemCheckoutDataSet(){
+        $ship=$this->request->getJSON();
     }
 
 

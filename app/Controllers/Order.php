@@ -9,6 +9,9 @@ class Order extends \App\Controllers\BaseController {
     use ResponseTrait;
 
     public function itemGet($order_id=null) {
+        if( !(session()->get('user_id')>-1) ){
+            return $this->failUnauthorized('unauthorized');
+        }
         if( !$order_id ){
             $order_id = $this->request->getVar('order_id');
         }
