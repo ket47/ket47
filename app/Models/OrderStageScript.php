@@ -53,8 +53,9 @@ class OrderStageScript{
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_corrected'=>          ['Изменить','medium','clear'],
             'supplier_action_take_photo'=>  ['Сфотографировать','medium','clear'],
-            'delivery_no_courier'=>         [],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
+            'delivery_no_courier'=>         [],
+            'delivery_force_start'=>        ['Готов к доставке','light'],
             ],
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения','success'],
@@ -67,6 +68,9 @@ class OrderStageScript{
             'delivery_start'=>              ['Начать доставку','success'],
             'delivery_no_courier'=>         [],
             'system_reckon'=>               []
+            ],
+        'delivery_force_start'=>            [
+            'supplier_finish'=>              [],
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
@@ -937,14 +941,27 @@ class OrderStageScript{
     }
     
     public function onDeliveryStart( $order_id ){
-        $CourierModel=model('CourierModel');
+        //$CourierModel=model('CourierModel');
         // if( !$CourierModel->isBusy() ){
         //     return 'wrong_courier_status';
         // }
-        $order=$this->OrderModel->itemGet($order_id);
-        if( !$order->images ){
-            //return 'photos_must_be_made';
-        }
+        // $order=$this->OrderModel->itemGet($order_id);
+        // if( !$order->images ){
+        //     return 'photos_must_be_made';
+        // }
+        return 'ok';
+    }
+    public function onDeliveryForceStart( $order_id ){
+        $courier_forcestart_task=[
+            'task_name'=>"forcestart by courier",
+            'task_programm'=>[
+                ['model'=>'UserModel','method'=>'systemUserLogin'],
+                ['model'=>'OrderModel','method'=>'itemStageCreate','arguments'=>[$order_id,'supplier_finish']],
+                ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ]
+        ];
+
+        jobCreate($courier_forcestart_task);
         return 'ok';
     }
     public function onDeliveryRejected( $order_id ){
