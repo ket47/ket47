@@ -119,6 +119,9 @@ trait OrderStageTrait{
     }
     
     private function itemStageChangeNotify($order, $stage){
+        if( in_array($stage,['customer_cart','customer_confirmed']) ){
+            return;//not notifying for this stages
+        }
         $order=$this->itemGet($order->order_id,'basic');
         $recievers_id=$order->owner_id.','.$order->owner_ally_ids;
         $push=(object)[
