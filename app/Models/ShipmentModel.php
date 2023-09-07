@@ -14,7 +14,20 @@ class ShipmentModel extends SecureModel{
         'ship_sum_delivery',
         'ship_description',
         ];
-
+    protected $validationRules    = [
+        'ship_store_id'     => [
+            'rules' =>'if_exist|permit_empty|numeric',
+        ],
+        'ship_start_location_id'     => [
+            'rules' =>'if_exist|permit_empty|numeric',
+        ],
+        'ship_finish_location_id'     => [
+            'rules' =>'if_exist|permit_empty|numeric',
+        ],
+        'ship_description'     => [
+            'rules' =>'if_exist|permit_empty',
+        ],
+    ];
     
     private function itemDeliverySumCalculate( int $store_id=null, int $start_location_id=null, int $finish_location_id=null ){
         $deliveryCourierCost=0;
@@ -64,7 +77,7 @@ class ShipmentModel extends SecureModel{
     
     public function itemUpdate( $shipment ){
         if( empty($shipment->ship_id) ){
-            return 'noid';
+            return 'notfound';
         }
         $this->update($shipment->ship_id,$shipment);
         return $this->db->affectedRows()>0?'ok':'idle';

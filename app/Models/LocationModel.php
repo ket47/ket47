@@ -38,6 +38,18 @@ class LocationModel extends Model{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet( $location_id ){
+        $this->select("
+            location_id,
+            location_holder,
+            location_holder_id,
+            location_prev_id,
+            location_order,
+            location_address,
+            location_comment,
+            location_latitude,
+            location_longitude,
+            is_main
+        ");
         return $this->where('location_id',$location_id)->get()->getRow();
     }
     

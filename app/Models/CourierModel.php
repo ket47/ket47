@@ -650,9 +650,8 @@ class CourierModel extends Model{
         if( $aroundLocation ){
             $aroundLocationRadius=15000;//maybe it should be different setting?
             if( isset($aroundLocation->location_id) ){
-                $location_holder=$aroundLocation->location_holder;
-                $location_holder_id=$aroundLocation->location_holder_id;
-                $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE location_id='{$aroundLocation->location_id}')");
+                $location_id=$aroundLocation->location_id;
+                $this->query("SET @start_point:=(SELECT location_point FROM location_list WHERE location_id='{$location_id}')");
             } else {
                 $location_holder=$aroundLocation->location_holder;
                 $location_holder_id=$aroundLocation->location_holder_id;
@@ -678,14 +677,14 @@ class CourierModel extends Model{
     }
     
     private function deliveryNotReadyNotify($aroundLocation){
-        $already_sent_key="deliveryNotReadyNotified-{$aroundLocation->location_holder}{$aroundLocation->location_holder_id}";
+        $already_sent_key="deliveryNotReadyNotified-".md5(json_encode($aroundLocation));
         $already_sent=session()->get($already_sent_key);
         if($already_sent){
             return;
         }
         session()->set($already_sent_key,1);
 
-        if($aroundLocation->location_holder=='store'){
+        if($aroundLocation?->location_holder=='store'){
             $StoreModel=model('StoreModel');
             $store=$StoreModel->itemGet($aroundLocation->location_holder_id);
         }

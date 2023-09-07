@@ -91,6 +91,45 @@ class Shipment extends \App\Controllers\BaseController{
         }
         return $result;
     }
+
+
+
+
+    /**
+     * we should calculate delivery time ranges
+     */
+    public function itemDeliveryStartRangeGet(){
+        $shiftStartHour=9;
+        $shiftEndHour=23;
+        $deliveryRangeDays=3;
+        $deliveryDurationDelta=20;
+        $deliveryDurationMinute=45;
+        $deliveryDurationHour=ceil($deliveryDurationMinute/60+$deliveryDurationDelta/60);
+        $dayFirstHour=date('H')+$deliveryDurationHour;
+
+        $deliveryStartRange=[
+            'dayFirst'=>null,
+            'dayLast'=>null,
+            'dayHours'=>[]
+        ];
+        for( $day=0; $day<$deliveryRangeDays; $day++ ){
+            $date=date("Y-m-d",strtotime("now +$day day"));
+            if(!$deliveryStartRange['dayFirst']){
+                $deliveryStartRange['dayFirst']=$date;
+            }
+            $deliveryStartRange['dayLast']=$date;
+            for($hour=0; $hour<=24; $hour++){
+                if( $hour<$shiftStartHour || $hour>$shiftEndHour ){
+                    continue;
+                }
+                if( $day==0 && $hour<$dayFirstHour ){
+                    continue;
+                }
+                $deliveryStartRange['dayHours'][$date][]=$hour;
+            }
+        }
+        return $deliveryStartRange;
+    }
     
     /**
      * Here we checking for errors and ability to deliver
@@ -118,10 +157,10 @@ class Shipment extends \App\Controllers\BaseController{
         $lookForCourierAroundLocation=(object)[
             'location_id'=>$ship->ship_start_location_id
         ];
-        $bulkResponse->deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
-        if( !$bulkResponse->deliveryIsReady ){
-            return $this->fail('no_courier');
-        }
+        // $bulkResponse->deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
+        // if( !$bulkResponse->deliveryIsReady ){
+        //     return $this->fail('no_courier');
+        // }
 
         $bulkResponse->Location_distanceGet=$LocationModel->distanceGet($ship->ship_start_location_id, $ship->ship_finish_location_id);//distance between start and finish
         if($bulkResponse->Location_distanceGet>getenv('delivery.radius')){
@@ -136,6 +175,11 @@ class Shipment extends \App\Controllers\BaseController{
             return $this->fail($bulkResponse->Ship_deliveryOptions);
         }
 
+        $bulkResponse->Ship_locationStart=$LocationModel->itemGet($ship->ship_start_location_id);
+        $bulkResponse->Ship_locationFinish=$LocationModel->itemGet($ship->ship_finish_location_id);
+
+        $bulkResponse->DeliveryStartRange=$this->itemDeliveryStartRangeGet();
+
         if( getenv('uniteller.recurrentAllow') ){
             $UserCardModel=model('UserCardModel');
             $bulkResponse->bankCard=$UserCardModel->itemMainGet();
@@ -145,6 +189,15 @@ class Shipment extends \App\Controllers\BaseController{
 
     public function itemCheckoutDataSet(){
         $ship=$this->request->getJSON();
+        $ShipmentModel = model('ShipmentModel');
+        $result = $ShipmentModel->itemUpdate($ship);
+        if ($result === 'notfound') {
+            return $this->failNotFound($result);
+        }
+        if ($result === 'idle') {
+            return $this->respondNoContent($result);
+        }
+        return $this->respondUpdated($result);
     }
 
 
