@@ -20,9 +20,9 @@ class OrderStageScript{
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
+            'customer_action_checkout'=>    ['Перейти к оформлению'],
             'customer_cart'=>               ['Изменить','light'],
             'customer_start'=>              [],
-            'customer_action_checkout'=>    ['Продолжить'],
             ],
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
@@ -55,7 +55,7 @@ class OrderStageScript{
             'supplier_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'delivery_no_courier'=>         [],
-            'delivery_force_start'=>        ['Готов к доставке','light'],
+            'delivery_force_start'=>        ['Заказ готов к доставке','light'],
             ],
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения','success'],
