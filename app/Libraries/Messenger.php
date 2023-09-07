@@ -91,7 +91,11 @@ class Messenger{
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
-        $reciever->subscriptions=model('MessageSubModel')->listGet($user_id);
+
+        $MessageSubModel=model('MessageSubModel');
+        $MessageSubModel->limit(1);
+        $MessageSubModel->orderBy('created_at','DESC');
+        $reciever->subscriptions=$MessageSubModel->listGet($user_id);
         $this->reciever_cache[$user_id]=$reciever;
         return $reciever;
     }
