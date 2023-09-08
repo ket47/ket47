@@ -13,7 +13,7 @@ class Product extends \App\Controllers\BaseController{
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'offset'=>$this->request->getVar('offset'),
-            'limit'=>$this->request->getVar('limit'),
+            'limit'=>500,//$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
             'group_id'=>$this->request->getVar('group_id'),
         ];
