@@ -31,25 +31,29 @@ class CashierKitOnline{
             if( $entry->entry_discount>0 && $entry->entry_discount<$entry->entry_price ){
                 $entry->entry_price-=$entry->entry_discount;
             }
-            $Check['Subjects'][]=[
+            $product_row=[
                 'SubjectName'=>$entry->entry_text,
                 'Price'=>round($entry->entry_price*100*$discount_modifier),
                 'Quantity'=>$entry->entry_quantity,
                 'Tax'=>6,//without VAT,
                 'GoodsAttribute'=>1,//Products
                 'unitOfMeasurement'=>$entry->product_unit,
-                'supplierINN'=>$order_all->store->store_tax_num,
-                'supplierInfo'=>[
-                    'name'=>$order_all->store->store_company_name,
-                    'phoneNumbers'=>[$order_all->store->store_phone]
-                ],
-                'agentType'=>64,//АГЕНТ
-                'agentInfo'=>[
-                    //'paymentAgentOperation'=>getenv('kitonline.paymentAgentOperation'),
-                    'paymentAgentPhoneNumbers'=>[getenv('kitonline.paymentAgentPhoneNumbers')]
-                ]
             ];
 
+            $tezkel_tax_num="9102283121";
+            if( $tezkel_tax_num!=$order_all->store->store_tax_num ){//tezkel
+                $product_row['supplierINN']=$order_all->store->store_tax_num;
+                $product_row['supplierInfo']=[
+                    'name'=>$order_all->store->store_company_name,
+                    'phoneNumbers'=>[$order_all->store->store_phone]
+                ];
+                $product_row['agentType']=64;
+                $product_row['agentInfo']=[
+                    //'paymentAgentOperation'=>getenv('kitonline.paymentAgentOperation'),
+                    'paymentAgentPhoneNumbers'=>[getenv('kitonline.paymentAgentPhoneNumbers')]
+                ];
+            }
+            $Check['Subjects'][]=$product_row;
             $order_sum_calculated+=round($entry->entry_price*100*$discount_modifier)*$entry->entry_quantity;
         }
         if($order_all->order_sum_delivery>0){
