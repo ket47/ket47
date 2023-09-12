@@ -336,8 +336,21 @@ class UserModel extends Model{
         $user_id=$this->itemCreate($user_data);
 
 
-
-
+        if( !$user_id ){
+            $admin_sms=(object)[
+                'message_reciever_id'=>-100,
+                'message_transport'=>'telegram',
+                'message_text'=>"❌❌❌ Неудачная попытка регистрации: $user_name +$user_phone_cleared",
+            ];
+            $notification_task=[
+                'task_name'=>"signup_welcome_sms",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
+                    ]
+            ];
+            jobCreate($notification_task);
+            return $user_id;
+        }
 
 
         $user_sms=(object)[
@@ -349,7 +362,10 @@ class UserModel extends Model{
         $admin_sms=(object)[
             'message_reciever_id'=>-100,
             'message_transport'=>'telegram',
-            'message_text'=>"Новый пользователь: $user_name",
+            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared",
+            'telegram_options'=>[
+                'disable_notification'=>1
+            ]
         ];
         $notification_task=[
             'task_name'=>"signup_welcome_sms",
