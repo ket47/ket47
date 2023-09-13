@@ -214,6 +214,7 @@ class ReactionModel extends Model{
 
         $select="
             SUM(reaction_is_like) sum_is_like,
+            SUM(reaction_is_dislike) sum_is_dislike,
             SUM(reaction_comment IS NOT NULL) sum_comment,
             MAX(IF(`owner_id`='{$user_id}',reaction_is_like,0)) reaction_is_like,
             MAX(IF(`owner_id`='{$user_id}',reaction_is_dislike,0)) reaction_is_dislike
