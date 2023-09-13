@@ -29,7 +29,7 @@ class CashierKitOnline{
                 continue;
             }
             if( $entry->entry_discount>0 && $entry->entry_discount<$entry->entry_price ){
-                $entry->entry_price-=$entry->entry_discount;
+                $entry->entry_price-=round($entry->entry_discount/$entry->entry_quantity,2);
             }
             $product_row=[
                 'SubjectName'=>$entry->entry_text,
@@ -110,6 +110,19 @@ class CashierKitOnline{
             $correcter_entry=$Check['Subjects'][0];
             $correcter_entry['Quantity']=1;
             $correcter_entry['Price']+=$order_sum_error;
+            array_unshift($Check['Subjects'],$correcter_entry);
+            return $Check;
+        }
+        if( $Check['Subjects'][0]['Quantity']<1 ){
+            $half=round($Check['Subjects'][0]['Quantity']/2,3);
+            $leftover=round($Check['Subjects'][0]['Quantity']-$half,3);
+            
+            $Check['Subjects'][0]['Quantity']=$half;
+            
+            
+            $correcter_entry=$Check['Subjects'][0];
+            $correcter_entry['Quantity']=$leftover;
+            $correcter_entry['Price']+=round($order_sum_error/$leftover);
             array_unshift($Check['Subjects'],$correcter_entry);
             return $Check;
         }
