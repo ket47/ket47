@@ -381,7 +381,7 @@ class CourierModel extends Model{
         // if( !$isCourierReady ){
         //     return 'notready';
         // }
-        $point_distance=getenv('delivery.radius');
+        $point_distance=20000;//getenv('delivery.radius');
 
         $LocationModel=model('LocationModel');
         $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
