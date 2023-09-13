@@ -61,7 +61,7 @@ class EntryModel extends Model{
         if( !is_object($order_basic) || !is_object($product_basic) ){
             return 'forbidden';
         }
-        if( !$product_quantity || $product_quantity<1 ){
+        if( !$product_quantity || $product_quantity<0 ){
             $product_quantity=1;
         }
 
