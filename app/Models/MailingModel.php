@@ -28,15 +28,19 @@ class MailingModel extends SecureModel{
         $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
     }
     
-    public function itemGet($mailing_id){
+    public function itemGet(int $mailing_id ){
         if( !sudo() ){
             return 'forbidden';
         }
         $mailing=$this->find($mailing_id);
-        if( !$mailing ){
-            return null;
+        if( !is_object($mailing) ){
+            return $mailing;
         }
         $ImageModel=model('ImageModel');
+        $MailingMessageModel=model('MailingMessageModel');
+        $mailing->recieverCount=$MailingMessageModel->listCountGet($mailing_id);
+
+
         $mailing->images=$ImageModel->listGet(['image_holder'=>'mailing','image_holder_id'=>$mailing_id]);
 
         if($mailing->images[0]->image_hash??null){
@@ -80,32 +84,8 @@ class MailingModel extends SecureModel{
         if( !sudo() ){
             return 'forbidden';
         }
-        $mailing=$this->itemGet($mailing_id);
-        $reciever_list=$this->itemRecieversGet( $mailing->user_filter );
-        if( !$reciever_list ){
-            return 'no_recievers';
-        }
-        $MailingMessageModel=model('MailingMessageModel');
-        foreach($reciever_list as $reciever){
-            $message=[
-                'mailing_id'=>$mailing_id,
-                'reciever_id'=>$reciever['user_id'],
-                'willsend_at'=>$mailing->start_at,
-            ];
-            $MailingMessageModel->itemCreate($message);
-        }
         $this->update($mailing_id,['is_started'=>1]);
         return 'ok';
-    }
-
-    private function itemRecieversGet( $user_filter ){
-        $UserModel=model('UserModel');
-        if( $user_filter->phones??null && $user_filter->phones!='*' ){
-            $UserModel->orWhereIn('user_phone',explode(',',$user_filter->phones));
-        }
-        $UserModel->select('user_id');
-        $UserModel->permitWhere('r');
-        return $UserModel->findAll();
     }
     
     public function listGet( $filter ){

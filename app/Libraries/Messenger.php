@@ -91,12 +91,6 @@ class Messenger{
         if($reciever->user_data){
             $reciever->user_data= json_decode($reciever->user_data);
         }
-
-        $MessageSubModel=model('MessageSubModel');
-        $MessageSubModel->limit(1);
-        $MessageSubModel->orderBy('created_at','DESC');
-        $reciever->subscriptions=$MessageSubModel->listGet($user_id);
-        $this->reciever_cache[$user_id]=$reciever;
         return $reciever;
     }
 
@@ -162,28 +156,32 @@ class Messenger{
         return true;
     }
     
+    private function itemPushTokensGet($user_id){
+        $MessageSubModel=model('MessageSubModel');
+        $MessageSubModel->select('GROUP_CONCAT(sub_registration_id) subs');
+        $MessageSubModel->where('sub_user_id',$user_id);
+        $row=$MessageSubModel->find();
+        if(!$row){
+            return [];
+        }
+        return explode(',',$row[0]['subs']);
+    }
+
     private function itemSendPush( $message ){
-        if( !count($message->reciever->subscriptions??[]) ){
+        $tokens=$this->itemPushTokensGet($message->message_reciever_id);
+        if( !count($tokens) ){
             return false;
         }
         $message->message_data??=(object)[];
         $message->message_data->title??=$message->message_subject??'';
         $message->message_data->body=strip_tags($message->message_data->body??$message->message_text??'');
-
-        $pushsent=false;
         $FirePush = new \App\Libraries\FirePushKreait();
-        foreach($message->reciever->subscriptions as $sub){
-            $result=$FirePush->sendPush((object)[
-                'token'=>$sub->sub_registration_id,
-                'title'=>$message->message_data->title,
-                'body'=>$message->message_data->body,
-                'data'=>$message->message_data,
-            ]);
-            if($result){
-                $pushsent=true;
-            }
-        }
-        return $pushsent;
+        return $FirePush->sendPush((object)[
+            'token'=>$tokens,
+            'title'=>$message->message_data->title,
+            'body'=>$message->message_data->body,
+            'data'=>$message->message_data,
+        ]);
     }
     
     private function itemSendTelegram( $message ){

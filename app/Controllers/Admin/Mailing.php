@@ -9,6 +9,9 @@ class Mailing extends \App\Controllers\BaseController{
     
     public function itemGet(){
         $mailing_id=$this->request->getPost('mailing_id');
+        if( !$mailing_id ){
+            return $this->fail('noid');
+        }
         $MailingModel=model('MailingModel');
         $result=$MailingModel->itemGet($mailing_id);
         if(is_object($result)){
@@ -36,6 +39,11 @@ class Mailing extends \App\Controllers\BaseController{
         $mailing=$this->request->getJSON();
         $MailingModel=model('MailingModel');
         $result=$MailingModel->itemUpdate($mailing);
+
+        // $MailingMessageModel=model('MailingMessageModel');
+        // $MailingMessageModel->listDelete($mailing->mailing_id);
+        // $MailingMessageModel->listRecieverFill($mailing->mailing_id);
+
         if($result=='ok'){
             return $this->respond($result);
         }
@@ -55,52 +63,41 @@ class Mailing extends \App\Controllers\BaseController{
     public function itemStart(){
         $mailing_id=$this->request->getPost('mailing_id');
         $MailingModel=model('MailingModel');
-        $result=$MailingModel->itemStart($mailing_id);
-        
+
         $mailing=$MailingModel->itemGet($mailing_id);
         if(!$mailing){
             return $this->failNotFound('notfound');
         }
-
+        $MailingModel->itemStart($mailing_id);
         $MailingMessageModel=model('MailingMessageModel');
-        $MailingMessageModel->where('willsend_at<NOW()');
-        $MailingMessageModel->where('is_sent',0);
-        $messages=$MailingMessageModel->listGet($mailing_id);
-        if( !is_array($messages) || !count($messages) ){
-            return $this->failNotFound('notfound');
-        }
 
-        $all_messages=[];
-        foreach($messages as $message){
-            $all_messages[]=(object)[
-                'message_subject'=>$mailing->subject_template,
-                'message_text'=>$mailing->text_template,
-                'message_transport'=>$mailing->transport,
-                'message_reciever_id'=>$message->reciever_id,
-                'message_data'=>(object)[
-                    'link'=>$mailing->link,
-                    'image'=>$mailing->image??'',
-                    'sound'=>$mailing->sound??''
-                ]
-            ];
-            //should set is_sent=1
-        }
+        $offset=0;
+        $batch_size=100;
+        while(1){
+            $MailingMessageModel->where('mailing_id',$mailing_id);
+            $MailingMessageModel->where('is_sent',0);
+            $MailingMessageModel->offset($offset);
+            $MailingMessageModel->limit($batch_size);
+            $MailingMessageModel->select('GROUP_CONCAT(reciever_id) reciever_ids');
+            $row=$MailingMessageModel->find();
+            $offset+=$batch_size;
 
-        $batched_messages=array_chunk($all_messages,10);
-        foreach($batched_messages as $batch){
+            if(!$row){
+                break;
+            }
+            $batch=explode(',',$row[0]->reciever_ids);
             $mailing_task=[
                 'task_name'=>"send mailing",
                 'task_priority'=>'low',
                 'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$batch]]
+                        ['model'=>'UserModel','method'=>'systemUserLogin'],
+                        ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],
+                        ['model'=>'UserModel','method'=>'systemUserLogout'],
                     ]
             ];
             jobCreate($mailing_task);
+            $result='ok';
         }
-
-
-
-
         if($result=='ok'){
             return $this->respond($result);
         }
@@ -134,14 +131,24 @@ class Mailing extends \App\Controllers\BaseController{
         return false;
     }
 
-
-
-
+    public function recieverListCreate(){
+        $mailing_id=$this->request->getPost('mailing_id');
+        if( !$mailing_id ){
+            return $this->fail('noid');
+        }
+        $MailingMessageModel=model('MailingMessageModel');
+        $MailingMessageModel->listDelete($mailing_id);
+        $result=$MailingMessageModel->listRecieverFill($mailing_id);
+        if(is_numeric($result)){
+            return $this->respond($result);
+        }
+        return $this->fail($result);
+    }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
-        $image_holder_id=$this->request->getVar('image_holder_id');
+        $image_holder_id=$this->request->getPost('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
@@ -192,7 +199,7 @@ class Mailing extends \App\Controllers\BaseController{
     }
 
     public function imageDelete() {
-        $image_id = $this->request->getVar('image_id');
+        $image_id = $this->request->getPost('image_id');
 
         $MailingModel = model('MailingModel');
         $result = $MailingModel->imageDelete($image_id);
@@ -203,13 +210,58 @@ class Mailing extends \App\Controllers\BaseController{
     }
 
     public function imageOrder(){
-        $image_id=$this->request->getVar('image_id');
-        $dir=$this->request->getVar('dir');
+        $image_id=$this->request->getPost('image_id');
+        $dir=$this->request->getPost('dir');
         
         $MailingModel=model('MailingModel');
         $result=$MailingModel->imageOrder( $image_id, $dir );
         if( $result==='ok' ){
             return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+
+    public function locationCreate(){
+        $location_holder_id=$this->request->getPost('location_holder_id');
+        $location_group_id=$this->request->getPost('location_group_id');
+        $location_group_type=$this->request->getPost('location_group_type');
+        $location_longitude=$this->request->getPost('location_longitude');
+        $location_latitude=$this->request->getPost('location_latitude');
+        $location_address=$this->request->getPost('location_address');
+
+        $data=[
+            'location_holder'=>'mailing',
+            'location_holder_id'=>$location_holder_id,
+            'location_group_id'=>$location_group_id,
+            'location_group_type'=>$location_group_type,
+            'location_longitude'=>$location_longitude,
+            'location_latitude'=>$location_latitude,
+            'location_address'=>$location_address,
+            'is_disabled'=>0,
+            //'owner_id'=>$location_holder_id   get userIds of store
+        ];
+        $LocationModel=model('LocationModel');
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $result= $LocationModel->itemCreate($data,1);
+        if( $LocationModel->errors() ){
+            return $this->failValidationErrors(json_encode($LocationModel->errors()));
+        }
+        return $this->respondCreated($result);
+    }
+    
+    public function locationDelete(){
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $location_id=$this->request->getPost('location_id');
+        $LocationModel=model('LocationModel');
+
+        $result=$LocationModel->itemDelete($location_id);
+        if( $result=='ok' ){
+            return $this->respondDeleted('ok');
         }
         return $this->fail($result);
     }
