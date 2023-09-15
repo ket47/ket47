@@ -88,7 +88,7 @@ class Mailing extends \App\Controllers\BaseController{
             $batch=explode(',',$row[0]->reciever_ids);
             $mailing_task=[
                 'task_name'=>"send mailing",
-                'task_priority'=>'low',
+            //    'task_priority'=>'low',
                 'task_programm'=>[
                         ['model'=>'UserModel','method'=>'systemUserLogin'],
                         ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],

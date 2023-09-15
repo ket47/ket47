@@ -157,6 +157,9 @@ class MailingMessageModel extends SecureModel{
     }
 
     private function render($template,$context){
+        if(!$template || !$context){
+            return $template;
+        }
         foreach($context as $key=>$value){
             $template=str_replace('{{'.$key.'}}',$value,$template);
         }
