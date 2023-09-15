@@ -98,7 +98,7 @@ class Shipment extends \App\Controllers\BaseController{
     /**
      * we should calculate delivery time ranges
      */
-    public function itemDeliveryStartRangeGet(){
+    public function itemDeliveryArriveRangeGet(){
         $shiftStartHour=9;
         $shiftEndHour=23;
         $deliveryRangeDays=3;
@@ -178,7 +178,7 @@ class Shipment extends \App\Controllers\BaseController{
         $bulkResponse->Ship_locationStart=$LocationModel->itemGet($ship->ship_start_location_id);
         $bulkResponse->Ship_locationFinish=$LocationModel->itemGet($ship->ship_finish_location_id);
 
-        $bulkResponse->DeliveryStartRange=$this->itemDeliveryStartRangeGet();
+        $bulkResponse->deliveryArriveRange=$this->itemDeliveryArriveRangeGet();
 
         if( getenv('uniteller.recurrentAllow') ){
             $UserCardModel=model('UserCardModel');
