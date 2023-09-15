@@ -54,7 +54,7 @@ class CashierKitOnline{
                 ];
             }
             $Check['Subjects'][]=$product_row;
-            $order_sum_calculated+=round($entry->entry_price*100*$discount_modifier)*$entry->entry_quantity;
+            $order_sum_calculated+=round(round($entry->entry_price*100*$discount_modifier)*$entry->entry_quantity);
         }
         if($order_all->order_sum_delivery>0){
             $delivery_row=[
