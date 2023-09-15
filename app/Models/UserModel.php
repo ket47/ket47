@@ -364,7 +364,9 @@ class UserModel extends Model{
             'message_transport'=>'telegram',
             'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared",
             'telegram_options'=>[
-                'disable_notification'=>1
+                'opts'=>[
+                    'disable_notification'=>1
+                ]
             ]
         ];
         $notification_task=[
