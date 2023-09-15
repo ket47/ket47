@@ -76,6 +76,7 @@ class Mailing extends \App\Controllers\BaseController{
         while(1){
             $MailingMessageModel->where('mailing_id',$mailing_id);
             $MailingMessageModel->where('is_sent',0);
+            $MailingMessageModel->where('is_failed',0);
             $MailingMessageModel->offset($offset);
             $MailingMessageModel->limit($batch_size);
             $MailingMessageModel->select('GROUP_CONCAT(reciever_id) reciever_ids');
