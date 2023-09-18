@@ -202,7 +202,7 @@ class EntryModel extends Model{
     
     public function listSumGet( $order_id ){
         $this->permitWhere('r');
-        $this->select("ROUND(SUM(ROUND(entry_quantity*entry_price,2)-IFNULL(entry_discount,0))) order_sum_product");
+        $this->select("SUM(ROUND(entry_quantity*entry_price-IFNULL(entry_discount,0),2)) order_sum_product");
         $this->where('order_id',$order_id);
         $this->where('deleted_at IS NULL');
         return $this->get()->getRow('order_sum_product');
