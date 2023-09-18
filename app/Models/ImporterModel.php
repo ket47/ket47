@@ -122,6 +122,7 @@ class ImporterModel extends Model{
         $this->importCreate($holder,$holder_id,$target,$colconfig);
         $this->importUpdate($holder,$holder_id,$target,$colconfig);
         $this->importDelete($holder,$holder_id,$target);
+        return 'ok';
     }
     ///////////////////////////////////////////
     //IMPORT SECTION

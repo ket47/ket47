@@ -11,10 +11,11 @@ class PosifloraWorm extends \App\Controllers\BaseController{
     private $bouquets=null;
     private $productList=[];
     private $prods;
+    private $subdomain;
 
     private function bouquetListGet(){
         try{
-            $bouquetsJson=file_get_contents("https://elselflowers.posiflora.com/shop/api/v1/bouquets?page%5Bnumber%5D=1&page%5Bsize%5D=100");
+            $bouquetsJson=file_get_contents("https://{$this->subdomain}.posiflora.com/shop/api/v1/bouquets?page%5Bnumber%5D=1&page%5Bsize%5D=100");
         } catch(\Throwable $e){
             pl($e,true);
         }
@@ -23,7 +24,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
 
     private function prodListGet(){
         try{
-            $prodJson=file_get_contents("https://elselflowers.posiflora.com/shop/api/v1/products?page%5Bnumber%5D=1&page%5Bsize%5D=100");
+            $prodJson=file_get_contents("https://{$this->subdomain}.posiflora.com/shop/api/v1/products?page%5Bnumber%5D=1&page%5Bsize%5D=100");
         } catch(\Throwable $e){
             pl($e,true);
         }
@@ -69,11 +70,11 @@ class PosifloraWorm extends \App\Controllers\BaseController{
     }
 
     public function dig(){
-        $gateway=$this->request->getVar('gateway');
+        $this->subdomain=$this->request->getVar('subdomain');
         $token_hash=$this->request->getVar('token');
 
         $result=$this->auth($token_hash);
-        if($result!=='ok'){
+        if($result!=='ok' || !$this->subdomain){
             return $this->failForbidden($result);
         }
         $productList=$this->productListFill();
