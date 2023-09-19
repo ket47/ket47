@@ -457,11 +457,12 @@ class CourierModel extends Model{
         $message_text=view('messages/events/on_delivery_start_sms',$context);
         $message=(object)[
             'message_reciever_id'=>"$reciever_id",
-            'message_transport'=>'telegram',
+            'message_transport'=>'telegram,push',
             'message_text'=>$message_text,
             'message_data'=>[
                 'title'=>"🛵 Заказ #{$context['order_id']}",
                 'body'=>$message_text,
+                'link'=>"/order/order-{$context['order_id']}"
             ]
         ];
 
