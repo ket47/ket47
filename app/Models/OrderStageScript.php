@@ -27,7 +27,8 @@ class OrderStageScript{
         'customer_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
-            'customer_rejected'=>           ['Отменить заказ','danger','clear']
+            'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
             ],
         'customer_rejected'=>[
             'system_reckon'=>               []
@@ -56,18 +57,21 @@ class OrderStageScript{
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'delivery_no_courier'=>         [],
             'delivery_force_start'=>        ['Заказ готов к доставке','light'],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения','success'],
             'supplier_action_add'=>         ['Добавить товар','medium','clear'],
             'delivery_no_courier'=>         [],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
             'supplier_corrected'=>          ['Изменить','medium','clear'],
             'delivery_start'=>              ['Начать доставку','success'],
             'delivery_no_courier'=>         [],
-            'system_reckon'=>               []
+            'system_reckon'=>               [],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_force_start'=>            [
             'supplier_finish'=>              [],
@@ -77,14 +81,17 @@ class OrderStageScript{
             'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа'],
             'admin_supervise'=>             ['Решить спор','danger'],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_no_courier'=>[
-            'system_reckon'=>               []  
+            'system_reckon'=>               [],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
         ],
         'delivery_finish'=>[
             'customer_disputed'=>           [],

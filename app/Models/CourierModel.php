@@ -433,7 +433,7 @@ class CourierModel extends Model{
 
         $this->transBegin();
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
-        $was_searching=$this->db->affectedRows()?true:false;
+        $was_searching=$OrderGroupMemberModel->affectedRows()?true:false;
         if( !$was_searching ){
             $this->transRollback();
             return 'notsearching';
@@ -449,6 +449,7 @@ class CourierModel extends Model{
         $this->transCommit();
 
         $this->itemJobStartNotify( $courier->owner_id, ['courier'=>$courier,'order_id'=>$order_id] );
+        $OrderModel->itemCacheClear();
         return $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
     }
 
@@ -503,7 +504,7 @@ class CourierModel extends Model{
     public function listGet( $filter ){
         $this->filterMake( $filter,false );
         if( $filter['status']??0 ){
-            $this->where('group_type',$filter['status']);
+            $this->whereIn('group_type',explode('||',$filter['status']));
         }
         $this->permitWhere('r');
         $this->select($this->selectList);

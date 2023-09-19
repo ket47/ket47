@@ -153,6 +153,24 @@ class Courier extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
 
+    public function itemAssign(){
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $courier_id = $this->request->getPost('courier_id');
+        $order_id = $this->request->getPost('order_id');
+        
+        $OrderModel=model('OrderModel');
+        $CourierModel=model('CourierModel');
+
+        $CourierModel->itemUpdateStatus($courier_id,'ready');
+        $OrderModel->itemStageAdd($order_id,'delivery_search');
+        $result=$CourierModel->itemJobStart( $order_id, $courier_id );
+        if( $result=='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
     
     
     
@@ -219,6 +237,7 @@ class Courier extends \App\Controllers\BaseController{
             'limit'=>$this->request->getVar('limit'),
             'offset'=>$this->request->getVar('offset'),
             'order'=>$this->request->getVar('order'),
+            'status'=>$this->request->getPost('status'),
         ];
         $CourierModel=model('CourierModel');
         $courier_list=$CourierModel->listGet($filter);
