@@ -392,7 +392,7 @@ class ProductModel extends Model{
                 validity=
                 1
                 *IF(product_price>0,1,0)
-                *IF(CHAR_LENGTH(product_name)>=5,1,0)
+                *IF(CHAR_LENGTH(product_name)>=4,1,0)
                 *(
                 30
                 +IF(image_id IS NOT NULL,20,0)
