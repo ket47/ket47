@@ -31,6 +31,36 @@ class PosifloraWorm extends \App\Controllers\BaseController{
         $this->prods=json_decode($prodJson);
     }
 
+    private $categoryMap=[
+        'цветы'=>'Живые цветы',
+        'шары'=>'Шары',
+        'сладости'=>'Шоколад',
+        'игрушки'=>'Мягкие игрушки'
+    ];
+    private function categoryListGet(){
+        try{
+            $catJson=file_get_contents("https://{$this->subdomain}.posiflora.com/shop/api/v1/categories");
+        } catch(\Throwable $e){
+            pl($e,true);
+        }
+        $cats=json_decode($catJson);
+
+        foreach($cats->data as $cat){
+            if( $cat->relationships->parent->data??null ){
+                continue;
+            }
+            $local_title=$this->categoryMap['цветы'];
+            $remote_title=$cat->attributes->title??'';
+            foreach($this->categoryMap as $key=>$val){
+                if( mb_stripos($remote_title,$key)!==false ){
+                    $local_title=$val;
+                }
+            }
+            $this->categories[$cat->id]=$local_title;
+        }
+    }
+
+
     private function productlistFill(){
         $this->bouquetListGet();
         $productList=[];
@@ -49,12 +79,16 @@ class PosifloraWorm extends \App\Controllers\BaseController{
             ];
         }
 
+
+        $this->categoryListGet();
         $this->prodListGet();
         foreach($this->prods->data as $item){
             $in_stock=0;
             if($item->attributes->status=='on'){
                 $in_stock=10;
             }
+            $category_id=$item->relationships->category->data->id??null;
+            $category_title=$this->categories[$category_id]??'Живые цветы';
             $productList[]=[
                 $item->id,
                 '',
@@ -63,7 +97,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
                 $item->attributes->price,
                 $in_stock,//product_quantity
                 $item->attributes->logoShop,
-                'Живые цветы',
+                $category_title,
             ];
         }
         return $productList;

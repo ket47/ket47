@@ -118,11 +118,19 @@ class ImporterModel extends Model{
 
     public $itemCreateAsDisabled=true;
     public function listImport( string $holder, int $holder_id, string $target, object $colconfig){
+        $rowcount=0;
         $this->listAnalyse( $holder_id, $target, $colconfig );
-        $this->importCreate($holder,$holder_id,$target,$colconfig);
-        $this->importUpdate($holder,$holder_id,$target,$colconfig);
+        $rowcount+=$this->importCreate($holder,$holder_id,$target,$colconfig);
+        $rowcount+=$this->importUpdate($holder,$holder_id,$target,$colconfig);
         $this->importDelete($holder,$holder_id,$target);
-        return 'ok';
+
+
+
+        if( $holder=='store' ){
+            $ProductModel=model('ProductModel');
+            $ProductModel->listUpdateValidity($holder_id);
+        }
+        return $rowcount;
     }
     ///////////////////////////////////////////
     //IMPORT SECTION
@@ -151,6 +159,7 @@ class ImporterModel extends Model{
             $update_ids[]=$item->id;
         }
         $this->update($update_ids,['action'=>'done']);
+        return $this->db->affectedRows();
     }
     
     public function importUpdate($holder,$holder_id,$target,$colconfig){
@@ -167,14 +176,16 @@ class ImporterModel extends Model{
         if(!$listToUpdate){
             return;//no products to update
         }
+        $rowcount=0;
         if($target==='product'){
             $ProductModel=model('ProductModel');
-            $ProductModel->listUpdate($holder_id,$listToUpdate);
+            $rowcount=$ProductModel->listUpdate($holder_id,$listToUpdate);
         }
         foreach($listToUpdate as $item){
             $update_ids[]=$item->id;
         }
         $this->update($update_ids,['action'=>'done']);
+        return $rowcount;
     }
     public function importDelete($holder,$holder_id,$target){
         if($target=='product'){
@@ -218,6 +229,10 @@ class ImporterModel extends Model{
         if( $this->productColValidate($colconfig) ){
             return 'no_required_fields';
         }
+        if( isset($colconfig->product_external_id) ){
+            $join_on_src=$colconfig->product_external_id;
+            $join_on_dst='product_external_id';
+        } else 
         if( isset($colconfig->product_code) ){
             $join_on_src=$colconfig->product_code;
             $join_on_dst='product_code';
@@ -246,8 +261,9 @@ class ImporterModel extends Model{
                 il.owner_id='{$owner_id}'
                 AND il.holder='store'
                 AND il.holder_id='$store_id'
-                AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
+                #AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
             ";
+        //pl($sql);
         $this->query($sql);
         
         $this->select("COUNT(*) row_count,`action`")

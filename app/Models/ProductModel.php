@@ -156,7 +156,9 @@ class ProductModel extends Model{
             $product->product_weight=(float) str_replace(',','.',$product->product_weight);
         }
         $product_id=$this->insert($product,true);
-
+        if( !$product_id ){
+            return 'invalid';
+        }
         if($product->product_image_url??null){
             $this->itemCreateImage($product_id,$product->product_image_url);
         }
@@ -354,17 +356,27 @@ class ProductModel extends Model{
     }
     
     public function listCreate( $store_id, $productList ){
+        $rowcount=0;
         foreach($productList as $product){
             $product->store_id=$store_id;
-            $this->itemCreate($product);
+            $product_id=$this->itemCreate($product);
+            if($product_id){
+                $rowcount++;
+            }
         }
+        return $rowcount;
     }
 
     public function listUpdate( $store_id, $productList ){
+        $rowcount=0;
         foreach($productList as $product){
             $product->store_id=$store_id;
-            $this->itemUpdate($product);
+            $result=$this->itemUpdate($product);
+            if($result=='ok'){
+                $rowcount++;
+            }
         }
+        return $rowcount;
     }
     
     public function listUpdateValidity(int $store_id=null,int $product_id=null){
@@ -404,7 +416,8 @@ class ProductModel extends Model{
     public function listDelete( array $product_ids ){
         $this->permitWhere('w');
         $this->delete($product_ids);
-        if( $this->db->affectedRows()>0 ){
+        $rowcount=$this->db->affectedRows();
+        if( $rowcount>0 ){
             $ImageModel=model('ImageModel');
             $ImageModel->listDelete('product', $product_ids);
             return 'ok';
