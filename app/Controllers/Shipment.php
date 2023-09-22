@@ -56,7 +56,7 @@ class Shipment extends \App\Controllers\BaseController{
                 'card_fee'=>0,
                 'cash_allow'=>0,
                 'cash_fee'=>0,
-                'credit_allow'=>0,
+                'credit_allow'=>1,
                 'delivery_allow'=>1,
                 'delivery_fee'=>30,
                 'delivery_cost'=>200
