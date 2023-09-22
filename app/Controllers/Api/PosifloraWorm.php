@@ -32,7 +32,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
     }
 
     private $categoryMap=[
-        'цветы'=>'Живые цветы',
+        'цветы'=>'Цветы',
         'шары'=>'Шары',
         'сладости'=>'Шоколад',
         'игрушки'=>'Мягкие игрушки'
