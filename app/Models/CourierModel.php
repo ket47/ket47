@@ -586,7 +586,8 @@ class CourierModel extends Model{
                             'type'=>'flash',
                             'title'=>'🚀 Новое задание',
                             'body'=>$message_text,
-                            'link'=>getenv('app.frontendUrl').'order/order-list'
+                            'link'=>getenv('app.frontendUrl').'order/order-list',
+                            'sound'=>'short.wav'
                         ],
                         'telegram_options'=>[
                             'buttons'=>[['',"onCourierJobStart-{$context['order']->order_id}",'🚀 Взять задание']],
