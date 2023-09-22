@@ -952,10 +952,10 @@ class OrderStageScript{
         // if( !$CourierModel->isBusy() ){
         //     return 'wrong_courier_status';
         // }
-        // $order=$this->OrderModel->itemGet($order_id);
-        // if( !$order->images ){
-        //     return 'photos_must_be_made';
-        // }
+        $order=$this->OrderModel->itemGet($order_id);
+        if( !$order->images ){
+            return 'photos_must_be_made';
+        }
         return 'ok';
     }
     public function onDeliveryForceStart( $order_id ){
