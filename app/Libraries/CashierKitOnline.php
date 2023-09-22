@@ -114,15 +114,24 @@ class CashierKitOnline{
             return $Check;
         }
         if( $Check['Subjects'][0]['Quantity']<1 ){
-            $half=round($Check['Subjects'][0]['Quantity']/2,3);
-            $leftover=round($Check['Subjects'][0]['Quantity']-$half,3);
-            
-            $Check['Subjects'][0]['Quantity']=$half;
-            
-            
+            $target_subtotal=round($Check['Subjects'][0]['Quantity']*$Check['Subjects'][0]['Price'])+$order_sum_error;
+            $row_quantity=$Check['Subjects'][0]['Quantity'];
+            $row_price=$Check['Subjects'][0]['Price'];
+
+            for($delta=0.001;$delta<$row_quantity;$delta+=0.001){
+                $row_quantity=round($row_quantity-$delta,3);
+
+                $correction_quantity=round($delta,3);
+                $correction_price=round( ($target_subtotal-round($row_quantity*$row_price))/$correction_quantity );
+                
+                if($target_subtotal==round($row_quantity*$row_price)+round($correction_quantity*$correction_price)){
+                    break;
+                }
+            }
+            $Check['Subjects'][0]['Quantity']=$row_quantity;
             $correcter_entry=$Check['Subjects'][0];
-            $correcter_entry['Quantity']=$leftover;
-            $correcter_entry['Price']+=round($order_sum_error/$leftover);
+            $correcter_entry['Quantity']=$correction_quantity;
+            $correcter_entry['Price']=$correction_price;
             array_unshift($Check['Subjects'],$correcter_entry);
             return $Check;
         }
@@ -180,6 +189,7 @@ class CashierKitOnline{
                 $response_text = file_get_contents($url, false, $context);
                 $response=json_decode($response_text);
                 if(($response->ResultCode??'error')!=0){
+                    pl($data);
                     log_message('critical',"CashierKitOnline on Order #{$CheckNumber} api ResultCode is:".$response->ResultCode);
                 }
                 return $response;
