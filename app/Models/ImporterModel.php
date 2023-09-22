@@ -254,7 +254,7 @@ class ImporterModel extends Model{
                 il.action=
                     IF(il.updated_at<'$delete_older_than','delete',
                     IF(product_id,'update',
-                    IF(LENGTH(`{$colconfig->product_name}`)>=4 AND (`{$colconfig->product_quantity}`<>'' OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add',
+                    IF(CHAR_LENGTH(`{$colconfig->product_name}`)>=4 AND (`{$colconfig->product_quantity}`<>'' OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add',
                     'skip'
                 )))
             WHERE
