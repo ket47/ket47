@@ -492,9 +492,27 @@ class UserModel extends Model{
          if(!$user_phone||!$user_name){
             return null;
         }
-        return $this->where('user_phone',$user_phone)
-                ->where('user_name',$user_name)
-                ->get()->getRow('user_id');
+        $user=$this->where('user_phone',$user_phone)
+                ->get()->getRow();
+        if( !$user ){
+            return null;
+        }
+        if($user->user_name==$user_name){
+            return $user->user_id;
+        }
+        $sms=(object)[
+            'message_reciever_id'=>$user->user_id,
+            'message_transport'=>'sms',
+            'template'=>"messages/events/on_user_forgotname_reminder.php",
+            'context'=>['user'=>$user]
+        ];
+        $notification_task=[
+            'task_name'=>"Username remember notify",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
     }
     
     public function passRecoveryCheckEmail($user_email,$user_name){

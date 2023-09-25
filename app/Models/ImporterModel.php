@@ -261,9 +261,8 @@ class ImporterModel extends Model{
                 il.owner_id='{$owner_id}'
                 AND il.holder='store'
                 AND il.holder_id='$store_id'
-                #AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
+                AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
             ";
-        //pl($sql);
         $this->query($sql);
         
         $this->select("COUNT(*) row_count,`action`")
@@ -279,6 +278,10 @@ class ImporterModel extends Model{
     }
     
     private function productListAnalyseAbsent($store_id,$colconfig=null,$get='row_count'){
+        if( isset($colconfig->product_external_id) ){
+            $join_on_src=$colconfig->product_external_id;
+            $join_on_dst='product_external_id';
+        } else 
         if( isset($colconfig->product_code) ){
             $join_on_src=$colconfig->product_code;
             $join_on_dst='product_code';
