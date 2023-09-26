@@ -17,6 +17,9 @@ class Product extends \App\Controllers\BaseController{
     }
     private function auth(){
         $token_hash=$this->authTokenGet();
+        if(!$token_hash){
+            return $this->failForbidden();
+        }
         $UserModel=model('UserModel');
         $result=$UserModel->signInByToken($token_hash,'store');
         if( $result=='ok' ){
@@ -62,7 +65,7 @@ class Product extends \App\Controllers\BaseController{
 
 
 
-        $ImporterModel->olderItemsDeleteTresholdSet( date('Y-m-d H:i:s') );//delete all products that left in imported_list
+        $ImporterModel->olderItemsDeleteTresholdSet( date('Y-m-d H:i:s',time()-3) );//delete all products that left in imported_list
         $ImporterModel->listCreate( $data->rows, $holder, $holder_id, $target, $external_id_index=0 );
         $result=$ImporterModel->listImport( $holder, $holder_id, $target, $colconfig );
         return $this->respond($result);

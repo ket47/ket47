@@ -295,17 +295,38 @@ class ImporterModel extends Model{
     }
     
     private function productListAnalyseAbsent($store_id,$colconfig=null,$get='row_count'){
+        // if( isset($colconfig->product_external_id) ){
+        //     $join_on_src=$colconfig->product_external_id;
+        //     $join_on_dst='product_external_id';
+        // } else 
+        // if( isset($colconfig->product_code) ){
+        //     $join_on_src=$colconfig->product_code;
+        //     $join_on_dst='product_code';
+        // } else {
+        //     $join_on_src=$colconfig->product_name;
+        //     $join_on_dst='product_name';            
+        // }
+
+
+        $join_cases=[];
         if( isset($colconfig->product_external_id) ){
-            $join_on_src=$colconfig->product_external_id;
-            $join_on_dst='product_external_id';
-        } else 
-        if( isset($colconfig->product_code) ){
-            $join_on_src=$colconfig->product_code;
-            $join_on_dst='product_code';
-        } else {
-            $join_on_src=$colconfig->product_name;
-            $join_on_dst='product_name';            
+            // $join_on_src=$colconfig->product_external_id;
+            // $join_on_dst='product_external_id';
+            $join_cases[]="pl.product_external_id IS NOT NULL AND pl.product_external_id={$colconfig->product_external_id}";
         }
+        if( isset($colconfig->product_code) ){
+            // $join_on_src=$colconfig->product_code;
+            // $join_on_dst='product_code';
+            $join_cases[]="pl.product_code IS NOT NULL AND pl.product_code={$colconfig->product_code}";
+        } else {
+            // $join_on_src=$colconfig->product_name;
+            // $join_on_dst='product_name';            
+        }
+        //pl.$join_on_dst=il.$join_on_src
+
+
+        $join_condition=implode(' OR ',$join_cases);
+
         if($get=='row_count'){
             $select='COUNT(*) row_count';
         }
@@ -318,7 +339,7 @@ class ImporterModel extends Model{
             FROM
                 product_list pl
                     LEFT JOIN
-                imported_list il ON pl.$join_on_dst=il.$join_on_src AND il.holder='store' AND il.holder_id='$store_id'
+                imported_list il ON ($join_condition) AND il.holder='store' AND il.holder_id='$store_id'
             WHERE
                 pl.owner_id='$this->user_id'
                 AND il.id IS NULL
