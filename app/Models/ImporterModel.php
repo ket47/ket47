@@ -23,6 +23,16 @@ class ImporterModel extends Model{
 
     protected $useSoftDeletes = false;
     protected $user_id=-1;
+    protected $olderItemsDeleteTreshold;
+
+    function __construct(){
+        parent::__construct();
+        $this->olderItemsDeleteTreshold=date('Y-m-d H:i:s',strtotime('- 10 minute'));
+    }
+
+    public function olderItemsDeleteTresholdSet( $tresholdDatetime ){
+        $this->olderItemsDeleteTreshold=$tresholdDatetime;
+    }
     
     public function itemGet(){
         return false;
@@ -229,25 +239,32 @@ class ImporterModel extends Model{
         if( $this->productColValidate($colconfig) ){
             return 'no_required_fields';
         }
+        $join_cases=[];
         if( isset($colconfig->product_external_id) ){
-            $join_on_src=$colconfig->product_external_id;
-            $join_on_dst='product_external_id';
-        } else 
-        if( isset($colconfig->product_code) ){
-            $join_on_src=$colconfig->product_code;
-            $join_on_dst='product_code';
-        } else {
-            $join_on_src=$colconfig->product_name;
-            $join_on_dst='product_name';            
+            // $join_on_src=$colconfig->product_external_id;
+            // $join_on_dst='product_external_id';
+            $join_cases[]="pl.product_external_id IS NOT NULL AND pl.product_external_id={$colconfig->product_external_id}";
         }
+        if( isset($colconfig->product_code) ){
+            // $join_on_src=$colconfig->product_code;
+            // $join_on_dst='product_code';
+            $join_cases[]="pl.product_code IS NOT NULL AND pl.product_code={$colconfig->product_code}";
+        } else {
+            // $join_on_src=$colconfig->product_name;
+            // $join_on_dst='product_name';            
+        }
+        //pl.$join_on_dst=il.$join_on_src
+
+
+        $join_condition=implode(' OR ',$join_cases);
         
         $owner_id=session()->get('user_id');
-        $delete_older_than=date('Y-m-d H:i:s',strtotime('- 10 minute'));
+        $delete_older_than=$this->olderItemsDeleteTreshold;
         $sql="
             UPDATE
                 imported_list il
                     LEFT JOIN
-                product_list pl ON pl.$join_on_dst=il.$join_on_src AND pl.store_id='$store_id'
+                product_list pl ON ($join_condition) AND pl.store_id='$store_id'
             SET
                 pl.deleted_at=null,
                 il.target_id=product_id,

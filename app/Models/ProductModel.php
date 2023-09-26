@@ -341,7 +341,7 @@ class ProductModel extends Model{
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $product_list= $this->get()->getResult();
 
-        ql($this);
+        // ql($this);
         foreach($product_list as $product){
             if($product->product_parent_id==$product->product_id){
                 $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");

@@ -40,17 +40,29 @@ class Product extends \App\Controllers\BaseController{
 
     public function listSave(){
         $data=$this->request->getJSON();
-        $this->auth();
-
-        $colconfig=$this->colconfigMake($data);
-
+        $result=$this->auth();
+        if( $result!='ok' ){
+            return $this->failForbidden();
+        }
         $token_data=session()->get('token_data');
+
+        $target='product';
         $holder='store';
         $holder_id=$token_data->token_holder_id;
-        $target='product';
+        $colconfig=$this->colconfigMake($data);
 
         $ImporterModel=model('ImporterModel');
         $ImporterModel->itemCreateAsDisabled=false;
+
+
+
+
+
+
+
+
+        
+        $ImporterModel->olderItemsDeleteTresholdSet( date('Y-m-d H:i:s') );//delete all products that left in imported_list
         $ImporterModel->listCreate( $data->rows, $holder, $holder_id, $target, $external_id_index=0 );
         $result=$ImporterModel->listImport( $holder, $holder_id, $target, $colconfig );
         return $this->respond($result);
