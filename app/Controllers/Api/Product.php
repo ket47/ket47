@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Api\v1;
+namespace App\Controllers\Api;
 use \CodeIgniter\API\ResponseTrait;
 
 class Product extends \App\Controllers\BaseController{
@@ -52,7 +52,7 @@ class Product extends \App\Controllers\BaseController{
         $colconfig=$this->colconfigMake($data);
 
         $ImporterModel=model('ImporterModel');
-        $ImporterModel->itemCreateAsDisabled=false;
+        $ImporterModel->itemCreateAsDisabled=true;
 
 
 
@@ -61,7 +61,7 @@ class Product extends \App\Controllers\BaseController{
 
 
 
-        
+
         $ImporterModel->olderItemsDeleteTresholdSet( date('Y-m-d H:i:s') );//delete all products that left in imported_list
         $ImporterModel->listCreate( $data->rows, $holder, $holder_id, $target, $external_id_index=0 );
         $result=$ImporterModel->listImport( $holder, $holder_id, $target, $colconfig );
