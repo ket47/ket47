@@ -354,7 +354,6 @@ class ProductModel extends Model{
                 $product->options=$this->get()->getResult();
             }
         }
-        
         return $product_list;
     }
     

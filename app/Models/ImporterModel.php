@@ -175,7 +175,6 @@ class ImporterModel extends Model{
                 $product_id=$ProductModel->itemCreate($product);
                 if($product_id){
                     $this->update($product->id,['action'=>'done','target_id'=>$product_id]);
-                    ql($this);
                     $rowcount++;
                 }
             }

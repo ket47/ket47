@@ -22,7 +22,7 @@ class Product extends \App\Controllers\BaseController{
 
         $data['product_list']=$ProductModel->listGet($filter);
         if( $grouptree_include ){
-            $data['group_tree']=$ProductModel->groupTreeGet(['store_id'=>$filter['store_id']]);
+            $data['group_tree']=$ProductModel->groupTreeGet(['store_id'=>$filter['store_id'],'limit'=>50]);
         }
         return $this->respond($data);
     }
