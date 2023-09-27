@@ -16,6 +16,7 @@ class ImporterModel extends Model{
         'holder_id',
         'holder_data_hash',
         'target',
+        'target_id',
         'target_external_id',
         'action',
         'updated_at'
@@ -104,6 +105,7 @@ class ImporterModel extends Model{
     }
     
     public function listCreate( array $itemList, string $holder, int $holder_id, string $target, int $external_id_index=null ){
+        $this->listStaleDelete( $holder, $holder_id );
         foreach ($itemList as $item){
             $external_id=$item[$external_id_index]??null;
             $this->itemCreate( $item, $holder, $holder_id, $target, $external_id );
@@ -120,6 +122,13 @@ class ImporterModel extends Model{
         return $this->db->affectedRows()>0?'ok':'idle';
     }
 
+    private function listStaleDelete(string $holder, int $holder_id){
+        $this->where('holder',$holder);
+        $this->where('holder_id',$holder_id);
+        $this->where('action','stale');
+        $this->delete(null);
+    }
+
     public function listAnalyse( $holder_id, $target, $colconfig ){
         if( $target==='product' ){
             return $this->productListAnalyse( $holder_id,$colconfig );
@@ -132,11 +141,8 @@ class ImporterModel extends Model{
         $this->listAnalyse( $holder_id, $target, $colconfig );
         $rowcount+=$this->importCreate($holder,$holder_id,$target,$colconfig);
         $rowcount+=$this->importUpdate($holder,$holder_id,$target,$colconfig);
-        $this->importDelete($holder,$holder_id,$target);
-
-
-
-        if( $holder=='store' ){
+        $rowcount+=$this->importDelete($holder,$holder_id,$target);
+        if( $target==='product' ){
             $ProductModel=model('ProductModel');
             $ProductModel->listUpdateValidity($holder_id);
         }
@@ -159,21 +165,26 @@ class ImporterModel extends Model{
         if(!$listToCreate){
             return;//no products to add
         }
+        $rowcount=0;
         if($target==='product'){
             $ProductModel=model('ProductModel');
             $ProductModel->itemCreateAsDisabled=$this->itemCreateAsDisabled;
             $ProductModel->itemImageCreateAsDisabled=$this->itemCreateAsDisabled;
-            $ProductModel->listCreate($holder_id,$listToCreate);
+            foreach($listToCreate as $product){
+                $product->store_id=$holder_id;
+                $product_id=$ProductModel->itemCreate($product);
+                if($product_id){
+                    $this->update($product->id,['action'=>'done','target_id'=>$product_id]);
+                    ql($this);
+                    $rowcount++;
+                }
+            }
         }
-        foreach($listToCreate as $item){
-            $update_ids[]=$item->id;
-        }
-        $this->update($update_ids,['action'=>'done']);
-        return $this->db->affectedRows();
+        return $rowcount;
     }
     
     public function importUpdate($holder,$holder_id,$target,$colconfig){
-        $select_list=['target_id product_id','id'];
+        $select_list=['target_id product_id','id','NULL deleted_at'];
         foreach($colconfig as $trg=>$src){
             $select_list []= "{$src} {$trg}";
         }
@@ -199,22 +210,18 @@ class ImporterModel extends Model{
     }
     public function importDelete($holder,$holder_id,$target){
         if($target=='product'){
-            $this->select('target_id,id');
-            $this->where('action','delete');
-            $this->where('holder',$holder);
-            $this->where('holder_id',$holder_id);
-            $this->permitWhere('r');
-            $listToDelete=$this->get()->getResult();
-            if(!$listToDelete){
-                return;//no products to delete
+            $pl_delete_ids_str=$this->productListAnalyseAbsent( $holder_id, $get='id_list' );
+            if(!$pl_delete_ids_str){
+                return 0;
             }
-            foreach($listToDelete as $item){
-                $il_delete_ids[]=$item->id;
-                $pl_delete_ids[]=$item->target_id;
-            }
-            $this->delete($il_delete_ids,true);
+            $pl_delete_ids=explode(',',$pl_delete_ids_str);
+            $this->whereIn('target_id',$pl_delete_ids);
+            $this->delete(null,true);
+
             $ProductModel=model('ProductModel');
-            return $ProductModel->listDelete($pl_delete_ids);
+            $ProductModel->listDelete($pl_delete_ids);
+
+            return count($pl_delete_ids);
         }
     }
     ///////////////////////////////////////////
@@ -241,21 +248,11 @@ class ImporterModel extends Model{
         }
         $join_cases=[];
         if( isset($colconfig->product_external_id) ){
-            // $join_on_src=$colconfig->product_external_id;
-            // $join_on_dst='product_external_id';
             $join_cases[]="pl.product_external_id IS NOT NULL AND pl.product_external_id={$colconfig->product_external_id}";
-        }
+        } else
         if( isset($colconfig->product_code) ){
-            // $join_on_src=$colconfig->product_code;
-            // $join_on_dst='product_code';
             $join_cases[]="pl.product_code IS NOT NULL AND pl.product_code={$colconfig->product_code}";
-        } else {
-            // $join_on_src=$colconfig->product_name;
-            // $join_on_dst='product_name';            
         }
-        //pl.$join_on_dst=il.$join_on_src
-
-
         $join_condition=implode(' OR ',$join_cases);
         
         $owner_id=session()->get('user_id');
@@ -269,7 +266,7 @@ class ImporterModel extends Model{
                 pl.deleted_at=null,
                 il.target_id=product_id,
                 il.action=
-                    IF(il.updated_at<'$delete_older_than','delete',
+                    IF(il.updated_at<'$delete_older_than','stale',
                     IF(product_id,'update',
                     IF(CHAR_LENGTH(`{$colconfig->product_name}`)>=4 AND (`{$colconfig->product_quantity}`<>'' OR '".($colconfig->is_counted??0)."') AND `$colconfig->product_price`>0,'add',
                     'skip'
@@ -281,52 +278,20 @@ class ImporterModel extends Model{
                 AND (il.action <> 'done' OR il.action IS NULL OR il.updated_at<'$delete_older_than')
             ";
         $this->query($sql);
+
+        pl("il.updated_at<'$delete_older_than'");
         
         $this->select("COUNT(*) row_count,`action`")
                 ->where('owner_id',$owner_id)
                 ->where('holder','store')
                 ->where('holder_id',$store_id)
                 ->groupBy('`action`');
-        
         $analysed=$this->get()->getResult();
-        //ANALYSE FOR DELETE
-        $analysed[]=['row_count'=>$this->productListAnalyseAbsent($store_id,$colconfig,'row_count'),'action'=>'delete'];
+        $analysed[]=['row_count'=>$this->productListAnalyseAbsent($store_id,'row_count'),'action'=>'delete'];
         return $analysed;
     }
     
-    private function productListAnalyseAbsent($store_id,$colconfig=null,$get='row_count'){
-        // if( isset($colconfig->product_external_id) ){
-        //     $join_on_src=$colconfig->product_external_id;
-        //     $join_on_dst='product_external_id';
-        // } else 
-        // if( isset($colconfig->product_code) ){
-        //     $join_on_src=$colconfig->product_code;
-        //     $join_on_dst='product_code';
-        // } else {
-        //     $join_on_src=$colconfig->product_name;
-        //     $join_on_dst='product_name';            
-        // }
-
-
-        $join_cases=[];
-        if( isset($colconfig->product_external_id) ){
-            // $join_on_src=$colconfig->product_external_id;
-            // $join_on_dst='product_external_id';
-            $join_cases[]="pl.product_external_id IS NOT NULL AND pl.product_external_id={$colconfig->product_external_id}";
-        }
-        if( isset($colconfig->product_code) ){
-            // $join_on_src=$colconfig->product_code;
-            // $join_on_dst='product_code';
-            $join_cases[]="pl.product_code IS NOT NULL AND pl.product_code={$colconfig->product_code}";
-        } else {
-            // $join_on_src=$colconfig->product_name;
-            // $join_on_dst='product_name';            
-        }
-        //pl.$join_on_dst=il.$join_on_src
-
-
-        $join_condition=implode(' OR ',$join_cases);
-
+    private function productListAnalyseAbsent( $store_id, $get='row_count' ){
         if($get=='row_count'){
             $select='COUNT(*) row_count';
         }
@@ -339,11 +304,11 @@ class ImporterModel extends Model{
             FROM
                 product_list pl
                     LEFT JOIN
-                imported_list il ON ($join_condition) AND il.holder='store' AND il.holder_id='$store_id'
+                imported_list il ON il.target_id=pl.product_id AND il.holder='store' AND il.holder_id='$store_id' AND il.action<>'stale'
             WHERE
-                pl.owner_id='$this->user_id'
-                AND il.id IS NULL
+                pl.store_id='$store_id'
                 AND pl.deleted_at IS NULL
+                AND il.id IS NULL
             ";
         return $this->query($sql)->getRow($get);
     }
