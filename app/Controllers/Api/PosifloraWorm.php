@@ -9,6 +9,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
 
     private $categories=[];
     private $bouquets=null;
+    private $specifications=null;
     private $productList=[];
     private $prods;
     private $subdomain;
@@ -20,6 +21,15 @@ class PosifloraWorm extends \App\Controllers\BaseController{
             pl($e,true);
         }
         $this->bouquets=json_decode($bouquetsJson);
+    }
+
+    private function specificationListGet(){
+        try{
+            $specificationsJson=file_get_contents("https://{$this->subdomain}.posiflora.com/shop/api/v1/specifications?page%5Bnumber%5D=1&page%5Bsize%5D=100&include=specVariants,specVariants.variant");
+        } catch(\Throwable $e){
+            pl($e,true);
+        }
+        $this->specifications=json_decode($specificationsJson);
     }
 
     private function prodListGet(){
@@ -56,15 +66,15 @@ class PosifloraWorm extends \App\Controllers\BaseController{
                     $local_title=$val;
                 }
             }
+            pl([$remote_title,$local_title]);
             $this->categories[$cat->id]=$local_title;
         }
     }
 
 
     private function productlistFill(){
-        $this->bouquetListGet();
         $productList=[];
-
+        $this->bouquetListGet();
         foreach($this->bouquets->data as $item){
             $in_stock=1;
             $productList[]=[
@@ -78,7 +88,21 @@ class PosifloraWorm extends \App\Controllers\BaseController{
                 'Букеты',
             ];
         }
-
+        
+        $this->specificationListGet();
+        foreach($this->specifications->data as $item){
+            $in_stock=1;
+            $productList[]=[
+                $item->id,
+                '',
+                $item->attributes->title,
+                $item->attributes->description?$item->attributes->description:$item->attributes->title,
+                $item->attributes->totalAmount,
+                $in_stock,//product_quantity
+                $item->attributes->logoShop,
+                'Шоколад ручной работы',
+            ];
+        }
 
         $this->categoryListGet();
         $this->prodListGet();
@@ -88,7 +112,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
                 $in_stock=10;
             }
             $category_id=$item->relationships->category->data->id??null;
-            $category_title=$this->categories[$category_id]??'Живые цветы';
+            $category_title=$this->categories[$category_id]??'Цветы';
             $productList[]=[
                 $item->id,
                 '',

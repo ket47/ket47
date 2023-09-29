@@ -278,7 +278,7 @@ class ImporterModel extends Model{
             ";
         $this->query($sql);
 
-        pl("il.updated_at<'$delete_older_than'");
+//        pl("il.updated_at<'$delete_older_than'");
         
         $this->select("COUNT(*) row_count,`action`")
                 ->where('owner_id',$owner_id)
