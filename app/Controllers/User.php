@@ -30,6 +30,7 @@ class User extends \App\Controllers\BaseController{
                 'mapBoundaries'=>[getenv('location.mapBoundaries')],
                 'mapCenter'=>getenv('location.mapCenter'),
                 'ymapApiKey'=>getenv('location.ymapApiKey'),
+                'ymapSuggestionApiKey'=>getenv('location.ymapSuggestionApiKey'),
                 'addressErase'=>getenv('location.addressErase')
             ],
             'delivery'=>[
