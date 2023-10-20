@@ -130,18 +130,30 @@ class StoreModel extends Model{
         if( empty($store->store_tax_num) || strlen($store->store_tax_num)<10 ){
             return 0;
         }
-        /**
-         * should I use balance caching instead?
-         */
+        // if($storeBalance<0){
+        //     //return 0; until bug is fixed
+        // }        
+        return 1;     
+    }
+
+    public function itemOwnedGet( int $owner_id ){
+        $this->where('owner_id',$owner_id);
+        $this->orWhere("FIND_IN_SET({$owner_id},owner_ally_ids)");
+        $this->select('store_id,store_name');
+        $this->limit(1);
+        $store=$this->find();
+        if( isset($store[0]['store_id']) ){
+            return $store[0];
+        }
+        return null;
+    }
+
+    public function itemBalanceGet( int $store_id=null ){
         $TransactionModel=model('TransactionModel');
         $filter=(object)[
             'tagQuery'=>"acc::supplier store:{$store_id}"
         ];
-        $storeBalance=$TransactionModel->balanceGet($filter,'skip_permision_check');
-        if($storeBalance<0){
-            //return 0; until bug is fixed
-        }
-        return 1;     
+        return $TransactionModel->balanceGet($filter,'skip_permision_check');
     }
     
     public function itemCreate( $name ){
@@ -268,6 +280,7 @@ class StoreModel extends Model{
         $this->where('finish_at>=NOW()');
         $this->where('tariff_list.is_disabled',0);
         $this->where('order_allow',1);
+        $this->where('is_shipping',0);
         $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
         if( $tariff_order_mode=='delivery_by_courier_first' ){
             $this->orderBy("delivery_allow DESC");

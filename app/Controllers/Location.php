@@ -17,6 +17,9 @@ class Location extends \App\Controllers\BaseController{
     
     public function itemUpdate(){
         $data= $this->request->getJSON();
+        if( !($data->location_id??0) ){
+            return $this->fail('noid');
+        }
         $LocationModel=model('LocationModel');
         $result=$LocationModel->itemUpdate($data);
         if( $result==='forbidden' ){

@@ -1,8 +1,7 @@
 <?php
 namespace App\Models;
-use CodeIgniter\Model;
 
-class TariffModel extends Model{
+class TariffModel extends SecureModel{
     
     protected $table      = 'tariff_list';
     protected $primaryKey = 'tariff_id';
@@ -37,8 +36,7 @@ class TariffModel extends Model{
         if( !isset($tariff_id) ){
             return 'noid';
         }
-        $this->where('tariff_id',$tariff_id);
-        return $this->get()->getRow();
+        return $this->find($tariff_id);
     }
     
     public function itemCreate( object $tariff ){
@@ -65,7 +63,8 @@ class TariffModel extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
-        return $this->delete($tariff_id);
+        $this->delete($tariff_id);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function listGet(){

@@ -352,9 +352,10 @@ class TransactionModel extends Model{
         return $this->delete(null,true);
     }
 
-    public function balanceGet( object $filter, $mode=null ){
-        if( $mode!='skip_permision_check' ){
-            $this->permitWhere('r');
+    public function balanceGet( object $filter, $mode='check_permission' ){
+        $permission_where='1=1';
+        if( $mode=='check_permission' ){
+            $permission_where=$this->permitWhereGet('r','item');
         }
         if( !($filter->tagQuery??null) ){
             return null;
@@ -377,6 +378,7 @@ class TransactionModel extends Model{
                     ($tagWhere)
                     AND `transaction_list`.`is_disabled`=0
                     AND `transaction_list`.`deleted_at` IS NULL
+                    AND $permission_where
                 GROUP BY `trans_id`
                 HAVING `matched_tag_count`='$tagCount') t";
         return $this->query($balance_sql)->getRow('balance');

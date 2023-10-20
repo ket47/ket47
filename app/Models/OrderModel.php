@@ -17,10 +17,9 @@ class OrderModel extends Model{
         'order_courier_admins',
         'order_start_location_id',
         'order_finish_location_id',
-        'order_sum_product',
-        'order_sum_delivery',
-        'order_sum_tax',
-        'order_sum_total',//is this good idea???
+        'order_sum_product',//should restrict direct sum updates
+        'order_sum_delivery',//
+        'order_sum_tax',//
         'order_description',
         'order_objection',
         'order_stock_status',
@@ -51,6 +50,7 @@ class OrderModel extends Model{
     
     public function itemCacheClear(){
         $this->itemCache=[];
+        $this->order_data=null;
         $this->resetQuery();
     }
     
@@ -141,17 +141,6 @@ class OrderModel extends Model{
         }
     }
 
-    private $order_data;
-    public function itemDataGet( int $order_id, bool $use_cache=true ){
-        if( !$this->order_data || !$use_cache ){
-            $this->permitWhere('r');
-            $this->where('order_id',$order_id);
-            $this->select('order_data');
-            $this->order_data=json_decode($this->get()->getRow('order_data'));
-        }
-        return $this->order_data;
-    }
-
     public function itemCreate( int $store_id ){
         if( !$this->permit(null,'w') ){
             return 'forbidden';
@@ -201,6 +190,17 @@ class OrderModel extends Model{
             $this->itemUpdateOwners($order->order_id);
         }
         return $update_result;
+    }
+
+    private $order_data;
+    public function itemDataGet( int $order_id, bool $use_cache=true ){
+        if( !$this->order_data || !$use_cache ){
+            $this->permitWhere('r');
+            $this->where('order_id',$order_id);
+            $this->select('order_data');
+            $this->order_data=json_decode($this->get()->getRow('order_data'));
+        }
+        return $this->order_data;
     }
 
     public function itemDataUpdate( int $order_id, object $data_update ){

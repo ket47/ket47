@@ -666,7 +666,7 @@ class CourierModel extends Model{
         return $this->get()->getRow('group_type')??0;
     }
 
-    public function deliveryIsReady( object $aroundLocation){
+    public function deliveryIsReady( object $aroundLocation ){
         if( date("H:i")>'22:50' ){//at 23:00 all orders are rejected. 10 for payment timeout
             $hasActiveCourier=false;
         }
@@ -679,7 +679,7 @@ class CourierModel extends Model{
         return $hasActiveCourier;
     }
     
-    private function deliveryNotReadyNotify($aroundLocation){
+    public function deliveryNotReadyNotify($aroundLocation=null){
         $already_sent_key="deliveryNotReadyNotified-".md5(json_encode($aroundLocation));
         $already_sent=session()->get($already_sent_key);
         if($already_sent){
@@ -710,7 +710,6 @@ class CourierModel extends Model{
         ];
         jobCreate($notification_task);
     }
-    
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
