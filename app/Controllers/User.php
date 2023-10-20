@@ -210,6 +210,7 @@ class User extends \App\Controllers\BaseController{
             session()->set('user_id',$user->user_id);
             session()->set('user_data',$user);
             $this->signInCourier($user->user_id);
+            $this->signInTokenSave($user->user_id);
             return $this->respond($user->user_id);
         }
         return $this->fail($result);
@@ -231,8 +232,26 @@ class User extends \App\Controllers\BaseController{
         $courier_id=$CourierModel->where('owner_id',$user_id)->get()->getRow('courier_id');
         session()->set('courier_id',$courier_id);
     }
+
+    private function signInTokenSave( $owner_id ){
+        $agent = $this->request->getUserAgent();
+
+        $TokenModel=model('TokenModel');
+
+        $token_holder='user';
+        $token_holder_id=$owner_id;
+        $token_device=$agent->getPlatform();
+        $token_hash_raw=session_id();
+        $TokenModel->itemCreate($owner_id,$token_holder,$token_holder_id,$token_device,$token_hash_raw);
+    }
     
     private function signOutUser(){
+        $TokenModel=model('TokenModel');
+        $token_hash_raw=session_id();
+        $token_hash=hash('sha256',$token_hash_raw);
+        $result=$TokenModel->itemDelete(null,$token_hash);
+        ql($TokenModel);
+
         $user_id=session()->get('user_id');
         $UserModel=model('UserModel');
         $UserModel->signOut($user_id);

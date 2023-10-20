@@ -60,6 +60,10 @@ class BaseController extends Controller
         //--------------------------------------------------------------------
 
         if( session()->get('user_id')==null ){
+            $result=$this->signInBySid();
+            if( $result=='ok' ){
+                return true;
+            }
             $this->guestUserInit();
         }
     }
@@ -117,5 +121,10 @@ class BaseController extends Controller
         session()->set('user_id',-1);            
     }
 
-
+    private function signInBySid(){
+        $session_id=session_id();
+        $token_hash=hash('sha256',$session_id);
+        $UserModel=model('UserModel');
+        return $UserModel->signInByToken($token_hash, 'user');
+    }
 }

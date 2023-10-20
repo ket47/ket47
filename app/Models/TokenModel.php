@@ -13,6 +13,7 @@ class TokenModel extends Model{
         'token_holder_id',
         'token_holder',
         'token_hash',
+        'token_device',
         'expired_at',
         'accessed_at'
         ];
@@ -70,7 +71,7 @@ class TokenModel extends Model{
         return $token;
     }
     
-    public function itemCreate($owner_id,$token_holder,$token_holder_id,$token_device){
+    public function itemCreate($owner_id,$token_holder,$token_holder_id,$token_device=null,$token_hash_raw=null){
         if( !($owner_id>0) ){
             return 'forbidden';
         }
@@ -79,12 +80,28 @@ class TokenModel extends Model{
             if( !$StoreModel->permit($token_holder_id,'w') ){
                 return 'forbidden';
             }
+        }
+        if($token_holder=='user'){
+            //
         } else {
             return 'forbidden';
         }
-        $validity_time=1*365*24*60*60;//1year
+
+        if( $token_hash_raw ){
+            $token_hash=hash('sha256',$token_hash_raw);
+            $token_id=$this->where('token_hash',$token_hash)->select('token_id')->get()->getRow('token_id');
+            if($token_id){
+                return [
+                    'token_id'=>$token_id,
+                    'token_hash_raw'=>$token_hash_raw
+                ];
+            }
+        }
+        if( !$token_hash_raw ){
+            $token_hash_raw = bin2hex(random_bytes(16));
+        }
+        $validity_time=2*365*24*60*60;//1year
         $expired_at=date('Y-m-d H:i:s',time()+$validity_time);
-        $token_hash_raw = bin2hex(random_bytes(16));
 
         $this->allowedFields[]='owner_id';
         $token=[
