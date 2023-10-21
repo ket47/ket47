@@ -416,6 +416,7 @@ class User extends \App\Controllers\BaseController{
         $location_longitude=$this->request->getVar('location_longitude');
         $location_latitude=$this->request->getVar('location_latitude');
         $location_address=$this->request->getVar('location_address');
+        $location_comment=$this->request->getVar('location_comment');
         
         $data=[
             'location_holder'=>'user',
@@ -424,6 +425,7 @@ class User extends \App\Controllers\BaseController{
             'location_longitude'=>$location_longitude,
             'location_latitude'=>$location_latitude,
             'location_address'=>$location_address,
+            'location_comment'=>$location_comment,
             'is_disabled'=>0,
             'owner_id'=>$location_holder_id
         ];
@@ -432,7 +434,7 @@ class User extends \App\Controllers\BaseController{
         if( !$UserModel->permit($data['owner_id'],'w') ){
             return $this->failForbidden('forbidden');
         }
-        $result= $LocationModel->itemCreate($data,5);
+        $result= $LocationModel->itemCreate($data,10);
         if( $result=='ok' ){
             return $this->respondCreated($result);
         }
