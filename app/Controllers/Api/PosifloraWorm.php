@@ -66,7 +66,6 @@ class PosifloraWorm extends \App\Controllers\BaseController{
                     $local_title=$val;
                 }
             }
-            pl([$remote_title,$local_title]);
             $this->categories[$cat->id]=$local_title;
         }
     }
