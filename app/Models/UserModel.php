@@ -417,17 +417,25 @@ class UserModel extends Model{
             return 'user_is_disabled';
         }
 
-        $this->signInInit( $user );
+        $this->signInInit( $user->user_id );
         return 'ok' ;
     }
 
-    private function signInInit( object $user ){
+    private function signInInit( int $user_id=null ){
+        if( !$user_id ){
+            return 'notfound';
+        }
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
-        $this->protect(false)
-                ->update($user->user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
-        $this->protect(true);
-        session()->set('user_id',$user->user_id);
+        $this->allowedFields[]='signed_in_at';
+        $this->update($user_id,['signed_in_at'=>\CodeIgniter\I18n\Time::now()]);
+        session()->set('user_id',$user_id);
+        $user=$this->itemGet($user_id);
+        if( $user=='notfound' ){
+            return 'notfound';
+        }
+        session()->set('user_data',$user);
+        return 'ok';
     }
 
     public function signInByToken(string $token_hash, string $holder=null){
@@ -435,8 +443,7 @@ class UserModel extends Model{
         $token_data=$TokenModel->itemAuth($token_hash, $holder);
         if($token_data && $token_data->owner_id){
             session()->set('token_data',$token_data);
-            $user=$this->where('user_id',$token_data->owner_id)->get()->getRow();
-            $this->signInInit( $user );
+            $this->signInInit( $token_data->owner_id );
             return 'ok';
         }
         return 'token_not_found';//token_hash not found

@@ -100,7 +100,7 @@ class TokenModel extends Model{
         if( !$token_hash_raw ){
             $token_hash_raw = bin2hex(random_bytes(16));
         }
-        $validity_time=2*365*24*60*60;//1year
+        $validity_time=2*365*24*60*60;//2years
         $expired_at=date('Y-m-d H:i:s',time()+$validity_time);
 
         $this->allowedFields[]='owner_id';

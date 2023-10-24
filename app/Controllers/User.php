@@ -207,8 +207,6 @@ class User extends \App\Controllers\BaseController{
                 return $this->fail('user_data_fetch_error');
             }
             $this->signInMetric( $user->user_id );
-            session()->set('user_id',$user->user_id);
-            session()->set('user_data',$user);
             $this->signInCourier($user->user_id);
             $this->signInTokenSave($user->user_id);
             return $this->respond($user->user_id);
@@ -249,8 +247,7 @@ class User extends \App\Controllers\BaseController{
         $TokenModel=model('TokenModel');
         $token_hash_raw=session_id();
         $token_hash=hash('sha256',$token_hash_raw);
-        $result=$TokenModel->itemDelete(null,$token_hash);
-        ql($TokenModel);
+        $TokenModel->itemDelete(null,$token_hash);
 
         $user_id=session()->get('user_id');
         $UserModel=model('UserModel');
