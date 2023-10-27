@@ -71,22 +71,19 @@ class Mailing extends \App\Controllers\BaseController{
         $MailingModel->itemStart($mailing_id);
         $MailingMessageModel=model('MailingMessageModel');
 
-        $offset=0;
-        $batch_size=100;
-        while(1){
-            $MailingMessageModel->where('mailing_id',$mailing_id);
-            $MailingMessageModel->where('is_sent',0);
-            $MailingMessageModel->where('is_failed',0);
-            $MailingMessageModel->offset($offset);
-            $MailingMessageModel->limit($batch_size);
-            $MailingMessageModel->select('GROUP_CONCAT(reciever_id) reciever_ids');
-            $row=$MailingMessageModel->find();
-            $offset+=$batch_size;
-
-            if(!$row){
-                break;
-            }
-            $batch=explode(',',$row[0]->reciever_ids);
+        $MailingMessageModel->where('mailing_id',$mailing_id);
+        $MailingMessageModel->where('is_sent',0);
+        $MailingMessageModel->where('is_failed',0);
+        $MailingMessageModel->select('GROUP_CONCAT(reciever_id) reciever_ids');
+        $row=$MailingMessageModel->find();
+        if(!$row){
+            return $this->fail('empty');
+        }
+        $ids=explode(',',$row[0]->reciever_ids);
+        $id_batches=array_chunk($ids,100);
+        $start_time=time();
+        foreach($id_batches as $batch){
+            $start_time+=5*60;//5 min
             $mailing_task=[
                 'task_name'=>"send mailing",
             //    'task_priority'=>'low',
@@ -94,7 +91,8 @@ class Mailing extends \App\Controllers\BaseController{
                         ['model'=>'UserModel','method'=>'systemUserLogin'],
                         ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],
                         ['model'=>'UserModel','method'=>'systemUserLogout'],
-                    ]
+                ],
+                'task_next_start_time'=>$start_time
             ];
             jobCreate($mailing_task);
             $result='ok';
