@@ -669,7 +669,7 @@ class CourierModel extends Model{
                     ],
                 'task_next_start_time'=>$next_start_time
             ];
-            //jobCreate($sms_job);
+            jobCreate($sms_job);
             $notification_index++;
         }
         return true;
