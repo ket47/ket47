@@ -74,7 +74,8 @@ class OrderStageScript{
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_force_start'=>            [
-            'supplier_finish'=>              [],
+            'supplier_finish'=>             ['Завершить подготовку'],
+            'supplier_corrected'=>          ['Изменить','medium','clear'],
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],

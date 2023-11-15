@@ -73,7 +73,7 @@ class OrderModel extends Model{
             $this->order_data=json_decode($order->order_data);
             unset($order->order_data);            
         }
-        pl([$order,$mode]);
+        //pl([$order,$mode]); WARNING itemGet called twice!!!!!!!!
         $this->itemInfoInclude($order);
         $this->itemCache['basic'.$order_id]=$order;
         if($mode=='basic'){

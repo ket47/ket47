@@ -43,11 +43,11 @@ class Task extends \App\Controllers\BaseController{
 
         while(time() < $start_time + $time_limit){
             $this->jobDelayedMove( $predis );
-            $job_chunk = $predis->blPop('queue.priority.normal queue.priority.low',4);
+            $job_chunk = $predis->blPop('queue.priority.normal',4);
             $job=$job_chunk[1]??null;
-            // if(!$job){
-            //     $job = $predis->lPop('queue.priority.low');
-            // }
+            if(!$job){
+                $job = $predis->lPop('queue.priority.low');
+            }
             if(!$job){
                 echo ".";
                 continue;
