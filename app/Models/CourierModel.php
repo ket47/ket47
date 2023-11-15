@@ -174,24 +174,23 @@ class CourierModel extends Model{
         $ok=$CourierGroupMemberModel->joinGroupByType( $courier_id, $group_type, $leave_other_groups );
         if( $ok ){
             if($group_type=='ready'){
-
-
-
-
-
-
-
-
-                
                 $courier=$this->itemGet($courier_id,'basic');
-                $notify_of_waiting_jobs_task=[
-                    'task_name'=>"notify_of_waiting_jobs_task",
-                    'task_programm'=>[
-                            ['model'=>'CourierModel','method'=>'itemNotify','arguments'=>[$courier]]
-                    ],
-                    'task_next_start_time'=>time()+5
-                ];
-                jobCreate($notify_of_waiting_jobs_task);
+                /**
+                 * If we will use task it will execute as guest so can't pass checks so need to execute directly
+                 */
+
+                $this->itemNotify($courier);
+
+
+
+                // $notify_of_waiting_jobs_task=[
+                //     'task_name'=>"notify_of_waiting_jobs_task",
+                //     'task_programm'=>[
+                //             ['model'=>'CourierModel','method'=>'itemNotify','arguments'=>[$courier]]//executes as guest
+                //     ],
+                //     'task_next_start_time'=>time()+5
+                // ];
+                // jobCreate($notify_of_waiting_jobs_task);
             }
             return 'ok';
         }
@@ -616,7 +615,7 @@ class CourierModel extends Model{
      * @todo We should in future check the distance between store and courier!!!
      */
     public function listNotify( $new_job ){
-        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5,'order']);
+        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
         if( !$ready_courier_list ){
             return false;
         }
@@ -640,14 +639,14 @@ class CourierModel extends Model{
      */
 
     private function listNotifyCreate( array $context_list ){
-        $notification_time_gap=3*60;//1min between notifications
+        $notification_time_gap=3*60;//3min between notifications
         $notification_index=0;
         foreach($context_list as $context){
             $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;
             $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
             $message=(object)[
                         'message_reciever_id'=>$reciever_id,
-                        'message_transport'=>'message',
+                        'message_transport'=>'telegram,push',
                         'message_text'=>$message_text,
                         'message_data'=>[
                             'type'=>'flash',
