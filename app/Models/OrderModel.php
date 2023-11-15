@@ -69,16 +69,11 @@ class OrderModel extends Model{
         if( !$order ){
             return 'notfound';
         }
-        // /**
-        //  * It's weirdo....
-        //  */
-        // if( $order->is_shipment??null ){
-        //     $this->stageScriptSet( 'shipping' );
-        // }
-        if( $this->order_data ){
+        if( $order->order_data ){
             $this->order_data=json_decode($order->order_data);
             unset($order->order_data);            
         }
+        pl([$order,$mode]);
         $this->itemInfoInclude($order);
         $this->itemCache['basic'.$order_id]=$order;
         if($mode=='basic'){
