@@ -69,47 +69,43 @@ class OrderModel extends Model{
         if( !$order ){
             return 'notfound';
         }
-        $this->order_data=json_decode($order->order_data);
-        unset($order->order_data);
+        // /**
+        //  * It's weirdo....
+        //  */
+        // if( $order->is_shipment??null ){
+        //     $this->stageScriptSet( 'shipping' );
+        // }
+        if( $this->order_data ){
+            $this->order_data=json_decode($order->order_data);
+            unset($order->order_data);            
+        }
         $this->itemInfoInclude($order);
+        $this->itemCache['basic'.$order_id]=$order;
         if($mode=='basic'){
-            $this->itemCache[$mode.$order_id]=$order;
             return $order;
         }
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $ImageModel=model('ImageModel');
         $EntryModel=model('EntryModel');
-        $StoreModel=model('StoreModel');
         $UserModel=model('UserModel');
 
-        // $CourierModel=model('CourierModel'); I THINK IT IS BETTER IDEA TO WRITE THIS TO ORDER DATA
-        // $CourierModel->join('image_list',"image_holder='courier' AND image_holder_id=courier_id AND is_main=1",'left');
-        // $CourierModel->select('courier_id,courier_name,image_hash');
-
         $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
-        $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num,image_hash');
-        $StoreModel->join('image_list','image_holder="store_avatar" AND image_holder_id=store_id','left');
         $UserModel->select('user_id,user_name,user_phone,user_email');
-        $order->stage_next= $this->itemStageNextGet($order->stage_current,$order->user_role);
+        $order->stage_next= $this->itemStageNextGet($order_id,$order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);
         $order->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$order->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
         $order->entries=    $EntryModel->listGet($order_id);
-        
-        $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
+        $order->store=      (object)[];    
+        if( $order->order_store_id ){
+            $StoreModel=model('StoreModel');
+            $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num,image_hash');
+            $StoreModel->join('image_list','image_holder="store_avatar" AND image_holder_id=store_id','left');
+            $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
+        }
 
-
-        /**
-         * Temporary fix to comply with old api
-         */
-        // $dayHour=date('H');
-        // $deliveryByCourierMinimal=($dayHour>='20' || $dayHour<'10')?1000:200;
-        // $order->store->store_minimal_order=max($order->store->store_minimal_order,$deliveryByCourierMinimal);
-
-        $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//$UserModel->itemGet($order->owner_id,'basic');permission issue for other parties
-        //$order->courier=    $CourierModel->where('courier_id',$order->order_courier_id)->get()->getRow();
+        $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//permission issue for other parties
         $order->is_writable=$this->permit($order_id,'w');
-        
         if( sudo() ){
             foreach($order->stages as $stage){
                 $UserModel->select('user_id,user_name,user_phone');
@@ -192,6 +188,10 @@ class OrderModel extends Model{
         return $update_result;
     }
 
+
+    /**
+     * Should port folowing functions from shipmentmodel
+     */
     private $order_data;
     public function itemDataGet( int $order_id, bool $use_cache=true ){
         if( !$this->order_data || !$use_cache ){
@@ -356,7 +356,7 @@ class OrderModel extends Model{
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->join('store_list sl',"store_id=order_store_id",'left');
 
-        $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total");
+        $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total,{$this->table}.is_shipment");
         $this->select("group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){

@@ -40,4 +40,12 @@ class TestController extends \App\Controllers\BaseController{
         header("Refresh:15");
         echo $result;
     }
+
+    public function shiftCalc(){
+        $courier_id=33;
+        $CourierShiftModel=model('CourierShiftModel');
+
+        $CourierShiftModel->itemClose($courier_id);
+        return $this->respond('ok');
+    }
 }

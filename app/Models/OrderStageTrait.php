@@ -4,18 +4,22 @@ namespace App\Models;
 
 trait OrderStageTrait{
 
+    protected $ScriptLibraryName="App\\Models\\OrderStageScript";
     private $StageScript=null;
-    private function itemStageScriptLoad(){
+    private function itemStageScriptLoad($order_id){
         if( !$this->StageScript ){
-            $ScriptLibraryName="App\\Models\\OrderStageScript";
-            $this->StageScript=new $ScriptLibraryName();
+            $order_basic=$this->itemGet($order_id,'basic');
+            if($order_basic->is_shipment??null){
+                $this->ScriptLibraryName="App\\Models\\ShipmentStageScript";
+            }
+            $this->StageScript=new $this->ScriptLibraryName();
             $this->StageScript->OrderModel=$this;
         }
         return $this->StageScript;
     }
 
-    private function itemStageNextGet($current_stage,$user_role){
-        $this->itemStageScriptLoad();
+    private function itemStageNextGet($order_id,$current_stage,$user_role){
+        $this->itemStageScriptLoad($order_id);
         $filtered_stage_next=[];
         $unfiltered_stage_next=$this->StageScript->stageMap[$current_stage??'']??[];
         foreach($unfiltered_stage_next as $stage=>$config){
@@ -31,10 +35,11 @@ trait OrderStageTrait{
     }
 
     private function itemStageValidate($stage,$order,$next_stage_group_id){
-        $next_stages=$this->itemStageNextGet($order->stage_current,$order->user_role);
+        $next_stages=$this->itemStageNextGet($order->order_id,$order->stage_current,$order->user_role);
         if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
             return 'ok';
         }
+        //pl([$this->ScriptLibraryName,"current: $order->stage_current","tried:$stage",'allowed next stages:',$next_stages]);
         return 'invalid_next_stage';
     }
 
@@ -107,7 +112,7 @@ trait OrderStageTrait{
     }
     
     private function itemStageHandle( $order_id, $stage, $data ){
-        $this->itemStageScriptLoad();
+        $this->itemStageScriptLoad($order_id);
         helper('job');
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
         try{
@@ -119,7 +124,7 @@ trait OrderStageTrait{
     }
     
     private function itemStageChangeNotify($order, $stage){
-        if( in_array($stage,['customer_cart','customer_confirmed']) ){
+        if( in_array($stage,['customer_cart','customer_confirmed','customer_start','customer_finish','system_recon']) ){
             return;//not notifying for this stages
         }
         $order=$this->itemGet($order->order_id,'basic');

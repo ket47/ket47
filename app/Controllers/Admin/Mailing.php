@@ -83,7 +83,7 @@ class Mailing extends \App\Controllers\BaseController{
         $id_batches=array_chunk($ids,100);
         $start_time=time();
         foreach($id_batches as $batch){
-            $start_time+=5*60;//5 min
+            $start_time+=2*60;//5 min
             $mailing_task=[
                 'task_name'=>"send mailing",
             //    'task_priority'=>'low',

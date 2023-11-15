@@ -37,7 +37,7 @@ class LocationModel extends Model{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet( $location_id ){
+    public function itemGet( $location_id, $mode='basic' ){
         $this->select("
             location_id,
             location_holder,
@@ -48,8 +48,14 @@ class LocationModel extends Model{
             location_comment,
             location_latitude,
             location_longitude,
-            is_main
+            location_list.is_main
         ");
+        if( $mode=='all' ){
+            $this->select('image_hash');
+            $this->join('location_group_member_list','member_id=location_id','left');
+            $this->join('location_group_list','group_id','left');
+            $this->join('image_list type_icon',"type_icon.image_holder='location_group_list' AND type_icon.image_holder_id=group_id AND type_icon.is_main=1",'left');
+        }
         return $this->where('location_id',$location_id)->get()->getRow();
     }
     

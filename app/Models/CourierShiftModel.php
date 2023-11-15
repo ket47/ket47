@@ -12,7 +12,7 @@ class CourierShiftModel extends Model{
     protected $allowedFields = [
         'shift_status',
         'courier_id',
-        'total_distance',
+        'total_bonus',
         'total_duration',
         'closed_at',
         ];
@@ -64,27 +64,39 @@ class CourierShiftModel extends Model{
         return $shift_id;
     }
 
-    private function itemOpenGet($courier_id){
+    public function itemOpenGet($courier_id){
         $this->where('courier_id',$courier_id);
         $this->where('shift_status','open');
         $this->permitWhere('r');
         return $this->get()->getRow();
     }
 
-    public function itemClose( $courier_id, $courier_owner_id ){
+    public function itemWorkStatisticsGet($courier_id,$start_at,$finish_at){
+        $OrderModel=model('OrderModel');
+        $OrderModel->join('order_group_member_list ogml','member_id=order_id');
+        $OrderModel->join('order_group_list ogl','group_id');
+        $OrderModel->where('group_type','delivery_start');
+        $OrderModel->where("ogml.created_at BETWEEN '$start_at' AND '$finish_at'");
+        $OrderModel->where('order_courier_id',$courier_id);
+        $OrderModel->where("order_data->>'$.order_is_canceled' IS NULL",null,false);
+        $OrderModel->select("COUNT(*) order_count,COUNT(order_data->>'$.delivery_heavy_bonus') heavy_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus')) heavy_bonus");
+        return $OrderModel->find();
+    }
+
+    public function itemClose( $courier_id ){
         $this->select('*,NOW() finished_at');
         $openedShift=$this->itemOpenGet($courier_id);
         if( !$openedShift ){
             return 'notfound';
         }
-
-        $LocationModel=model('LocationModel');
-        $total_distance=$LocationModel->routeLengthGet( 'courier', $courier_id, $openedShift->created_at, $openedShift->finished_at );
+        //$LocationModel=model('LocationModel');
+        //$total_distance=$LocationModel->routeLengthGet( 'courier', $courier_id, $openedShift->created_at, $openedShift->finished_at );
         $total_duration=strtotime($openedShift->finished_at)-strtotime($openedShift->created_at);
+        $statistics=$this->itemWorkStatisticsGet($courier_id,$openedShift->created_at,$openedShift->finished_at);
 
         $this->set('closed_at',$openedShift->finished_at);
         $this->set('total_duration',$total_duration??0);
-        $this->set('total_distance',$total_distance??0);
+        $this->set('total_bonus',$statistics->heavy_bonus??0);
         $this->set('shift_status','closed');
         $this->where('shift_id',$openedShift->shift_id);
         $this->permitWhere('w');
@@ -97,17 +109,19 @@ class CourierShiftModel extends Model{
         $courier=$CourierModel->itemGet($courier_id);
 
         $message=(object)[
-            'message_reciever_id'=>"-50,{$courier_owner_id}",//copy to courier group
+            'message_reciever_id'=>"-50,{$courier->owner_id}",//copy to courier group
             'message_transport'=>'telegram',
             'message_subject'=>'💤 Смена Закрыта',
             'context'=>[
                 'total_duration'=>$total_duration,
-                'total_distance'=>$total_distance,
+                //'total_distance'=>$total_distance,
                 'courier'=>$courier,
                 'shift'=>$openedShift,
+                'statistics'=>$statistics,
             ],
             'template'=>'messages/events/on_delivery_shift_closed_sms'
         ];
+        pl($message);
         $sms_job=[
             'task_name'=>"Courier Shift closed msg send",
             'task_programm'=>[

@@ -196,7 +196,7 @@ $(Order.init);
         <div style="display:grid;grid-template-columns:1fr 3fr;grid-gap:10px;">
             <div>Продавец</div>
             <div>
-                <?=$order->store->store_name ?> (<?=$order->store->store_phone ?>)
+                <?=$order->store->store_name??'' ?> (<?=$order->store->store_phone??'' ?>)
             </div>
 
             <div>Покупатель</div>

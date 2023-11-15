@@ -60,7 +60,7 @@ class OrderStageScript{
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_corrected'=>[
-            'supplier_start'=>              ['Сохранить изменения','success'],
+            'supplier_start'=>              ['Сохранить изменения'],
             'supplier_action_add'=>         ['Добавить товар','medium','clear'],
             'delivery_no_courier'=>         [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
@@ -68,7 +68,7 @@ class OrderStageScript{
         'supplier_finish'=>[
             'supplier_action_take_photo'=>  ['Сфотографировать'],
             'supplier_corrected'=>          ['Изменить','medium','clear'],
-            'delivery_start'=>              ['Начать доставку','success'],
+            'delivery_start'=>              ['Начать доставку'],
             'delivery_no_courier'=>         [],
             'system_reckon'=>               [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
@@ -406,7 +406,7 @@ class OrderStageScript{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'long.wav'
@@ -435,18 +435,18 @@ class OrderStageScript{
             'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
             'context'=>$context
         ];
-        $admin_email=(object)[
-            'message_transport'=>'email',
-            'message_reciever_id'=>-100,
-            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_start_ADMIN_email.php',
-            'context'=>$context
-        ];
+        // $admin_email=(object)[
+        //     'message_transport'=>'email',
+        //     'message_reciever_id'=>-100,
+        //     'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+        //     'template'=>'messages/order/on_customer_start_ADMIN_email.php',
+        //     'context'=>$context
+        // ];
 
 
 
         $cust_sms=(object)[
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
@@ -454,7 +454,7 @@ class OrderStageScript{
         $notification_task=[
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms,$admin_sms,$admin_email]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms,$admin_sms]]]
                 ]
         ];
         jobCreate($notification_task);
@@ -495,7 +495,7 @@ class OrderStageScript{
             'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
             'message_data'=>(object)[
-                'sound'=>'medium.wav'
+                'sound'=>'short.wav'
             ],
             'telegram_options'=>[
                 'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
@@ -513,9 +513,9 @@ class OrderStageScript{
         ];
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_data'=>(object)[
-                'sound'=>'medium.wav'
+                'sound'=>'short.wav'
             ],
             'template'=>'messages/order/on_customer_rejected_COUR_sms.php',
             'context'=>$context
@@ -763,7 +763,7 @@ class OrderStageScript{
 
     public function onSupplierOverdue( $order_id  ){
         $order=$this->OrderModel->itemGet($order_id,'basic');
-        if( !in_array($order->stage_current,['customer_start','supplier_start','supplier_corrected']) ){
+        if( !in_array($order->stage_current??'',['customer_start','supplier_start','supplier_corrected']) ){
             return 'idle';
         }
         $StoreModel=model('StoreModel');
@@ -773,13 +773,13 @@ class OrderStageScript{
             'store'=>$store
         ];
         $customer_sms=(object)[
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_supplier_overdue_STORE_sms.php',
             'context'=>$context
@@ -927,12 +927,12 @@ class OrderStageScript{
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_delivery_found_STORE_sms.php',
             'context'=>$context

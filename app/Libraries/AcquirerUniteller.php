@@ -48,51 +48,6 @@ class AcquirerUniteller{
         }
         $UserModel=model('UserModel');
         $customer=$UserModel->itemGet($user_id,'basic');
-        // $p=(object)[
-        //     'Shop_IDP' => getenv('uniteller.Shop_IDP'),
-        //     'Order_IDP' => getenv('uniteller.orderPreffix').'REG'.$card_id,
-        //     'Subtotal_P' => 11,
-        //     'Customer_IDP' => $user_id,
-        //     'Email' => $customer->user_email??"user{$user_id}@tezkel.com",
-        //     'Phone' => $customer->user_phone,
-        //     'PhoneVerified' => $customer->user_phone,
-        //     //'FirstName'=>$order_all->customer->user_name,
-        //     'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
-        //     'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
-        //     'Preauth'=>1,
-        //     'IsRecurrentStart'=>0,
-        //     'Lifetime' => 5*60,// 5 min
-        //     //'OrderLifetime' => 5*60,// 5 min
-        //     'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
-        //     //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
-        // ];
-        // $p->Signature = strtoupper(
-        //     md5(
-        //         md5($p->Shop_IDP) . "&" .
-        //         md5($p->Order_IDP) . "&" .
-        //         md5($p->Subtotal_P) . "&" .
-        //         md5($p->MeanType??'') . "&" .
-        //         md5($p->EMoneyType??'') . "&" .
-        //         md5($p->Lifetime??'') . "&" .
-        //         md5($p->Customer_IDP) . "&" .
-        //         md5($p->Card_IDP??'') . "&" .
-        //         md5($p->IData??'') . "&" .
-        //         md5($p->PT_Code??'') . "&" .
-        //         md5($p->PhoneVerified??'') . "&" .
-        //         md5( getenv('uniteller.password') )
-        //     )
-        // );
-
-
-
-
-
-
-
-
-
-
-
         $p=(object)[
             'Shop_IDP' => getenv('uniteller.Shop_IDP'),
             'Order_IDP' => getenv('uniteller.orderPreffix').'REG'.$card_id,

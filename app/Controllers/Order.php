@@ -238,6 +238,26 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($bulkResponse);
     }
 
+    private function itemDeliveryHeavyGet(){
+        $PrefModel=model('PrefModel');
+        $delivery_heavy_level=$PrefModel->itemGet('delivery_heavy_level','pref_value');
+        if($delivery_heavy_level){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+            $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+
+            if( $delivery_heavy_cost && $delivery_heavy_bonus ){
+                return (object)[
+                    'cost'=>$delivery_heavy_cost,
+                    'bonus'=>$delivery_heavy_bonus
+                ];
+            }
+        }
+        return (object)[
+            'cost'=>0,
+            'bonus'=>0
+        ];
+    }
+
     private function itemDeliveryOptionsGet( $store_id ){
         $StoreModel=model('StoreModel');
         if(!$StoreModel->itemIsReady($store_id)){
@@ -260,14 +280,16 @@ class Order extends \App\Controllers\BaseController {
         if(!$storeTariffRuleList){
             return 'no_tariff';
         }
+        $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
-                
+                $order_sum_delivery=(int)$tariff->delivery_cost+$deliveryHeavyModifier->cost;
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,
-                    'order_sum_delivery'=>(int)$tariff->delivery_cost,
+                    'order_sum_delivery'=>$order_sum_delivery,
                     'order_sum_minimal'=>$this->itemSumMinimalGet('delivery_by_courier'),
+                    'deliveryHeavyBonus'=>$deliveryHeavyModifier->bonus,
                     'deliveryByCourier'=>1,
                     'deliveryIsReady'=>$deliveryIsReady,
                     'deliveryByStore'=>0,
@@ -364,12 +386,13 @@ class Order extends \App\Controllers\BaseController {
          * RACING CONDITION CAN OCCUR!!! WHEN MODIFYING ORDER DATA FROM LOADED PREVIOUSLY OBJECT
          */
 
-
         //DELIVERY OPTIONS SET
         if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
+            $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
             $order_data->delivery_by_courier=1;
             $order_data->delivery_fee=$tariff->delivery_fee;
-            $order_data->delivery_cost=$tariff->delivery_cost;
+            $order_data->delivery_cost=$tariff->delivery_cost+$deliveryHeavyModifier->cost;
+            $order_data->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
             $CourierModel=model('CourierModel');
             $lookForCourierAroundLocation=(object)[
                 'location_holder'=>'store',

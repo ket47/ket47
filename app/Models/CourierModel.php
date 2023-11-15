@@ -133,7 +133,9 @@ class CourierModel extends Model{
         $this->update($courier->courier_id,$courier);
         return $this->db->affectedRows()?'ok':'idle';
     }
-    
+    /**
+     * Function only changes group courier belongs to
+     */
     public function itemUpdateGroup($courier_id,$group_id,$is_joined){
         if( !$this->permit($courier_id,'w') ){
             return 'forbidden';
@@ -152,6 +154,9 @@ class CourierModel extends Model{
         return 'error';
     }
 
+    /**
+     * Function changes group courier belongs to AND notifies about awating orders
+     */
     public function itemUpdateStatus($courier_id,$group_type){
         if(!$courier_id){
             return 'notfound';
@@ -169,13 +174,22 @@ class CourierModel extends Model{
         $ok=$CourierGroupMemberModel->joinGroupByType( $courier_id, $group_type, $leave_other_groups );
         if( $ok ){
             if($group_type=='ready'){
+
+
+
+
+
+
+
+
+                
                 $courier=$this->itemGet($courier_id,'basic');
                 $notify_of_waiting_jobs_task=[
-                    'task_name'=>"free the courier",
+                    'task_name'=>"notify_of_waiting_jobs_task",
                     'task_programm'=>[
                             ['model'=>'CourierModel','method'=>'itemNotify','arguments'=>[$courier]]
                     ],
-                    'task_next_start_time'=>time()+1
+                    'task_next_start_time'=>time()+5
                 ];
                 jobCreate($notify_of_waiting_jobs_task);
             }
@@ -377,34 +391,87 @@ class CourierModel extends Model{
 
     public function listJobGet( $courier_id ){
         //courier should be able to preview jobs
-        // $isCourierReady=$this->isCourierReady();
-        // if( !$isCourierReady ){
-        //     return 'notready';
-        // }
-        $point_distance=2000000;//getenv('delivery.radius');
-
-        $LocationModel=model('LocationModel');
-        $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
-        if(!$courier_location){
-            return 'courier_location_required';
+        $isCourierReady=$this->isCourierReady();
+        if( !$isCourierReady ){
+            return 'notready';
         }
 
-        $LocationModel->select("location_latitude,location_longitude");
-        $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
-        $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
-        $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
-        $LocationModel->join('order_list','store_id=order_store_id');
-        $LocationModel->join('order_group_member_list ogml','member_id=order_id');
-        $LocationModel->join('order_group_list ogl','group_id');
-        $LocationModel->where('group_type','delivery_search');
-        $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
 
-        $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        $OrderModel=model('OrderModel');
+        $OrderModel->select("location_latitude,location_longitude,location_address");
+        $OrderModel->select("order_id,'courier' user_role, 1 is_courier_job");
+        $OrderModel->select("store_id,store_name");
+        $OrderModel->select("order_data->>'$.plan_delivery_start' plan_delivery_start,'courier' user_role, 1 is_courier_job");
+
+        $OrderModel->join('order_group_member_list ogml','member_id=order_id');
+        $OrderModel->join('order_group_list ogl','group_id');
+        $OrderModel->join('location_list ll','location_id=order_start_location_id');
+        $OrderModel->join('store_list sl','store_id=order_store_id','left');
+        
+        $OrderModel->where('group_type','delivery_search');
+        $OrderModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
+
+        $OrderModel->orderBy('plan_delivery_start');
+        $job_list=$OrderModel->get()->getResult();
+
         if( !is_array($job_list) ){
             return 'notfound';
         }
         return $job_list;
     }
+
+    // public function listJobGet( $courier_id ){
+    //     //courier should be able to preview jobs
+    //     // $isCourierReady=$this->isCourierReady();
+    //     // if( !$isCourierReady ){
+    //     //     return 'notready';
+    //     // }
+    //     $point_distance=2000000;//getenv('delivery.radius');
+
+    //     $LocationModel=model('LocationModel');
+    //     $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
+    //     if(!$courier_location){
+    //         return 'courier_location_required';
+    //     }
+
+    //     $LocationModel->select("location_latitude,location_longitude");
+    //     $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
+    //     $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
+    //     $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
+    //     $LocationModel->join('order_list','store_id=order_store_id');
+    //     $LocationModel->join('order_group_member_list ogml','member_id=order_id');
+    //     $LocationModel->join('order_group_list ogl','group_id');
+    //     $LocationModel->where('group_type','delivery_search');
+    //     $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
+
+    //     $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
+    //     if( !is_array($job_list) ){
+    //         return 'notfound';
+    //     }
+    //     return $job_list;
+    // }
 
     public function itemJobGet( $order_id ){
         $isCourierReady=$this->isCourierReady();
@@ -457,7 +524,7 @@ class CourierModel extends Model{
         $message_text=view('messages/events/on_delivery_start_sms',$context);
         $message=(object)[
             'message_reciever_id'=>"$reciever_id",
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'message',
             'message_text'=>$message_text,
             'message_data'=>[
                 'title'=>"🛵 Заказ #{$context['order_id']}",
@@ -602,7 +669,7 @@ class CourierModel extends Model{
                     ],
                 'task_next_start_time'=>$next_start_time
             ];
-            jobCreate($sms_job);
+            //jobCreate($sms_job);
             $notification_index++;
         }
         return true;

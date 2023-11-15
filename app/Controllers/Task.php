@@ -14,6 +14,17 @@ class Task extends \App\Controllers\BaseController{
         session_write_close();
     }
 
+    private function jobDelayedMove( $predis ){
+        $time=time();
+        $job2execute=$predis->zRangeByScore('queue.delayed', 0, $time);
+        $predis->zRemRangeByScore('queue.delayed',0,$time);
+        //pl($time);
+        //pl($job2execute);
+        foreach($job2execute as $job){
+            $predis->lPush('queue.priority.normal', $job);
+        }
+    }
+
     public function jobDo(){
         if( getenv('app.logworkers') ){
             ob_start();
@@ -31,11 +42,12 @@ class Task extends \App\Controllers\BaseController{
         $this->timedJobDo($predis);
 
         while(time() < $start_time + $time_limit){
-            $job_chunk = $predis->blPop('queue.priority.normal',4);
+            $this->jobDelayedMove( $predis );
+            $job_chunk = $predis->blPop('queue.priority.normal queue.priority.low',4);
             $job=$job_chunk[1]??null;
-            if(!$job){
-                $job = $predis->lPop('queue.priority.low');
-            }
+            // if(!$job){
+            //     $job = $predis->lPop('queue.priority.low');
+            // }
             if(!$job){
                 echo ".";
                 continue;
@@ -44,17 +56,10 @@ class Task extends \App\Controllers\BaseController{
             if( !$task ){
                 echo "\nInvalid job syntax: ".json_last_error_msg();
             }
-            if( isset($task->task_next_start_time) && $task->task_next_start_time>time() ){
-                $final_count=$predis->rPush('queue.priority.normal', $job);
-                if( $final_count<2 ){
-                    sleep(1);//if only one timed job is left wait 1 sec
-                }
-                continue;
-            }
             echo "\nJob {($task->task_name??'-')} Started at ".date('H:i:s')." result=";
             print_r( $this->itemExecute( $task ) );
             echo "\nDone!";
-            $time_limit+=2;//adding 2 seconds if there is job
+            $time_limit+=2;//adding 2 seconds if there is a job
         }
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
         if( getenv('app.logworkers') ){

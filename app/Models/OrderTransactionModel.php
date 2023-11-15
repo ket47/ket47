@@ -102,7 +102,7 @@ class OrderTransactionModel extends TransactionModel{
             return false;
         }
 
-        if($paymentStatus->status=='Paid'){//already confirmation done
+        if($paymentStatus->needConfirm=='0'){//already confirmation done
             $confirmSum=0;
         }
 

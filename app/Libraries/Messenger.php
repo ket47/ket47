@@ -133,7 +133,7 @@ class Messenger{
 
     private function itemSendMessage( $message ){
         if( $this->itemSendPush($message) ){
-            //return true;//try to send viber even if push is successfull
+            return true;
         }
         if( $this->itemSendTelegram($message) ){
             return true;

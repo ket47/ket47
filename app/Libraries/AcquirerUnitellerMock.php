@@ -12,9 +12,15 @@ class AcquirerUnitellerMock{
     public function cardRegisterActivate(){
         return 'ok';
     }
-    public function statusGet($order_id,$mode=null){
-        $order=model('OrderModel')->itemGet($order_id,'basic');
-        $order_data=model('OrderModel')->itemDataGet($order_id);
+    public function statusGet($order_id_full,$mode=null){
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
+        $order=$OrderModel->itemGet($order_id,'basic');
+        $order_data=$OrderModel->itemDataGet($order_id);
         $balance=$order_data->payment_card_confirm_sum??$order_data->payment_card_fixate_sum??$order->order_sum_total;
         $status='authorized';
         if( $mode=='beforepayment' ){
@@ -25,11 +31,12 @@ class AcquirerUnitellerMock{
             $status='waiting';
         }
         return (object)[
-            'order_id'=>$order_id,
+            'order_id'=>$order_id_full,
             'status'=>$status,
             'total'=>$balance,
             'billNumber'=>rand(100000,999999),
             'approvalCode'=>000,
+            'needConfirm'=>1
         ];
     }
 

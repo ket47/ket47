@@ -1,6 +1,11 @@
 <?php
 namespace App\Models;
-
+/**
+ * 
+ * This model should be merged to OrderModel! After experimenting with new features
+ * 
+ * 
+ */
 class ShipmentModel extends SecureModel{
     protected $table            = 'order_list';
     protected $primaryKey       = 'order_id';
@@ -27,11 +32,28 @@ class ShipmentModel extends SecureModel{
         ],
     ];
     
+    use OrderStageTrait;
+
     private $itemCache=[];
     private $order_data=null;
 
     public function fieldUpdateAllow($field){
         $this->allowedFields[]=$field;
+    }
+    
+    private function itemUserRoleCalc(){
+        $user_id=session()->get('user_id')??-1;
+        if( sudo() ){
+            $this->select("'admin' user_role");
+        }
+        else {
+            $this->select("
+                IF(order_list.owner_id=$user_id,'customer',
+                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_store_admins),0),'supplier',
+                IF(COALESCE(FIND_IN_SET('$user_id',order_list.order_courier_admins),0),'delivery',
+                'other'))) user_role
+                ");
+        }
     }
     
     public function itemCacheClear(){
@@ -44,9 +66,15 @@ class ShipmentModel extends SecureModel{
         if( $this->itemCache[$mode.$order_id]??0 ){
             return $this->itemCache[$mode.$order_id];
         }
+        $this->select("{$this->table}.*,group_name stage_current_name,group_type stage_current");
+        $this->join('order_group_list','order_group_id=group_id','left');
+        $this->itemUserRoleCalc();
         $shipment=$this->find($order_id);
         if( !$shipment ){
             return 'notfound';
+        }
+        if( !($shipment->is_shipment??null) ){
+            return 'nosupport';
         }
         if($shipment->order_data){
             $this->order_data=json_decode($shipment->order_data);
@@ -57,6 +85,30 @@ class ShipmentModel extends SecureModel{
             return $shipment;
         }
 
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $ImageModel=model('ImageModel');
+        //$EntryModel=model('EntryModel');
+        $StoreModel=model('StoreModel');
+        $UserModel=model('UserModel');
+
+        $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
+        $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num,image_hash');
+        $StoreModel->join('image_list','image_holder="store_avatar" AND image_holder_id=store_id','left');
+        $UserModel->select('user_id,user_name,user_phone,user_email');
+        $shipment->stage_next= $this->itemStageNextGet($order_id,$shipment->stage_current,$shipment->user_role);
+        $shipment->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($shipment->order_id);
+        $shipment->images=     $ImageModel->listGet(['image_holder'=>'order','image_holder_id'=>$shipment->order_id,'is_active'=>1,'is_disabled'=>1,'is_deleted'=>1]);
+        //$shipment->entries=    $EntryModel->listGet($order_id);
+        $shipment->store=      $StoreModel->where('store_id',$shipment->order_store_id)->get()->getRow();
+
+        $shipment->customer=   $UserModel->where('user_id',$shipment->owner_id)->get()->getRow();//permission issue for other parties
+        $shipment->is_writable=$this->permit($order_id,'w');
+        if( sudo() ){
+            foreach($shipment->stages as $stage){
+                $UserModel->select('user_id,user_name,user_phone');
+                $stage->created_user=$UserModel->itemGet($stage->created_by,'basic');
+            }
+        }
         $this->itemCache[$mode.$order_id]=$shipment;
         return $shipment;
     }
@@ -67,26 +119,55 @@ class ShipmentModel extends SecureModel{
             'owner_id'=>$user_id,
             'order_sum_delivery'=>0,
             'order_data'=>'{"is_shopping":0}',
-            'is_shipping'=>1,
+            'is_shipment'=>1,
         ];
         $this->allowedFields[]='order_data';
         $this->allowedFields[]='owner_id';
-        $this->allowedFields[]='is_shipping';
+        $this->allowedFields[]='is_shipment';
         try{
-            return $this->insert($new_shipment,true);
+            $order_id=$this->insert($new_shipment,true);
+            $this->itemStageCreate( $order_id, 'customer_draft' );//move to controller
+            return $order_id;
         } catch(\Exception $e){
             return $e->getMessage();
         }
     }
-    
+
     public function itemUpdate( $shipment ){
         if( empty($shipment->order_id) ){
             return 'notfound';
         }
+        $shipment->updated_by=session()->get('user_id');
         $this->update($shipment->order_id,$shipment);
-        return $this->db->affectedRows()>0?'ok':'idle';
+        $update_result=$this->db->affectedRows()>0?'ok':'idle';
+        if( $this->in_object($shipment,['owner_id','owner_ally_ids','order_courier_id']) ){//,'order_store_id'   not updating owners so store will not see order at this stage 
+            $this->itemUpdateOwners($shipment->order_id);
+        }
+        return $update_result;
     }
-    
+
+    public function itemUpdateOwners( $order_id ){
+        $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM store_list WHERE order_store_id=store_id) store_owners");
+        $this->select("(SELECT CONCAT(owner_id,',',owner_ally_ids) FROM courier_list WHERE order_courier_id=courier_id) courier_owners");
+        //$this->select("owner_id");,$all_owners->owner_id
+        $all_owners=$this->getWhere(['order_id'=>$order_id])->getRow();
+        $owners=array_map('trim',array_unique(explode(',',"0,$all_owners->store_owners,$all_owners->courier_owners"),SORT_NUMERIC));
+        array_shift($owners);
+        $owner_list=implode(',',$owners);
+
+        $sql="
+            UPDATE
+                order_list ol
+                    LEFT JOIN
+                order_entry_list el USING(order_id)
+            SET
+                ol.owner_ally_ids='$owner_list',
+                el.owner_ally_ids='$owner_list'
+            WHERE
+                ol.order_id='$order_id'";
+        $this->query($sql);
+    }
+
     public function itemDelete( $order_id ){
         $this->delete(['order_id'=>$order_id]);
         return $this->db->affectedRows()?'ok':'idle';
@@ -103,7 +184,7 @@ class ShipmentModel extends SecureModel{
 
     public function itemDataCreate( int $order_id, object $data_create ){
         foreach($data_create as $path=>$value){
-            $data_create->{$path}=$this->db->escape($value);
+            $data_create->{$path}=addslashes($value);
         }
         $this->order_data=null;//cache is unvalidated
         $this->set("order_data",json_encode($data_create));
@@ -137,7 +218,7 @@ class ShipmentModel extends SecureModel{
         $this->where('finish_at>=NOW()');
         $this->where('tariff_list.is_disabled',0);
         $this->where('order_allow',1);
-        $this->where('is_shipping',0);
+        $this->where('is_shipment',0);
         $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
         if( $tariff_order_mode=='delivery_by_courier_first' ){
             $this->orderBy("delivery_allow DESC");
@@ -159,10 +240,23 @@ class ShipmentModel extends SecureModel{
         return 0;
     }
 
+    private function in_object(object $obj,array $props){
+        foreach($props as $prop){
+            if( property_exists($obj,$prop) ){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function listGet( $filter ){
         $this->filterMake($filter,false);
         $this->orderBy('shipment_list.created_at','DESC');
         return $this->get()->getResult();
+    }
+    
+    public function listCountGet(){
+        return 0;
     }
     
     public function listCreate(){

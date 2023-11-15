@@ -6,6 +6,11 @@ trait SystemTrait{
         ['isAdmin',  'onSystemMetricsWeek',     "📲 Метрика нед."],
         ['isAdmin',  'onSystemMetricsMonth',    "📲 Метрика мес."],
         ['isAdmin',  'onSystemRegistrations',   "👦🏻 Регистрации"],
+
+        ['isAdmin',  'onSystemHeavyDelivery-0',   "⛈️ Сброс"],
+        ['isAdmin',  'onSystemHeavyDelivery-1',   "⛈️ Дост +60"],
+        ['isAdmin',  'onSystemHeavyDelivery-2',   "⛈️ Дост +100"],
+        ['isAdmin',  'onSystemHeavyDelivery-3',   "⛈️ Дост +150"],
     ];
     public function systemButtonsGet(){
         return $this->systemButtons;
@@ -19,6 +24,22 @@ trait SystemTrait{
         }
         return false;
     }
+
+    private function onSystemHeavyDelivery( $delivery_heavy_level=0 ){
+        $PrefModel=model('PrefModel');
+        $PrefModel->itemUpdateValue('delivery_heavy_level',$delivery_heavy_level);
+        $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+        $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+        $context=[
+            'delivery_heavy_level'=>$delivery_heavy_level,
+            'delivery_heavy_cost'=>$delivery_heavy_cost,
+            'delivery_heavy_bonus'=>$delivery_heavy_bonus,
+        ];
+        $heavy_html=View('messages/telegram/deliveryHeavy',$context);
+        return  $this->sendHTML($heavy_html,'','system_message');
+    }
+
+
     private function onSystemMetricsDay(){
         $this->onSystemMetrics( "DAY" );
     }

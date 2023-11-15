@@ -3,6 +3,8 @@
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
 
+use function PHPUnit\Framework\stringContains;
+
 class Cardacquirer extends \App\Controllers\BaseController{
 
     use ResponseTrait;
@@ -30,25 +32,31 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->statusApply($result);
     }
     private function statusApply($incomingStatus){
-        if( !$this->authorizeAsSystem($incomingStatus->order_id) ){
-            $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$incomingStatus->order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
+        $order_id_full=$incomingStatus->order_id;//with affix if any
+        if( !$this->authorizeAsSystem($order_id_full) ){
+            $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id_full  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->fail('CAN\'T AUTHORIZE AS SYSTEM');
         }
-        $OrderModel=model('OrderModel');
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
         $result='ok';
         switch(strtolower($incomingStatus->status)){
             case 'authorized':
             case 'paid':
-                if( $this->paymentIsDone($incomingStatus->order_id) ){
+                if( $this->paymentIsDone($order_id) ){
                     return $this->respond('OK');
                 }
-                $result=$OrderModel->itemStageAdd( $incomingStatus->order_id, 'customer_payed_card', $incomingStatus, false );
+                $result=$OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $incomingStatus, false );
                 break;
             case 'canceled':
-                if( $this->paymentIsRefunded($incomingStatus->order_id) ){
+                if( $this->paymentIsRefunded($order_id) ){
                     return $this->respond('OK');
                 }
-                $result=$OrderModel->itemStageCreate( $incomingStatus->order_id, 'customer_refunded', $incomingStatus, false );
+                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $incomingStatus, false );
                 break;
             case 'partly canceled':
             case 'waiting':
@@ -56,7 +64,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('waiting');
                 break;
             case 'not authorized':
-                $this->log_message('error', " order_id:#$incomingStatus->order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
+                $this->log_message('error', " order_id:#$order_id_full paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
                 return $this->failValidationErrors('not_authorized');
                 break;
             default:
@@ -67,7 +75,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( $result=='ok' ){
             return $this->respond('OK'); 
         }
-        $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$incomingStatus->order_id; STAGE CANT BE CHANGED $result=='ok'");
+        $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id_full; STAGE CANT BE CHANGED $result=='ok'");
         return $this->fail('cant_change_order_stage');     
     }
 
@@ -99,18 +107,23 @@ class Cardacquirer extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////////////////////////////
     
     public function paymentLinkGet(){
-        $order_id=$this->request->getVar('order_id');
+        $order_id_full=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_id,'beforepayment');
+        $paymentStatus=$Acquirer->statusGet($order_id_full,'beforepayment');
 
         if( isset($paymentStatus->status) && $paymentStatus->status=='Authorized' ){
             return $this->fail('already_payed');
         }
-        $result=$this->orderValidate($order_id);
+        $result=$this->orderValidate($order_id_full);
         if( $result!='ok' ){
             return $this->fail($result);
         }
-        $OrderModel=model('OrderModel');
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
         $order_all=$OrderModel->itemGet($order_id,'all');
 
         $await_payment_timeout=time()+6*60;//6min
@@ -119,9 +132,9 @@ class Cardacquirer extends \App\Controllers\BaseController{
     }
 
     public function paymentDo(){
-        $order_id=$this->request->getVar('order_id');
+        $order_id_full=$this->request->getVar('order_id');
         $card_id=$this->request->getVar('card_id');
-        $result=$this->orderValidate($order_id);
+        $result=$this->orderValidate($order_id_full);
         if( $result!='ok' ){
             return $this->fail($result);
         }
@@ -129,7 +142,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return $this->fail('nocardid');
         }
         $Acquirer=\Config\Services::acquirer();
-        $OrderModel=model('OrderModel');
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
         $order_all=$OrderModel->itemGet($order_id,'all');
         $result=$Acquirer->pay($order_all,$card_id);
         if( $result ){
@@ -138,22 +156,28 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->fail('not_authorized');
     }
 
-    private function orderValidate( $order_id ){
-        $OrderModel=model('OrderModel');
-        $StoreModel=model('StoreModel');
+    private function orderValidate( $order_id_full ){
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
         $order_all=$OrderModel->itemGet($order_id,'all');
 
         if( !is_object($order_all) ){
             return 'order_notfound';
         }
         $order_data=$OrderModel->itemDataGet($order_id);
-        $store_is_ready=$StoreModel->itemIsReady($order_all->order_store_id);
-        if( !($order_all->order_sum_product>0) || $order_all->stage_current!='customer_confirmed' ){
+        if( !($order_all->order_sum_total>0) || !in_array($order_all->stage_current,['customer_confirmed','customer_draft']) ){
             return 'order_notvalid';
         }
-        if( $store_is_ready!==1 ){
-            return 'store_notready';
-        }
+        // if we will use customer_await then store can be not ready
+        
+        // $store_is_ready=$StoreModel->itemIsReady($order_all->order_store_id);
+        // if( $store_is_ready!==1 ){
+        //     return 'store_notready';
+        // }
         if( !($order_all->customer??null) ){
             return 'user_notfound';
         }
@@ -200,14 +224,6 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
 
-
-
-
-
-
-
-
-
     private function paymentIsDone( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         return $OrderGroupMemberModel->isMemberOf($order_id,'customer_payed_card');
@@ -217,152 +233,23 @@ class Cardacquirer extends \App\Controllers\BaseController{
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         return $OrderGroupMemberModel->isMemberOf($order_id,'customer_refunded');
     }
-
-
-
-
-
-
-
-
-
-    /*
-
-    public function paymentStatusRequest(){
-        $order_id=$this->request->getVar('order_id');
-        $request=[
-            'Shop_ID'=>getenv('uniteller.Shop_IDP'),
-            'Login'=>getenv('uniteller.login'),
-            'Password'=>getenv('uniteller.password'),
-            'Format'=>'1',
-            'ShopOrderNumber'=>$order_id,
-            'S_FIELDS'=>'OrderNumber;Status;Total;ApprovalCode;BillNumber'
-        ];
-        $context  = stream_context_create([
-            'http' => [
-                'header'  => "Content-type: application/x-www-form-urlencoded",
-                'method'  => 'POST',
-                'content' => http_build_query($request)
-                ]
-        ]);
-        $result = file_get_contents(getenv('uniteller.gateway').'results/', false, $context);
-        if(!$result){
-            return 'noresponse';
-        }
-        $response=explode(';',$result);
-        return $this->paymentStatusSetApply($response[0],$response[1],$response[2],$response[2],$response[3],$response[4]);
-    }
-
-
-
-    public function paymentStatusSet(){
-        $order_id=$this->request->getVar('Order_ID');
-        $status=$this->request->getVar('Status');
-        $signature=$this->request->getVar('Signature');
-        $total=$this->request->getVar('Total');
-        $balance=$this->request->getVar('Balance');
-        $approvalCode=$this->request->getVar('ApprovalCode');
-        $billNumber=$this->request->getVar('ApprovalCode');
-
-        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('uniteller.password')));
-        if($signature!=$signature_check){
-            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check");
-            return $this->failUnauthorized();
-        }
-        return $this->paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode,$billNumber);
-    }
-
-    private function paymentStatusSetApply($order_id,$status,$total,$balance,$approvalCode,$billNumber){
-        if( !$this->authorizeAsSystem($order_id) ){
-            $this->log_message('error', "paymentStatusSet $status; order_id:$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
-            return $this->respond('CANT AUTORIZE AS SYSTEM');
-        }
-        $data=(object)[
-            'total'=>$total,
-            'balance'=>$balance,
-            'approvalCode'=>$approvalCode,
-            'billNumber'=>$billNumber
-        ];
-        $OrderModel=model('OrderModel');
-        $result='ok';
-        switch(strtolower($status)){
-            case 'authorized':
-            case 'paid':
-                if( $this->paymentIsDone($order_id) ){
-                    return $this->respond('OK');
-                }
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_payed_card', $data, false );
-                break;
-            case 'canceled':
-                if( $this->paymentIsRefunded($order_id) ){
-                    return $this->respond('OK');
-                }
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $data, false );
-                break;
-            case 'partly canceled':
-            case 'waiting':
-                break;
-            default:
-                $this->log_message('error', "paymentStatusSet $status; wrong_status");
-                return $this->failValidationErrors('wrong_status');
-                break;
-        }
-        if( $result=='ok' ){
-            return $this->respond('OK'); 
-        }
-        $this->log_message('error', "paymentStatusSet $status; order_id:$order_id; STAGE CANT BE CHANGED $result=='ok'");
-        return $this->failValidationErrors('cant_change_order_stage');        
-    }
-    
-    private function paymentIsDone( $order_id ){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        return $OrderGroupMemberModel->isMemberOf($order_id,'customer_payed_card');
-    }
-    
-    private function paymentIsRefunded( $order_id ){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        return $OrderGroupMemberModel->isMemberOf($order_id,'customer_refunded');
-    }
-
-    public function paymentStatusCheck(){
-        $order_id=$this->request->getVar('order_id');
-        $upoint_id=$this->request->getVar('upoint_id');
-        if( $upoint_id!=getenv('uniteller.Shop_IDP') ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$order_id Shop_IDP DO NOT MATCH upoint_id:$upoint_id");
-            return $this->failUnauthorized();
-        }
-        if( !$this->authorizeAsSystem($order_id) ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$order_id CANT AUTORIZE AS SYSTEM");
-            return $this->failUnauthorized();
-        }
-        $OrderModel=model('OrderModel');
-        $order=$OrderModel->itemGet($order_id);
-        if( $order->stage_current==='customer_confirmed' ){
-            $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS NEW");
-            return $this->respond('NEW');//Заказ не оплачен
-        }
-        if( $this->paymentIsDone($order_id) ){
-            //$this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS PAID");
-            return $this->respond('PAID');//Заказ оплачен
-        }
-        $this->log_message('error', "paymentStatusCheck; order_id:$order_id = REPORTED AS CANCELED");
-        return $this->respond('CANCELLED');
-    }
-
-
-    */
 
     private function log_message($severity,$message){
         log_message($severity, $message);
         $this->sendErrorEmail($message);
     }
 
-    private function authorizeAsSystem( $order_id ){
-        if( !$order_id ){
+    private function authorizeAsSystem( $order_id_full ){
+        if( !$order_id_full ){
             return false;
         }
+        list($order_id)=explode('-',$order_id_full);
+        if( str_contains($order_id_full,'s') ){//is shipping
+            $OrderModel=model('ShipmentModel');
+        } else {
+            $OrderModel=model('OrderModel');
+        }
         $UserModel=model('UserModel');
-        $OrderModel=model('OrderModel');
         
         $order_owner_id=$OrderModel
                 ->select('owner_id')

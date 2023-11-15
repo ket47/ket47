@@ -14,18 +14,27 @@ class DeliveryScheduleModel extends SecureModel{
 
     protected $useSoftDeletes = false;
 
-    private $orderAverageDuration=40;//minute
+
     private $shiftStartHour=9;
     private $shiftEndHour=23;
     private $shiftEndMarginMinute=30;//30 min before shiftEnd skip to next day
     private $deliveryRangeDays=2;
     private $deliveryDurationDelta=15;//+-15 min
+    private $avgSpeed;
+    private $avgDistance;
+
+    function __construct(){
+        parent::__construct();
+
+        $this->avgSpeed=(int) getenv('delivery.speed');// m/h
+        $this->avgDistance=(int) getenv('delivery.radius');// m
+    }
 
     /**
      * Function estimates when courier may become ready
      * when all couriers are busy
      */
-    private function courierBusynessEndEstimate(){
+    private function courierBusynessEndEstimate():int{
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $OrderGroupMemberModel->join('order_group_list','group_id');
         $OrderGroupMemberModel->where("TIMESTAMPDIFF(HOUR,order_group_member_list.created_at,NOW())<5");
@@ -38,16 +47,16 @@ class DeliveryScheduleModel extends SecureModel{
         $courierBusyCount=$CourierGroupMemberModel->select("COUNT(*) courierBusyCount")->get()->getRow('courierBusyCount');
 
         $orderTotalDuration=$this->orderAverageDuration*($orderInQueueCount+0.5);//half time for order in progress
-        $courierBusyDuration=$orderTotalDuration/$courierBusyCount;//min
+        $courierBusyDuration=$orderTotalDuration*60/$courierBusyCount;//sec
 
-        return strtotime("now +{$courierBusyDuration} minute");
+        return time()+$courierBusyDuration;
     }
 
     /**
      * Function estimates when courier may become ready
      * estimates courier busyness time, shift times, margins etc
      */
-    public function courierReadinessTimeEstimate(){
+    public function courierReadinessBeginEstimate():array{
         $nowHour=(int) date('H');
         $nowMinute=(int) date('i');
         if( $nowHour<$this->shiftStartHour ){
@@ -83,7 +92,7 @@ class DeliveryScheduleModel extends SecureModel{
                  */
                 $ReadinessTime=strtotime(date("Y-m-d {$this->shiftStartHour}:00:00",strtotime("now +1 day")));
                 return [
-                    'status'=>'heavyload,downtime',
+                    'status'=>'downtime',
                     'time'=>$ReadinessTime,
                 ];
             }
@@ -103,24 +112,75 @@ class DeliveryScheduleModel extends SecureModel{
         ];
     }
 
+    public function routeStatsGet(int $start_location_id, int $finish_location_id){
+        $LocationModel=model('LocationModel');
+        $default_location_id=$LocationModel->where('location_holder','default_location')->get()->getRow('location_id');
+
+        $maximum_distance=getenv('delivery.radius');
+        $result=(object)[
+            'max_distance'=>$maximum_distance
+        ];
+        $start_center_distance=(int) $LocationModel->distanceGet($default_location_id,$start_location_id);
+        if($start_center_distance>$maximum_distance){
+            $result->error='start_center_toofar';
+            $result->deliveryDistance=$start_center_distance;
+            return $result;
+        }
+        $finish_center_distance=(int) $LocationModel->distanceGet($default_location_id,$finish_location_id);
+        if($finish_center_distance>$maximum_distance){
+            $result->error='finish_center_toofar';
+            $result->deliveryDistance=$finish_center_distance;
+            return $result;
+        }
+        $start_finish_distance=(int) $LocationModel->distanceGet($start_location_id,$finish_location_id);
+        if($start_finish_distance>$maximum_distance){
+            $result->error='start_finish_toofar';
+            $result->deliveryDistance=$start_finish_distance;
+            return $result;
+        }
+        $result->deliveryDistance=$start_finish_distance;//km
+        return $result;
+    }
+
+    public function routePlanGet(int $start_location_id, int $finish_location_id){
+        $result=$this->routeStatsGet($start_location_id, $finish_location_id);
+        if( isset($result->error) ){
+            return $result;
+        }
+        $courierReadinessBegin=$this->courierReadinessBeginEstimate();
+        $estStartArrivalDurationSeconds=round($this->avgDistance*60*60/$this->avgSpeed);//seconds
+
+        $result->time_offset=(int) date("Z");
+        $result->time_start_arrival=$estStartArrivalDurationSeconds;
+        $result->time_delivery=round($result->deliveryDistance*60*60/$this->avgSpeed);//seconds
+
+        $result->plan_mode="nodelay";
+        $result->plan_delivery_ready=$courierReadinessBegin['time'];
+        $result->plan_delivery_start=$result->plan_delivery_ready+$result->time_start_arrival;
+        $result->plan_delivery_finish=$result->plan_delivery_start+$result->time_delivery;
+
+        if( $courierReadinessBegin['status']=='heavyload' ){
+            $result->plan_mode="await";
+        }
+        if( $courierReadinessBegin['status']=='downtime' ){
+            $result->plan_mode="schedule";
+        }
+        return $result;
+    }
+
     /**
      * Function calculates courier arrival ranges to start or finish location
      * 
      */
-    public function itemDeliveryArriveRangeGet(){
-        //$orderTotalDuration=$this->orderTotalDurationGet();
-        $courierReadiness=$this->courierReadinessTimeEstimate();
-        $courierArrivalTime=$courierReadiness['time']+$this->orderAverageDuration*60/2;
-        $courierArrivalTimeRounded=round($courierArrivalTime/($this->deliveryDurationDelta*60))*($this->deliveryDurationDelta*60);
-
-        $arrivalDay     =date('Y-m-d',$courierArrivalTimeRounded);
-        $arrivalHour    =date('H',$courierArrivalTimeRounded);
-        $arrivalMinute  =date('i',$courierArrivalTimeRounded);
+    public function itemDeliveryArrivalRangeGet( int $timeArrival ){
+        $timeArrivalRounded=round($timeArrival/($this->deliveryDurationDelta*60))*($this->deliveryDurationDelta*60);
+        $dateArrival=date('Y-m-d,H,i',$timeArrivalRounded);
+        list($arrivalDay,$arrivalHour,$arrivalMinute)=explode(',',$dateArrival);
 
         $defaultMinuteRange=['00','15','30','45'];
-        $deliveryArrivalNearest=null;
-        $deliveryArrivalRange=[
-            'dayFirst'=>date("Y-m-d",$courierArrivalTimeRounded),
+        $nearest=null;
+        $range=[
+            'dayFirst'=>date("Y-m-d",$timeArrivalRounded),
             'dayLast'=>date("Y-m-d",strtotime("now +{$this->deliveryRangeDays} day")),
             'dayHours'=>[]
         ];
@@ -138,31 +198,29 @@ class DeliveryScheduleModel extends SecureModel{
                     continue;
                 }
                 $hourPadded=str_pad($hour,2,'0',STR_PAD_LEFT);
-                $deliveryArrivalRange['dayHours'][$date]["h_{$hourPadded}"]=[];
+                $range['dayHours'][$date]["h_{$hourPadded}"]=[];
                 if( $day==0 && $hour==$arrivalHour ){
                     foreach($defaultMinuteRange as $minute){
                         if( $minute<$arrivalMinute ){
                             continue;
                         }
                         //$minutePadded=str_pad($minute,2,'0',STR_PAD_LEFT);
-                        $deliveryArrivalRange['dayHours'][$date]["h_{$hourPadded}"][]=$minute;
-                        if( !$deliveryArrivalNearest ){
-                            $deliveryArrivalNearest="{$date} {$hourPadded}:{$minute}:00";
+                        $range['dayHours'][$date]["h_{$hourPadded}"][]=$minute;
+                        if( !$nearest ){
+                            $nearest="{$date} {$hourPadded}:{$minute}:00";
                         }
                     }
                     continue;
                 }
-                $deliveryArrivalRange['dayHours'][$date]["h_{$hourPadded}"]=$defaultMinuteRange;
-                if( !$deliveryArrivalNearest ){
-                    $deliveryArrivalNearest="{$date} {$hourPadded}:{$defaultMinuteRange[0]}:00";
+                $range['dayHours'][$date]["h_{$hourPadded}"]=$defaultMinuteRange;
+                if( !$nearest ){
+                    $nearest="{$date} {$hourPadded}:{$defaultMinuteRange[0]}:00";
                 }
             }
         }
         return [
-            'deliveryDuration'=>'',
-            'deliveryStatus'=>$courierReadiness['status'],
-            'deliveryArrivalNearest'=>$deliveryArrivalNearest,
-            'deliveryArrivalRange'=>$deliveryArrivalRange,
+            'nearest'=>$nearest,
+            'range'=>$range,
         ];
     }
 
@@ -175,6 +233,35 @@ class DeliveryScheduleModel extends SecureModel{
         return $this->shiftEndHour;
     }
     
+    /**
+     * Starts next awaiting order
+     */
+    public function itemStart( $mode='next' ){
+
+
+    }
+
+    /**
+     * Refreshes queue and starts
+     */
+    public function listRefresh(){
+        $this->db->query("SET @order_position:=0");
+        $this->db->query("
+            UPDATE 
+                order_list ol
+                    JOIN
+                order_group_member_list ogml ON order_id=member_id
+                    JOIN
+                order_group_list ogl ON ogl.group_id=ogml.group_id AND group_type='delivery_search'
+            SET
+                ol.order_position= (@order_position:=@order_position+1)
+            ORDER BY ogml.created_at
+        ");
+    }
+
+
+
+
     public function itemGet(){
         return false;
     }
