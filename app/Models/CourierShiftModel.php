@@ -80,7 +80,7 @@ class CourierShiftModel extends Model{
         $OrderModel->where('order_courier_id',$courier_id);
         $OrderModel->where("order_data->>'$.order_is_canceled' IS NULL",null,false);
         $OrderModel->select("COUNT(*) order_count,COUNT(order_data->>'$.delivery_heavy_bonus') heavy_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus')) heavy_bonus");
-        return $OrderModel->find();
+        return $OrderModel->get()->getRow();
     }
 
     public function itemClose( $courier_id ){
@@ -121,7 +121,6 @@ class CourierShiftModel extends Model{
             ],
             'template'=>'messages/events/on_delivery_shift_closed_sms'
         ];
-        pl($message);
         $sms_job=[
             'task_name'=>"Courier Shift closed msg send",
             'task_programm'=>[

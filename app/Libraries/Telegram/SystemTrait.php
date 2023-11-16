@@ -7,12 +7,50 @@ trait SystemTrait{
         ['isAdmin',  'onSystemMetricsMonth',    "📲 Метрика мес."],
         ['isAdmin',  'onSystemRegistrations',   "👦🏻 Регистрации"],
 
-        ['isAdmin',  'onSystemHeavyDelivery-0',   "⛈️ Сброс"],
-        ['isAdmin',  'onSystemHeavyDelivery-1',   "⛈️ Дост +60"],
-        ['isAdmin',  'onSystemHeavyDelivery-2',   "⛈️ Дост +100"],
-        ['isAdmin',  'onSystemHeavyDelivery-3',   "⛈️ Дост +150"],
+        // ['isAdmin',  'onSystemHeavyDelivery-0',   "🌤️ Сброс"],
+        // ['isAdmin',  'onSystemHeavyDelivery-1',   "⛈️ Дост +60"],
+        // ['isAdmin',  'onSystemHeavyDelivery-2',   "⛈️ Дост +100"],
+        // ['isAdmin',  'onSystemHeavyDelivery-3',   "⛈️ Дост +150"],
     ];
+
+
+    public function systemStatusGet(){
+        if( !$this->isAdmin() ){
+            return '';
+        }
+
+        $PrefModel=model('PrefModel');
+        $delivery_heavy_level=$PrefModel->itemGet("delivery_heavy_level",'pref_value');
+        $delivery_heavy=[
+            'delivery_heavy_level'=>$delivery_heavy_level,
+            'delivery_heavy_cost'=>$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value'),
+            'delivery_heavy_bonus'=>$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value')
+        ];
+
+        $context=[
+            'delivery_heavy'=>$delivery_heavy
+        ];
+        return View('messages/telegram/systemStatus',$context);
+    }
+
+
     public function systemButtonsGet(){
+        $PrefModel=model('PrefModel');
+        $delivery_heavy_level=$PrefModel->itemGet("delivery_heavy_level",'pref_value');
+        $delivery_heavy_level_prev=$delivery_heavy_level-1;
+        $delivery_heavy_level_next=$delivery_heavy_level+1;
+        if($delivery_heavy_level_prev==0){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_0",'pref_value');
+            $this->systemButtons[]=['isAdmin',  "onSystemHeavyDelivery-0",   "🌤️ Доставка норм."];
+        }
+        if($delivery_heavy_level_prev>0){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level_prev}",'pref_value');
+            $this->systemButtons[]=['isAdmin',  "onSystemHeavyDelivery-{$delivery_heavy_level_prev}",   "☁️ Доставка +{$delivery_heavy_cost}"];
+        }
+        if($delivery_heavy_level_next<=3){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level_next}",'pref_value');
+            $this->systemButtons[]=['isAdmin',  "onSystemHeavyDelivery-{$delivery_heavy_level_next}",   "⛈️ Доставка +{$delivery_heavy_cost}"];
+        }
         return $this->systemButtons;
     }
 
@@ -26,17 +64,30 @@ trait SystemTrait{
     }
 
     private function onSystemHeavyDelivery( $delivery_heavy_level=0 ){
+        if(!$this->isAdmin()){
+            return false;
+        }
+        if($delivery_heavy_level<0 || $delivery_heavy_level>3){
+            return $this->sendHTML('wrong level','','system_message');
+        }
         $PrefModel=model('PrefModel');
-        $PrefModel->itemUpdateValue('delivery_heavy_level',$delivery_heavy_level);
-        $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
-        $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
-        $context=[
-            'delivery_heavy_level'=>$delivery_heavy_level,
-            'delivery_heavy_cost'=>$delivery_heavy_cost,
-            'delivery_heavy_bonus'=>$delivery_heavy_bonus,
-        ];
-        $heavy_html=View('messages/telegram/deliveryHeavy',$context);
-        return  $this->sendHTML($heavy_html,'','system_message');
+        $PrefModel->save([
+            'pref_name'=>'delivery_heavy_level',
+            'pref_value'=>$delivery_heavy_level
+        ]);
+
+        $this->sendMainMenu();
+        return true;
+
+        // $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+        // $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+        // $context=[
+        //     'delivery_heavy_level'=>$delivery_heavy_level,
+        //     'delivery_heavy_cost'=>$delivery_heavy_cost,
+        //     'delivery_heavy_bonus'=>$delivery_heavy_bonus,
+        // ];
+        // $heavy_html=View('messages/telegram/deliveryHeavy',$context);
+        // return  $this->sendHTML($heavy_html,'','system_message');
     }
 
 

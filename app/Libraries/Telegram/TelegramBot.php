@@ -262,10 +262,11 @@ class TelegramBot{
     public function sendMainMenu(){
         $courierStatusHTML=$this->courierStatusGet();
         $supplierStatusHTML=$this->supplierStatusGet();
+        $systemStatusHTML=$this->systemStatusGet();
         $menu_2col=array_merge(
             $this->buttonInlineRowBuild( $this->orderButtons ),
             $this->buttonInlineRowBuild( $this->courierButtons ),
-            $this->buttonInlineRowBuild( $this->systemButtons )
+            $this->buttonInlineRowBuild( $this->systemButtonsGet() )
         );
         $menu_1col=array_merge(
             $this->buttonInlineRowBuild( $this->supplierButtonsGet() )
@@ -282,6 +283,7 @@ class TelegramBot{
             'user'=>$this->userGet(),
             'courierStatusHTML'=>$courierStatusHTML,
             'supplierStatusHTML'=>$supplierStatusHTML,
+            'systemStatusHTML'=>$systemStatusHTML,
         ];
         $html=View('messages/telegram/mainMenu',$context);
         $this->sendHTML($html,$opts,'mmenu_message');

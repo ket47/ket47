@@ -39,7 +39,7 @@ class PrefModel extends Model{
     }
     
     public function itemUpdateValue( $pref_name, $pref_value ){
-        return $this->itemUpdate((object)['pref_name'=>$pref_name,'pref_value'=>$pref_value]);
+        return $this->itemUpdate(['pref_name'=>$pref_name,'pref_value'=>$pref_value]);
     }
     
     public function itemUpdateJson( $pref_name, $pref_json ){
