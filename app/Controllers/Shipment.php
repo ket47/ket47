@@ -125,7 +125,7 @@ class Shipment extends \App\Controllers\BaseController{
         $routeStats=$DeliveryScheduleModel->routePlanGet($start_location_id, $finish_location_id);
         $deliveryOptions=$this->deliveryOptionsGet($routeStats->deliveryDistance, $store_owner_id);
         $defaultDeliveryOption=array_shift($deliveryOptions);
-        if($defaultDeliveryOption['deliverySum']>0){
+        if( ($defaultDeliveryOption['deliverySum']??0) >0 ){
             $routeStats->cost=$defaultDeliveryOption['deliveryCost'];
             $routeStats->fee=$defaultDeliveryOption['deliveryFee'];
             $routeStats->sum=$defaultDeliveryOption['deliverySum'];

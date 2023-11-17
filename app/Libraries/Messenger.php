@@ -35,20 +35,24 @@ class Messenger{
             $message->message_text=$this->itemRender($message);
         }
         //log_message('error',json_encode($message,JSON_UNESCAPED_UNICODE));
+        $ok=1;
         if( str_contains($message->message_transport,'email') ){
-            return $this->itemSendEmail($message);
+            $ok*=$this->itemSendEmail($message);
         }
         if( str_contains($message->message_transport,'message') ){
-            return $this->itemSendMessage($message);
+            $ok*=$this->itemSendMessage($message);
         }
         if( str_contains($message->message_transport,'sms') ){
-            return $this->itemSendSms($message);
+            $ok*=$this->itemSendSms($message);
         }
         if( str_contains($message->message_transport,'telegram') ){
-            return $this->itemSendTelegram($message);
+            $ok*=$this->itemSendTelegram($message);
         }
         if( str_contains($message->message_transport,'push') ){
-            return $this->itemSendPush($message);
+            $ok*=$this->itemSendPush($message);
+        }
+        if( $ok ){
+            return $ok;
         }
         log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));
     }

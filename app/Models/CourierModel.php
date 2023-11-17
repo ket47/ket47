@@ -394,30 +394,6 @@ class CourierModel extends Model{
         if( !$isCourierReady ){
             return 'notready';
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         $OrderModel=model('OrderModel');
         $OrderModel->select("location_latitude,location_longitude,location_address");
         $OrderModel->select("order_id,'courier' user_role, 1 is_courier_job");

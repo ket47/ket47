@@ -74,7 +74,7 @@ trait CourierTrait{
         ]]);
 
         $content['chat_id']=getenv("telegram.adminChatId");
-        $this->sendLocation( $content, null, 'copy_to_admin' );
+        $this->sendLocation( $content, null, 'copy_to_admin'.$courier->courier_id );
     }
 
     public function onCourierJobsGet(){

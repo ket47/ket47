@@ -77,17 +77,21 @@ trait SystemTrait{
         ]);
 
         $this->sendMainMenu();
-        return true;
 
-        // $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
-        // $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
-        // $context=[
-        //     'delivery_heavy_level'=>$delivery_heavy_level,
-        //     'delivery_heavy_cost'=>$delivery_heavy_cost,
-        //     'delivery_heavy_bonus'=>$delivery_heavy_bonus,
-        // ];
-        // $heavy_html=View('messages/telegram/deliveryHeavy',$context);
-        // return  $this->sendHTML($heavy_html,'','system_message');
+        $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+        $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+        $context=[
+            'delivery_heavy_level'=>$delivery_heavy_level,
+            'delivery_heavy_cost'=>$delivery_heavy_cost,
+            'delivery_heavy_bonus'=>$delivery_heavy_bonus,
+        ];
+        $heavy_html=View('messages/telegram/deliveryHeavy',$context);
+        $content=[
+            'chat_id'=>getenv("telegram.adminChatId"),
+            'text'=>$heavy_html,
+            'parse_mode'=>'HTML'
+        ];
+        return  $this->sendMessage($content,'','system_message');
     }
 
 
