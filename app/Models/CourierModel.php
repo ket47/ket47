@@ -158,13 +158,18 @@ class CourierModel extends Model{
 
 
     private function itemHasActiveOrders($courier_id){
-        $OrderModel=model('OrderModel');
-        $OrderModel->join('order_group_list','order_group_id=group_id');
-        $OrderModel->where('order_courier_id',$courier_id);
-        $OrderModel->where("group_type<>'system_finish'");
-        $OrderModel->limit(1);
-        $OrderModel->select("1 has_orders");
-        return $OrderModel->get()->getRow('has_orders');
+        return false;
+        /**
+         * NOT SO EASY must have delivery finish
+         */
+
+        // $OrderModel=model('OrderModel');
+        // $OrderModel->join('order_group_list','order_group_id=group_id');
+        // $OrderModel->where('order_courier_id',$courier_id);
+        // $OrderModel->where("group_type<>'system_finish'");
+        // $OrderModel->limit(1);
+        // $OrderModel->select("1 has_orders");
+        // return $OrderModel->get()->getRow('has_orders');
     }
     /**
      * Function changes group courier belongs to AND notifies about awating orders
