@@ -79,7 +79,7 @@ class CourierShiftModel extends Model{
         $OrderModel->where("ogml.created_at BETWEEN '$start_at' AND '$finish_at'");
         $OrderModel->where('order_courier_id',$courier_id);
         $OrderModel->where("order_data->>'$.order_is_canceled' IS NULL",null,false);
-        $OrderModel->select("COUNT(*) order_count,COUNT(order_data->>'$.delivery_heavy_bonus') heavy_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus')) heavy_bonus");
+        $OrderModel->select("COUNT(*) order_count,COUNT(order_data->>'$.delivery_heavy_bonus'>0) heavy_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus')) heavy_bonus");
         return $OrderModel->get()->getRow();
     }
 
