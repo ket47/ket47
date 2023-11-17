@@ -388,21 +388,22 @@ class CourierModel extends Model{
     }
 
 
-    public function listJobGet( $courier_id ){
+    public function listJobGet2( $courier_id ){
         //courier should be able to preview jobs
         $isCourierReady=$this->isCourierReady();
         if( !$isCourierReady ){
             return 'notready';
         }
         $OrderModel=model('OrderModel');
-        $OrderModel->select("location_latitude,location_longitude,location_address");
-        $OrderModel->select("order_id,'courier' user_role, 1 is_courier_job");
+        $OrderModel->select("ll.location_latitude,ll.location_longitude,ll.location_address,llf.location_address finish_location_address,llf.location_comment finish_location_comment");
+        $OrderModel->select("order_id,order_list.created_at,order_description,'courier' user_role, 1 is_courier_job");
         $OrderModel->select("store_id,store_name");
         $OrderModel->select("order_data->>'$.plan_delivery_start' plan_delivery_start,'courier' user_role, 1 is_courier_job");
 
         $OrderModel->join('order_group_member_list ogml','member_id=order_id');
         $OrderModel->join('order_group_list ogl','group_id');
-        $OrderModel->join('location_list ll','location_id=order_start_location_id');
+        $OrderModel->join('location_list ll','ll.location_id=order_start_location_id');
+        $OrderModel->join('location_list llf','llf.location_id=order_finish_location_id');
         $OrderModel->join('store_list sl','store_id=order_store_id','left');
         
         $OrderModel->where('group_type','delivery_search');
@@ -417,36 +418,36 @@ class CourierModel extends Model{
         return $job_list;
     }
 
-    // public function listJobGet( $courier_id ){
-    //     //courier should be able to preview jobs
-    //     // $isCourierReady=$this->isCourierReady();
-    //     // if( !$isCourierReady ){
-    //     //     return 'notready';
-    //     // }
-    //     $point_distance=2000000;//getenv('delivery.radius');
+    public function listJobGet( $courier_id ){
+        //courier should be able to preview jobs
+        $isCourierReady=$this->isCourierReady();
+        if( !$isCourierReady ){
+            return 'notready';
+        }
+        $point_distance=2000000;//getenv('delivery.radius');
 
-    //     $LocationModel=model('LocationModel');
-    //     $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
-    //     if(!$courier_location){
-    //         return 'courier_location_required';
-    //     }
+        $LocationModel=model('LocationModel');
+        $courier_location=$LocationModel->itemMainGet('courier', $courier_id);
+        if(!$courier_location){
+            return 'courier_location_required';
+        }
 
-    //     $LocationModel->select("location_latitude,location_longitude");
-    //     $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
-    //     $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
-    //     $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
-    //     $LocationModel->join('order_list','store_id=order_store_id');
-    //     $LocationModel->join('order_group_member_list ogml','member_id=order_id');
-    //     $LocationModel->join('order_group_list ogl','group_id');
-    //     $LocationModel->where('group_type','delivery_search');
-    //     $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
+        $LocationModel->select("location_latitude,location_longitude,location_address");
+        $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
+        $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
+        $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
+        $LocationModel->join('order_list','store_id=order_store_id');
+        $LocationModel->join('order_group_member_list ogml','member_id=order_id');
+        $LocationModel->join('order_group_list ogl','group_id');
+        $LocationModel->where('group_type','delivery_search');
+        $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
 
-    //     $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
-    //     if( !is_array($job_list) ){
-    //         return 'notfound';
-    //     }
-    //     return $job_list;
-    // }
+        $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
+        if( !is_array($job_list) ){
+            return 'notfound';
+        }
+        return $job_list;
+    }
 
     public function itemJobGet( $order_id ){
         $isCourierReady=$this->isCourierReady();
@@ -460,7 +461,8 @@ class CourierModel extends Model{
         if( !$job ){
             return 'notfound';
         }
-        $job->finish_location_address=$LocationModel->itemGet($job->order_finish_location_id??0)->location_address??'';
+        $job->finish_location=$LocationModel->itemGet($job->order_finish_location_id??0);
+        $job->finish_location_address=$job->finish_location->location_address??'';//for compability
         $job->start_finish_distance=$LocationModel->distanceGet($job->order_start_location_id??0,$job->order_finish_location_id??0);
         return $job;
     }
