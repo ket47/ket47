@@ -5,3 +5,6 @@
 <?php if($order->location_longitude??''): ?>
 Адрес:<a href='https://yandex.ru/maps/?pt=<?=$order->location_longitude?>,<?=$order->location_latitude?>&z=19&l=map,trf'><?=$order->location_address?></a>
 <?php endif; ?>
+<?php if($order->order_description??''): ?>
+Комент:<pre><?=$order->order_description?></pre>
+<?php endif; ?>
