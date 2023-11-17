@@ -154,6 +154,18 @@ class CourierModel extends Model{
         return 'error';
     }
 
+
+
+
+    private function itemHasActiveOrders($courier_id){
+        $OrderModel=model('OrderModel');
+        $OrderModel->join('order_group_list','order_group_id=group_id');
+        $OrderModel->where('order_courier_id',$courier_id);
+        $OrderModel->where("group_type<>'system_finish'");
+        $OrderModel->limit(1);
+        $OrderModel->select("1 has_orders");
+        return $OrderModel->get()->getRow('has_orders');
+    }
     /**
      * Function changes group courier belongs to AND notifies about awating orders
      */
@@ -168,6 +180,9 @@ class CourierModel extends Model{
         $is_active=$this->where('courier_id',$courier_id)->get()->getRow('is_active');
         if( !$is_active && $group_type!='idle' ){
             return 'notactive';
+        }
+        if( $group_type=='ready' && $this->itemHasActiveOrders($courier_id) ){
+            return 'has_active_orders';
         }
         $CourierGroupMemberModel=model('CourierGroupMemberModel');
         $leave_other_groups=true;
@@ -584,7 +599,8 @@ class CourierModel extends Model{
                 'courier'=>$courier
             ];
         }
-        return $this->listNotifyCreate($context_list);
+        $transport="telegram";
+        return $this->listNotifyCreate($context_list,$transport);
     }
     
     /**
@@ -602,7 +618,8 @@ class CourierModel extends Model{
             $new_job['courier']=$courier;
             $context_list[]=$new_job;
         }
-        return $this->listNotifyCreate($context_list);
+        $transport="telegram,push";
+        return $this->listNotifyCreate($context_list,$transport);
     }
 
     /**
@@ -616,7 +633,7 @@ class CourierModel extends Model{
      * should rewrite so jobs will be sent only if job is still not taken!!!
      */
 
-    private function listNotifyCreate( array $context_list ){
+    private function listNotifyCreate( array $context_list, string $transport='telegram' ){
         $notification_time_gap=3*60;//3min between notifications
         $notification_index=0;
         foreach($context_list as $context){
@@ -624,7 +641,7 @@ class CourierModel extends Model{
             $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
             $message=(object)[
                         'message_reciever_id'=>$reciever_id,
-                        'message_transport'=>'telegram,push',
+                        'message_transport'=>$transport,
                         'message_text'=>$message_text,
                         'message_data'=>[
                             'type'=>'flash',
