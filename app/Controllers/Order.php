@@ -382,6 +382,14 @@ class Order extends \App\Controllers\BaseController {
         if( $tariff->order_fee ){
             $order_data->order_fee=$tariff->order_fee;
         }
+        $LocationModel=model('LocationModel');
+
+        $order_start_location_id=$LocationModel->itemMainGet('store',$order->order_store_id)->location_id;
+        $order_finish_location_id=$LocationModel->itemMainGet('user',$order->owner_id)->location_id;
+        $delivery_distance=$LocationModel->distanceGet($order_start_location_id,$order_finish_location_id);
+        if( $delivery_distance>getenv('delivery.radius') ){
+            return $this->fail('too_far');
+        }
         /**
          * RACING CONDITION CAN OCCUR!!! WHEN MODIFYING ORDER DATA FROM LOADED PREVIOUSLY OBJECT
          */

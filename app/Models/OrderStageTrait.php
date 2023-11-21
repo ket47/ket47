@@ -124,7 +124,7 @@ trait OrderStageTrait{
     }
     
     private function itemStageChangeNotify($order, $stage){
-        if( in_array($stage,['customer_cart','customer_confirmed','customer_start','customer_finish','system_recon']) ){
+        if( in_array($stage,['customer_cart','customer_confirmed','customer_start','customer_finish','system_recon','system_finish']) ){
             return;//not notifying for this stages
         }
         $order=$this->itemGet($order->order_id,'basic');

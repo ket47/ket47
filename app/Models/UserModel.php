@@ -325,7 +325,7 @@ class UserModel extends Model{
         }
         $user_data=[
             'user_phone'=>$user_phone_cleared,
-            'user_name'=>$user_name,
+            'user_name'=>trim($user_name),
             'user_pass'=>$user_pass,
             'user_pass_confirm'=>$user_pass_confirm,
             'is_disabled'=>0

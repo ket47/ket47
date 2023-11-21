@@ -54,7 +54,7 @@ class Messenger{
         if( $ok ){
             return $ok;
         }
-        log_message('error', "Unknown transport ($message->message_transport). Cant send message:". json_encode($message));
+        log_message('error', "Sending error ($message->message_transport). Cant send message:". json_encode($message));
     }
     
     private $reciever_cache=null;
@@ -162,13 +162,20 @@ class Messenger{
     
     private function itemPushTokensGet($user_id){
         $MessageSubModel=model('MessageSubModel');
-        $MessageSubModel->select('GROUP_CONCAT(sub_registration_id) subs');
+        $MessageSubModel->select('sub_registration_id');
         $MessageSubModel->where('sub_user_id',$user_id);
-        $row=$MessageSubModel->find();
-        if(!$row){
+        $MessageSubModel->orderBy("sub_type='push'","DESC");
+        $MessageSubModel->orderBy("created_at","DESC");
+        $MessageSubModel->limit(1);
+        $rows=$MessageSubModel->get()->getResult();
+        if(!$rows){
             return [];
         }
-        return explode(',',$row[0]['subs']);
+        $tokens=[];
+        foreach($rows as $row){
+            $tokens[]=$row->sub_registration_id;
+        }
+        return $tokens;
     }
 
     private function itemSendPush( $message ){

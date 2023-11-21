@@ -25,7 +25,7 @@ class FirePushKreait{
                     'body' => $push->body,
                     'image'=>$push->data['image']??null,
                     'icon'=>$push->data['icon']??null,
-                    'click_action'=>'NOTIF_ACTIVATE'
+                    'click_action'=>'NOTIF_ACTIVATE',
                 ],
             ],
             'apns' => [
@@ -60,6 +60,12 @@ class FirePushKreait{
             }
         }
         if( $push->data['tag']??'' ){
+            $ttl=60;
+            $expirationDate = time() + $ttl;
+            $msg['apns']['headers']['apns-expiration']=(string) $expirationDate;//ios
+            $msg['android']["ttl"]=$ttl;
+            $msg['webpush']["headers"]["TTL"]=$ttl;
+
             $msg['apns']['headers']['apns-collapse-id']=$push->data['tag'];//ios
             $msg['collapse_key']=$push->data['tag'];//android
         }
