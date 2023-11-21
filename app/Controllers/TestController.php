@@ -72,4 +72,12 @@ class TestController extends \App\Controllers\BaseController{
         $result=$CourierShiftModel->itemReportSend(457);
         return $this->respond($result);
     }
+
+    public function uni(){
+        $Acquirer=\Config\Services::acquirer();
+        $paymentStatus=$Acquirer->statusGet(4612);
+
+        p($paymentStatus);
+        return $this->respond($paymentStatus);
+    }
 }

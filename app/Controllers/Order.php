@@ -289,7 +289,7 @@ class Order extends \App\Controllers\BaseController {
                     'tariff_id'=>$tariff->tariff_id,
                     'order_sum_delivery'=>$order_sum_delivery,
                     'order_sum_minimal'=>$this->itemSumMinimalGet('delivery_by_courier'),
-                    'deliveryHeavyBonus'=>$deliveryHeavyModifier->bonus,
+                    'deliveryHeavyCost'=>$deliveryHeavyModifier->cost,
                     'deliveryByCourier'=>1,
                     'deliveryIsReady'=>$deliveryIsReady,
                     'deliveryByStore'=>0,
@@ -393,6 +393,12 @@ class Order extends \App\Controllers\BaseController {
         /**
          * RACING CONDITION CAN OCCUR!!! WHEN MODIFYING ORDER DATA FROM LOADED PREVIOUSLY OBJECT
          */
+        /**
+         * Should use shipment system!
+         */
+
+
+        $PromoModel=model('PromoModel');
 
         //DELIVERY OPTIONS SET
         if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
@@ -416,15 +422,18 @@ class Order extends \App\Controllers\BaseController {
             $store=$StoreModel->itemGet($order->order_store_id);
             $order_data->delivery_by_store=1;
             $order_data->delivery_by_store_cost=$store->store_delivery_cost??0;
-            $PromoModel=model('PromoModel');
             $PromoModel->itemUnLink($checkoutData->order_id);
         } else
         if( $checkoutData->pickupByCustomer??0 ){
             $order_data->pickup_by_customer=1;
-            $PromoModel=model('PromoModel');
             $PromoModel->itemUnLink($checkoutData->order_id);
         } else {
             return $this->fail('no_delivery');
+        }
+        //PROMO SHARE CHECK
+        $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
+        if( $promo && $promo->promo_value/$order->order_sum_total > $promo->promo_share/100 ){
+            return $this->fail('promo_share_too_high');
         }
         //PAYMENT OPTIONS SET
         if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow && getenv('uniteller.recurrentAllow') ){

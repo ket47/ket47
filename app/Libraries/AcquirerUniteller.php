@@ -143,6 +143,7 @@ class AcquirerUniteller{
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'results/', true, $context);
         //pl([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],false);
+        error_log("#$order_id".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3, "/uniteller-".date('Y-m-d').".log");
         if(!$result){
             return null;
         }
@@ -226,6 +227,7 @@ class AcquirerUniteller{
         $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
+        error_log("#{$order_all->order_id}".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3, "/uniteller-".date('Y-m-d').".log");
         if(!$result || str_contains($result,'Error_Code') || !$response){
             log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;
@@ -261,6 +263,10 @@ class AcquirerUniteller{
         //pl([getenv('uniteller.gateway').'confirm/'.http_build_query($request),$request,$result],false);
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
+
+        error_log("BN#{$billNumber}".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3, "/uniteller-".date('Y-m-d').".log");
+
+
         if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE confirm UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;
@@ -294,6 +300,7 @@ class AcquirerUniteller{
         $result = file_get_contents(getenv('uniteller.gateway').'unblock/', false, $context);
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
+        error_log("BN#{$billNumber}".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3, "/uniteller-".date('Y-m-d').".log");
         if(!$result || str_contains($result,'ErrorCode') || !$response){
             log_message('error','RESPONSE refund UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
             return null;

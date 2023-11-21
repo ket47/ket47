@@ -252,17 +252,17 @@ class OrderStageScript{
         if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
             $Acquirer=\Config\Services::acquirer();
             $incomingStatus=$Acquirer->statusGet($order_id);
-            if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) ){
+            
+            $orderData=$this->OrderModel->itemDataGet($order_id);
+            if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) || ($orderData->payment_card_fixate_id??null) ){
                 return 'already_payed';//already payed so refuse to reset to cart
             }
             if( $this->isAwaitingPayment($order_id) ){
                 return 'awaiting_payment';
             }
         }
-        //$this->OrderModel->itemUnDelete($order_id); seems to be unnecessary
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
-        //$this->OrderModel->update($order_id,['order_sum_product'=>0]);in this case serious bug
         return 'ok';
     }
 

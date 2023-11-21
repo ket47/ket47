@@ -42,13 +42,15 @@ class OrderTransactionModel extends TransactionModel{
     private function orderFinalizeRefund($order_basic,$order_data){//Made refund of excess money
         $skip=
                 ($order_data->finalize_refund_done??0)
-            ||  !($order_data->payment_card_fixate_id??0);
+            ||  !($order_data->payment_card_fixate_id??0)
+            ||  ($order_data->sanction_customer_fee??0) ;
         if( $skip ){
             return true;
         }
 
         $Acquirer=\Config\Services::acquirer();
         $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+
         $fixationBalance=(float)($paymentStatus->total??0);
         $fixationId=($order_data->payment_card_fixate_id??0);
 
