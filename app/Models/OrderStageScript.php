@@ -1070,6 +1070,26 @@ class OrderStageScript{
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
 
+    private function itemDeliveryHeavyGet(){
+        $PrefModel=model('PrefModel');
+        $delivery_heavy_level=$PrefModel->itemGet('delivery_heavy_level','pref_value');
+        if($delivery_heavy_level){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+            $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+
+            if( $delivery_heavy_cost && $delivery_heavy_bonus ){
+                return (object)[
+                    'cost'=>$delivery_heavy_cost,
+                    'bonus'=>$delivery_heavy_bonus
+                ];
+            }
+        }
+        return (object)[
+            'cost'=>0,
+            'bonus'=>0
+        ];
+    }
+    
     public function onDeliveryFinish( $order_id ){
         $order_basic=$this->OrderModel->itemGet($order_id,'basic');
         if($order_basic->order_courier_id){//if stage changed by admin skip this
@@ -1077,10 +1097,21 @@ class OrderStageScript{
             $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
         }
 
-        $PrefModel=model('PrefModel');
+        ///////////////////////////////////////////////////
+        //DELIVERY HEAVY BONUS CHECK (if bonus is bigger than on checkout then update)
+        ///////////////////////////////////////////////////
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $delivery_heavy=$this->itemDeliveryHeavyGet();
+        if($order_data->delivery_heavy_bonus<$delivery_heavy->bonus){
+            $order_data_update=(object)[
+                'delivery_heavy_bonus'=>$delivery_heavy->bonus
+            ];
+            $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        }
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
+        $PrefModel=model('PrefModel');
         $timeout_min=(int)$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
