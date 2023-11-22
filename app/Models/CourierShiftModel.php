@@ -57,7 +57,12 @@ class CourierShiftModel extends Model{
             'context'=>[
                 'courier'=>$courier
             ],
-            'template'=>'messages/events/on_delivery_shift_opened_sms'
+            'template'=>'messages/events/on_delivery_shift_opened_sms',
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1
+                ]
+            ],
         ];
         $sms_job=[
             'task_name'=>"Courier Shift opened msg send",
@@ -128,7 +133,12 @@ class CourierShiftModel extends Model{
                 'shift'=>$shift,
                 'statistics'=>$statistics,
             ],
-            'template'=>'messages/events/on_delivery_shift_closed_sms'
+            'template'=>'messages/events/on_delivery_shift_closed_sms',
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1
+                ]
+            ],
         ];
         $sms_job=[
             'task_name'=>"Courier Shift closed msg send",
