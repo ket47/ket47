@@ -28,9 +28,6 @@ class CourierShiftModel extends Model{
     }
 
     public function itemCreate($courier_id, $courier_owner_id){
-        /**
-         * should i check if its opened shift already?
-         */
         if( !$this->permit(null,'w') ){
             return 'forbidden';
         }
@@ -44,22 +41,28 @@ class CourierShiftModel extends Model{
     }
     
     public function itemOpen( $courier_id, $courier_owner_id ){
+        $this->itemClose( $courier_id );
         $shift_id=$this->itemCreate( $courier_id, $courier_owner_id );
         if( !$shift_id || $shift_id=='forbidden' ){
             return $shift_id;
         }
 
+        $CourierModel=model('CourierModel');
+        $courier=$CourierModel->itemGet($courier_id);
+
         $message=(object)[
-            'message_reciever_id'=>$courier_owner_id,
+            'message_reciever_id'=>"-100,$courier_owner_id",
             'message_transport'=>'telegram',
             'message_subject'=>'shift open',
-            'context'=>[],
+            'context'=>[
+                'courier'=>$courier
+            ],
             'template'=>'messages/events/on_delivery_shift_opened_sms'
         ];
         $sms_job=[
             'task_name'=>"Courier Shift opened msg send",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSendMulticast','arguments'=>[$message]]
                 ],
         ];
         jobCreate($sms_job);
@@ -106,6 +109,9 @@ class CourierShiftModel extends Model{
 
     public function itemReportSend( $shift_id ){
         $shift=$this->itemGet($shift_id);
+        if( !$shift ){
+            return 'notfound';
+        }
         $total_duration=strtotime($shift->closed_at)-strtotime($shift->created_at);
         $statistics=$this->itemWorkStatisticsGet($shift->courier_id,$shift->created_at,$shift->closed_at);
         
@@ -113,7 +119,7 @@ class CourierShiftModel extends Model{
         $courier=$CourierModel->itemGet($shift->courier_id);
 
         $message=(object)[
-            'message_reciever_id'=>"-50,{$courier->owner_id}",//copy to courier group
+            'message_reciever_id'=>"-100,{$courier->owner_id}",//copy to courier group
             'message_transport'=>'telegram',
             'message_subject'=>'shift close',
             'context'=>[

@@ -14,14 +14,13 @@
     $shift_sum_car=(int)($total_duration*($hour_cost_car/3600)/50)*50;
 ?>
 🏁🏁🏁🏁🏁🏁🏁🏁🏁🏁
-<b><?=$courier->courier_name?></b>, ваша смена закрыта. 
+<b><?=trim($courier->courier_name)?></b>, ваша смена закрыта. 
 
-<pre>Начало  <?=$shift->created_at?></pre>
-<pre>Конец   <?=$shift->closed_at?></pre>
-
-<pre>
-Время   <?=sprintf('%02d:%02d:%02d', ($total_duration??0)/3600,($total_duration??0)/60%60, ($total_duration??0)%60);?> 
-Оплата  <?=$shift_sum_standart?>₽ (<?=$shift_sum_car?>₽) 
+<pre>Начало  <?=$shift->created_at?> </pre>
+<pre>Конец   <?=$shift->closed_at?> </pre>
+<pre>Время   <?=sprintf('%02d:%02d:%02d', ($total_duration??0)/3600,($total_duration??0)/60%60, ($total_duration??0)%60);?> 
+Мопед   <?=$shift_sum_standart?>₽ (+<?=$statistics->heavy_bonus??0?>₽) 
+Авто    <?=$shift_sum_car?>₽   
 </pre>
 <pre>Заказы  <?=$order_count_all?>шт 
 Оплата  <?=$order_sum_all?>₽ 

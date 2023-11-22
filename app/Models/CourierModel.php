@@ -558,7 +558,8 @@ class CourierModel extends Model{
             return 'notfound';
         }
         $job->courier_finish_distance=  $LocationModel->distanceGet($job->courier_location_id??0,$job->order_finish_location_id??0);
-        $job->start_finish_distance=    $LocationModel->distanceGet($job->order_start_location_id??0,$job->order_finish_location_id??0);
+        $job->start_location=           $LocationModel->itemGet($job->order_start_location_id);
+        $job->finish_location=          $LocationModel->itemGet($job->order_finish_location_id);
         return $job;
     }
 
