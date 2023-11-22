@@ -432,8 +432,11 @@ class Order extends \App\Controllers\BaseController {
         }
         //PROMO SHARE CHECK
         $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
-        if( $promo && $promo->promo_value/$order->order_sum_total > $promo->promo_share/100 ){
-            return $this->fail('promo_share_too_high');
+        if( $promo ){
+            $order_sum_total_wo_promo=$order->order_sum_total+$promo->promo_value;
+            if($promo->promo_value/$order_sum_total_wo_promo > $promo->promo_share/100){
+                return $this->fail('promo_share_too_high');
+            }
         }
         //PAYMENT OPTIONS SET
         if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow && getenv('uniteller.recurrentAllow') ){
