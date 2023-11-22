@@ -30,7 +30,8 @@ class ProductModel extends Model{
         'product_promo_start',
         'product_promo_finish',
         'is_counted',
-        'deleted_at'
+        'deleted_at',
+        'updated_by',
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -73,6 +74,8 @@ class ProductModel extends Model{
             product_list.is_disabled,
             product_list.deleted_at,
             product_list.validity,
+            product_list.updated_by,
+            product_list.updated_at,
 
             COALESCE(parent_pl.product_name,product_list.product_name) product_name,
             COALESCE(parent_pl.product_description,product_list.product_description) product_description,
@@ -103,6 +106,10 @@ class ProductModel extends Model{
         $product->images=$ImageModel->listGet($filter);
         if($product->product_parent_id??null){
             $product->options=$this->itemOptionGet( $product->product_parent_id, 'active_only' );
+        }
+        if( $product->is_writable ){
+            $UserModel=model('UserModel');
+            $product->updated_user=$UserModel->select('user_name,user_phone')->where('user_id',$product->updated_by)->get()->getRow();
         }
         $product->store=$this->itemStoreMetaGet($product->store_id);
         return $product;
@@ -143,6 +150,7 @@ class ProductModel extends Model{
         if( $this->itemCreateAsDisabled ){
             $product->is_disabled=1;
         }
+        $product->updated_by=session()->get('user_id');
         $product->owner_id=session()->get('user_id');
         $product->owner_ally_ids=$store->owner_ally_ids;
         $this->allowedFields[]='is_disabled';//if run many times allowedFields will contain duplicated values
@@ -207,6 +215,7 @@ class ProductModel extends Model{
         if($product->product_category_name??null){
             $this->itemCreateCategory($product->product_id,$product->product_category_name);
         }
+        $product->updated_by=session()->get('user_id');
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
     }
