@@ -45,6 +45,14 @@ trait CourierTrait{
         if( $this->isCourierIdle() ){
             $this->courierSetReady();
         }
+        //return coordinates to boundary box
+        $bound_longitude_min=34.000344;
+        $bound_longitude_max=34.217667;
+        $bound_latitude_min=44.894650;
+        $bound_latitude_max=44.996708;
+        $location['longitude']=min(max($bound_longitude_min,$location['longitude']),$bound_longitude_max);
+        $location['latitude']=min(max($bound_latitude_min,$location['latitude']),$bound_latitude_max);
+
         $courier=$this->courierGet();
         $courier_location=[
             'location_holder'   =>'courier',
@@ -66,15 +74,15 @@ trait CourierTrait{
             ]
         );
 
-        $content=$location;
-        $content['proximity_alert_radius']="100";
-        $content['disable_notification']=1;
-        $content['reply_markup']=$this->Telegram->buildInlineKeyBoard([[
-            $this->Telegram->buildInlineKeyboardButton("Курьер: {$courier->courier_name}",'',"onNoop")
-        ]]);
+        // $content=$location;
+        // $content['proximity_alert_radius']="100";
+        // $content['disable_notification']=1;
+        // $content['reply_markup']=$this->Telegram->buildInlineKeyBoard([[
+        //     $this->Telegram->buildInlineKeyboardButton("Курьер: {$courier->courier_name}",'',"onNoop")
+        // ]]);
 
-        $content['chat_id']=getenv("telegram.adminChatId");
-        $this->sendLocation( $content, null, 'copy_to_admin'.$courier->courier_id );
+        // $content['chat_id']=getenv("telegram.adminChatId");
+        // $this->sendLocation( $content, null, 'copy_to_admin'.$courier->courier_id );
     }
 
     public function onCourierJobsGet(){
