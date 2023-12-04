@@ -37,6 +37,7 @@ class OrderStageScript{
         'customer_disputed'=>[
             'customer_finish'=>             ['Отказаться от спора','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ','medium','outline'],
+            'supplier_corrected'=>          ['Исправить заказ'],
             'admin_supervise'=>             ['Решить спор','danger'],
             ],
         'customer_finish'=>[
@@ -553,6 +554,40 @@ class OrderStageScript{
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $customer=$UserModel->itemGet($order->owner_id,'basic');
         $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
+
+
+
+        helper('phone_number');
+        $update=(object)[
+            'info_for_customer'=>json_encode([
+                'supplier_name'=>$store->store_name,
+                'supplier_email'=>$store->store_email,
+                'supplier_phone'=>'+'.clearPhone(store->store_phone),
+            ]),
+            'info_for_supplier'=>json_encode([
+                'customer_phone'=>'+'.clearPhone($customer->user_phone),
+                'customer_name'=>$customer->user_name,
+                'customer_email'=>$customer->user_email,
+            ]),
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         $context=[
             'order'=>$order,
             'store'=>$store,
@@ -564,6 +599,19 @@ class OrderStageScript{
             'message_transport'=>'email',
             'message_subject'=>"Возражение по заказу №{$order->order_id} от ".getenv('app.title'),
             'template'=>'messages/order/on_customer_disputed_ADMIN_email.php',
+            'context'=>$context
+        ];
+        $store_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'long.wav',
+                'link'=>"/order/order-{$order_id}"
+            ],
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
+            'template'=>'messages/order/on_customer_disputed_STORE_sms.php',
             'context'=>$context
         ];
         $store_email=(object)[
@@ -583,7 +631,7 @@ class OrderStageScript{
         $notification_task=[
             'task_name'=>"customer_disputed Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$store_email,$cust_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$store_email,$store_sms,$cust_sms]]]
                 ]
         ];
         jobCreate($notification_task);
