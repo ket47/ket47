@@ -95,7 +95,46 @@ class Talk extends \App\Controllers\BaseController{
         return $this->respond('ok');
     }
 
+    public function orderChatSend(){
+        $order_id=$this->request->getPost('order_id');
+        $reciever=$this->request->getPost('reciever');
 
+        $subject=$this->request->getPost('subject',FILTER_SANITIZE_SPECIAL_CHARS);
+        $body=$this->request->getPost('body',FILTER_SANITIZE_SPECIAL_CHARS);
+
+        $OrderModel=model('OrderModel');
+        $order=$OrderModel->itemGet($order_id,'basic');
+
+        if( !is_object($order) ){
+            return $this->fail($order);
+        }
+        if( $order->stage_current=='system_finish' ){
+            return $this->fail('order_is_finished');
+        }
+        if( $reciever!=='customer' ){
+            return $this->fail('unknown_reciever_type');
+        }
+
+        $sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$order->owner_id,
+            'message_subject'=> "Сообщение по заказу #$order_id",
+            'message_text'=>$body,
+            'message_data'=>(object)[
+                'sound'=>'long.wav',
+                'link'=>"/order/order-{$order_id}"
+            ],
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
+        ];
+        $Messenger=new \App\Libraries\Messenger();
+        $ok=$Messenger->itemSend($sms);
+        if( $ok ){
+            return $this->respond('ok');
+        }
+        return $this->fail('notsent');
+    }
 
 
     
