@@ -16,9 +16,6 @@ class CashierKitOnline{
             ],
             'Subjects'=>[]
         ];
-        if( !$order_all?->entries ){
-            return 'noentries';
-        }
         $order_sum_calculated=0;
         $discount_modifier=1;
         if($order_all->order_sum_promo>0){
@@ -80,6 +77,9 @@ class CashierKitOnline{
             $Check['Subjects'][]=$delivery_row;
 
             $order_sum_calculated+=round($order_all->order_sum_delivery*100);
+        }
+        if( !count($Check['Subjects']) ){
+            return 'noentries';
         }
         $order_sum_error=$Check['Sum']-$order_sum_calculated;
         if( $order_sum_error!=0 ){

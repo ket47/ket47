@@ -16,6 +16,7 @@ class ShipmentModel extends SecureModel{
         'order_start_location_id',
         'order_finish_location_id',
         'order_description',
+        'order_objection',
         ];
     protected $validationRules    = [
         'order_store_id'     => [

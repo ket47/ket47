@@ -261,8 +261,15 @@ class OrderTransactionModel extends TransactionModel{
         $orderFee=$order_data->order_fee??0;
         $orderCost=$order_data->order_cost??0;
         
-        $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;    
-        $commissionDescription=view('transactions/supplier_commission',$context);
+        if($order_data->payment_by_credit_store??0){
+            $orderSum=$order_basic->order_sum_total;
+            $commissionSum=$orderSum;
+            $commissionDescription=view('transactions/supplier_shipment_commission',$context);
+        } else {
+            $commissionSum=$orderCost+$productSum*$orderFee/100+$paymentCost+$paymentSum*$paymentFee/100;
+            $commissionDescription=view('transactions/supplier_commission',$context);
+        }
+
         $commissionTrans=(object)[
             'trans_date'=>$order_basic->updated_at,
             'trans_amount'=>$commissionSum,
@@ -280,7 +287,6 @@ class OrderTransactionModel extends TransactionModel{
                 return false;
             }
         }
-
 
         $order_data_update=(object)[
             'finalize_settle_supplier_done'=>1
@@ -385,32 +391,53 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
-        $deliveryCost=$order_data->delivery_cost??0;
-        $deliveryFee=$order_data->delivery_fee??0;
-        $productSum=$order_basic->order_sum_product;
         $promoSum=$order_basic->order_sum_promo??0;
-
-        $commissionSum=$deliveryCost+$productSum*$deliveryFee/100-$promoSum;
         $context=[
             'order_basic'=>$order_basic,
             'order_data'=>$order_data
         ];
-        $commissionDescription=view('transactions/system_commission',$context);
-        $commissionTrans=(object)[
+        $promoExpenseDescription=view('transactions/system_promo_expense',$context);
+        $promoExpenseTrans=(object)[
             'trans_date'=>$order_basic->updated_at,
-            'trans_amount'=>$commissionSum,
-            'trans_role'=>'profit->site',
-            'tags'=>"order:{$order_basic->order_id}:commission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
-            'trans_description'=>$commissionDescription,
+            'trans_amount'=>$promoSum,
+            'trans_role'=>'site->profit',
+            'tags'=>"order:{$order_basic->order_id}:commission:promo store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
+            'trans_description'=>$promoExpenseDescription,
             'owner_id'=>0,//customer should not see
             'owner_ally_ids'=>0,
             'is_disabled'=>0
         ];
-        if($commissionTrans->trans_amount!=0){
-            $result= $this->itemCreate($commissionTrans);
+        if($promoExpenseTrans->trans_amount!=0){
+            $result= $this->itemCreate($promoExpenseTrans);
             if( !$result ){
                 log_message('error',"Making #commissionSum transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
                 return false;
+            }
+        }
+
+        if( $order_data->delivery_by_courier??0 ){
+            $deliverySum=$order_basic->order_sum_delivery??0;//what if not our delivery
+            $context=[
+                'order_basic'=>$order_basic,
+                'order_data'=>$order_data
+            ];
+            $deliveryProfitDescription=view('transactions/system_commission',$context);
+            $deliveryProfitTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
+                'trans_amount'=>$deliverySum,
+                'trans_role'=>'profit->site',
+                'tags'=>"order:{$order_basic->order_id}:commission:delivery store:{$order_basic->order_store_id} courier:{$order_basic->order_courier_id}",
+                'trans_description'=>$deliveryProfitDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>0,
+                'is_disabled'=>0
+            ];
+            if($deliveryProfitTrans->trans_amount!=0){
+                $result= $this->itemCreate($deliveryProfitTrans);
+                if( !$result ){
+                    log_message('error',"Making #commissionSum transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
             }
         }
         $order_data_update=(object)[

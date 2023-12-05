@@ -48,7 +48,6 @@ class ShipmentStageScript{
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_rejected'=>[
-            'supplier_reclaimed'=>          ['Принять возврат заказа'],
             'admin_supervise'=>             ['Решить спор','danger'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
@@ -67,9 +66,6 @@ class ShipmentStageScript{
             'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
             ],
         'admin_sanction_customer'=>[
-            'system_reckon'=>               [],
-            ],
-        'admin_sanction_supplier'=>[
             'system_reckon'=>               [],
             ],
         'admin_sanction_courier'=>[
@@ -120,15 +116,15 @@ class ShipmentStageScript{
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
-    public function onAdminSanctionSupplier( $order_id ){
-        $order_data_update=(object)[
-            'sanction_customer_fee'=>0,
-            'sanction_courier_fee'=>0,
-            'sanction_supplier_fee'=>1,
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-    }
+    // public function onAdminSanctionSupplier( $order_id ){
+    //     $order_data_update=(object)[
+    //         'sanction_customer_fee'=>0,
+    //         'sanction_courier_fee'=>0,
+    //         'sanction_supplier_fee'=>1,
+    //     ];
+    //     $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+    //     return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+    // }
     public function onAdminRecalculate($order_id){
         $order_data_update=(object)[
             'finalize_settle_supplier_done'=>0,
@@ -312,34 +308,16 @@ class ShipmentStageScript{
             'customer'=>$customer
         ];
         $notifications=[];
-        if($order->order_store_id){
-            $notifications[]=(object)[
-                'message_transport'=>'telegram,push',
-                'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-                'telegram_options'=>[
-                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
-                ],
-                'template'=>'messages/order/on_shipping_customer_start_STORE_sms.php',
-                'context'=>$context
-            ];
-        }
         $notifications[]=(object)[
             'message_transport'=>'telegram',
             'message_reciever_id'=>-100,
-            'template'=>'messages/order/on_shipping_customer_start_ADMIN_sms.php',
+            'template'=>'messages/order/on_ship_customer_start_ADMIN_sms.php',
             'context'=>$context
         ];
-        // $notifications[]=(object)[
-        //     'message_transport'=>'email',
-        //     'message_reciever_id'=>-100,
-        //     'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-        //     'template'=>'messages/order/on_shipping_customer_start_ADMIN_email.php',
-        //     'context'=>$context
-        // ];
         $notifications[]=(object)[
             'message_transport'=>'telegram,push',
             'message_reciever_id'=>$order->owner_id,
-            'template'=>'messages/order/on_shipping_customer_start_CUST_sms.php',
+            'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
         ];
         $notification_task=[

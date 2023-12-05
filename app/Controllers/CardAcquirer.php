@@ -119,11 +119,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return $this->fail($result);
         }
         list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        // if( str_contains($order_id_full,'s') ){//is shipping
+        //     $OrderModel=model('ShipmentModel');
+        // } else {
+            
+        // }
+        $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
 
         $await_payment_timeout=time()+6*60;//6min
@@ -143,11 +144,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         $Acquirer=\Config\Services::acquirer();
         list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        // if( str_contains($order_id_full,'s') ){//is shipping
+        //     $OrderModel=model('ShipmentModel');
+        // } else {
+            
+        // }
+        $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
         $result=$Acquirer->pay($order_all,$card_id);
         if( $result ){
@@ -158,11 +160,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
 
     private function orderValidate( $order_id_full ){
         list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        // if( str_contains($order_id_full,'s') ){//is shipping
+        //     $OrderModel=model('ShipmentModel');
+        // } else {
+           
+        // }
+        $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
 
         if( !is_object($order_all) ){
@@ -244,11 +247,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return false;
         }
         list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        // if( str_contains($order_id_full,'s') ){//is shipping
+        //     $OrderModel=model('ShipmentModel');
+        // } else {
+            
+        // }
+        $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         
         $order_owner_id=$OrderModel

@@ -453,8 +453,8 @@ class CourierModel extends Model{
         }
 
         $LocationModel->select("location_latitude,location_longitude,location_address");
-        $LocationModel->select("store_id,store_name,store_time_preparation,'courier' user_role, 1 is_courier_job");
-        $LocationModel->select("order_list.*,'' image_hash");//user_phone,user_name,
+        $LocationModel->select("order_id,order_list.created_at,order_description,'courier' user_role, 1 is_courier_job");
+        $LocationModel->select("store_id,store_name");
         $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
         $LocationModel->join('order_list','store_id=order_store_id');
         $LocationModel->join('order_group_member_list ogml','member_id=order_id');

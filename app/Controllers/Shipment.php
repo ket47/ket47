@@ -151,7 +151,28 @@ class Shipment extends \App\Controllers\BaseController{
         return $this->customerOwnedStore;
     }
 
+    private function itemDeliveryHeavyGet(){
+        $PrefModel=model('PrefModel');
+        $delivery_heavy_level=$PrefModel->itemGet('delivery_heavy_level','pref_value');
+        if($delivery_heavy_level){
+            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
+            $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
+
+            if( $delivery_heavy_cost && $delivery_heavy_bonus ){
+                return (object)[
+                    'cost'=>$delivery_heavy_cost,
+                    'bonus'=>$delivery_heavy_bonus
+                ];
+            }
+        }
+        return (object)[
+            'cost'=>0,
+            'bonus'=>0
+        ];
+    }
+
     private function deliveryOptionsGet( int $distance_m, int $store_owner_id=null ){
+        $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
         $TariffModel=model('TariffModel');
         $tariffList=$TariffModel->where('is_shipment',1)->get()->getResult();
         $deliveryOptions=[];
@@ -160,8 +181,10 @@ class Shipment extends \App\Controllers\BaseController{
             $rule=[
                 'tariff_id'=>$tariff->tariff_id,
                 'deliverySum'=>$orderSumDelivery,
-                'deliveryCost'=>$tariff->delivery_cost,
+                'deliveryCost'=>$tariff->delivery_cost+$deliveryHeavyModifier->cost,
                 'deliveryFee'=>$tariff->delivery_fee,
+                'deliveryHeavyCost'=>$deliveryHeavyModifier->cost,
+                'deliveryHeavyBonus'=>$deliveryHeavyModifier->bonus,
                 'paymentByCard'=>$tariff->card_allow,
                 'paymentByCash'=>$tariff->cash_allow,
                 'paymentByCreditStore'=>0
@@ -171,8 +194,10 @@ class Shipment extends \App\Controllers\BaseController{
                 $customerOwnedStore=$this->сreditBalanceGet( $store_owner_id );
             }
             if( $customerOwnedStore ){
+                $store_owners_all=ownersAll((object)$customerOwnedStore);
                 $rule['paymentByCreditStore']=1;
                 $rule['storeId']=$customerOwnedStore['store_id']??0;
+                $rule['storeAdmins']=$store_owners_all;
                 $rule['storeCreditBalance']=$customerOwnedStore['creditBalance']??0;
                 $rule['storeCreditName']=$customerOwnedStore['store_name']??'';
                 $rule['storeCreditBalanceLow']= ($rule['storeCreditBalance']<$orderSumDelivery)?1:0;
@@ -292,10 +317,15 @@ class Shipment extends \App\Controllers\BaseController{
             }
             $order_data->payment_by_credit_store=1;
             $order->order_store_id=$deliveryOption->storeId;
+            $order->order_store_admins=$deliveryOption->storeAdmins;
+            $ShipmentModel->fieldUpdateAllow('order_store_admins');
         } else {
             return $this->fail('no_payment');
         }
         $order_data->delivery_by_courier=1;
+        $order_data->delivery_fee=$deliveryOption->deliveryFee;
+        $order_data->delivery_cost=$deliveryOption->deliveryCost;
+        $order_data->delivery_heavy_bonus=$deliveryOption->deliveryHeavyBonus;
         $order->order_sum_delivery=$deliveryOption->deliverySum;
         $ShipmentModel->fieldUpdateAllow('order_sum_delivery');
 
