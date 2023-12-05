@@ -71,6 +71,7 @@ class OrderStageScript{
             'supplier_corrected'=>          ['Изменить','medium','clear'],
             'delivery_start'=>              ['Начать доставку'],
             'delivery_no_courier'=>         [],
+            'delivery_finish'=>             [],//if dispute is ongoing then fartforward 
             'system_reckon'=>               [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
@@ -82,6 +83,7 @@ class OrderStageScript{
             'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
+            //'delivery_action_cust_push'=>   ['Написать покупателю','primary','clear'],
             'delivery_rejected'=>           [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
@@ -358,15 +360,40 @@ class OrderStageScript{
         //LOCATION FIXATION SECTION
         ////////////////////////////////////////////////
         $LocationModel=model('LocationModel');
+        $supplierLocation=$LocationModel->itemMainGet('store',$order->order_store_id);
+        $customerLocation=$LocationModel->itemMainGet('user',$order->owner_id);
         try{
             $order_update=[
-                'order_start_location_id'=>$LocationModel->itemMainGet('store',$order->order_store_id)->location_id,
-                'order_finish_location_id'=>$LocationModel->itemMainGet('user',$order->owner_id)->location_id
+                'order_start_location_id'=>$supplierLocation->location_id,
+                'order_finish_location_id'=>$customerLocation->location_id
             ];
             $this->OrderModel->update($order_id,$order_update);
         } catch (\Exception $e){
             return 'address_not_set';
         }
+        helper('phone_number');
+        $info_for_courier=(object)json_decode($order_data->info_for_courier??'[]');
+
+        $info_for_courier->customer_location_address=$customerLocation->location_address??'';
+        $info_for_courier->customer_location_comment=$customerLocation->location_comment??'';
+        $info_for_courier->customer_location_latitude=$customerLocation->location_latitude??'';
+        $info_for_courier->customer_location_longitude=$customerLocation->location_longitude??'';
+        $info_for_courier->customer_phone='+'.clearPhone($order->customer->user_phone);
+        $info_for_courier->customer_name=$order->customer->user_name;
+        $info_for_courier->customer_email=$order->customer->user_email;
+
+        $info_for_courier->supplier_location_address=$supplierLocation->location_address??'';
+        $info_for_courier->supplier_location_comment=$supplierLocation->location_comment??'';
+        $info_for_courier->supplier_location_latitude=$supplierLocation->location_latitude??'';
+        $info_for_courier->supplier_location_longitude=$supplierLocation->location_longitude??'';
+        $info_for_courier->supplier_phone='+'.clearPhone($order->store->store_phone);
+        $info_for_courier->supplier_name=$order->store->store_name??'';
+        $info_for_courier->supplier_email=$order->store->store_email??'';
+
+        $update=(object)[
+            'info_for_courier'=>json_encode($info_for_courier),
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
         ///////////////////////////////////////////////////
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
@@ -555,37 +582,27 @@ class OrderStageScript{
         $customer=$UserModel->itemGet($order->owner_id,'basic');
         $courier=$CourierModel->itemGet($order->order_courier_id,'basic');
 
-
-
         helper('phone_number');
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+
+        $order_data->is_dispute_opened=1;
+        $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
+
+        $info_for_supplier->customer_name=$customer->user_name;
+        $info_for_supplier->customer_phone='+'.clearPhone($customer->user_phone);
+        $info_for_supplier->customer_email=$customer->user_email;
+
+        $info_for_customer->supplier_name=$store->store_name;
+        $info_for_customer->supplier_phone='+'.clearPhone($store->store_phone);
+        $info_for_customer->supplier_email=$store->store_email;
+
         $update=(object)[
-            'info_for_customer'=>json_encode([
-                'supplier_name'=>$store->store_name,
-                'supplier_email'=>$store->store_email,
-                'supplier_phone'=>'+'.clearPhone(store->store_phone),
-            ]),
-            'info_for_supplier'=>json_encode([
-                'customer_phone'=>'+'.clearPhone($customer->user_phone),
-                'customer_name'=>$customer->user_name,
-                'customer_email'=>$customer->user_email,
-            ]),
+            'is_dispute_opened'=>1,
+            'info_for_customer'=>json_encode($info_for_customer),
+            'info_for_supplier'=>json_encode($info_for_supplier),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         $context=[
@@ -739,34 +756,33 @@ class OrderStageScript{
         
     public function onSupplierStart($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        $info_for_supplier=[];
+        $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
             $order=$this->OrderModel->itemGet($order_id);
             $LocationModel=model("LocationModel");
             $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
-            $info_for_supplier=[
-                'customer_location_address'=>$customerLocation->location_address,
-                'customer_location_comment'=>$customerLocation->location_comment,
-                'customer_location_latitude'=>$customerLocation->location_latitude,
-                'customer_location_longitude'=>$customerLocation->location_longitude,
-                'customer_phone'=>'+'.$order->customer->user_phone,
-                'customer_name'=>$order->customer->user_name,
-                'customer_email'=>$order->customer->user_email,
-            ];
+
+            helper('phone_number');
+            $info_for_supplier->customer_location_address=$customerLocation->location_address;
+            $info_for_supplier->customer_location_comment=$customerLocation->location_comment;
+            $info_for_supplier->customer_location_latitude=$customerLocation->location_latitude;
+            $info_for_supplier->customer_location_longitude=$customerLocation->location_longitude;
+
+            $info_for_supplier->customer_phone='+'.clearPhone($order->customer->user_phone);
+            $info_for_supplier->customer_name=$order->customer->user_name;
+            $info_for_supplier->customer_email=$order->customer->user_email;
         }
-        $info_for_supplier['tariff_info']=view('order/supplier_tariff_info.php',['order_data'=>$order_data]);
+        $info_for_supplier->tariff_info=view('order/supplier_tariff_info.php',['order_data'=>$order_data]);
         if($order_data->pickup_by_customer??0){
-            $info_for_supplier['pickup_by_customer']=$order_data->pickup_by_customer;
+            $info_for_supplier->pickup_by_customer=$order_data->pickup_by_customer;
         }
         if($order_data->payment_card_fixate_sum??0){
-            $info_for_supplier['payment_card_fixate_sum']=$order_data->payment_card_fixate_sum;
+            $info_for_supplier->payment_card_fixate_sum=$order_data->payment_card_fixate_sum;
         }
-        if(count($info_for_supplier)){
-            $update=(object)[
-                'info_for_supplier'=>json_encode($info_for_supplier)
-            ];
-            $this->OrderModel->itemDataUpdate($order_id,$update);
-        }
+        $update=(object)[
+            'info_for_supplier'=>json_encode($info_for_supplier)
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
         return 'ok';
     }
     
@@ -885,21 +901,33 @@ class OrderStageScript{
         if( !isset($order_data->delivery_by_courier) ){
             return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
         }
+        if( $order_data->is_dispute_opened??0 ){
+            $fastforward_delfinish_task=[
+                'task_name'=>"fastforward delivery finish by store",
+                'task_programm'=>[
+                    ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'OrderModel','method'=>'itemStageCreate','arguments'=>[$order_id,'delivery_finish']],
+                    ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ],
+                'task_next_start_time'=>time()+1
+            ];
+            jobCreate($fastforward_delfinish_task);
+        }
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
-        $PrefModel=model('PrefModel');
-        $timeout_min=$PrefModel->itemGet('delivery_no_courier_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"check if Courier was not found #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['supplier_finish','delivery_no_courier',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        helper('job');
-        jobCreate($stage_reset_task);
+        // $PrefModel=model('PrefModel');
+        // $timeout_min=$PrefModel->itemGet('delivery_no_courier_timeout_min','pref_value',0);
+        // $next_start_time=time()+$timeout_min*60;
+        // $stage_reset_task=[
+        //     'task_name'=>"check if Courier was not found #$order_id",
+        //     'task_programm'=>[
+        //             ['method'=>'orderResetStage','arguments'=>['supplier_finish','delivery_no_courier',$order_id]]
+        //         ],
+        //     'task_next_start_time'=>$next_start_time
+        // ];
+        // helper('job');
+        // jobCreate($stage_reset_task);
         return 'ok';
     }
     
@@ -932,38 +960,25 @@ class OrderStageScript{
         helper('phone_number');
 
         $order=$this->OrderModel->itemGet($order_id);
-        $LocationModel=model("LocationModel");
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($order->order_courier_id);
-        $supplierLocation=$LocationModel->itemGet($order->order_start_location_id);
-        $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
-        $update=(object)[
-            'info_for_courier'=>json_encode([
-                'customer_location_address'=>$customerLocation->location_address??'',
-                'customer_location_comment'=>$customerLocation->location_comment??'',
-                'customer_location_latitude'=>$customerLocation->location_latitude??'',
-                'customer_location_longitude'=>$customerLocation->location_longitude??'',
-                'customer_phone'=>'+'.clearPhone($order->customer->user_phone),
-                'customer_name'=>$order->customer->user_name,
-                'customer_email'=>$order->customer->user_email,
 
-                'supplier_location_address'=>$supplierLocation->location_address??'',
-                'supplier_location_comment'=>$supplierLocation->location_comment??'',
-                'supplier_location_latitude'=>$supplierLocation->location_latitude??'',
-                'supplier_location_longitude'=>$supplierLocation->location_longitude??'',
-                'supplier_name'=>$order->store->store_name,
-                'supplier_phone'=>'+'.clearPhone($order->store->store_phone),
-            ]),
-            'info_for_customer'=>json_encode([
-                'courier_name'=>$courier->courier_name,
-                'courier_phone'=>$courier->user_phone,
-                'courier_image_hash'=>$courier->images[0]->image_hash??''
-            ]),
-            'info_for_supplier'=>json_encode([
-                'courier_name'=>$courier->courier_name,
-                'courier_phone'=>'+'.clearPhone($courier->user_phone),
-                'courier_image_hash'=>$courier->images[0]->image_hash??''
-            ]),
+        helper('phone_number');
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
+
+        $info_for_supplier->courier_name=$courier->courier_name;
+        $info_for_supplier->courier_phone='+'.clearPhone($courier->user_phone);
+        $info_for_supplier->courier_image_hash=$courier->images[0]->image_hash??'';
+
+        $info_for_customer->courier_name=$courier->courier_name;
+        $info_for_customer->courier_phone='+'.clearPhone($courier->user_phone);
+        $info_for_customer->courier_image_hash=$courier->images[0]->image_hash??'';
+
+        $update=(object)[
+            'info_for_customer'=>json_encode($info_for_customer),
+            'info_for_supplier'=>json_encode($info_for_supplier),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
