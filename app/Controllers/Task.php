@@ -185,14 +185,11 @@ class Task extends \App\Controllers\BaseController{
         $UserModel->systemUserLogout();
     }
 
-    private function orderResetStage( $stage_from, $stage_to, $order_id=null ){
-        //reset stage of multiple orders Probably it will be better to avoid this behavior!!!
+    private function orderResetStage( string $stage_from, string $stage_to, int $order_id ){
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         $UserModel->systemUserLogin();
-        if( $order_id ){
-            $OrderModel->where('order_id',$order_id);
-        }
+        $OrderModel->where('order_id',$order_id);
         $OrderModel->join('order_group_list ogl',"order_group_id=group_id");
         $OrderModel->where('ogl.group_type',$stage_from);
         $orders=$OrderModel->get()->getResult();
