@@ -255,7 +255,7 @@ class OrderStageScript{
         if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
             $Acquirer=\Config\Services::acquirer();
             $incomingStatus=$Acquirer->statusGet($order_id);
-            
+            error_log("\n\n#$order_id ".date(" H:i:s")." onCustomerCart\n".json_encode($incomingStatus,JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
             $orderData=$this->OrderModel->itemDataGet($order_id);
             if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) || ($orderData->payment_card_fixate_id??null) ){
                 return 'already_payed';//already payed so refuse to reset to cart
