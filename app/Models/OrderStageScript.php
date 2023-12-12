@@ -13,10 +13,10 @@ class OrderStageScript{
         //     'customer_cart'=>               ['Восстановить'],
         //     ],
         'customer_cart'=>[
-            'customer_confirmed'=>          [],
             'customer_action_confirm'=>     ['Перейти к оформлению'],
             'customer_action_add'=>         ['Добавить товар','medium','clear'],
             'customer_deleted'=>            ['Удалить','danger','clear'],
+            'customer_confirmed'=>          [],
             ],
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
@@ -591,7 +591,7 @@ class OrderStageScript{
 
         $info_for_supplier->customer_name=$customer->user_name;
         $info_for_supplier->customer_phone='+'.clearPhone($customer->user_phone);
-        $info_for_supplier->customer_email=$customer->user_email;
+        $info_for_supplier->customer_email=$customer->user_email??null;
 
         $info_for_customer->supplier_name=$store->store_name;
         $info_for_customer->supplier_phone='+'.clearPhone($store->store_phone);
