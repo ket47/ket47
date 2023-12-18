@@ -14,7 +14,7 @@ class Reaction extends \App\Controllers\BaseController{
     public function itemSave(){
         $is_like=$this->request->getPost('is_like');
         $is_dislike=$this->request->getPost('is_dislike');
-        $comment=$this->request->getPost('comment',FILTER_SANITIZE_SPECIAL_CHARS);
+        $comment=$this->request->getPost('comment');//,FILTER_SANITIZE_SPECIAL_CHARS
         $tagQuery=$this->request->getPost('tagQuery');
 
         if(!$tagQuery){

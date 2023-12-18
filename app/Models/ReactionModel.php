@@ -19,7 +19,10 @@ class ReactionModel extends Model{
     protected $useSoftDeletes = true;
     protected $useTimestamps = true;
     protected $autoSealingTimeout="1 DAY";
-    
+
+    protected function initialize(){
+        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
+    }
     
     public function itemGet( int $reaction_id ){
         $this->permitWhere('r');
