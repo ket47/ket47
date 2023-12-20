@@ -65,7 +65,7 @@ class Mailing extends \App\Controllers\BaseController{
         $MailingModel=model('MailingModel');
 
         $mailing=$MailingModel->itemGet($mailing_id);
-        if(!$mailing){
+        if( !$mailing || $mailing=='forbidden' ){
             return $this->failNotFound('notfound');
         }
         $MailingModel->itemStart($mailing_id);
@@ -74,13 +74,19 @@ class Mailing extends \App\Controllers\BaseController{
         $MailingMessageModel->where('mailing_id',$mailing_id);
         $MailingMessageModel->where('is_sent',0);
         $MailingMessageModel->where('is_failed',0);
-        $MailingMessageModel->select('GROUP_CONCAT(reciever_id) reciever_ids');
-        $row=$MailingMessageModel->find();
-        if(!$row){
+        //$MailingMessageModel->select('reciever_id');
+        $ids=$MailingMessageModel->findColumn('reciever_id');
+        if(!$ids){
             return $this->fail('empty');
         }
-        $ids=explode(',',$row[0]->reciever_ids);
+        //$ids=explode(',',$row[0]->reciever_ids);
         $id_batches=array_chunk($ids,100);
+
+
+
+        //pl($id_batches);die;
+
+
         $start_time=time();
         foreach($id_batches as $batch){
             $start_time+=2*60;//5 min

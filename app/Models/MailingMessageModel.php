@@ -60,20 +60,20 @@ class MailingMessageModel extends SecureModel{
         return $this->findAll();
     }
     
-    public function listCreate( $mailing_id ){
-        if( !sudo() ){
-            return 'forbidden';
-        }
-        $reciever_list=$this->listRecieverGet($mailing_id);
-        foreach($reciever_list as $reciever){
-            $message=[
-                'mailing_id'=>$mailing_id,
-                'reciever_id'=>$reciever['user_id'],
-            ];
-            $this->itemCreate($message);
-        }
-        return true;
-    }
+    // public function listCreate( $mailing_id ){
+    //     if( !sudo() ){
+    //         return 'forbidden';
+    //     }
+    //     $reciever_list=$this->listRecieverGet($mailing_id);
+    //     foreach($reciever_list as $reciever){
+    //         $message=[
+    //             'mailing_id'=>$mailing_id,
+    //             'reciever_id'=>$reciever['user_id'],
+    //         ];
+    //         $this->itemCreate($message);
+    //     }
+    //     return true;
+    // }
     
     public function listUpdate(){
         return false;
