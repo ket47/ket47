@@ -594,6 +594,10 @@ class CourierModel extends Model{
             return;
         }
         $job_list=$this->listJobGet( $courier->courier_id );
+        if( !is_array($job_list) ){
+            pl(['itemNotify',$courier,$job_list]);
+            return true;
+        }
         $context_list=[];
         foreach($job_list as $job){
             $context_list[]=[
