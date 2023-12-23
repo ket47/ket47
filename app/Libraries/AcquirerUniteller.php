@@ -168,7 +168,7 @@ class AcquirerUniteller{
         $total=$request->getVar('Total');
         $balance=$request->getVar('Balance');
         $approvalCode=$request->getVar('ApprovalCode');
-        $billNumber=$request->getVar('ApprovalCode');
+        $billNumber=$request->getVar('BillNumber');
         //Total Balance ApprovalCode BillNumber
         $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('uniteller.password')));
         if($signature!=$signature_check){
