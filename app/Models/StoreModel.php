@@ -577,11 +577,18 @@ class StoreModel extends Model{
                     LEFT JOIN
                 transaction_list tl ON ttl.trans_id=tl.trans_id AND trans_role IN ('site->supplier','supplier->site','profit->supplier')
             SET
-                sl.owner_ally_ids='$owner_list',
-                pl.owner_ally_ids='$owner_list',
-                ils.owner_ally_ids='$owner_list',
-                ilp.owner_ally_ids='$owner_list',
-                tl.owner_ally_ids='$owner_list'
+            sl.owner_ally_ids='$owner_list',
+            pl.owner_ally_ids='$owner_list',
+            ils.owner_ally_ids='$owner_list',
+            ilp.owner_ally_ids='$owner_list',
+            tl.owner_ally_ids='$owner_list',
+
+            sl.owner_id='$store_owners->owner_id',
+            pl.owner_id='$store_owners->owner_id',
+            ils.owner_id='$store_owners->owner_id',
+            ilp.owner_id='$store_owners->owner_id',
+            tl.owner_id='$store_owners->owner_id',
+        
             WHERE
                 sl.store_id='$store_id'";
         $this->query($sql);
