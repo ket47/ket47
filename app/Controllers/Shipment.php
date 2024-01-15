@@ -14,13 +14,20 @@ class Shipment extends \App\Controllers\BaseController{
         if( !$order_id ){
             $order_id=$this->request->getPost('order_id');
         }
-        $LocationModel=model('LocationModel');
-        $ShipmentModel=model('ShipmentModel');
-        $result=$ShipmentModel->itemGet($order_id);
+        $OrderModel=model('OrderModel');
+        $result=$OrderModel->itemGet($order_id);
         if( is_object($result) ){
-            if( $result->order_start_location_id && $result->order_start_location_id ){
-                $result->locationStart=$LocationModel->itemGet($result->order_start_location_id,'all');
-                $result->locationFinish=$LocationModel->itemGet($result->order_finish_location_id,'all');
+            $order_data=$OrderModel->itemDataGet($order_id);
+            $result->locationStart=$order_data->location_start??[];
+            $result->locationFinish=$order_data->location_finish??[];
+
+            if( $order_data->delivery_by_courier??0 ){
+                $DeliveryJobModel=model('DeliveryJobModel');
+                $result->deliveryJob=$DeliveryJobModel->select('start_plan,stage')->itemGet(null,$order_id);
+                $result->deliveryJob->start_plan_date=date("H:i, d.m",$result->deliveryJob->start_plan);
+            }
+            if( $order_data->finish_plan_scheduled??0 ){
+                $result->finish_plan_scheduled=date("H:i, d.m",$order_data->finish_plan_scheduled);
             }
             return $this->respond($result);
         }
@@ -37,38 +44,40 @@ class Shipment extends \App\Controllers\BaseController{
         if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
             return $this->failUnauthorized('unauthorized');
         }
-        $ShipmentModel = model('ShipmentModel');
+        $OrderModel = model('OrderModel');
         $order_id_exists=false;
         if( ($data->order_id??-1)>0 ){
-            $order_id_exists=$ShipmentModel->select('order_id')->find($data->order_id);
+            $order_id_exists=$OrderModel->select('order_id')->find($data->order_id);
         }
-        $ShipmentModel->transBegin();
+        $OrderModel->transBegin();
         if( !$order_id_exists ){
-            $result=$ShipmentModel->itemCreate($data->is_shopping);
+            $result=$OrderModel->itemCreate(null,1);
             if ($result === 'forbidden') {
-                $ShipmentModel->transRollback();
+                $OrderModel->transRollback();
                 return $this->failForbidden($result);
             }
             if (!is_numeric($result)) {
-                $ShipmentModel->transRollback();
+                $OrderModel->transRollback();
                 return $this->fail($result);
             }
             $data->order_id=$result;
+            $OrderModel->itemStageCreate( $data->order_id, 'customer_cart' );
+            $OrderModel->itemStageCreate( $data->order_id, 'customer_confirmed' );
         }
-        $result = $ShipmentModel->itemUpdate($data);
+        $result = $OrderModel->itemUpdate($data);
         if ($result === 'forbidden') {
-            $ShipmentModel->transRollback();
+            $OrderModel->transRollback();
             return $this->failForbidden($result);
         }
         if ($result === 'validation_error') {
-            $ShipmentModel->transRollback();
+            $OrderModel->transRollback();
             return $this->fail($result);
         }
-        if ($ShipmentModel->errors()) {
-            $ShipmentModel->transRollback();
-            return $this->failValidationErrors($ShipmentModel->errors());
+        if ($OrderModel->errors()) {
+            $OrderModel->transRollback();
+            return $this->failValidationErrors($OrderModel->errors());
         }
-        $ShipmentModel->transCommit();
+        $OrderModel->transCommit();
         return $this->respond($data->order_id);
     }
 
@@ -80,8 +89,8 @@ class Shipment extends \App\Controllers\BaseController{
         if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
             return $this->failUnauthorized('unauthorized');
         }
-        $ShipmentModel = model('ShipmentModel');
-        $result=$ShipmentModel->itemCreate($data);
+        $OrderModel = model('OrderModel');
+        $result=$OrderModel->itemCreate($data);
         if (is_numeric($result)) {
             return $this->respondCreated($result);
         }
@@ -96,13 +105,13 @@ class Shipment extends \App\Controllers\BaseController{
         if(!$data){
             return $this->fail('malformed_request');
         }
-        $ShipmentModel = model('ShipmentModel');
-        $result = $ShipmentModel->itemUpdate($data);
+        $OrderModel = model('OrderModel');
+        $result = $OrderModel->itemUpdate($data);
         if ($result === 'forbidden') {
             return $this->failForbidden($result);
         }
-        if ($ShipmentModel->errors()) {
-            return $this->failValidationErrors($ShipmentModel->errors());
+        if ($OrderModel->errors()) {
+            return $this->failValidationErrors($OrderModel->errors());
         }
         return $this->respondUpdated($result);
     }
@@ -121,14 +130,14 @@ class Shipment extends \App\Controllers\BaseController{
             return $this->fail('noid');
         }
         $store_owner_id=session()->get('user_id');        
-        $DeliveryScheduleModel=model('DeliveryScheduleModel');
-        $routeStats=$DeliveryScheduleModel->routePlanGet($start_location_id, $finish_location_id);
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $routeStats=$DeliveryJobModel->routePlanGet($start_location_id, $finish_location_id);
         $deliveryOptions=$this->deliveryOptionsGet($routeStats->deliveryDistance, $store_owner_id);
         $defaultDeliveryOption=array_shift($deliveryOptions);
         if( ($defaultDeliveryOption['deliverySum']??0) >0 ){
-            $routeStats->cost=$defaultDeliveryOption['deliveryCost'];
-            $routeStats->fee=$defaultDeliveryOption['deliveryFee'];
-            $routeStats->sum=$defaultDeliveryOption['deliverySum'];
+            $routeStats->cost=(int) $defaultDeliveryOption['deliveryCost'];
+            $routeStats->fee=(int) $defaultDeliveryOption['deliveryFee'];
+            $routeStats->sum=(int) $defaultDeliveryOption['deliverySum'];
             return $this->respond($routeStats);
         }
         return $this->fail('cant_estimate');
@@ -209,8 +218,8 @@ class Shipment extends \App\Controllers\BaseController{
 
     private function checkoutDataGet( $order ){
         $data=(object)[];
-        $DeliveryScheduleModel=model('DeliveryScheduleModel');
-        $data->routePlan=$DeliveryScheduleModel->routePlanGet($order->order_start_location_id,$order->order_finish_location_id);
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $data->routePlan=$DeliveryJobModel->routePlanGet($order->order_start_location_id,$order->order_finish_location_id);
         if( $data->routePlan->error??null ){
             return $data->routePlan->error;
         }
@@ -222,18 +231,18 @@ class Shipment extends \App\Controllers\BaseController{
             $UserCardModel=model('UserCardModel');
             $data->bankCard=$UserCardModel->itemMainGet();
         }
-        $data->validUntil=time()+5*60;//5 min
+        $data->validUntil=time()+10*60;//10 min
         return $data;
     }
 
     public function itemCheckoutDataGet(){
-        $order_id = $this->request->getVar('order_id');////!!!!!!!!!!!!!!!!
+        $order_id = $this->request->getVar('order_id');
         $with_arrival_range = $this->request->getVar('with_arrival_range');
         if(!$order_id){
             return $this->fail('noid');
         }
-        $ShipmentModel = model('ShipmentModel');
-        $order = $ShipmentModel->itemGet($order_id,'basic');
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($order_id,'basic');
         if ($order === 'forbidden') {
             return $this->failForbidden('forbidden');
         }
@@ -244,35 +253,40 @@ class Shipment extends \App\Controllers\BaseController{
         if( !is_object($bulkResponse) ){
             return $this->fail($bulkResponse);
         }
-        $ShipmentModel->itemDataUpdate($order_id,(object)['checkoutDataCache'=>json_encode($bulkResponse)]);
+        if($bulkResponse->routePlan->start_plan!='nocourier'){
+            /**
+             * If right now there is no couriers, don't cache checkoutDataCache
+             */
+            $OrderModel->itemDataUpdate($order_id,(object)['checkoutDataCache'=>$bulkResponse]);
+        }
         $bulkResponse->order=$order;
-        if( $with_arrival_range || $bulkResponse->routePlan->plan_mode ){//if delay is inqueue or schedule
-            $plan_delivery_start=$bulkResponse->routePlan->plan_delivery_start;
-            $DeliveryScheduleModel=model('DeliveryScheduleModel');
-            $bulkResponse->arrivalRange=$DeliveryScheduleModel->itemDeliveryArrivalRangeGet($plan_delivery_start);
+        if( $with_arrival_range || $bulkResponse->routePlan->start_plan_mode=='scheduled' ){
+            $finish_plan=$bulkResponse->routePlan->start_plan+$bulkResponse->routePlan->finish_arrival;
+            $DeliveryJobModel=model('DeliveryJobModel');
+            $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($finish_plan);
         }
         return $this->respond($bulkResponse);
     }
 
     public function itemCheckoutDataSet(){
         $checkoutSettings = $this->request->getJSON();
-        $ShipmentModel = model('ShipmentModel');
-        $order = $ShipmentModel->itemGet($checkoutSettings->order_id,'basic');
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($checkoutSettings->order_id,'basic');
         if ( $order === 'forbidden' || !$checkoutSettings->order_id??0 || !$checkoutSettings->tariff_id??0 ) {
             return $this->failForbidden();
         }
         if ( $order === 'notfound' ) {
             return $this->failNotFound();
         }
-        $order_data=$ShipmentModel->itemDataGet($checkoutSettings->order_id);
+        $order_data=$OrderModel->itemDataGet($checkoutSettings->order_id);
         if($order_data->payment_card_fixate_id??0){
             return $this->failResourceExists('payment_already_done');
         }
         /**
-         * Try to use checkout cache data.If it is out dated create new
+         * Try to use checkout cache data. If it is outdated create new
          */
         if($order_data->checkoutDataCache??null){
-            $checkoutData=json_decode($order_data->checkoutDataCache??null);
+            $checkoutData=$order_data->checkoutDataCache??null;
         }
         if( !isset($checkoutData->validUntil) || $checkoutData->validUntil<time() ){
             $checkoutData=$this->checkoutDataGet($order);
@@ -295,9 +309,6 @@ class Shipment extends \App\Controllers\BaseController{
         }
 
         //CONSTRUCTING ORDER DATA
-        // $order=(object)[
-        //     'order_id'=>$checkoutSettings->order_id
-        // ];
         $order_data=(object)[];
 
         //PAYMENT OPTIONS CHECK
@@ -318,7 +329,7 @@ class Shipment extends \App\Controllers\BaseController{
             $order_data->payment_by_credit_store=1;
             $order->order_store_id=$deliveryOption->storeId;
             $order->order_store_admins=$deliveryOption->storeAdmins;
-            $ShipmentModel->fieldUpdateAllow('order_store_admins');
+            $OrderModel->fieldUpdateAllow('order_store_admins');
         } else {
             return $this->fail('no_payment');
         }
@@ -327,32 +338,32 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data->delivery_cost=$deliveryOption->deliveryCost;
         $order_data->delivery_heavy_bonus=$deliveryOption->deliveryHeavyBonus;
         $order->order_sum_delivery=$deliveryOption->deliverySum;
-        $ShipmentModel->fieldUpdateAllow('order_sum_delivery');
+        $OrderModel->fieldUpdateAllow('order_sum_delivery');
 
-        //ARRIVAL TIME CHECK && ESTIMATE TIMINGS
-        $order_data->time_offset=$checkoutData->routePlan->time_offset;//offset sec
-        $order_data->time_delivery=$checkoutData->routePlan->time_delivery;//duration sec
-        $order_data->time_preparation=$checkoutData->routePlan->time_start_arrival;//duration sec
-        $order_data->time_start_arrival=$checkoutData->routePlan->time_start_arrival;//duration sec
-
-        $order_data->plan_delivery_start=$checkoutData->routePlan->plan_delivery_ready+$order_data->time_start_arrival;//time
-        $order_data->plan_mode=$checkoutData->routePlan->plan_mode;//nodelay | await | schedule
-
-        if( $checkoutSettings->deliveryStartScheduled ){
-            $plan_delivery_start_scheduled=strtotime($checkoutSettings->deliveryStartScheduled);
-            if( $plan_delivery_start_scheduled > $order_data->plan_delivery_start ){
-                $order_data->plan_delivery_start=$plan_delivery_start_scheduled;
-            }
-            $order_data->plan_mode='schedule';
+        //START PLAN AND MODE
+        $order_data->start_plan=$checkoutData->routePlan->start_plan;
+        $order_data->start_plan_mode=$checkoutData->routePlan->start_plan_mode;//inited | awaited | scheduled 
+        if( $checkoutSettings->deliveryFinishScheduled ){
+            $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+            //if scheduled time is lesser than start_plan use start_plan
+            $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
+            $order_data->start_plan_mode='scheduled';
+            $order_data->finish_arrival=$checkoutData->routePlan->finish_arrival;
         }
+
+        //LOCATIONS DATA (SAVING IN DATA TO NOT AFFECT BY DELETION BY USER)
+        $LocationModel=model('LocationModel');
+        $order_data->location_start=$LocationModel->itemGet($order->order_start_location_id,'all');
+        $order_data->location_finish=$LocationModel->itemGet($order->order_finish_location_id,'all');   
+
         //SAVING CHECKOUT DATA
-        $result=$ShipmentModel->itemDataCreate($checkoutSettings->order_id,$order_data);
-        if( $result != 'ok' ){
-            return $this->respondNoContent($result);
-        }
-        $result = $ShipmentModel->itemUpdate($order);
+        $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
+        $result = $OrderModel->itemUpdate($order);
         if ($result === 'notfound') {
             return $this->failNotFound($result);
+        }
+        if( $order_data->payment_by_credit_store??0 ){
+            $OrderModel->itemStageAdd($checkoutSettings->order_id,'customer_payed_credit');
         }
         if ($result != 'ok') {
             return $this->respondNoContent($result);
@@ -367,8 +378,8 @@ class Shipment extends \App\Controllers\BaseController{
     }
 
     private function itemStage($order_id, $stage) {
-        $ShipmentModel = model('ShipmentModel');
-        $result = $ShipmentModel->itemStageCreate($order_id, $stage);
+        $OrderModel = model('OrderModel');
+        $result = $OrderModel->itemStageCreate($order_id, $stage);
         if ($result === 'ok') {
             return $this->respondUpdated($result);
         }

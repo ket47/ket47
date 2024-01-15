@@ -14,17 +14,17 @@ class OrderTransactionModel extends TransactionModel{
         $order_data=$OrderModel->itemDataGet($order_id);
 
         $finalized=
-               $this->orderFinalizeRefund( $order_basic,$order_data)
-            && $this->orderFinalizeConfirm($order_basic,$order_data)
-            && $this->orderFinalizeInvoice($order_basic,$order_data)
-            && $this->orderFinalizeSettle( $order_basic,$order_data);
+               $this->orderFinalizeRefund( $order_basic)
+            && $this->orderFinalizeConfirm($order_basic)
+            && $this->orderFinalizeInvoice($order_basic)
+            && $this->orderFinalizeSettle($order_basic,$order_data);
 
         if( !$finalized ){//?????????????
-            $orderIsCanceled=isset($order_data->order_is_canceled)?1:0;
-            $refund=$this->orderFinalizeRefund( $order_basic,$order_data);
-            $confirm=$this->orderFinalizeConfirm($order_basic,$order_data);
-            $invoice=$this->orderFinalizeInvoice($order_basic,$order_data);
-            $settle=$this->orderFinalizeSettle( $order_basic,$order_data);
+            $orderIsCanceled=$order_data->order_is_canceled??0;
+            $refund=$this->orderFinalizeRefund( $order_basic);
+            $confirm=$this->orderFinalizeConfirm($order_basic);
+            $invoice=$this->orderFinalizeInvoice($order_basic);
+            $settle=$this->orderFinalizeSettle($order_basic,$order_data);
             pl("order #$order_id Finalization FAILED orderIsCanceled:$orderIsCanceled || refund:$refund && confirm:$confirm && invoice:$invoice && settle:$settle",false);
         }
         return $finalized;
@@ -39,7 +39,9 @@ class OrderTransactionModel extends TransactionModel{
         return $this->acquirerStatusCache[$order_id];
     }
 
-    private function orderFinalizeRefund($order_basic,$order_data){//Made refund of excess money
+    private function orderFinalizeRefund($order_basic){//Made refund of excess money
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_refund_done??0)
             ||  !($order_data->payment_card_fixate_id??0)
@@ -81,7 +83,9 @@ class OrderTransactionModel extends TransactionModel{
         return true;
     }
 
-    private function orderFinalizeConfirm($order_basic,$order_data){//Claim payment for order
+    private function orderFinalizeConfirm($order_basic){//Claim payment for order
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_confirm_done??0)
             ||  ($order_data->order_is_canceled??0)
@@ -126,7 +130,9 @@ class OrderTransactionModel extends TransactionModel{
         return true;
     }
 
-    private function orderFinalizeInvoice($order_basic,$order_data){//Create tax invoice
+    private function orderFinalizeInvoice($order_basic){//Create tax invoice
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_invoice_done??0)
             ||  ($order_data->order_is_canceled??0)
@@ -148,7 +154,6 @@ class OrderTransactionModel extends TransactionModel{
             $order_all->print_delivery_as_agent=$order_data->delivery_by_store??0;
             $Cashier=\Config\Services::cashier();
             $cashier_data=$Cashier->printAndGet($order_all);
-    
             if( !$cashier_data ){//connection error need to repeat
                 log_message('error',"Printing check failed. Connection error??? Order #{$order_basic->order_id}");
                 return false;
@@ -170,34 +175,31 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderFinalizeSettle($order_basic,$order_data){//Calculate profits, interests etc
-        if( isset($order_data->order_is_canceled) ){
-            return $this->orderFinalizeCancel($order_basic,$order_data);
+        if( $order_data->order_is_canceled??0 ){
+            return $this->orderFinalizeCancel($order_basic);
         }
-        /**
-         * update data because it may change in previous stages
-         * eg refund,confirm sum
-         */
-        $order_data=model('OrderModel')->itemDataGet($order_basic->order_id,false);
         return 
-           $this->orderFinalizeSettleCustomer($order_basic,$order_data)
-        && $this->orderFinalizeSettleSupplier($order_basic,$order_data)
-        && $this->orderFinalizeSettleCourier($order_basic,$order_data)
-        && $this->orderFinalizeSettleSystem($order_basic,$order_data);
+           $this->orderFinalizeSettleCustomer($order_basic)
+        && $this->orderFinalizeSettleSupplier($order_basic)
+        && $this->orderFinalizeSettleCourier($order_basic)
+        && $this->orderFinalizeSettleSystem($order_basic);
     }
 
-    private function orderFinalizeCancel($order_basic,$order_data){
+    private function orderFinalizeCancel($order_basic){
         $PromoModel=model('PromoModel');
         $PromoModel->itemOrderDisable($order_basic->order_id,0);
         return true;
     }
 
-    private function orderFinalizeSettleCustomer($order_basic,$order_data){
+    private function orderFinalizeSettleCustomer($order_basic){
         $PromoModel=model('PromoModel');
         $PromoModel->itemOrderUse($order_basic->order_id);
         return true;
     }
     
-    private function orderFinalizeSettleSupplier($order_basic,$order_data){
+    private function orderFinalizeSettleSupplier($order_basic){
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_settle_supplier_done??0)
             ||  ($order_data->order_is_canceled??0);
@@ -297,7 +299,9 @@ class OrderTransactionModel extends TransactionModel{
         return true;
     }
 
-    private function orderFinalizeSettleCourier($order_basic,$order_data){
+    private function orderFinalizeSettleCourier($order_basic){
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_settle_courier_done??0)
             ||  ($order_data->order_is_canceled??0)
@@ -327,7 +331,7 @@ class OrderTransactionModel extends TransactionModel{
             if($sanctionTrans->trans_amount!=0){
                 $result=$this->itemCreate($sanctionTrans);
                 if( !$result ){
-                    log_message('error',"Making #courierSanction transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    log_message(  'error', "Making #courierSanction transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()) );
                     return false;
                 }
             }
@@ -383,7 +387,9 @@ class OrderTransactionModel extends TransactionModel{
         return true;
     }
 
-    private function orderFinalizeSettleSystem($order_basic,$order_data){
+    private function orderFinalizeSettleSystem($order_basic){
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
         $skip=
                 ($order_data->finalize_settle_system_done??0)
             ||  ($order_data->order_is_canceled??0);

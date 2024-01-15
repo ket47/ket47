@@ -20,6 +20,7 @@ class DeliveryScheduleModel extends SecureModel{
     private $shiftEndMarginMinute=30;//30 min before shiftEnd skip to next day
     private $deliveryRangeDays=2;
     private $deliveryDurationDelta=15;//+-15 min
+    private $avgOrderDuration=30;
     private $avgSpeed;
     private $avgDistance;
 
@@ -46,7 +47,7 @@ class DeliveryScheduleModel extends SecureModel{
         $CourierGroupMemberModel->where('group_type','busy');
         $courierBusyCount=$CourierGroupMemberModel->select("COUNT(*) courierBusyCount")->get()->getRow('courierBusyCount');
 
-        $orderTotalDuration=$this->orderAverageDuration*($orderInQueueCount+0.5);//half time for order in progress
+        $orderTotalDuration=$this->avgOrderDuration*($orderInQueueCount+0.5);//half time for order in progress
         $courierBusyDuration=$orderTotalDuration*60/$courierBusyCount;//sec
 
         return time()+$courierBusyDuration;
@@ -107,7 +108,7 @@ class DeliveryScheduleModel extends SecureModel{
          */
         $time=time();
         return [
-            'status'=>'ready',
+            'status'=>'heavyload',
             'time'=>$time,
         ];
     }
@@ -148,13 +149,14 @@ class DeliveryScheduleModel extends SecureModel{
             return $result;
         }
         $courierReadinessBegin=$this->courierReadinessBeginEstimate();
+        pl($courierReadinessBegin);
         $estStartArrivalDurationSeconds=round($this->avgDistance*60*60/$this->avgSpeed);//seconds
 
         $result->time_offset=(int) date("Z");
         $result->time_start_arrival=$estStartArrivalDurationSeconds;
         $result->time_delivery=round($result->deliveryDistance*60*60/$this->avgSpeed);//seconds
 
-        $result->plan_mode="nodelay";
+        $result->plan_mode="start";
         $result->plan_delivery_ready=$courierReadinessBegin['time'];
         $result->plan_delivery_start=$result->plan_delivery_ready+$result->time_start_arrival;
         $result->plan_delivery_finish=$result->plan_delivery_start+$result->time_delivery;
@@ -233,35 +235,6 @@ class DeliveryScheduleModel extends SecureModel{
         return $this->shiftEndHour;
     }
     
-    /**
-     * Starts next awaiting order
-     */
-    public function itemStart( $mode='next' ){
-
-
-    }
-
-    /**
-     * Refreshes queue and starts
-     */
-    public function listRefresh(){
-        $this->db->query("SET @order_position:=0");
-        $this->db->query("
-            UPDATE 
-                order_list ol
-                    JOIN
-                order_group_member_list ogml ON order_id=member_id
-                    JOIN
-                order_group_list ogl ON ogl.group_id=ogml.group_id AND group_type='delivery_search'
-            SET
-                ol.order_position= (@order_position:=@order_position+1)
-            ORDER BY ogml.created_at
-        ");
-    }
-
-
-
-
     public function itemGet(){
         return false;
     }

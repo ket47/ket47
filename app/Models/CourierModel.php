@@ -440,10 +440,10 @@ class CourierModel extends Model{
 
     public function listJobGet( $courier_id ){
         //courier should be able to preview jobs
-        $isCourierReady=$this->isCourierReady();
-        if( !$isCourierReady ){
-            return 'notready';
-        }
+        // $isCourierReady=$this->isCourierReady();
+        // if( !$isCourierReady ){
+        //     return 'notready';
+        // }
         $point_distance=2000000;//getenv('delivery.radius');
 
         $LocationModel=model('LocationModel');
@@ -503,6 +503,7 @@ class CourierModel extends Model{
             return 'notsearching';
         }
         $courier=$this->itemGet($courier_id,'basic');
+        $OrderModel->allowWrite();//allow modifing order once
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
         $result=$this->itemUpdateStatus($courier_id,'busy');
@@ -518,6 +519,9 @@ class CourierModel extends Model{
     }
 
     private function itemJobStartNotify( $reciever_id, $context ){
+        if( $reciever_id==session()->get('user_id') ){
+            return;//if courier picked job don't send notif to himself
+        }
         $message_text=view('messages/events/on_delivery_start_sms',$context);
         $message=(object)[
             'message_reciever_id'=>"$reciever_id",
@@ -574,7 +578,7 @@ class CourierModel extends Model{
         }
         $this->permitWhere('r');
         $this->select($this->selectList);
-        $this->join('user_list','user_id=courier_list.owner_id');
+        $this->join('user_list','user_id=courier_list.owner_id','left');
         $this->join('courier_group_member_list','member_id=courier_id','left');
         $this->join('courier_group_list','group_id','left');
         $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
@@ -675,6 +679,7 @@ class CourierModel extends Model{
             ];
             jobCreate($sms_job);
             $notification_index++;
+            break;
         }
         return true;
     }
@@ -718,7 +723,7 @@ class CourierModel extends Model{
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->whereIn('group_type',['ready','busy']);
-        $this->orderBy('group_type','DESC');//if exists ready first
+        $this->orderBy('group_type','DESC');//if exists, ready first
         $this->limit(1);
 
         if( $aroundLocation ){
@@ -744,9 +749,6 @@ class CourierModel extends Model{
         else {
             $hasActiveCourier= $this->hasActiveCourier($aroundLocation);
         }
-        if( !$hasActiveCourier ){
-            $this->deliveryNotReadyNotify($aroundLocation);
-        }
         return $hasActiveCourier;
     }
     
@@ -766,7 +768,7 @@ class CourierModel extends Model{
             'store'=>$store??null,
             'customer'=>session()->get('user_data'),
         ];
-        $admin_email=(object)[
+        $admin_sms=(object)[
             'message_reciever_id'=>'-100',
             'message_transport'=>'telegram',
             'message_subject'=>"Нет доступного курьера",
@@ -776,7 +778,7 @@ class CourierModel extends Model{
         $notification_task=[
             'task_name'=>"delivery_not_found Notify",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
                 ]
         ];
         jobCreate($notification_task);

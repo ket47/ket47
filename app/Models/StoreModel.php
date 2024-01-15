@@ -583,7 +583,6 @@ class StoreModel extends Model{
             ilp.owner_ally_ids='$owner_list',
             tl.owner_ally_ids='$owner_list',
 
-            sl.owner_id='$store_owners->owner_id',
             pl.owner_id='$store_owners->owner_id',
             ils.owner_id='$store_owners->owner_id',
             ilp.owner_id='$store_owners->owner_id',

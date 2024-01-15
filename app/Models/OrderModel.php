@@ -2,7 +2,7 @@
 namespace App\Models;
 use CodeIgniter\Model;
 
-class OrderModel extends Model{
+class OrderModel extends SecureModel{
     
     use PermissionTrait;
     use FilterTrait;
@@ -10,6 +10,7 @@ class OrderModel extends Model{
     
     protected $table      = 'order_list';
     protected $primaryKey = 'order_id';
+    protected $returnType = 'object';
     protected $allowedFields = [
         'order_store_id',
         'order_store_admins',
@@ -19,7 +20,7 @@ class OrderModel extends Model{
         'order_finish_location_id',
         'order_sum_product',//should restrict direct sum updates
         'order_sum_delivery',//
-        'order_sum_tax',//
+        //'order_sum_tax',//
         'order_description',
         'order_objection',
         'order_stock_status',
@@ -74,7 +75,6 @@ class OrderModel extends Model{
             unset($order->order_data);            
         }
         //pl([$order,$mode]); WARNING itemGet called twice!!!!!!!!
-        $this->itemInfoInclude($order);
         $this->itemCache['basic'.$order_id]=$order;
         if($mode=='basic'){
             return $order;
@@ -107,6 +107,7 @@ class OrderModel extends Model{
                 $stage->created_user=$UserModel->itemGet($stage->created_by,'basic');
             }
         }
+        $this->itemInfoInclude($order);
         $this->itemCache[$mode.$order_id]=$order;
         return $order;
     }
@@ -132,33 +133,39 @@ class OrderModel extends Model{
         }
     }
 
-    public function itemCreate( int $store_id ){
-        if( !$this->permit(null,'w') ){
-            return 'forbidden';
-        }
-        $StoreModel=model('StoreModel');
-        $store=$StoreModel->itemGet($store_id,'basic');
-        if( !$store ){
-            return 'nostore';
-        }
-        $this->allowedFields[]='owner_id';
-        $store_owners_all=ownersAll($store);
-        $order_sum_delivery=$StoreModel->tariffRuleDeliveryCostGet( $store_id );//Possible delivery cost
+    public function itemCreate( int $store_id=null, int $is_shipment=0 ){
         $user_id=session()->get('user_id');
         $new_order=[
             'owner_id'=>$user_id,
-            'order_store_id'=>$store_id,
-            'order_store_admins'=>$store_owners_all,
-            'order_sum_delivery'=>$order_sum_delivery??0,//IF null then there is no delivery
+            'order_sum_delivery'=>0,
+            'is_shipment'=>$is_shipment,
             'order_data'=>'{}',
         ];
-        $this->allowedFields[]='order_data';
-        $order_id=$this->insert($new_order,true);
-        /**
-         * not updating owners so store will not see order at this stage 
-         */
-        //$this->itemUpdateOwners($order_id);
-        $this->itemStageCreate( $order_id, 'customer_cart' );
+        
+        if( $store_id ){
+            $StoreModel=model('StoreModel');
+            $store=$StoreModel->itemGet($store_id,'basic');
+            if( !is_object($store) ){
+                return 'nostore';
+            }
+            $new_order['order_store_id']=$store_id;
+            $new_order['order_store_admins']=ownersAll($store);
+            $new_order['order_sum_delivery']=$StoreModel->tariffRuleDeliveryCostGet( $store_id );//Possible delivery cost
+        } else if( !$is_shipment ){
+            return 'nostore';
+        }
+        $this->fieldUpdateAllow('owner_id');
+        $this->fieldUpdateAllow('order_data');
+        $this->fieldUpdateAllow('is_shipment');
+        $this->fieldUpdateAllow('order_store_admins');
+        $this->fieldUpdateAllow('order_sum_delivery');
+
+        try{
+            $order_id=$this->insert($new_order,true);
+            return $order_id;
+        } catch(\Exception $e){
+            return $e->getMessage();
+        }
         return $order_id;
     }
     
@@ -184,37 +191,53 @@ class OrderModel extends Model{
     }
 
 
-    /**
-     * Should port folowing functions from shipmentmodel
-     */
     private $order_data;
-    public function itemDataGet( int $order_id, bool $use_cache=true ){
-        if( !$this->order_data || !$use_cache ){
-            $this->permitWhere('r');
-            $this->where('order_id',$order_id);
+    public function itemDataGet( int $order_id, bool $use_cache=true ){// $use_cache should use direct cache clear function
+        if( !$use_cache ){
+            $this->itemCacheClear();
+        }
+        if( !$this->order_data ){
             $this->select('order_data');
-            $this->order_data=json_decode($this->get()->getRow('order_data'));
+            $order=$this->find($order_id);
+            $this->order_data=json_decode($order->order_data);
         }
         return $this->order_data;
     }
 
-    public function itemDataUpdate( int $order_id, object $data_update ){
-        $permit_where=$this->permitWhereGet('w','item');
-        $path_value='';
-        foreach($data_update as $path=>$value){
-            $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
+    public function itemDataCreate( int $order_id, object $data_create ){
+        foreach($data_create as $path=>$value){
+            if( is_string($value) ){
+                $data_create->{$path}=addslashes($value);
+            }
         }
         $this->order_data=null;//cache is unvalidated
-        $sql="UPDATE order_list SET order_data=JSON_SET(`order_data`{$path_value}) WHERE order_id=$order_id AND $permit_where";
-        $this->query($sql);
+        $this->set("order_data",json_encode($data_create));
+        $this->fieldUpdateAllow('order_data');
+        $this->update($order_id);
+        $this->itemCacheClear();
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemDataUpdate( int $order_id, object $data_update ){
+        $path_value='';
+        foreach($data_update as $path=>$value){
+            if( is_object($value) ){
+                $path_value.=','.$this->db->escape("$.$path").",CAST('".json_encode($value)."' AS JSON)";
+            } else {
+                $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
+            }
+        }
+        $this->order_data=null;//cache is unvalidated
+        $this->set("order_data","JSON_SET(`order_data`{$path_value})",false);
+        $this->fieldUpdateAllow('order_data');
+        $this->update($order_id);
+        $this->itemCacheClear();
         return $this->db->affectedRows()?'ok':'idle';
     }
 
     public function itemDataDelete( int $order_id ){
-        $this->permitWhere('w');
-        $this->allowedFields[]='order_data';
-        $this->update($order_id,['order_data'=>'{}']);
-        return $this->db->affectedRows()?'ok':'idle';
+        $this->itemCacheClear();
+        return $this->itemDataCreate($order_id,(object)[]);
     }
 
     public function deliverySumUpdate( int $order_id ){

@@ -46,9 +46,10 @@ class Reaction extends \App\Controllers\BaseController{
     private function onCommentSupplierNotify( $tagQuery ){
         $ReactionModel=model('ReactionModel');
         $reaction=$ReactionModel->itemByTagGet($tagQuery);
-        if( empty($reaction->reaction_comment) ){
+        if( empty($reaction->reaction_comment) || session()->get('reaction_is_notified_'.$reaction->reaction_id) ){
             return;
         }
+        session()->set('reaction_is_notified_'.$reaction->reaction_id,1);
 
         $StoreModel=model('StoreModel');
         $StoreModel->join('reaction_tag_list','tag_name="store" AND tag_id=store_id');

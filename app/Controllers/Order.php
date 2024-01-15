@@ -51,6 +51,7 @@ class Order extends \App\Controllers\BaseController {
         if ($OrderModel->errors()) {
             return $this->failValidationErrors($OrderModel->errors());
         }
+        $OrderModel->itemStageCreate( $result, 'customer_cart' );
         return $this->respond($result);
     }
 
@@ -82,6 +83,7 @@ class Order extends \App\Controllers\BaseController {
                 $OrderModel->transRollback();
                 return $this->fail($result);
             }
+            $OrderModel->itemStageCreate( $result, 'customer_cart' );
             $data->order_id=$result;
         }
         $result = $OrderModel->itemUpdate($data);
@@ -284,6 +286,9 @@ class Order extends \App\Controllers\BaseController {
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
+                if( !$deliveryIsReady ){
+                    $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
+                }
                 $order_sum_delivery=(int)$tariff->delivery_cost+$deliveryHeavyModifier->cost;
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,

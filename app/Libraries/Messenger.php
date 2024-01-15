@@ -54,7 +54,7 @@ class Messenger{
         if( $ok ){
             return $ok;
         }
-        log_message('error', "Sending error ($message->message_transport). Cant send message:". json_encode($message));
+        log_message('error', "Sending error ($message->message_transport). Cant send message:". json_encode($message->reciever));
     }
     
     private $reciever_cache=null;
@@ -107,13 +107,13 @@ class Messenger{
     }
     
     private function itemSendEmail( $message ){
+        if(getenv('test.emailMock')==1){
+            return true;
+        }
         $email_to=$message->message_reciever_email??$message->reciever->user_email??'';
         if(!$email_to){
             //log_message('error','Email cant be send: no email address');
             return false;
-        }
-        if(getenv('test.emailMock')==1){
-            return true;
         }
         $email = \Config\Services::email();
         $config=[
@@ -129,7 +129,7 @@ class Messenger{
         $email->setMessage($message->message_text);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){
-            log_message('error', 'Cant send email:'. json_encode($message).$email->printDebugger(['headers']) );
+            //log_message('error', 'Cant send email:'. $email->printDebugger(['headers']) );
             return false;
         }
         return true;
@@ -179,6 +179,9 @@ class Messenger{
     }
 
     private function itemSendPush( $message ){
+        if(getenv('test.pushMock')==1){
+            return true;
+        }
         $tokens=$this->itemPushTokensGet($message->message_reciever_id);
         if( !count($tokens) ){
             return false;
@@ -207,20 +210,6 @@ class Messenger{
             return true;
         }
         log_message('error', 'Telegram message failed: '.json_encode([$result,$message]));
-        return false;
-    }
-
-    private function itemSendViber( $message ){
-        if( !isset($message->reciever->user_data->viberId) ){
-            //log_message('error', 'No viberId for user_id:'.$message->message_reciever_id);
-            return false;
-        }
-        $Viber = new \App\Libraries\Viber();
-        $result=$Viber->send_message($message->reciever->user_data->viberId,$message->message_text);
-        if( $result && ($result->status??null)==0 ){
-            return true;
-        }
-        log_message('error', 'Viber message failed: '.json_encode([$result,$message]));
         return false;
     }
 }

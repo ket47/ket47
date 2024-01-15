@@ -1,10 +1,7 @@
 <?php
 namespace App\Models;
-use CodeIgniter\Model;
+class CourierShiftModel extends SecureModel{
 
-class CourierShiftModel extends Model{
-    
-    use PermissionTrait;
     use FilterTrait;
     
     protected $table      = 'courier_shift_list';
@@ -12,31 +9,38 @@ class CourierShiftModel extends Model{
     protected $allowedFields = [
         'shift_status',
         'courier_id',
-        'total_bonus',
-        'total_duration',
+        'courier_speed',
+        'courier_reach',
+        'actual_longitude',
+        'actual_latitude',
+        'last_finish_plan',
+        'last_longitude',
+        'last_latitude',
         'closed_at',
         ];
 
     protected $useSoftDeletes = true;
-    protected $useTimestamps = true;
+    protected $useTimestamps  = true;
+    protected $returnType     = 'object';
     
+    public function fieldUpdateAllow($field){
+        $this->allowedFields[]=$field;
+    }
     
     public function itemGet( $shift_id ){
-        $this->where('shift_id',$shift_id);
-        $this->permitWhere('r');
-        return $this->get()->getRow();
+        return $this->find($shift_id);
     }
 
     public function itemCreate($courier_id, $courier_owner_id){
-        if( !$this->permit(null,'w') ){
-            return 'forbidden';
-        }
         $shift=[
             'shift_status'=>'open',
             'courier_id'=>$courier_id,
             'owner_id'=>$courier_owner_id,
+            'courier_reach'=>15000,// m maximum distance,
+            'courier_speed'=>2.78,// m/s
+            'last_finish_plan'=>time(),
         ];
-        $this->allowedFields[]="owner_id";
+        $this->fieldUpdateAllow("owner_id");
         return $this->insert($shift,true);
     }
     
@@ -77,8 +81,8 @@ class CourierShiftModel extends Model{
     public function itemOpenGet($courier_id){
         $this->where('courier_id',$courier_id);
         $this->where('shift_status','open');
-        $this->permitWhere('r');
-        return $this->get()->getRow();
+        $shiftsAll=$this->find();
+        return $shiftsAll[0]??null;
     }
 
     public function itemWorkStatisticsGet($courier_id,$start_at,$finish_at){
@@ -88,7 +92,7 @@ class CourierShiftModel extends Model{
         $OrderModel->where('group_type','delivery_start');
         $OrderModel->where("ogml.created_at BETWEEN '$start_at' AND '$finish_at'");
         $OrderModel->where('order_courier_id',$courier_id);
-        $OrderModel->where("order_data->>'$.order_is_canceled' IS NULL",null,false);
+        $OrderModel->where("( order_data->>'$.order_is_canceled' IS NULL OR order_data->>'$.order_is_canceled' <> 1 )",null,false);//sometimes order_is_canceled==0
         $OrderModel->select("COUNT(*) order_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus',0)>0) heavy_count,SUM(COALESCE(order_data->>'$.delivery_heavy_bonus')) heavy_bonus");
         return $OrderModel->get()->getRow();
     }
@@ -99,10 +103,10 @@ class CourierShiftModel extends Model{
         if( !$openedShift ){
             return 'notfound';
         }
+        
         $this->set('closed_at','NOW()',false);
         $this->set('shift_status','closed');
         $this->where('shift_id',$openedShift->shift_id);
-        $this->permitWhere('w');
         $this->update();
         if( !$this->db->affectedRows() ){
             return 'idle';
@@ -119,7 +123,11 @@ class CourierShiftModel extends Model{
         }
         $total_duration=strtotime($shift->closed_at)-strtotime($shift->created_at);
         $statistics=$this->itemWorkStatisticsGet($shift->courier_id,$shift->created_at,$shift->closed_at);
-        
+        ql($this);
+
+
+
+
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($shift->courier_id);
 
@@ -157,8 +165,11 @@ class CourierShiftModel extends Model{
         return false;
     }
     
-    public function listGet(){
-        return false;
+    public function listGet( object $filter ){
+        if( $filter->shift_status??null ){
+            $this->where('shift_status',$filter->shift_status);
+        }
+        return $this->findAll();
     }
     
     public function listCreate(){

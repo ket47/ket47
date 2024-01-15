@@ -188,7 +188,7 @@ class ReactionModel extends Model{
                 image_list
                     JOIN
                 reaction_tag_list 
-                    ON image_holder = 'product' AND tag_name='product' AND image_holder_id = tag_id
+                    ON image_holder = 'product' AND tag_name='product' AND image_holder_id = tag_id AND is_main=1
             WHERE
                 member_id=reaction_id) image_hash");
         $this->select('reaction_comment,reaction_is_like,user_name');

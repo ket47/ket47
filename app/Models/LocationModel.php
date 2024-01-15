@@ -17,6 +17,7 @@ class LocationModel extends Model{
         'location_order',
         'location_address',
         'location_comment',
+        'location_phone',
         'location_latitude',
         'location_longitude',
         'location_point',
@@ -46,6 +47,7 @@ class LocationModel extends Model{
             location_order,
             location_address,
             location_comment,
+            location_phone,
             location_latitude,
             location_longitude,
             location_list.is_main

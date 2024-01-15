@@ -105,7 +105,7 @@ class OrderStageScript{
 
 
         'admin_supervise'=>[
-            'system_finish'=>               ['Проблема решена','success'],
+            'customer_finish'=>             ['Проблема решена','success'],
             'supplier_corrected'=>          ['Исправить заказ'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
@@ -213,6 +213,7 @@ class OrderStageScript{
     //SYSTEM HANDLERS
     ////////////////////////////////////////////////
     public function onSystemReckon( $order_id, $data ){
+        $this->OrderModel->itemDataUpdate($order_id,(object)['delivery_by_courier_is_needed'=>0]);
         $finishing_task=[
             'task_name'=>"Order reckoning #$order_id",
             'task_programm'=>[
@@ -223,7 +224,7 @@ class OrderStageScript{
             $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
         }
         jobCreate($finishing_task);
-        $finishing_task['task_next_start_time']=time()+3*60;//SECOND TRY AFTER 3 MIN DO WE NEED IT???
+        $finishing_task['task_next_start_time']=time()+5*60;//SECOND TRY AFTER 7 MIN DO WE NEED IT???
         jobCreate($finishing_task);
         return 'ok';
     }
@@ -231,7 +232,6 @@ class OrderStageScript{
         /**
          * we should pause db transaction so API cals can be atomized
          */
-        //pl(['onSystemFinish11111'],false);
         $this->OrderModel->transComplete();
         $OrderTransactionModel=model('OrderTransactionModel');
         $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
@@ -402,6 +402,14 @@ class OrderStageScript{
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
         if( !empty($order_data->delivery_by_courier) ){
+            $job=(object)[
+                'start_plan'=>$order_data->plan_delivery_start??0,
+                'start_longitude'=>$supplierLocation->location_longitude??0,
+                'start_latitude'=>$supplierLocation->location_latitude??0,
+                'finish_longitude'=>$customerLocation->location_longitude??0,
+                'finish_latitude'=>$customerLocation->location_latitude??0,
+            ];
+            model('DeliveryJobModel')->itemStageSet( $order_id, 'inited', $job);
             $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
         }
         ///////////////////////////////////////////////////
@@ -510,6 +518,7 @@ class OrderStageScript{
 
         $EntryModel->listStockMove($order_id,'free');
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
 
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $StoreModel->itemCacheClear();
@@ -620,7 +629,7 @@ class OrderStageScript{
         ];
         $store_sms=(object)[
             'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_reciever_id'=>'-100,'.$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'long.wav',
                 'link'=>"/order/order-{$order_id}"
@@ -673,6 +682,7 @@ class OrderStageScript{
             'task_next_start_time'=>$next_start_time
         ];
         jobCreate($notification_task);
+        $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>0]);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }
     
@@ -687,6 +697,7 @@ class OrderStageScript{
 
         $EntryModel->listStockMove($order_id,'free');
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
         
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
@@ -843,16 +854,16 @@ class OrderStageScript{
             'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
             'context'=>$context
         ];
-        $store_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'template'=>'messages/order/on_supplier_overdue_STORE_sms.php',
-            'context'=>$context
-        ];
+        // $store_sms=(object)[
+        //     'message_transport'=>'message',
+        //     'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+        //     'template'=>'messages/order/on_supplier_overdue_STORE_sms.php',
+        //     'context'=>$context
+        // ];
         $notification_task=[
             'task_name'=>"supplier_overdue Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$customer_sms,$store_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$customer_sms/**,$store_sms*/]]]
                 ]
         ];
         jobCreate($notification_task);
@@ -982,6 +993,8 @@ class OrderStageScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'started', (object)['courier_id'=>$order->order_courier_id]);
+
         $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
@@ -1016,10 +1029,10 @@ class OrderStageScript{
         // if( !$CourierModel->isBusy() ){
         //     return 'wrong_courier_status';
         // }
-        $order=$this->OrderModel->itemGet($order_id);
-        if( !$order->images ){
-            return 'photos_must_be_made';
-        }
+        // $order=$this->OrderModel->itemGet($order_id);
+        // if( !$order->images ){
+        //     return 'photos_must_be_made';
+        // }
         return 'ok';
     }
     public function onDeliveryForceStart( $order_id ){
@@ -1041,6 +1054,7 @@ class OrderStageScript{
         $CourierModel=model('CourierModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'all');
@@ -1088,7 +1102,8 @@ class OrderStageScript{
         $StoreModel=model('StoreModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
+
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
@@ -1171,6 +1186,7 @@ class OrderStageScript{
             ];
             $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         }
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'finished');
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////

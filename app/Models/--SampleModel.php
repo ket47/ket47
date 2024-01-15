@@ -1,14 +1,13 @@
 <?php
 namespace App\Models;
-use CodeIgniter\Model;
-
-class SampleModel extends Model{
+class SampleModel extends SecureModel{
     
     use PermissionTrait;
     use FilterTrait;
     
     protected $table      = 'item_list';
     protected $primaryKey = 'item_id';
+    protected $returnType = 'object';
     protected $allowedFields = [
 
         ];

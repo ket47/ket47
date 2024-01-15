@@ -45,15 +45,30 @@ trait CourierTrait{
         if( $this->isCourierIdle() ){
             $this->courierSetReady();
         }
-        //return coordinates to boundary box
+        //limit coordinates to boundary box
         $bound_longitude_min=34.000344;
         $bound_longitude_max=34.217667;
         $bound_latitude_min=44.894650;
         $bound_latitude_max=44.996708;
-        $location['longitude']=min(max($bound_longitude_min,$location['longitude']),$bound_longitude_max);
-        $location['latitude']=min(max($bound_latitude_min,$location['latitude']),$bound_latitude_max);
+
+        $location_is_distorted=0;
+        if( $location['longitude']<$bound_longitude_min || $location['longitude']>$bound_longitude_max ){
+            $location['longitude']= ($bound_longitude_min+$bound_longitude_max)/2;//set at midpoint
+            $location_is_distorted=1;
+        }
+        if( $location['latitude']<$bound_latitude_min || $location['latitude']>$bound_latitude_max ){
+            $location['latitude']= ($bound_latitude_min+$bound_latitude_max)/2;//set at midpoint
+            $location_is_distorted=1;
+        }
 
         $courier=$this->courierGet();
+        if( !$location_is_distorted ){
+            $CourierShiftModel=model('CourierShiftModel');
+            $CourierShiftModel->fieldUpdateAllow('actual_longitude');
+            $CourierShiftModel->fieldUpdateAllow('actual_latitude');
+            $CourierShiftModel->where('courier_id',$courier->courier_id)->where('shift_status','open');
+            $CourierShiftModel->update(null,['actual_longitude'=>$location['longitude'],'actual_latitude'=>$location['latitude']]);
+        }
         $courier_location=[
             'location_holder'   =>'courier',
             'location_holder_id'=>$courier->courier_id,

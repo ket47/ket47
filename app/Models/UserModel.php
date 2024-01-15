@@ -188,6 +188,9 @@ class UserModel extends Model{
         if( !$this->permit($data->user_id,'w') ){
             return 'forbidden';
         }
+        if( isset($data->user_name) ){
+            $data->user_name=trim($data->user_name);
+        }
         $this->update(['user_id'=>$data->user_id],$data);
         $this->protect(true);
         return $this->db->affectedRows()?'ok':'idle';

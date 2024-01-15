@@ -32,17 +32,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->statusApply($result);
     }
     private function statusApply($incomingStatus){
-        $order_id_full=$incomingStatus->order_id;//with affix if any
-        if( !$this->authorizeAsSystem($order_id_full) ){
-            $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id_full  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
+        $order_id=$incomingStatus->order_id;//with affix if any
+        if( !$this->authorizeAsSystem($order_id) ){
+            $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->fail('CAN\'T AUTHORIZE AS SYSTEM');
         }
-        list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        $OrderModel=model('OrderModel');
         $result='ok';
         switch(strtolower($incomingStatus->status)){
             case 'authorized':
@@ -53,10 +48,10 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 $result=$OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $incomingStatus, false );
                 break;
             case 'canceled':
-                if( $this->paymentIsRefunded($order_id) ){
+                ////if( $this->paymentIsRefunded($order_id) ){
                     return $this->respond('OK');
-                }
-                $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $incomingStatus, false );
+                // }
+                // $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $incomingStatus, false );
                 break;
             case 'partly canceled':
             case 'waiting':
@@ -64,7 +59,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('waiting');
                 break;
             case 'not authorized':
-                $this->log_message('error', " order_id:#$order_id_full paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
+                $this->log_message('error', " order_id:#$order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
                 return $this->failValidationErrors('not_authorized');
                 break;
             default:
@@ -75,7 +70,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( $result=='ok' ){
             return $this->respond('OK'); 
         }
-        $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id_full; STAGE CANT BE CHANGED $result=='ok'");
+        $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id; STAGE CANT BE CHANGED $result=='ok'");
         return $this->fail('cant_change_order_stage');     
     }
 
@@ -107,23 +102,18 @@ class Cardacquirer extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////////////////////////////
     
     public function paymentLinkGet(){
-        $order_id_full=$this->request->getVar('order_id');
+        $order_id=$this->request->getVar('order_id');
         $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_id_full,'beforepayment');
+        $paymentStatus=$Acquirer->statusGet($order_id,'beforepayment');
 
         if( isset($paymentStatus->status) && $paymentStatus->status=='Authorized' ){
             return $this->fail('already_payed');
         }
-        $result=$this->orderValidate($order_id_full);
+        $result=$this->orderValidate($order_id);
         if( $result!='ok' ){
             return $this->fail($result);
         }
-        list($order_id)=explode('-',$order_id_full);
-        // if( str_contains($order_id_full,'s') ){//is shipping
-        //     $OrderModel=model('ShipmentModel');
-        // } else {
-            
-        // }
+        list($order_id)=explode('-',$order_id);
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
 
@@ -158,13 +148,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->fail('not_authorized');
     }
 
-    private function orderValidate( $order_id_full ){
-        list($order_id)=explode('-',$order_id_full);
-        // if( str_contains($order_id_full,'s') ){//is shipping
-        //     $OrderModel=model('ShipmentModel');
-        // } else {
-           
-        // }
+    private function orderValidate( $order_id ){
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
 
@@ -172,7 +156,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return 'order_notfound';
         }
         $order_data=$OrderModel->itemDataGet($order_id);
-        if( !($order_all->order_sum_total>0) || !in_array($order_all->stage_current,['customer_confirmed','customer_draft']) ){
+        if( !($order_all->order_sum_total>0) || !in_array($order_all->stage_current,['customer_confirmed']) ){
             return 'order_notvalid';
         }
         // if we will use customer_await then store can be not ready
