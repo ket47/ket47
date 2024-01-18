@@ -992,8 +992,11 @@ class OrderStageScript{
             'info_for_supplier'=>json_encode($info_for_supplier),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
+        $job=(object)[
+            'courier_id'=>$order->order_courier_id
+        ];
 
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'started', (object)['courier_id'=>$order->order_courier_id]);
+        model('DeliveryJobModel')->itemStageSet( $order_id, 'started', $job );
 
         $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();

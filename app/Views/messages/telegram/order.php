@@ -13,6 +13,24 @@
 <?=$order->info->customer_location_address?> <?=$order->info->customer_location_comment?></a>
 <?php endif;?>
 
+<?php if($order->locaionStart??null):?>
+    
+Откуда: 
+<a href="https://yandex.ru/maps/?pt=<?=$order->locaionStart->location_longitude?>,<?=$order->locaionStart->location_latitude?>&z=19&l=map,trf`" target="_new">
+<?=$order->locaionStart->location_address?> <?=$order->locaionStart->location_comment?></a>
++<?=$order->locaionStart->location_phone?>
+
+<?php endif;?>
+
+<?php if($order->locaionFinish??null):?>
+
+Куда: 
+<a href="https://yandex.ru/maps/?pt=<?=$order->locaionFinish->location_longitude?>,<?=$order->locaionFinish->location_latitude?>&z=19&l=map,trf`" target="_new">
+<?=$order->locaionFinish->location_address?> <?=$order->locaionFinish->location_comment?></a>
++<?=$order->locaionFinish->location_phone?>
+
+<?php endif;?>
+        
 <?php foreach($order->entries as $rnum=>$entry):?>
 <?=($rnum+1)?>) <u><?=$entry->entry_text?></u> <b><?=$entry->entry_quantity?></b><?=$entry->product_unit?> x <?=$entry->entry_price?>р
 <?php endforeach;?>

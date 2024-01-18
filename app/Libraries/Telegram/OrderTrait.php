@@ -123,7 +123,14 @@ trait OrderTrait{
     }
     private function orderGet($order_id){
         $OrderModel=model('OrderModel');
-        return $OrderModel->itemGet($order_id);
+        $result=$OrderModel->itemGet($order_id);
+
+        if( $result->is_shipment??0 ){
+            $order_data=$OrderModel->itemDataGet($order_id);
+            $result->locationStart=$order_data->location_start??[];
+            $result->locationFinish=$order_data->location_finish??[];
+        }
+        return $result;
     }
     
     private function orderPhotoDownload($order_id,$img_url){
