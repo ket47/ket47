@@ -24,7 +24,9 @@ class Shipment extends \App\Controllers\BaseController{
             if( $order_data->delivery_by_courier??0 ){
                 $DeliveryJobModel=model('DeliveryJobModel');
                 $result->deliveryJob=$DeliveryJobModel->select('start_plan,stage')->itemGet(null,$order_id);
-                $result->deliveryJob->start_plan_date=date("H:i, d.m",$result->deliveryJob->start_plan??time());
+                if($result->deliveryJob){
+                    $result->deliveryJob->start_plan_date=date("H:i, d.m",$result->deliveryJob->start_plan??time());
+                }
             }
             if( $order_data->finish_plan_scheduled??0 ){
                 $result->finish_plan_scheduled=date("H:i, d.m",$order_data->finish_plan_scheduled);
