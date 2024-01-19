@@ -799,30 +799,49 @@ class OrderStageScript{
     
     public function onSupplierCorrected($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( isset($order_data->store_correction_allow) ){
-            $order=$this->OrderModel->itemGet($order_id);
-            $context=[
-                'order'=>$order,
-            ];
-            $cust_sms=(object)[
-                'message_transport'=>'message',
-                'message_reciever_id'=>$order->owner_id,
-                'message_data'=>(object)[
-                    'sound'=>'short.wav'
-                ],
-                'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
-                'context'=>$context
-            ];
-            $notification_task=[
-                'task_name'=>"supplier_corrected Notify #$order_id",
-                'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
-                    ]
-            ];
-            jobCreate($notification_task);
-            return 'ok';
+        if( !($order_data->store_correction_allow??0) ){
+            return 'forbidden_bycustomer';
         }
-        return 'forbidden_bycustomer';
+        helper('phone_number');
+
+        $order=$this->OrderModel->itemGet($order_id,'all');
+
+        $order_data->is_dispute_opened=1;
+        $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
+
+        $info_for_supplier->customer_name=$order->customer->user_name;
+        $info_for_supplier->customer_phone='+'.clearPhone($order->customer->user_phone);
+
+        $info_for_customer->supplier_name=$order->store->store_name;
+        $info_for_customer->supplier_phone='+'.clearPhone($order->store->store_phone);
+
+        $update=(object)[
+            'is_dispute_opened'=>1,
+            'info_for_customer'=>json_encode($info_for_customer),
+            'info_for_supplier'=>json_encode($info_for_supplier),
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
+        $context=[
+            'order'=>$order,
+        ];
+        $cust_sms=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$order->owner_id,
+            'message_data'=>(object)[
+                'sound'=>'short.wav'
+            ],
+            'template'=>'messages/order/on_supplier_corrected_CUST_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_name'=>"supplier_corrected Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+        return 'ok';
     }
     
     public function onSupplierReclaimed($order_id){

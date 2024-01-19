@@ -123,11 +123,6 @@ class CourierShiftModel extends SecureModel{
         }
         $total_duration=strtotime($shift->closed_at)-strtotime($shift->created_at);
         $statistics=$this->itemWorkStatisticsGet($shift->courier_id,$shift->created_at,$shift->closed_at);
-        ql($this);
-
-
-
-
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($shift->courier_id);
 

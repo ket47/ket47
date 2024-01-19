@@ -368,8 +368,7 @@ class DeliveryJobModel extends SecureModel{
         $this->whereIn('stage',$stages);
         $this->orderBy("start_arrival_distance/$courier_speed - readiness_offset - earliness_offset",'ASC',false);
 
-        pl($this->db->error());
-        return $this->limit(1)->find();        
+        return $this->limit(1)->get()->getRow();//not using primary key array s unwanted; permission check is unnecessary
     }
 
     private function chainShortestGet( float $start_longitude, float $start_latitude ){
