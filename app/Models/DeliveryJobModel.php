@@ -313,7 +313,7 @@ class DeliveryJobModel extends SecureModel{
     private function chainAssignedJobs( object $shift ){
         $this->where('courier_id',$shift->courier_id);//only courier of shift
         $nextLink=$this->chainLinkFind($shift->last_longitude,$shift->last_latitude,['assigned'],$shift->courier_speed);
-        if( !$nextLink ){
+        if( !($nextLink->start_arrival_estimation??null)  ){
             return $shift;
         }
         $start_plan=$shift->last_finish_plan+$nextLink->start_arrival_estimation;
