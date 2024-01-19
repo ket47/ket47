@@ -827,7 +827,7 @@ class OrderStageScript{
         ];
         $cust_sms=(object)[
             'message_transport'=>'message',
-            'message_reciever_id'=>$order->owner_id,
+            'message_reciever_id'=>"-100,{$order->owner_id}",
             'message_data'=>(object)[
                 'sound'=>'short.wav'
             ],
