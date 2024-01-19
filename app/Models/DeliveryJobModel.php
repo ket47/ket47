@@ -332,7 +332,7 @@ class DeliveryJobModel extends SecureModel{
         //$this->having("start_arrival_distance<$shift->courier_reach");
         $this->where('courier_id IS NULL');//skip jobs that are already chained
         $nextLink=$this->chainLinkFind($shift->last_longitude,$shift->last_latitude,['inited','awaited'],$shift->courier_speed);
-        if( !$nextLink ){
+        if( !($nextLink->start_arrival_estimation??null)  ){
             return $shift;
         }
         $nextLink->courier_id=$shift->courier_id;
