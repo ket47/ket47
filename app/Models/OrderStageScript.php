@@ -594,7 +594,6 @@ class OrderStageScript{
         helper('phone_number');
         $order_data=$this->OrderModel->itemDataGet($order_id);
 
-        $order_data->is_dispute_opened=1;
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
 
@@ -806,7 +805,6 @@ class OrderStageScript{
 
         $order=$this->OrderModel->itemGet($order_id,'all');
 
-        $order_data->is_dispute_opened=1;
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
 
@@ -817,7 +815,6 @@ class OrderStageScript{
         $info_for_customer->supplier_phone='+'.clearPhone($order->store->store_phone);
 
         $update=(object)[
-            'is_dispute_opened'=>1,
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_supplier'=>json_encode($info_for_supplier),
         ];
