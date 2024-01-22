@@ -586,7 +586,7 @@ class StoreModel extends Model{
             pl.owner_id='$store_owners->owner_id',
             ils.owner_id='$store_owners->owner_id',
             ilp.owner_id='$store_owners->owner_id',
-            tl.owner_id='$store_owners->owner_id',
+            tl.owner_id='$store_owners->owner_id'
         
             WHERE
                 sl.store_id='$store_id'";
