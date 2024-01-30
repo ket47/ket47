@@ -365,6 +365,35 @@ class ProductModel extends Model{
         }
         return $product_list;
     }
+
+    public function listSearch( $filter=null ){
+        if( $filter['store_id']??0 ){
+            $this->where('store_id',$filter['store_id']);
+        }
+        if( $filter['limit']??0 ){
+            $this->limit($filter['limit']);
+        }
+        $against=$filter['search_query']??null;
+        if( $against ){
+            $words=explode(' ',$against);
+            foreach($words as $word){
+                if(mb_strlen($word)<4){
+                    continue;
+                }
+                $word_root=mb_substr($word,0,4);
+                $against.="<$word_root";
+            }
+            $this->where("MATCH(product_name,product_description) AGAINST ('$against' IN BOOLEAN MODE) OR MATCH(group_description) AGAINST ('$against' IN BOOLEAN MODE)");
+        }
+        $this->join('product_group_member_list pgml','member_id=product_id','left');
+        $this->join('product_group_list pgl','pgl.group_id=pgml.group_id','left');
+        $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
+        $this->select("product_list.*,image_hash");
+        $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
+        $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
+        $product_list= $this->get()->getResult();
+        return $product_list;
+    }
     
     public function listCreate( $store_id, $productList ){
         $rowcount=0;
