@@ -27,14 +27,12 @@ class Search extends \App\Controllers\BaseController{
         $limit=5;
         foreach($store_list as $store){
             $filter=[
-                'name_query'=>$query,
-                'name_query_fields'=>'product_name,product_code',
+                'search_query'=>$query,
                 'limit'=>4,
-                'store_id'=>$store->store_id,
-                'order'=>'product_final_price'
+                'store_id'=>$store->store_id
             ];
             $ProductModel->where('(validity<>0 OR validity IS NULL)');
-            $store->matches=$ProductModel->listGet($filter);
+            $store->matches=$ProductModel->listSearch($filter);
             if($store->matches || mb_stripos($store->store_name,$query)!==false ){
                 $matched_stores[]=$store;
                 if(--$limit<1){

@@ -118,6 +118,7 @@
             <th>Категория</th>
             <th>Код</th>
             <th>Изобр.</th>
+            <th>Описание</th>
         </tr>
         <tr>
             <td style="width:30px;"></td>
@@ -155,6 +156,9 @@
                     <i class="fa fa-upload" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>" data-action="upload"></i>
                 </div>
                 <?php endif;?>
+            </td>
+            <td>
+                <input value="<?=$group->group_description??''?>" data-field="group_description" data-group_id="<?=$group->group_id?>" data-type="<?=$table->type?>">
             </td>
             <td>
             </td>
