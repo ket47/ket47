@@ -381,9 +381,9 @@ class ProductModel extends Model{
                     continue;
                 }
                 $word_root=mb_substr($word,0,4);
-                $against.="<$word_root";
+                $against.="<$word_root*";
             }
-            $this->where("MATCH(product_name,product_description) AGAINST ('$against' IN BOOLEAN MODE) OR MATCH(group_description) AGAINST ('$against' IN BOOLEAN MODE)");
+            $this->where("(MATCH(product_name,product_description) AGAINST ('$against' IN BOOLEAN MODE) OR MATCH(group_description) AGAINST ('$against' IN BOOLEAN MODE))");
         }
         $this->join('product_group_member_list pgml','member_id=product_id','left');
         $this->join('product_group_list pgl','pgl.group_id=pgml.group_id','left');
