@@ -23,7 +23,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////////////////////////////
     //ACQUIRER INCOMING REQUESTS SECTION
     ///////////////////////////////////////////////////////////////////////
-    public function statusSet(){//handle request from acquirer //do we need this???
+    public function statusSet(){
         $Acquirer=\Config\Services::acquirer();
         $result=$Acquirer->statusParse($this->request);
         if( $result=='unauthorized' ){
@@ -31,8 +31,17 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         return $this->statusApply($result);
     }
+    public function statusHook(){
+        $Acquirer=new \App\Libraries\AcquirerRncb();
+        $result=$Acquirer->statusParse($this->request);
+        if( $result=='unauthorized' ){
+            return $this->failUnauthorized();
+        }
+        return $this->statusApply($result);
+    }
+
     private function statusApply($incomingStatus){
-        $order_id=$incomingStatus->order_id;//with affix if any
+        $order_id=$incomingStatus->order_id;
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");
             return $this->fail('CAN\'T AUTHORIZE AS SYSTEM');
@@ -48,10 +57,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 $result=$OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $incomingStatus, false );
                 break;
             case 'canceled':
-                ////if( $this->paymentIsRefunded($order_id) ){
-                    return $this->respond('OK');
-                // }
-                // $result=$OrderModel->itemStageCreate( $order_id, 'customer_refunded', $incomingStatus, false );
+                return $this->respond('OK');
                 break;
             case 'partly canceled':
             case 'waiting':
@@ -113,7 +119,6 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( $result!='ok' ){
             return $this->fail($result);
         }
-        list($order_id)=explode('-',$order_id);
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
 
@@ -123,29 +128,23 @@ class Cardacquirer extends \App\Controllers\BaseController{
     }
 
     public function paymentDo(){
-        $order_id_full=$this->request->getVar('order_id');
+        $order_id=$this->request->getVar('order_id');
         $card_id=$this->request->getVar('card_id');
-        $result=$this->orderValidate($order_id_full);
+        $result=$this->orderValidate($order_id);
         if( $result!='ok' ){
             return $this->fail($result);
         }
         if( !$card_id ){
-            return $this->fail('nocardid');
+            return $this->fail('error_nocof');
         }
-        $Acquirer=\Config\Services::acquirer();
-        list($order_id)=explode('-',$order_id_full);
-        // if( str_contains($order_id_full,'s') ){//is shipping
-        //     $OrderModel=model('ShipmentModel');
-        // } else {
-            
-        // }
+        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
         $result=$Acquirer->pay($order_all,$card_id);
-        if( $result ){
+        if( $result=='ok' ){
             return $this->respond('ok');
         }
-        return $this->fail('not_authorized');
+        return $this->fail($result);
     }
 
     private function orderValidate( $order_id ){
@@ -189,22 +188,26 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return view('payment/payment_result_no');
     }
     
-    public function cardRegisterLinkGet(){
+    public function cardRegisteredLinkGet(){
         $user_id=session()->get('user_id');
         if( !($user_id>0) ){
             return $this->failForbidden('forbidden');
         }
-        $Acquirer=\Config\Services::acquirer();
-        $result=$Acquirer->cardRegisterLinkGet($user_id);
+        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
+        $result=$Acquirer->cardRegisteredLinkGet($user_id);
         if($result=='nocardid'){
             return $this->fail($result);
         }
         return $result;
     }
 
-    public function cardRegisterActivate(){
-        $Acquirer=\Config\Services::acquirer();
-        $result=$Acquirer->cardRegisterActivate();
+    public function cardRegisteredActivate(){
+        $user_id=session()->get('user_id');
+        if( !($user_id>0) ){
+            return $this->failForbidden('forbidden');
+        }
+        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
+        $result=$Acquirer->cardRegisteredSync($user_id);
         if( $result=='ok' ){
             return $this->respond($result);
         }
@@ -216,10 +219,10 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $OrderGroupMemberModel->isMemberOf($order_id,'customer_payed_card');
     }
     
-    private function paymentIsRefunded( $order_id ){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        return $OrderGroupMemberModel->isMemberOf($order_id,'customer_refunded');
-    }
+    // private function paymentIsRefunded( $order_id ){
+    //     $OrderGroupMemberModel=model('OrderGroupMemberModel');
+    //     return $OrderGroupMemberModel->isMemberOf($order_id,'customer_refunded');
+    // }
 
     private function log_message($severity,$message){
         log_message($severity, $message);

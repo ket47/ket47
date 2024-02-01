@@ -59,6 +59,8 @@ class AcquirerUnitellerMock{
         ];
     }
 
+    public $refundPartialIsNeeded=true;
+    
     public function refund(int $billNumber,$sum){
         $OrderModel=model('OrderModel');
         $order_id=$OrderModel->where("JSON_EXTRACT(order_data,\"$.payment_card_fixate_id\")=$billNumber")->get()->getRow('order_id');

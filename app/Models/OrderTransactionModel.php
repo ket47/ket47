@@ -30,14 +30,14 @@ class OrderTransactionModel extends TransactionModel{
         return $finalized;
     }
 
-    private $acquirerStatusCache;
-    private function acquirerStatusGet( $order_id ){
-        if( !isset($this->acquirerStatusCache[$order_id]) ){
-            $Acquirer=\Config\Services::acquirer();
-            $this->acquirerStatusCache[$order_id]=$Acquirer->statusGet($order_id);
-        }
-        return $this->acquirerStatusCache[$order_id];
-    }
+    // private $acquirerStatusCache;
+    // private function acquirerStatusGet( $order_id ){
+    //     if( !isset($this->acquirerStatusCache[$order_id]) ){
+    //         $Acquirer=\Config\Services::acquirer();
+    //         $this->acquirerStatusCache[$order_id]=$Acquirer->statusGet($order_id);
+    //     }
+    //     return $this->acquirerStatusCache[$order_id];
+    // }
 
     private function orderFinalizeRefund($order_basic){//Made refund of excess money
         $OrderModel=model('OrderModel');
@@ -50,15 +50,21 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
-        $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
-
-        $fixationBalance=(float)($paymentStatus->total??0);
         $fixationId=($order_data->payment_card_fixate_id??0);
+        if($order_data->payment_card_acq_rncb??0){
+            $Acquirer=new \App\Libraries\AcquirerRncb();
+            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        } else {
+            $Acquirer=\Config\Services::acquirer();
+            $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+            $fixationBalance=(float)($paymentStatus->total??0);
+        }
 
+        $refundIsFull=false;
         $refundSum=$fixationBalance-$order_basic->order_sum_total;
         if( ($order_data->order_is_canceled??0) || ($order_data->sanction_courier_fee??0) || ($order_data->sanction_supplier_fee??0)  ){
             $refundSum=$fixationBalance;
+            $refundIsFull=true;
         }
         if( $refundSum<0 ){
             log_message('error',"Payment refunding failed for order #{$order_basic->order_id}. Fixation amount is smaller $fixationBalance<={$order_basic->order_sum_total} ");
@@ -69,7 +75,7 @@ class OrderTransactionModel extends TransactionModel{
             'finalize_refund_done'=>1
         ];
         if($refundSum!=0){
-            $acquirer_data=$Acquirer->refund($fixationId,$refundSum);
+            $acquirer_data=$Acquirer->refund($fixationId,$refundSum,$refundIsFull);
             if( !$acquirer_data ){//connection error need to repeat
                 return false;
             }
@@ -96,11 +102,17 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
-        $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
-
-        $fixationBalance=(float)($paymentStatus->total??0);
         $fixationId=($order_data->payment_card_fixate_id??0);
+        if($order_data->payment_card_acq_rncb??0){
+            $Acquirer=new \App\Libraries\AcquirerRncb();
+            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        } else {
+            $Acquirer=\Config\Services::acquirer();
+            $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+            $fixationBalance=(float)($paymentStatus->total??0);
+        }
+
+        $confirmIsFull=($order_basic->order_sum_total==$fixationBalance)?true:false;
         $confirmSum=$order_basic->order_sum_total;
 
         if( $fixationBalance<$confirmSum || $confirmSum<0 ){
@@ -108,15 +120,11 @@ class OrderTransactionModel extends TransactionModel{
             return false;
         }
 
-        if($paymentStatus->needConfirm=='0'){//already confirmation done
-            $confirmSum=0;
-        }
-
         $order_data_update=(object)[
             'finalize_confirm_done'=>1
         ];
         if($confirmSum!=0){
-            $acquirer_data=$Acquirer->confirm($fixationId,$confirmSum);
+            $acquirer_data=$Acquirer->confirm($fixationId,$confirmSum,$confirmIsFull);
             if( !$acquirer_data ){//connection error need to repeat
                 return false;
             }
