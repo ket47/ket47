@@ -233,7 +233,7 @@ class Order extends \App\Controllers\BaseController {
             'active',
             'count'
         );
-        if( getenv('uniteller.recurrentAllow') ){
+        if( sudo() ){
             $UserCardModel=model('UserCardModel');
             $bulkResponse->bankCard=$UserCardModel->itemMainGet();
         }
@@ -437,14 +437,11 @@ class Order extends \App\Controllers\BaseController {
         }
         //PROMO SHARE CHECK
         $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
-        if( $promo ){
-            $order_sum_total_wo_promo=$order->order_sum_total+$promo->promo_value;
-            if($promo->promo_value/$order_sum_total_wo_promo > $promo->promo_share/100){
-                return $this->fail('promo_share_too_high');
-            }
+        if( $promo && ($promo->min_order_sum_product<$order->order_sum_product) ){
+            return $this->fail('promo_share_too_high');
         }
         //PAYMENT OPTIONS SET
-        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow && getenv('uniteller.recurrentAllow') ){
+        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow ){
             $order_data->payment_by_card_recurrent=1;
             $order_data->payment_by_card=1;
             $order_data->payment_fee=$tariff->card_fee;

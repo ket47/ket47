@@ -229,7 +229,7 @@ class Shipment extends \App\Controllers\BaseController{
         if( $data->deliveryOptions=='no_tariff' ){
             return 'no_tariff';
         }
-        if( getenv('uniteller.recurrentAllow') ){
+        if( getenv('rncb.recurrentAllow') ){
             $UserCardModel=model('UserCardModel');
             $data->bankCard=$UserCardModel->itemMainGet();
         }
@@ -282,6 +282,10 @@ class Shipment extends \App\Controllers\BaseController{
         }
         $order_data=$OrderModel->itemDataGet($checkoutSettings->order_id);
         if($order_data->payment_card_fixate_id??0){
+            /**
+             * Should try set payed by card stage
+             */
+            //$OrderModel->itemStageCreate($checkoutSettings->order_id,'')
             return $this->failResourceExists('payment_already_done');
         }
         /**
