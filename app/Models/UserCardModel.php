@@ -42,17 +42,12 @@ class UserCardModel extends Model{
         return $card;
     }
     
-    public function itemCreate(){
-        $this->listClear();
+    public function itemCreate( object $card ){
         if( !$this->permit(null,'w') ){
             return 'forbidden';
         }
-        $this->itemMainReset();
         $user_id=session()->get('user_id');
-        $card=[
-            'owner_id'=>$user_id,
-            'is_disabled'=>1
-        ];
+        $card->owner_id=$user_id;
         $this->allowedFields[]='owner_id';
         return $this->insert($card,true);
     }
@@ -61,9 +56,9 @@ class UserCardModel extends Model{
         if(!$card->card_id){
             return 'notfound';
         }
-        $this->itemMainReset();
-        $card->is_disabled=0;
-        $card->is_main=1;
+        // $this->itemMainReset();
+        // $card->is_disabled=0;
+        // $card->is_main=1;
         $this->permitWhere('w');
         $this->update($card->card_id,$card);
         return $this->db->affectedRows()?'ok':'idle';
@@ -71,7 +66,7 @@ class UserCardModel extends Model{
 
     public function itemMainGet(){
         $this->permitWhere('r');
-        $this->select("card_id,card_type,card_mask");
+        $this->select("card_id,card_remote_id,card_type,card_mask");
         $this->limit(1);
         $this->orderBy('is_main','DESC');
         $this->where('is_disabled',0);
@@ -102,19 +97,23 @@ class UserCardModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function listGet(){
+    public function listGet( int $user_id ){
         $this->permitWhere('r');
-        $this->select("card_id,card_mask,card_type");
+        $this->select("card_id,card_mask,LOWER(card_type) card_type");
         $this->where('is_disabled',0);
         $this->orderBy('is_main','DESC');
+        if( $user_id ){
+            $this->where('owner_id',$user_id);
+        }
         $card_list=$this->get()->getResult();
         return $card_list;
     }
 
-    private function listClear(){
+    public function listDelete( int $user_id ){
         $this->permitWhere('w');
-        $this->where('is_disabled',1);
+        $this->where('owner_id',$user_id);
         $this->delete();
+        return $this->db->affectedRows()?'ok':'idle';
     }
 
 }
