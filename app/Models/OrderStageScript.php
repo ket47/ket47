@@ -252,10 +252,9 @@ class OrderStageScript{
     
     public function onCustomerCart($order_id){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        if($OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed')){
+        if( $OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed') ){
             $Acquirer=\Config\Services::acquirer();
             $incomingStatus=$Acquirer->statusGet($order_id);
-            error_log("\n\n#$order_id ".date(" H:i:s")." onCustomerCart\n".json_encode($incomingStatus,JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
             $orderData=$this->OrderModel->itemDataGet($order_id);
             if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) || ($orderData->payment_card_fixate_id??null) ){
                 return 'already_payed';//already payed so refuse to reset to cart
@@ -270,13 +269,19 @@ class OrderStageScript{
     }
 
     private function isAwaitingPayment($order_id){
-        $now=time();
-        $await_payment_until=null;
         $user_id=session()->get('user_id');
-        if( $user_id==-100 ){//System user autoreset system
-            $orderData=$this->OrderModel->itemDataGet($order_id);
-            $await_payment_until=$orderData->await_payment_until??null;
+        /**
+         * If user wants to return to cart. allow
+         */
+        if( $user_id!=-100 ){
+            return false;
         }
+        $now=time();
+        $orderData=$this->OrderModel->itemDataGet($order_id);
+        $await_payment_until=$orderData->await_payment_until??null;
+        /**
+         * If order is waiting for payment now then reset to cart after timeout
+         */
         if( $await_payment_until && $await_payment_until>$now ){
             $stage_reset_task=[
                 'task_name'=>"customer_confirmed Rollback #$order_id",
@@ -284,7 +289,7 @@ class OrderStageScript{
                         ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                     ],
                 'is_singlerun'=>1,
-                'task_next_start_time'=>$await_payment_until
+                'task_next_start_time'=>$await_payment_until+1
             ];
             jobCreate($stage_reset_task);
             return true;

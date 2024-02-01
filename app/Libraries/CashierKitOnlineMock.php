@@ -107,7 +107,7 @@ class CashierKitOnlineMock{
     public function printAndGet($order_all){
         $response=$this->print($order_all);
         if( $response?->ResultCode!=0 ){
-            pl(["KIT ONLINE CHECK PRINT FAILED",$response],false);
+            pl(["MOCK CHECK PRINT FAILED",$response],false);
             return $response;
         }
         //MOCKING

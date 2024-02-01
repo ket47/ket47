@@ -242,7 +242,7 @@ class LocationModel extends Model{
             type_icon.image_hash image_hash";
     public function listGet( $filter ){
         $filter['order']=null;
-        $filter['limit']=5;
+        $filter['limit']=15;
         $this->filterMake($filter);
         if( in_array($filter['location_holder'],['courier','user']) ){
             $this->permitWhere('r');

@@ -111,13 +111,17 @@ class Talk extends \App\Controllers\BaseController{
         if( $order->stage_current=='system_finish' ){
             return $this->fail('order_is_finished');
         }
-        if( $reciever!=='customer' ){
-            return $this->fail('unknown_reciever_type');
+        if( $reciever=='customer' ){
+            $reciever_id=$order->owner_id;
+        } else if( $reciever=='store' ){
+            $reciever_id=$order->order_store_admins;
+        } else {
+            return $this->fail('unknown_reciever_type');            
         }
 
         $sms=(object)[
             'message_transport'=>'message',
-            'message_reciever_id'=>$order->owner_id,
+            'message_reciever_id'=>$reciever_id,
             'message_subject'=> "Сообщение по заказу #$order_id",
             'message_text'=>$body,
             'message_data'=>(object)[

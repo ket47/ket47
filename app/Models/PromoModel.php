@@ -27,6 +27,7 @@ class PromoModel extends Model{
         if( !$promo_id ){
             return null;
         }
+        $this->select("*,ROUND(promo_value/(promo_share/100)) min_order_sum_product");
         $this->permitWhere('r');
         $this->where('promo_id',$promo_id);
         return $this->get()->getRow();
@@ -125,6 +126,7 @@ class PromoModel extends Model{
     }
 
     public function itemLinkGet($order_id){
+        $this->select("*,ROUND(promo_value/(promo_share/100)) min_order_sum_product");
         $this->permitWhere('r');
         $this->where('promo_order_id',$order_id);
         return $this->get()->getRow();
@@ -137,6 +139,7 @@ class PromoModel extends Model{
         }
         $this->limit(30);
         if( $type == 'active' ){
+            $this->select("*,ROUND(promo_value/(promo_share/100)) min_order_sum_product,DATE_FORMAT(expired_at,'%d.%m.%Y') expiration");
             $this->where('promo_list.is_disabled',0);
             $this->where('is_used',0);
             $this->where('expired_at>NOW()');

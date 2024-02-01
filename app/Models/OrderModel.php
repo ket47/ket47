@@ -199,7 +199,7 @@ class OrderModel extends SecureModel{
         if( !$this->order_data ){
             $this->select('order_data');
             $order=$this->find($order_id);
-            $this->order_data=json_decode($order->order_data);
+            $this->order_data=json_decode($order->order_data??null);
         }
         return $this->order_data;
     }

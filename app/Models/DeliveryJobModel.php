@@ -452,7 +452,7 @@ class DeliveryJobModel extends SecureModel{
         $LocationModel=model('LocationModel');
         $default_location_id=$LocationModel->where('location_holder','default_location')->get()->getRow('location_id');
 
-        $maximum_distance=getenv('delivery.radius');
+        $maximum_distance=getenv('delivery.radius')+4000;//why 4000???
         $result=(object)[
             'max_distance'=>$maximum_distance
         ];
