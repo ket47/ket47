@@ -13,10 +13,20 @@ class Product extends \App\Controllers\BaseController{
             'is_deleted'=>$this->request->getVar('is_deleted'),
             'is_active'=>$this->request->getVar('is_active'),
             'offset'=>$this->request->getVar('offset'),
-            'limit'=>500,//$this->request->getVar('limit'),
+            'limit'=>$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
             'group_id'=>$this->request->getVar('group_id'),
         ];
+
+
+
+        if($filter['limit']==200){
+            $filter['limit']==500;//tmp fix for storeview
+        }
+
+
+
+
         $grouptree_include=$this->request->getVar('grouptree_include');
         $ProductModel=model('ProductModel');
 
