@@ -136,7 +136,7 @@ class AcquirerRncb{
         $response=$this->apiExecute('order',$request);
         
         if( $response->errorCode??null ){
-            pl(['Acquirer:cardRegisteredLinkGet',$response]);
+            pl(['Acquirer:cardRegisteredLinkGet',$request,$response]);
             return null;
         }
         return "{$response->order->hppUrl}?at={$response->order->accessToken}";
@@ -177,13 +177,16 @@ class AcquirerRncb{
         $function="consumer/{$user_id}?ownerKind=Merchant&tokenDetailLevel=1";
         $consumerCards=$this->apiExecute($function,null,'GET');
         $cardIsAbsent=1;
-        foreach($consumerCards->consumer->tokens as $token){
-            if( $token->id==$card_remote_id ){
-                $token->status="Closed";
-                $cardIsAbsent=0;
+        if($consumerCards->consumer->tokens??null){
+            foreach($consumerCards->consumer->tokens as $token){
+                if( $token->id==$card_remote_id ){
+                    $token->status="Closed";
+                    $cardIsAbsent=0;
+                }
             }
         }
         if($cardIsAbsent){
+            $this->cardRegisteredSync( $user_id );
             return 'notfound';
         }
         $response=$this->apiExecute('consumer',(array)$consumerCards,'PUT');

@@ -437,7 +437,7 @@ class Order extends \App\Controllers\BaseController {
         }
         //PROMO SHARE CHECK
         $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
-        if( $promo && ($promo->min_order_sum_product<$order->order_sum_product) ){
+        if( $promo && ($promo->min_order_sum_product>$order->order_sum_product) ){
             return $this->fail('promo_share_too_high');
         }
         //PAYMENT OPTIONS SET

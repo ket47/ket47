@@ -195,7 +195,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
         $result=$Acquirer->cardRegisteredLinkGet($user_id);
-        if($result=='nocardid'){
+        if( !$result || $result=='nocardid' ){
             return $this->fail($result);
         }
         return $result;

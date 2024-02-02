@@ -22,7 +22,7 @@ class Product extends \App\Controllers\BaseController{
 
 
         if($filter['limit']==200){
-            $filter['limit']==500;//tmp fix for storeview
+            $filter['limit']=500;//tmp fix for storeview
         }
 
 

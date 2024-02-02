@@ -29,7 +29,7 @@ class Usercards extends \App\Controllers\BaseController{
         if( $cof=='notfound' ){
             return $this->failNotFound();
         }
-        $Acquirer=\Config\Services::acquirer();
+        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
         $Acquirer->cardRegisteredRemove($cof->owner_id,$cof->card_remote_id);
         $Acquirer->cardRegisteredSync( $cof->owner_id );
 
