@@ -28,7 +28,16 @@ class MessageSubModel extends Model{
             'sub_type'=>$type,
             'sub_device'=>$user_agent
         ];
-        $this->ignore()->insert($sub);
+        $this->ignore()->insert($sub,true);
+        $is_inserted=$this->affectedRows()>0?'ok':'idle';
+        if( $is_inserted=='ok' ){
+            return 'ok';
+        }
+        /**
+         * sub_user_id may change for same device. so update sub_user_id
+         */
+        $this->where('sub_registration_id',$registration_id);
+        $this->update(null,$sub);
         return $this->affectedRows()>0?'ok':'idle';
     }
 
