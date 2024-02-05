@@ -64,12 +64,13 @@ class UserCardModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function itemMainGet(){
+    public function itemMainGet( int $user_id ){
         $this->permitWhere('r');
         $this->select("card_id,card_remote_id,card_type,card_mask");
         $this->limit(1);
         $this->orderBy('is_main','DESC');
         $this->where('is_disabled',0);
+        $this->where('owner_id',$user_id);
         $card=$this->get()->getRow();
         if( !$card ){
             return 'notfound';

@@ -406,7 +406,7 @@ class OrderStageScript{
         ///////////////////////////////////////////////////
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
-        if( !empty($order_data->delivery_by_courier) ){
+        if( ($order_data->delivery_by_courier??0)==1 ){
             $job=(object)[
                 'start_plan'=>$order_data->plan_delivery_start??0,
                 'start_longitude'=>$supplierLocation->location_longitude??0,

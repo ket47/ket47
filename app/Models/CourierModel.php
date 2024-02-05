@@ -624,6 +624,7 @@ class CourierModel extends Model{
      */
     public function listNotify( $new_job ){
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
+        ql($this);
         if( !$ready_courier_list ){
             return false;
         }
@@ -648,7 +649,7 @@ class CourierModel extends Model{
      */
 
     private function listNotifyCreate( array $context_list, string $transport='telegram' ){
-        $notification_time_gap=3*60;//3min between notifications
+        $notification_time_gap=0;//3min between notifications
         $notification_index=0;
         foreach($context_list as $context){
             $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;

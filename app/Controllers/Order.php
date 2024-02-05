@@ -235,7 +235,7 @@ class Order extends \App\Controllers\BaseController {
         );
         if( sudo() ){
             $UserCardModel=model('UserCardModel');
-            $bulkResponse->bankCard=$UserCardModel->itemMainGet();
+            $bulkResponse->bankCard=$UserCardModel->itemMainGet($order->owner_id);
         }
         return $this->respond($bulkResponse);
     }
