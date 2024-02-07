@@ -63,16 +63,24 @@ trait OrderStageTrait{
         return $handled;
     }
 
+    /**
+     * Now this system works on on stage handler
+     * This should be rewrited as onStageHandler and offStageHandler
+     */
     private $itemStageUnconfirmedGroupId=null;
     private $itemStageUnconfirmedOrderId=null;
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
-        $this->itemStageConfirm();
+        $this->itemStageConfirm();//confirms previous stage if any
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
             return $order;
         }
         if($order->stage_current==$stage){
             return 'ok';
+        }
+        $handled=$this->itemStageOffHandle( $order_id,  $stage, $order->stage_current, $data );
+        if( 'ok'!=$handled ){
+            return $handled;
         }
         $OrderGroupModel=model('OrderGroupModel');
         $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
@@ -117,6 +125,21 @@ trait OrderStageTrait{
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
         try{
             return $this->StageScript->{$stageHandlerName}($order_id, $data);
+        } catch (\Throwable $e){
+            log_message('error',"itemStageCreate ".$e->getMessage()."\n".json_encode($e->getTrace(),JSON_PRETTY_PRINT));
+        }
+        return 'error';
+    }
+
+    private function itemStageOffHandle( $order_id, $stage_next, $stage_current, $data ){
+        $this->itemStageScriptLoad($order_id);
+        helper('job');
+        $stageHandlerName = 'off'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage_current)));
+        if( !method_exists($this->StageScript,$stageHandlerName) ){
+            return 'ok';
+        }
+        try{
+            return $this->StageScript->{$stageHandlerName}($order_id, $stage_next, $data);
         } catch (\Throwable $e){
             log_message('error',"itemStageCreate ".$e->getMessage()."\n".json_encode($e->getTrace(),JSON_PRETTY_PRINT));
         }

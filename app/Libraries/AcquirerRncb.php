@@ -46,48 +46,66 @@ class AcquirerRncb{
         return json_decode($result);
     }
 
-    public function linkGet( object $order_all ){
+    public function linkGet( object $order_all, bool $enable_auto_cof=false ){
         $orderTitle="Заказ #{$order_all->order_id}";
-        $orderDescription="Оплата доставки tezkel.com";
+        $orderDescription="Оплата на tezkel.com";
 
         $OrderModel=model('OrderModel');
         $orderData=$OrderModel->itemDataGet($order_all->order_id);
-        /**
-         * If link was created within timeout then reuse it.
-         * Otherwise create new order on acq
-         */
-        if( ($orderData->await_payment_until??0)<time() ){
-            $request=[
-                'order'=>[
-                    //"ridByMerchant"=>$order_all->order_id,
-                    "title"=>$orderTitle,
-                    "description"=>$orderDescription,
-                    "hppRedirectUrl"=>getenv('app.baseURL').'CardAcquirer/pageOk',
-                    "typeRid"=>"Sale Order Type Preauth_CVV",
-                    "amount"=>$order_all->order_sum_total,
-                    "currency"=>"RUB",
-                    "consumer"=>[
-                        "ridByOwner"=>$order_all->customer->user_id,
-                        "name"=>$order_all->customer->user_name
+
+        $request=[
+            'order'=>[
+                //"ridByMerchant"=>$order_all->order_id,
+                "title"=>$orderTitle,
+                "description"=>$orderDescription,
+                "hppRedirectUrl"=>getenv('app.baseURL').'CardAcquirer/pageOk',
+                "typeRid"=>"Sale Order Type Preauth_CVV",
+                "amount"=>$order_all->order_sum_total,
+                "currency"=>"RUB",
+                "consumer"=>[
+                    "ridByOwner"=>$order_all->customer->user_id,
+                    "name"=>$order_all->customer->user_name
+                ],
+                "srcPersonName"=>$order_all->customer?->user_name,
+                "srcEmail"=>$order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
+                "srcMobile" => $order_all->customer?->user_phone,
+            ]
+        ];
+
+        if( $enable_auto_cof ){
+            $request['order']['aut']=[
+                "purpose"=>"AddCard"
+            ];
+            $request['order']['hppCofCapturePurposes']=[
+                "Cit",
+                "Instalment",
+                "Recurring",
+                "PartialShipment",
+                "UnspecifiedMit",
+                "DelayedCharge"
+            ];
+            $next_start_time=time()+10*60;//10 min
+            $cof_refresh_task=[
+                'task_name'=>"Refresh CoFs of customer",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\AcquirerRncb','method'=>'cardRegisteredSync','arguments'=>[$order_all->customer->user_id]]
                     ],
-                    "srcPersonName"=>$order_all->customer?->user_name,
-                    "srcEmail"=>$order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
-                    "srcMobile" => $order_all->customer?->user_phone,
-                ]
+                'task_next_start_time'=>$next_start_time
             ];
-            $response=$this->apiExecute('order',$request);
-            if($response->errorCode??null){
-                pl(['Acquirer:linkGet',$order_all->order_id,$response]);
-            }
-            $orderData=(object)[
-                "payment_card_acq_rncb"=>1,
-                "payment_card_acq_order_id"=>$response->order->id,
-                "payment_card_acq_url"=>"{$response->order->hppUrl}?at={$response->order->accessToken}"
-                //"payment_card_fixate_id"=>$response->order->id,//notpayed yet
-            ];
-            $OrderModel->fieldUpdateAllow('order_data');
-            $OrderModel->itemDataUpdate($order_all->order_id,$orderData);
+            jobCreate($cof_refresh_task);
         }
+
+        $response=$this->apiExecute('order',$request);
+        if($response->errorCode??null){
+            pl(['Acquirer:linkGet',$order_all->order_id,$response]);
+        }
+        $orderData=(object)[
+            "payment_card_acq_rncb"=>1,
+            "payment_card_acq_order_id"=>$response->order->id,
+            "payment_card_acq_url"=>"{$response->order->hppUrl}?at={$response->order->accessToken}"
+        ];
+        $OrderModel->itemDataUpdate($order_all->order_id,$orderData);
+
         return $orderData->payment_card_acq_url;
     }
 
@@ -109,7 +127,7 @@ class AcquirerRncb{
             'order'=>[
                 "title"=>$orderTitle,
                 "description"=>$orderDescription,
-                "hppRedirectUrl"=>getenv('app.baseURL').'CardAcquirer/pageOk',
+                "hppRedirectUrl"=>getenv('app.backendUrl').'CardAcquirer/pageOk',
                 "typeRid"=>"CheckTokenViaPurchase",
                 "amount"=>1,
                 "currency"=>"RUB",
@@ -201,10 +219,10 @@ class AcquirerRncb{
         $OrderModel=model('OrderModel');
         $orderData=$OrderModel->itemDataGet($order_id);
 
-        if( !($orderData->payment_card_fixate_id??null) ){
+        if( !($orderData->payment_card_acq_order_id??null) ){
             return null;
         }
-        $function="order/{$orderData->payment_card_fixate_id}";
+        $function="order/{$orderData->payment_card_acq_order_id}";
         $response=$this->apiExecute($function,['orderDetailLevel'=>1],'GET');
         if($response->errorCode??null){
             pl(['Acquirer:statusGet',$response]);
@@ -239,7 +257,17 @@ class AcquirerRncb{
         //
     }
 
-
+    /**
+     * Gets status of payment and if payed applies to order
+     */
+    public function statusCheck( int $order_id ){
+        $payment_data=$this->statusGet( $order_id );
+        if( 'authorized'==$payment_data?->status ){
+            $OrderModel=model('OrderModel');
+            return $OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $payment_data, false );
+        }
+        return 'order_not_payed';
+    }
 
     public function pay( object $order_all ){
         $OrderModel=model('OrderModel');
@@ -252,7 +280,7 @@ class AcquirerRncb{
         if( !($CoF->card_remote_id??null) ){
             return "error_nocof";
         }
-        if( !($orderData->payment_card_fixate_id??null) ){
+        if( !($orderData->payment_card_acq_order_id??null) ){
             //Creating new cof order
             $request=[
                 'order'=>[
@@ -333,9 +361,6 @@ class AcquirerRncb{
         return 'error';
     }
 
-
-
-
     /**
      * Confirmes previously preauthorized bill/order
      */
@@ -370,18 +395,14 @@ class AcquirerRncb{
      * Refunds Full Sum previously preauthorized bill/order
      */
     public function refund( int $docId, float $sum, bool $isFull=false ){
-        if( !$isFull ){
-            /**
-             * For this acquirer partial refunds are not necessarry
-             */
-            return (object)[
-                'billNumber'=>'not_aplicable'
-            ];
+        $voidKind="Partial";
+        if( $isFull ){
+            $voidKind="Full";
         }
         $request=[
             "tran"=>[
                 "phase"=>"Auth",
-                "voidKind"=>"Full",
+                "voidKind"=>$voidKind,
                 "amount"=>$sum
             ]
         ];

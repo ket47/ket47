@@ -74,7 +74,7 @@ class OrderTransactionModel extends TransactionModel{
         $order_data_update=(object)[
             'finalize_refund_done'=>1
         ];
-        if($refundSum!=0){
+        if($refundSum>0){
             $acquirer_data=$Acquirer->refund($fixationId,$refundSum,$refundIsFull);
             if( !$acquirer_data ){//connection error need to repeat
                 return false;

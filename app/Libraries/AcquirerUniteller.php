@@ -160,7 +160,17 @@ class AcquirerUniteller{
             'needConfirm'=>$response[6],
         ];
     }
-
+    /**
+     * Gets status of payment and if payed applies to order
+     */
+    public function statusCheck( int $order_id ){
+        $payment_data=$this->statusGet( $order_id );
+        if( 'authorized'==$payment_data?->status ){
+            $OrderModel=model('OrderModel');
+            return $OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $payment_data, false );
+        }
+        return 'order_not_payed';
+    }
     public function statusParse($request){
         $order_id=$request->getVar('Order_ID');
         $status=$request->getVar('Status');

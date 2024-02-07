@@ -108,11 +108,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
     ///////////////////////////////////////////////////////////////////////
     
     public function paymentLinkGet(){
-        $order_id=$this->request->getVar('order_id');
-        $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_id,'beforepayment');
+        $order_id=$this->request->getPost('order_id');
+        $enable_auto_cof=$this->request->getPost('enable_auto_cof');
 
-        if( isset($paymentStatus->status) && $paymentStatus->status=='Authorized' ){
+        $Acquirer=\Config\Services::acquirer();
+        $isAlreadyPayed=$Acquirer->statusCheck( $order_id );
+        if( 'ok'==$isAlreadyPayed ){//order is already payed and started
             return $this->fail('already_payed');
         }
         $result=$this->orderValidate($order_id);
@@ -121,15 +122,23 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
-
+        $orderData=$OrderModel->itemDataGet($order_id);
+        /**
+         * If link was created within timeout then reuse it.
+         * Otherwise create new order on acq
+         */
+        if( ($orderData->await_payment_until??0)>time() && ($orderData->payment_card_acq_url??null) ){
+            return $orderData->payment_card_acq_url;
+        }
+        $paymentLink=$Acquirer->linkGet($order_all,$enable_auto_cof);
         $await_payment_timeout=time()+10*60;//10min
         $OrderModel->itemDataUpdate($order_id,(object)['await_payment_until'=>$await_payment_timeout]);
-        return $Acquirer->linkGet($order_all);
+        return $paymentLink;
     }
 
     public function paymentDo(){
-        $order_id=$this->request->getVar('order_id');
-        $card_id=$this->request->getVar('card_id');
+        $order_id=$this->request->getPost('order_id');
+        $card_id=$this->request->getPost('card_id');
         $result=$this->orderValidate($order_id);
         if( $result!='ok' ){
             return $this->fail($result);
@@ -201,7 +210,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $result;
     }
 
-    public function cardRegisteredActivate(){
+    public function cardRegisteredSync(){
         $user_id=session()->get('user_id');
         if( !($user_id>0) ){
             return $this->failForbidden('forbidden');

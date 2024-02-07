@@ -14,11 +14,7 @@ class AcquirerUnitellerMock{
     }
     public function statusGet($order_id_full,$mode=null){
         list($order_id)=explode('-',$order_id_full);
-        if( str_contains($order_id_full,'s') ){//is shipping
-            $OrderModel=model('ShipmentModel');
-        } else {
-            $OrderModel=model('OrderModel');
-        }
+        $OrderModel=model('OrderModel');
         $order=$OrderModel->itemGet($order_id,'basic');
         $order_data=$OrderModel->itemDataGet($order_id);
         $balance=$order_data->payment_card_confirm_sum??$order_data->payment_card_fixate_sum??$order->order_sum_total;
@@ -38,6 +34,12 @@ class AcquirerUnitellerMock{
             'approvalCode'=>000,
             'needConfirm'=>1
         ];
+    }
+    /**
+     * Gets status of payment and if payed applies to order
+     */
+    public function statusCheck( int $order_id ){
+        return 'idle';
     }
 
     public function confirm(int $billNumber,$sum){

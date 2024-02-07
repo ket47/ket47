@@ -624,7 +624,6 @@ class CourierModel extends Model{
      */
     public function listNotify( $new_job ){
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
-        ql($this);
         if( !$ready_courier_list ){
             return false;
         }

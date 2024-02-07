@@ -251,18 +251,6 @@ class OrderStageScript{
     }
     
     public function onCustomerCart($order_id){
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        if( $OrderGroupMemberModel->isMemberOf($order_id,'customer_confirmed') ){
-            $Acquirer=\Config\Services::acquirer();
-            $incomingStatus=$Acquirer->statusGet($order_id);
-            $orderData=$this->OrderModel->itemDataGet($order_id);
-            if( in_array(strtolower($incomingStatus?->status),['authorized','paid']) || ($orderData->payment_card_fixate_id??null) ){
-                return 'already_payed';//already payed so refuse to reset to cart
-            }
-            if( $this->isAwaitingPayment($order_id) ){
-                return 'awaiting_payment';
-            }
-        }
         $EntryModel=model('EntryModel');
         $EntryModel->listStockMove($order_id,'free');
         return 'ok';
@@ -296,9 +284,37 @@ class OrderStageScript{
         }
         return false;
     }
-    
+
+    /**
+     * offCustomerConfirmed
+     * 
+     * before exit customer confirmed stage check if card_payment is done
+     * if so reject passing to cart
+     * 
+     */
+    public function offCustomerConfirmed( $order_id, $stage_next ){
+        if( $stage_next=='customer_cart' ){
+            /**
+             * Checking if payment is done. Add stage customer_payed_card
+             */
+            $Acquirer=\Config\Services::acquirer();
+            $result=$Acquirer->statusCheck( $order_id );
+            if( $result!='order_not_payed' ){
+                return 'already_payed';
+            }
+            /**
+             * Payment HPP may still be open so reject reset to cart
+             */
+            if( $this->isAwaitingPayment($order_id) ){
+                return 'awaiting_payment';
+            }
+        }
+        return 'ok';
+    }
+
+
     public function onCustomerConfirmed( $order_id ){
-        $order=$this->OrderModel->itemGet( $order_id, 'basic' );
+        //$order=$this->OrderModel->itemGet( $order_id, 'basic' );
         ////////////////////////////////////////////////
         //STOCK RESERVE SECTION
         ////////////////////////////////////////////////
@@ -313,7 +329,7 @@ class OrderStageScript{
             'order_sum_product'=>$order_sum_product
         ]);
         ////////////////////////////////////////////////
-        //RESET SECTION
+        //AUTORESET SECTION
         ////////////////////////////////////////////////
         $PrefModel=model('PrefModel');
         $timeout_min=$PrefModel->itemGet('customer_confirmed_timeout_min','pref_value',0);
