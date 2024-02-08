@@ -222,6 +222,10 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+    
+    public function cardRegisteredActivate(){
+        return $this->cardRegisteredSync();
+    }
 
     private function paymentIsDone( $order_id ){
         $OrderGroupMemberModel=model('OrderGroupMemberModel');

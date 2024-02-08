@@ -78,9 +78,9 @@ trait OrderStageTrait{
         if($order->stage_current==$stage){
             return 'ok';
         }
-        $handled=$this->itemStageOffHandle( $order_id,  $stage, $order->stage_current, $data );
-        if( 'ok'!=$handled ){
-            return $handled;
+        $offHandled=$this->itemStageOffHandle( $order_id,  $stage, $order->stage_current, $data );
+        if( 'ok'!=$offHandled ){
+            return $offHandled;
         }
         $OrderGroupModel=model('OrderGroupModel');
         $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
