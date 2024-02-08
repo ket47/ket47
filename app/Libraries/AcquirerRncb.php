@@ -208,7 +208,6 @@ class AcquirerRncb{
             return 'notfound';
         }
         $response=$this->apiExecute('consumer',(array)$consumerCards,'PUT');
-        pl(['Acquirer:cardRegisteredRemove',$consumerCards,$response]);
         return 'ok';
     }
 

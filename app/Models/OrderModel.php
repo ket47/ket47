@@ -355,7 +355,7 @@ class OrderModel extends SecureModel{
         }
         if($filter['order_group_type']??null){
             if($filter['order_group_type']=='active_only'){
-                $user_id=session()->get('user_id');
+                //$user_id=session()->get('user_id');
                 $this->where('ogl.group_type<>','system_finish');
                 //$this->where("`ogl`.`group_type`='customer_cart' AND order_list.owner_id='$user_id' OR `ogl`.`group_type`<>'customer_cart'");
                 $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
@@ -374,7 +374,7 @@ class OrderModel extends SecureModel{
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->join('store_list sl',"store_id=order_store_id",'left');
 
-        $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total,{$this->table}.is_shipment");
+        $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total,{$this->table}.is_shipment,{$this->table}.order_data->>'$.order_is_canceled' is_canceled");
         $this->select("group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
