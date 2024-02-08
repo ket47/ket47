@@ -99,6 +99,9 @@ class Product extends \App\Controllers\BaseController{
     
     public function itemUpdate(){
         $data= $this->request->getJSON();
+        if( !$data ){
+            return $this->fail('empty');
+        }
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdate($data);
         if( $result==='ok' ){

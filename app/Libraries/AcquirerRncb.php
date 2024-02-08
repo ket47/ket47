@@ -46,7 +46,7 @@ class AcquirerRncb{
         return json_decode($result);
     }
 
-    public function linkGet( object $order_all, bool $enable_auto_cof=false ){
+    public function linkGet( object $order_all, $enable_auto_cof=false ){
         $orderTitle="Заказ #{$order_all->order_id}";
         $orderDescription="Оплата на tezkel.com";
 

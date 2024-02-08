@@ -37,10 +37,8 @@ class Services extends BaseService
 		if( getenv('test.acquirerMock')==1 ){
 			return new \App\Libraries\AcquirerUnitellerMock();
 		}
-		//if( sudo() ){
-			return new \App\Libraries\AcquirerRncb();
-		//}
-	    //return new \App\Libraries\AcquirerUniteller();
+		//return new \App\Libraries\AcquirerRncb();
+	    return new \App\Libraries\AcquirerUniteller();
 	}
 
 	public static function cashier($getShared = true){
