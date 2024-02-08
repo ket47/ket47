@@ -50,7 +50,7 @@ class User extends \App\Controllers\BaseController{
                 'vapidKey'=>getenv('firebase.vapidKey'),
             ],
             'other'=>[
-                'recurrentPaymentAllow'=>sudo()?1:0,
+                'recurrentPaymentAllow'=>1//sudo()?1:0,
             ]
         ];
         return $this->respond($settings);
