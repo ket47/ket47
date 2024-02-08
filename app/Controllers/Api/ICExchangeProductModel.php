@@ -15,6 +15,9 @@ class ICExchangeProductModel extends Model{
         $this->ProductModel->transCommit();
     }
 
+    private $store_exceptions=[
+        '99'=>'351455e8-d625-11ea-aa68-e4aaeab6caae'
+    ];
     private $unit_dict=[
         'Штука'=>'шт',
         'Штук'=>'шт',
@@ -57,6 +60,13 @@ class ICExchangeProductModel extends Model{
 
         if($existing_product){
             $product_quantity=isset($xml_product->Количество)?(float)$xml_product->Количество:0;
+            if(isset($xml_product->Склад)){
+                foreach($xml_product->Склад as $store_xml){
+                    if($store_xml['ИдСклада'] == $this->store_exceptions[$holder_id]){
+                        $product_quantity = $store_xml['КоличествоНаСкладе'];
+                    }
+                }
+            }
             $product_price=isset($xml_product->Цены->Цена->ЦенаЗаЕдиницу)?(float)$xml_product->Цены->Цена->ЦенаЗаЕдиницу:0;
             $updated_product=(object)[
                 'product_id'=>$existing_product->product_id,
