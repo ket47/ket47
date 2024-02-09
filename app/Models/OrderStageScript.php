@@ -447,7 +447,7 @@ class OrderStageScript{
         ];
         jobCreate($stage_reset_task);
         ///////////////////////////////////////////////////
-        //LOCKING PROMOUTION
+        //LOCKING PROMOTION
         ///////////////////////////////////////////////////
         $PromoModel=model('PromoModel');
         $PromoModel->itemOrderDisable($order_id,1);
@@ -463,27 +463,32 @@ class OrderStageScript{
             'store'=>$store,
             'customer'=>$customer
         ];
-        $store_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'message_data'=>(object)[
-                'sound'=>'long.wav'
-            ],
-            'telegram_options'=>[
-                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
-            ],
-            'template'=>'messages/order/on_customer_start_STORE_sms.php',
-            'context'=>$context
-        ];
-        $store_email=(object)[
-            'message_transport'=>'email',
-            //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'message_reciever_email'=>$store->store_email,
-            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_start_STORE_email.php',
-            'context'=>$context
-        ];
 
+        if( ($order_data->delivery_by_courier??0)==0 ){
+            $store_sms=(object)[
+                'message_transport'=>'message',
+                'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+                'message_data'=>(object)[
+                    'sound'=>'long.wav'
+                ],
+                'telegram_options'=>[
+                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+                ],
+                'template'=>'messages/order/on_customer_start_STORE_sms.php',
+                'context'=>$context
+            ];
+            $store_email=(object)[
+                'message_transport'=>'email',
+                //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+                'message_reciever_email'=>$store->store_email,
+                'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+                'template'=>'messages/order/on_customer_start_STORE_email.php',
+                'context'=>$context
+            ];
+        } else {
+            $store_sms=(object)[];
+            $store_email=(object)[];
+        }
 
 
 
@@ -1048,16 +1053,52 @@ class OrderStageScript{
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
-        $store_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'template'=>'messages/order/on_delivery_found_STORE_sms.php',
-            'context'=>$context
+        // $store_sms=(object)[
+        //     'message_transport'=>'message',
+        //     'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+        //     'template'=>'messages/order/on_delivery_found_STORE_sms.php',
+        //     'context'=>$context
+        // ];
+
+        $store=$StoreModel->itemGet($order->order_store_id);
+        $context=[
+            'order'=>$order,
+            'store'=>$store,
         ];
+
+
+
+
+
+
+            $store_sms=(object)[
+                'message_transport'=>'message',
+                'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+                'message_data'=>(object)[
+                    'sound'=>'long.wav'
+                ],
+                'telegram_options'=>[
+                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+                ],
+                'template'=>'messages/order/on_customer_start_STORE_sms.php',
+                'context'=>$context
+            ];
+            $store_email=(object)[
+                'message_transport'=>'email',
+                //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+                'message_reciever_email'=>$store->store_email,
+                'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+                'template'=>'messages/order/on_customer_start_STORE_email.php',
+                'context'=>$context
+            ];
+
+
+
+
         $notification_task=[
             'task_name'=>"delivery_found Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms,$store_email]]]
                 ]
         ];
         jobCreate($notification_task);

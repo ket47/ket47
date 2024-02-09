@@ -21,8 +21,10 @@ class MetricModel extends Model{
     protected $updatedField=    'updated_at';
     
     
-    public function itemGet( int $metric_id ){
-        $this->permitWhere('r');
+    public function itemGet( int $metric_id=null ){
+        if( !$metric_id ){
+            return null;
+        }
         $this->where('metric_id',$metric_id);
         $this->join('metric_media_list','come_media_id=media_tag','left');
         $this->select('come_referrer,COALESCE(media_name,come_media_id) come_media,device_platform');

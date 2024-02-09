@@ -372,7 +372,7 @@ class UserModel extends Model{
         $admin_sms=(object)[
             'message_reciever_id'=>-100,
             'message_transport'=>'telegram',
-            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared {$media->come_media} {$media->device_platform} {$media->come_referrer}",
+            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared {$media?->come_media} {$media?->device_platform} {$media?->come_referrer}",
             'telegram_options'=>[
                 'opts'=>[
                     'disable_notification'=>1
