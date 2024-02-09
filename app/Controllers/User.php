@@ -151,18 +151,19 @@ class User extends \App\Controllers\BaseController{
     //LOGIN SECTION
     /////////////////////////////////////////////
     public function signUp() {
-        $user_phone=$this->request->getVar('user_phone');
-        $user_name=$this->request->getVar('user_name');
-        $user_pass=$this->request->getVar('user_pass');
-        $user_pass_confirm=$this->request->getVar('user_pass_confirm');
-        $user_email=$this->request->getVar('user_email');
-        $inviter_user_id=$this->request->getVar('inviter_user_id');
+        $user_phone=$this->request->getPost('user_phone');
+        $user_name=$this->request->getPost('user_name');
+        $user_pass=$this->request->getPost('user_pass');
+        $user_pass_confirm=$this->request->getPost('user_pass_confirm');
+        $user_email=$this->request->getPost('user_email');
+        $inviter_user_id=$this->request->getPost('inviter_user_id');
+        $metric_id=$this->request->getPost('metric_id');
         $this->signOut();
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
 
-        $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email);
+        $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email,$metric_id);
         if( $new_user_id=='user_phone_unverified' ){
             return $this->failForbidden('user_phone_unverified');
         }
@@ -179,8 +180,8 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function signIn(){
-        $user_phone=$this->request->getVar('user_phone');
-        $user_pass=$this->request->getVar('user_pass');
+        $user_phone=$this->request->getPost('user_phone');
+        $user_pass=$this->request->getPost('user_pass');
         if( !$user_phone || !$user_pass ){
             return $this->fail('empty_phone_or_pass');
         }

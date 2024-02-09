@@ -322,7 +322,7 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email){
+    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email,$metric_id){
         if( $this->getUnverifiedUserIdByPhone($user_phone_cleared) ){
             return 'user_phone_unverified';
         }
@@ -365,7 +365,7 @@ class UserModel extends Model{
         $admin_sms=(object)[
             'message_reciever_id'=>-100,
             'message_transport'=>'telegram',
-            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared",
+            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared ($metric_id)",
             'telegram_options'=>[
                 'opts'=>[
                     'disable_notification'=>1
