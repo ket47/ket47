@@ -362,10 +362,17 @@ class UserModel extends Model{
             'template'=>'messages/signup_welcome_sms.php',
             'context'=>$user_data
         ];
+
+        $MetricModel=model('MetricModel');
+        $media=$MetricModel->itemGet($metric_id);
+
+
+
+
         $admin_sms=(object)[
             'message_reciever_id'=>-100,
             'message_transport'=>'telegram',
-            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared ($metric_id)",
+            'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared {$media->come_media} {$media->device_platform} {$media->come_referrer}",
             'telegram_options'=>[
                 'opts'=>[
                     'disable_notification'=>1
