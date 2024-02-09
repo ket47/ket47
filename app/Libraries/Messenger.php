@@ -13,6 +13,9 @@ class Messenger{
     }
    
     public function itemSendMulticast( $message ){
+        if( !$message ){
+            return false;
+        }
         if( isset($message->message_reciever_id) ){
             $multiple_recievers=explode(',',$message->message_reciever_id);
             if( count($multiple_recievers)>1 ){

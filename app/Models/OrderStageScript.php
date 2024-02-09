@@ -486,8 +486,8 @@ class OrderStageScript{
                 'context'=>$context
             ];
         } else {
-            $store_sms=(object)[];
-            $store_email=(object)[];
+            $store_sms=null;
+            $store_email=null;
         }
 
 

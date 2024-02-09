@@ -375,7 +375,8 @@ class UserModel extends Model{
             'message_text'=>"Новый пользователь: $user_name +$user_phone_cleared {$media?->come_media} {$media?->device_platform} {$media?->come_referrer}",
             'telegram_options'=>[
                 'opts'=>[
-                    'disable_notification'=>1
+                    'disable_notification'=>1,
+                    'disable_web_page_preview'=>1,
                 ]
             ]
         ];
