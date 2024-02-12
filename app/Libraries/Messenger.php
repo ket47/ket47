@@ -169,7 +169,7 @@ class Messenger{
         $MessageSubModel->where('sub_user_id',$user_id);
         $MessageSubModel->orderBy("sub_type='push'","DESC");
         $MessageSubModel->orderBy("created_at","DESC");
-        $MessageSubModel->limit(1);
+        $MessageSubModel->limit(3);
         $rows=$MessageSubModel->get()->getResult();
         if(!$rows){
             return [];

@@ -201,8 +201,6 @@ class CourierModel extends Model{
 
                 $this->itemNotify($courier);
 
-
-
                 // $notify_of_waiting_jobs_task=[
                 //     'task_name'=>"notify_of_waiting_jobs_task",
                 //     'task_programm'=>[
@@ -613,7 +611,7 @@ class CourierModel extends Model{
                 'courier'=>$courier
             ];
         }
-        $transport="telegram";
+        $transport="telegram,push";
         return $this->listNotifyCreate($context_list,$transport);
     }
     
@@ -648,6 +646,7 @@ class CourierModel extends Model{
      */
 
     private function listNotifyCreate( array $context_list, string $transport='telegram' ){
+
         $notification_time_gap=0;//3min between notifications
         $notification_index=0;
         foreach($context_list as $context){
@@ -662,7 +661,7 @@ class CourierModel extends Model{
                             'title'=>'🚀 Новое задание',
                             'body'=>$message_text,
                             'link'=>getenv('app.frontendUrl').'order/order-list',
-                            'sound'=>'short.wav'
+                            'sound'=>'long.wav'
                         ],
                         'telegram_options'=>[
                             'buttons'=>[['',"onCourierJobStart-{$context['order']->order_id}",'🚀 Взять задание']],

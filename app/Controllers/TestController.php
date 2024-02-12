@@ -73,78 +73,95 @@ class TestController extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
-    private $order_id=4880;
-    public function rncbLink(){
-        $OrderModel=model('OrderModel');
+    // private $order_id=4880;
+    // public function rncbLink(){
+    //     $OrderModel=model('OrderModel');
 
-        $order_all=$OrderModel->itemGet($this->order_id);
-        $Acquirer=\Config\Services::acquirer();
-        $link=$Acquirer->linkGet($order_all);
-        header("Location: $link");
-    }
+    //     $order_all=$OrderModel->itemGet($this->order_id);
+    //     $Acquirer=\Config\Services::acquirer();
+    //     $link=$Acquirer->linkGet($order_all);
+    //     header("Location: $link");
+    // }
 
-    public function rncbStatus(){
-        $OrderModel=model('OrderModel');
+    // public function rncbStatus(){
+    //     $OrderModel=model('OrderModel');
 
-        $order_all=$OrderModel->itemGet($this->order_id);
-        $Acquirer=\Config\Services::acquirer();
-        $paymentStatus=$Acquirer->statusGet($order_all->order_id);
-        return $this->respond($paymentStatus);
-    }
-
-
-    public function rncbDo(){
-        $OrderModel=model('OrderModel');
-        $order_data=$OrderModel->itemDataGet($this->order_id);
-
-        $order_sum=(float)$order_data->payment_card_fixate_sum;
-        $refund=(float)105;
-        $confirm=$order_sum-$refund;
-
-        $isFullRefund=($refund==$order_sum)?1:0;
-        $isFullConfirm=($confirm==$order_sum)?1:0;
+    //     $order_all=$OrderModel->itemGet($this->order_id);
+    //     $Acquirer=\Config\Services::acquirer();
+    //     $paymentStatus=$Acquirer->statusGet($order_all->order_id);
+    //     return $this->respond($paymentStatus);
+    // }
 
 
-        $Acquirer=\Config\Services::acquirer();
-        $ref=$Acquirer->refund($order_data->payment_card_fixate_id,$refund,$isFullRefund);
-        $con=$Acquirer->confirm($order_data->payment_card_fixate_id,$order_sum-$refund);
+    // public function rncbDo(){
+    //     $OrderModel=model('OrderModel');
+    //     $order_data=$OrderModel->itemDataGet($this->order_id);
 
-        $paymentStatus=$Acquirer->statusGet($this->order_id);
-        p([$ref,$con,$paymentStatus,]);
-    }
+    //     $order_sum=(float)$order_data->payment_card_fixate_sum;
+    //     $refund=(float)105;
+    //     $confirm=$order_sum-$refund;
 
-
-    public function rncbPay(){
-        $OrderModel=model('OrderModel');
-        $order_all=$OrderModel->itemGet($this->order_id);
-
-        $order_sum=(float)50000;$order_all->order_sum_total;
-        $refund=(float)405;
-        $confirm=$order_sum-$refund;
-
-        $isFullRefund=($refund==$order_sum)?1:0;
-        $isFullConfirm=($confirm==$order_sum)?1:0;
-
-        $Acquirer=new \App\Libraries\AcquirerRncb();
-
-        $orderData=(object)[
-            "payment_card_fixate_id"=>null,
-        ];
-        $OrderModel->fieldUpdateAllow('order_data');
-        $OrderModel->itemDataUpdate($order_all->order_id,$orderData);
+    //     $isFullRefund=($refund==$order_sum)?1:0;
+    //     $isFullConfirm=($confirm==$order_sum)?1:0;
 
 
+    //     $Acquirer=\Config\Services::acquirer();
+    //     $ref=$Acquirer->refund($order_data->payment_card_fixate_id,$refund,$isFullRefund);
+    //     $con=$Acquirer->confirm($order_data->payment_card_fixate_id,$order_sum-$refund);
 
-        $auth=$Acquirer->pay($order_all);
-        if( $auth!='ok' ){
-            return $this->fail($auth);
+    //     $paymentStatus=$Acquirer->statusGet($this->order_id);
+    //     p([$ref,$con,$paymentStatus,]);
+    // }
+
+
+    // public function rncbPay(){
+    //     $OrderModel=model('OrderModel');
+    //     $order_all=$OrderModel->itemGet($this->order_id);
+
+    //     $order_sum=(float)50000;$order_all->order_sum_total;
+    //     $refund=(float)405;
+    //     $confirm=$order_sum-$refund;
+
+    //     $isFullRefund=($refund==$order_sum)?1:0;
+    //     $isFullConfirm=($confirm==$order_sum)?1:0;
+
+    //     $Acquirer=new \App\Libraries\AcquirerRncb();
+
+    //     $orderData=(object)[
+    //         "payment_card_fixate_id"=>null,
+    //     ];
+    //     $OrderModel->fieldUpdateAllow('order_data');
+    //     $OrderModel->itemDataUpdate($order_all->order_id,$orderData);
+
+
+
+    //     $auth=$Acquirer->pay($order_all);
+    //     if( $auth!='ok' ){
+    //         return $this->fail($auth);
+    //     }
+    //     $order_data=$OrderModel->itemDataGet($this->order_id);
+
+    //     $ref=$Acquirer->refund($order_data->payment_card_fixate_id,$refund,$isFullRefund);
+    //     $con=$Acquirer->confirm($order_data->payment_card_fixate_id,$order_sum-$refund);
+
+    //     $paymentStatus=$Acquirer->statusGet($this->order_id);
+    //     p([$auth,$ref,$con,$paymentStatus,]);
+    // }
+
+        public function courierTest(){
+            $order_id=4943;
+            $order_courier_id=12;
+
+            $OrderGroupMemberModel=model('OrderGroupMemberModel');
+            $OrderModel=model('OrderModel');
+            $CourierModel=model('CourierModel');
+
+            $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+
+            $OrderModel->itemStageAdd($order_id,'delivery_search');
+
+            $CourierModel->itemUpdateStatus($order_courier_id,'ready');
         }
-        $order_data=$OrderModel->itemDataGet($this->order_id);
 
-        $ref=$Acquirer->refund($order_data->payment_card_fixate_id,$refund,$isFullRefund);
-        $con=$Acquirer->confirm($order_data->payment_card_fixate_id,$order_sum-$refund);
 
-        $paymentStatus=$Acquirer->statusGet($this->order_id);
-        p([$auth,$ref,$con,$paymentStatus,]);
-    }
 }
