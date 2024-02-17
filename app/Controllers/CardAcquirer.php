@@ -223,6 +223,15 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
     
+    
+    public function cardRegisterLinkGet(){
+        return $this->cardRegisteredLinkGet();
+    }
+    
+    public function cardRegisterActivate(){
+        return $this->cardRegisteredSync();
+    }
+    
     public function cardRegisteredActivate(){
         return $this->cardRegisteredSync();
     }

@@ -4,7 +4,7 @@ namespace App\Controllers\Api;
 
 class ICExchange extends \App\Controllers\BaseController
 {
-    private $max_product_count=150;
+    private $max_product_count=500;
     private $max_exec_time=300;
     private $start_time=0;
     private $filename_subfolder;
