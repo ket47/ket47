@@ -67,21 +67,10 @@ class Task extends \App\Controllers\BaseController{
         }
     }
 
-    // private function timedJobCheck($predis){
-    //     $timer=$predis->get('cronjobtimer');
-    //     if($timer){//time not came
-    //         echo "\ntimedJobCheck skipping: $timer";
-    //         return false;
-    //     }
-    //     echo "\nTimed Jobs will execute:";
-    //     $this->timedJobDo();
-    //     $predis->setEx('cronjobtimer',$this->timedJobInterval,1);
-    //     return true;
-    // }
-
     private function timedJobDo($predis){
         $this->taskPurge($predis);
         $this->taskShiftClose($predis);
+        //$this->taskCourierNotify($predis);
     }
 
     private function taskPurge($predis){
@@ -114,7 +103,15 @@ class Task extends \App\Controllers\BaseController{
         $UserModel->systemUserLogout();
     }
 
-
+    private function taskCourierNotify($predis){
+        $timerNotExpired=$predis->get('couriernotifytimer');
+        if( $timerNotExpired ){
+            return false;
+        }
+        $predis->setEx('couriernotifytimer',5*60,1);//5 min
+        $DeliveryJobModel=model("DeliveryJobModel");
+        $DeliveryJobModel->itemAvailableNotify();
+    }
 
 
 

@@ -337,13 +337,13 @@ class ProductModel extends Model{
                 $this->where('validity>','50');
             }
         }
-        $this->filterMake( $filter );
-        $this->permitWhere('r');
         //if( !($filter['order']??0) ){
-            $this->orderBy("image_hash",'DESC');
+            $this->orderBy("validity",'DESC');
             $this->orderBy("{$this->table}.updated_at",'DESC');
             $this->orderBy("product_final_price<>product_price",'DESC',false);
         //}
+        $this->filterMake( $filter );
+        $this->permitWhere('r');
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("product_list.*,image_hash,group_id");
@@ -352,7 +352,7 @@ class ProductModel extends Model{
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $product_list= $this->get()->getResult();
 
-        ql($this);
+        //ql($this);
         foreach($product_list as $product){
             if($product->product_parent_id==$product->product_id){
                 $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");

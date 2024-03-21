@@ -57,7 +57,7 @@ class Messenger{
         if( $ok ){
             return $ok;
         }
-        log_message('error', "Sending error ($message->message_transport). Cant send message:". json_encode($message->reciever));
+        //log_message('error', "Sending error ($message->message_transport). Cant send message:". json_encode($message->reciever));
     }
     
     private $reciever_cache=null;

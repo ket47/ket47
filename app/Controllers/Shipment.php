@@ -231,7 +231,7 @@ class Shipment extends \App\Controllers\BaseController{
         }
         if( getenv('rncb.recurrentAllow') ){
             $UserCardModel=model('UserCardModel');
-            $data->bankCard=$UserCardModel->itemMainGet();
+            $data->bankCard=$UserCardModel->itemMainGet($order->owner_id);
         }
         $data->validUntil=time()+10*60;//10 min
         return $data;
@@ -263,9 +263,12 @@ class Shipment extends \App\Controllers\BaseController{
         }
         $bulkResponse->order=$order;
         if( $with_arrival_range || $bulkResponse->routePlan->start_plan_mode=='scheduled' ){
-            $finish_plan=$bulkResponse->routePlan->start_plan+$bulkResponse->routePlan->finish_arrival;
+            /**
+             * For shipment it is more logical to use start_plan instead of finish_plan
+             */
+            $start_plan=$bulkResponse->routePlan->start_plan;//+$bulkResponse->routePlan->finish_arrival;
             $DeliveryJobModel=model('DeliveryJobModel');
-            $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($finish_plan);
+            $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($start_plan);
         }
         return $this->respond($bulkResponse);
     }
@@ -301,7 +304,7 @@ class Shipment extends \App\Controllers\BaseController{
             }    
         }
         /**
-         * Here we controlling if user selected options are valid
+         * Here we are controlling if user selected options are valid
          */
         $deliveryOption=null;
         foreach($checkoutData->deliveryOptions as $opt){
@@ -345,22 +348,37 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data->delivery_heavy_bonus=$deliveryOption->deliveryHeavyBonus;
         $order->order_sum_delivery=$deliveryOption->deliverySum;
         $OrderModel->fieldUpdateAllow('order_sum_delivery');
-
-        //START PLAN AND MODE
-        $order_data->start_plan=$checkoutData->routePlan->start_plan;
-        $order_data->start_plan_mode=$checkoutData->routePlan->start_plan_mode;//inited | awaited | scheduled 
-        if( $checkoutSettings->deliveryFinishScheduled ){
-            $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
-            //if scheduled time is lesser than start_plan use start_plan
-            $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
-            $order_data->start_plan_mode='scheduled';
-            $order_data->finish_arrival=$checkoutData->routePlan->finish_arrival;
-        }
-
+        
         //LOCATIONS DATA (SAVING IN DATA TO NOT AFFECT BY DELETION BY USER)
         $LocationModel=model('LocationModel');
         $order_data->location_start=$LocationModel->itemGet($order->order_start_location_id,'all');
         $order_data->location_finish=$LocationModel->itemGet($order->order_finish_location_id,'all');   
+
+        //DELIVERY JOB SETUP
+        $order_data->start_plan=$checkoutData->routePlan->start_plan;
+        $order_data->start_plan_mode=$checkoutData->routePlan->start_plan_mode;//inited | awaited | scheduled 
+        if( $checkoutSettings->deliveryFinishScheduled ){
+            //if scheduled time is lesser than start_plan use start_plan
+            $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+            /**
+             * finish_plan_scheduled must be saved in order_data to show in order view
+             */
+            $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
+            $order_data->start_plan_mode='scheduled';
+        }
+        $order_data->delivery_job=(object)[
+            'job_name'=>'Вызов курьера',
+            'start_plan'=>$order_data->start_plan,
+            'start_prep_time'=>null,
+            
+            'start_longitude'=>$order_data->location_start->location_longitude,
+            'start_latitude'=>$order_data->location_start->location_latitude,
+            'start_address'=>$order_data->location_start->location_address,
+            'finish_longitude'=>$order_data->location_finish->location_longitude,
+            'finish_latitude'=>$order_data->location_finish->location_latitude,
+            'finish_address'=>$order_data->location_finish->location_address,
+        ];
+
 
         //SAVING CHECKOUT DATA
         $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);

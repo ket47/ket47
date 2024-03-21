@@ -85,7 +85,7 @@ class OrderModel extends SecureModel{
         $EntryModel=model('EntryModel');
         $UserModel=model('UserModel');
 
-        $OrderGroupMemberModel->orderBy('order_group_member_list.created_at DESC,link_id DESC');
+        $OrderGroupMemberModel->orderBy('link_id DESC');//order_group_member_list.created_at DESC,
         $UserModel->select('user_id,user_name,user_phone,user_email');
         $order->stage_next= $this->itemStageNextGet($order_id,$order->stage_current,$order->user_role);
         $order->stages=     $OrderGroupMemberModel->memberOfGroupsListGet($order->order_id);

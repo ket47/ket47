@@ -39,7 +39,7 @@ trait OrderStageTrait{
         if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
             return 'ok';
         }
-        //pl([$this->ScriptLibraryName,"current: $order->stage_current","tried:$stage",'allowed next stages:',$next_stages]);
+        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried:$stage",'allowed next stages:',$next_stages]);
         return 'invalid_next_stage';
     }
 
@@ -67,10 +67,59 @@ trait OrderStageTrait{
      * Now this system works on on stage handler
      * This should be rewrited as onStageHandler and offStageHandler
      */
-    private $itemStageUnconfirmedGroupId=null;
-    private $itemStageUnconfirmedOrderId=null;
+    // private $itemStageUnconfirmedGroupId=null;
+    // private $itemStageUnconfirmedOrderId=null;
+    // public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
+    //     $this->itemStageConfirm();//confirms previous stage if any
+    //     $order=$this->itemGet( $order_id, 'basic' );
+    //     if( !is_object($order) ){
+    //         return $order;
+    //     }
+    //     if($order->stage_current==$stage){
+    //         return 'ok';
+    //     }
+    //     $offHandled=$this->itemStageOffHandle( $order_id,  $stage, $order->stage_current, $data );
+    //     if( 'ok'!=$offHandled ){
+    //         return $offHandled;
+    //     }
+    //     $OrderGroupModel=model('OrderGroupModel');
+    //     $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
+    //     $result=$this->itemStageValidate($stage,$order,$this->itemStageUnconfirmedGroupId);
+    //     if( $result!=='ok' ){
+    //         return $result;
+    //     }
+    //     if( $check_permission ){
+    //         $this->permitWhere('w');
+    //     }
+
+    //     $this->itemStageUnconfirmedOrderId=$order_id;
+    //     $this->transBegin();
+    //         $handled=$this->itemStageHandle( $order_id, $stage, $data );
+    //         if($handled==='ok'){
+    //             $this->itemStageConfirm();
+    //         } else {//failed
+    //             $this->transRollback();
+    //             return $handled;
+    //         }
+    //     $this->transCommit();
+    //     $this->itemStageChangeNotify($order, $stage);
+    //     $this->itemStageUnconfirmedOrderId=null;
+    //     return 'ok';
+    // }
+
+    // public function itemStageConfirm(){
+    //     if(!$this->itemStageUnconfirmedOrderId || !$this->itemStageUnconfirmedGroupId){
+    //         return;
+    //     }
+    //     $this->allowedFields[]='order_group_id';
+    //     $this->update($this->itemStageUnconfirmedOrderId,['order_group_id'=>$this->itemStageUnconfirmedGroupId]);
+    //     $this->itemCacheClear();//because order properties have changed
+        
+    //     $OrderGroupMemberModel=model('OrderGroupMemberModel');
+    //     $OrderGroupMemberModel->joinGroup($this->itemStageUnconfirmedOrderId,$this->itemStageUnconfirmedGroupId);
+    // }
+
     public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
-        $this->itemStageConfirm();//confirms previous stage if any
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
             return $order;
@@ -83,42 +132,32 @@ trait OrderStageTrait{
             return $offHandled;
         }
         $OrderGroupModel=model('OrderGroupModel');
-        $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
-        $result=$this->itemStageValidate($stage,$order,$this->itemStageUnconfirmedGroupId);
+        $next_stage_group_id=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
+        $result=$this->itemStageValidate($stage,$order,$next_stage_group_id);
         if( $result!=='ok' ){
             return $result;
         }
+        
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        $this->allowedFields[]='order_group_id';
         if( $check_permission ){
             $this->permitWhere('w');
         }
 
-        $this->itemStageUnconfirmedOrderId=$order_id;
         $this->transBegin();
+            $updated=$this->update($order_id,['order_group_id'=>$next_stage_group_id]);
+            $joined=$OrderGroupMemberModel->joinGroup($order_id,$next_stage_group_id);
+            $this->itemCacheClear();//because order properties have changed
             $handled=$this->itemStageHandle( $order_id, $stage, $data );
-            if($handled==='ok'){
-                $this->itemStageConfirm();
-            } else {//failed
+            if( !$updated || !$joined || $handled!=='ok' ){//failed
                 $this->transRollback();
                 return $handled;
             }
         $this->transCommit();
         $this->itemStageChangeNotify($order, $stage);
-        $this->itemStageUnconfirmedOrderId=null;
         return 'ok';
     }
 
-    public function itemStageConfirm(){
-        if(!$this->itemStageUnconfirmedOrderId || !$this->itemStageUnconfirmedGroupId){
-            return;
-        }
-        $this->allowedFields[]='order_group_id';
-        $this->update($this->itemStageUnconfirmedOrderId,['order_group_id'=>$this->itemStageUnconfirmedGroupId]);
-        $this->itemCacheClear();//because order properties have changed
-        
-        $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        $OrderGroupMemberModel->joinGroup($this->itemStageUnconfirmedOrderId,$this->itemStageUnconfirmedGroupId);
-    }
-    
     private function itemStageHandle( $order_id, $stage, $data ){
         $this->itemStageScriptLoad($order_id);
         helper('job');

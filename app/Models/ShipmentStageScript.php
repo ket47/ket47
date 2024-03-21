@@ -19,7 +19,6 @@ class ShipmentStageScript{
         'customer_confirmed'=>[
             'customer_action_checkout'=>    ['Перейти к оформлению'],
             'customer_cart'=>               ['Изменить','light'],
-            'customer_start'=>              [],
             'system_await'=>                [],
             'system_schedule'=>             [],
             ],
@@ -36,6 +35,7 @@ class ShipmentStageScript{
             ],
         'system_schedule'=>[
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'system_await'=>                [],
             'customer_start'=>              [],
             'admin_action_customer_start'=> ['Запустить заказ','medium','clear'],
             ],
@@ -245,14 +245,22 @@ class ShipmentStageScript{
             'payment_card_fixate_date'=>date('Y-m-d H:i:s'),
             'payment_card_fixate_sum'=>$acquirer_data->total,
         ];
-        pl($order_data_update);
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->systemBegin($order_id);
+        //return $this->OrderModel->itemStageCreate($order_id,'system_await');
     }
 
     public function onCustomerPayedCredit( $order_id, $data ){
         return $this->systemBegin($order_id);
+        //return $this->OrderModel->itemStageCreate($order_id,'system_await');
     }
+
+    /**
+     * In case of marketplace but it is only for orders
+     */
+    // public function onCustomerWillPayStore( $order_id, $data ){
+    //     return $this->systemBegin($order_id);
+    // }
 
     private function systemBegin($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
@@ -270,33 +278,31 @@ class ShipmentStageScript{
 
     public function onSystemAwait( $order_id, $data ){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        /**
-         * only prepayed orders are allowed
-         */
         if( empty($order_data->payment_by_credit_store) && empty($order_data->payment_card_fixate_sum) ){
             return 'payment_is_missing';
         }
         /**
          * This is shipment order so only delivery_by_courier allowed
-         * For marketplace orders no delivery should be allowed
+         * For marketplace orders delivery should not be checked
          */
-        if( empty($order_data->delivery_by_courier) ){
+        if( empty($order_data->delivery_job) ){
             return 'delivery_is_missing';
         }
-        ///////////////////////////////////////////////////
-        //ADDING TO JOB LIST
-        ///////////////////////////////////////////////////
-        $job=(object)[
-            'start_plan'=>$order_data->start_plan??0,
-        ];
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'awaited', $job );
+        // if( $order_data->start_plan_mode=='scheduled' ){
+        //     $result=$this->OrderModel->itemStageCreate( $order_id, 'system_schedule', $order_data );//passing $order_data
+        //     if( $result=='ok' ){
+        //         return 'ok';//Order is in Scheduled stage
+        //     }
+        // }
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $DeliveryJobModel->itemStageSet( $order_id, 'awaited', $order_data->delivery_job );
 
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $order=$this->OrderModel->itemGet($order_id);
         ///////////////////////////////////////////////////
         //CREATING STAGE NOTIFICATIONS
         ///////////////////////////////////////////////////
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $order=$this->OrderModel->itemGet($order_id);
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
@@ -323,70 +329,36 @@ class ShipmentStageScript{
         return 'ok';
     }
 
-    public function onSystemSchedule( $order_id, $data ){
+    public function onSystemSchedule( $order_id ){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        /**
-         * only prepayed orders are allowed
-         */
-        if( empty($order_data->payment_by_credit_store) && empty($order_data->payment_card_fixate_sum) ){
-            return 'payment_is_missing';
-        }
-        /**
-         * This is shipment order so only delivery_by_courier allowed
-         * For marketplace orders no delivery should be allowed
-         */
-        if( empty($order_data->delivery_by_courier) ){
-            return 'delivery_is_missing';
-        }
-        ///////////////////////////////////////////////////
-        //ADDING TO JOB LIST
-        ///////////////////////////////////////////////////
-        $job=(object)[
-            'job_name'=>'Вызов курьера',
-            'start_plan'=>$order_data->start_plan??0,
-            'start_prep_time'=>$order_data->finish_arrival,
-            'finish_arrival'=>$order_data->finish_arrival,
-            'start_longitude'=>$order_data->location_start->location_longitude,
-            'start_latitude'=>$order_data->location_start->location_latitude,
-            'finish_longitude'=>$order_data->location_finish->location_latitude,
-            'finish_latitude'=>$order_data->location_finish->location_latitude,
-        ];
+        //$this->OrderModel->itemDataUpdate($order_id,(object)['start_plan_mode'=>'awaited']);
         $DeliveryJobModel=model('DeliveryJobModel');
-        $stage=$DeliveryJobModel->itemStageSet( $order_id, 'scheduled', $job );
-
-        if( $stage!=='scheduled' ){
-            return 'ok';
+        $start_offset=$DeliveryJobModel->avgStartArrival;//in sec
+        $init_plan=$order_data->start_plan-$start_offset;
+        if( $init_plan<time() ){//should be placed in awaited queue already
+            //it will be done automatically
+            //return $this->OrderModel->itemStageCreate($order_id, 'system_await');
         }
 
-        ///////////////////////////////////////////////////
-        //CREATING STAGE NOTIFICATIONS
-        ///////////////////////////////////////////////////
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $order=$this->OrderModel->itemGet($order_id);
-        $store=$StoreModel->itemGet($order->order_store_id);
-        $customer=$UserModel->itemGet($order->owner_id);
-        $context=[
-            'customer_start_time'=>$order_data->start_plan??0,
-            'order'=>$order,
-            'order_data'=>$order_data,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $notifications=[];
-        $notifications[]=(object)[
-            'message_transport'=>'telegram',
-            'message_reciever_id'=>-100,
-            'template'=>'messages/order/on_ship_customer_start_ADMIN_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"shipping system_await Notify #$order_id",
+
+
+        $init_plan=time()+5;
+
+
+
+
+
+
+
+        $DeliveryJobModel->itemStageSet( $order_id, 'scheduled', $order_data->delivery_job );
+        $set_on_queue_task=[
+            'task_name'=>"Delivery job On schedule #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
-                ]
+                    ['method'=>'orderResetStage','arguments'=>['system_schedule','system_await',$order_id]]
+                ],
+            'task_next_start_time'=>$init_plan
         ];
-        jobCreate($notification_task);
+        jobCreate($set_on_queue_task);
         return 'ok';
     }
     

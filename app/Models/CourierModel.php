@@ -565,6 +565,36 @@ class CourierModel extends Model{
         return $job;
     }
 
+    /**
+     * Notifies courier that it has undone jobs
+     */
+    public function itemJobAvailableNotify( int $courier_id ){
+        $courier=$this->select('owner_id')->where('courier_id',$courier_id)->get()->getRow();
+        if( !$courier ){
+            return false;
+        }
+        $message_text="👋 У вас есть невыполненное задание";
+        $message=(object)[
+                    'message_reciever_id'=>$courier->owner_id,
+                    'message_transport'=>'push,telegram',
+                    'message_text'=>$message_text,
+                    'message_data'=>[
+                        'type'=>'flash',
+                        'title'=>'🚀 Новое задание',
+                        'body'=>$message_text,
+                        'link'=>getenv('app.frontendUrl').'order/order-list',
+                        'sound'=>'long.wav'
+                    ],
+                ];
+        $sms_job=[
+            'task_name'=>"Courier Notify Order",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                ]
+        ];
+        jobCreate($sms_job);
+        return true;
+    }
     
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
@@ -614,7 +644,6 @@ class CourierModel extends Model{
         $transport="telegram,push";
         return $this->listNotifyCreate($context_list,$transport);
     }
-    
     /**
      * Notifies ready couriers of particular job
      * @param array $new_job array with data about job to send to couriers
@@ -699,7 +728,7 @@ class CourierModel extends Model{
 
     public function listIdleShiftClose(){
         $locationUnknownTimeoutMin=15;
-        $shiftCloseMin=30;
+        $shiftCloseMin=60;
         $this->join('courier_group_member_list','member_id=courier_id');
         $this->join('courier_group_list','group_id');
         $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    

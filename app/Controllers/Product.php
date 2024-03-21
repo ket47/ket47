@@ -16,7 +16,8 @@ class Product extends \App\Controllers\BaseController{
             'limit'=>$this->request->getVar('limit'),
             'store_id'=>$this->request->getVar('store_id'),
             'group_id'=>$this->request->getVar('group_id'),
-            'order'=>$this->request->getVar('order'),
+            //'order'=>$this->request->getVar('order'),
+            'reverse'=>$this->request->getVar('reverse'),
         ];
 
 

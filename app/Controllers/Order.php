@@ -389,9 +389,9 @@ class Order extends \App\Controllers\BaseController {
         }
         $LocationModel=model('LocationModel');
 
-        $order_start_location_id=$LocationModel->itemMainGet('store',$order->order_store_id)->location_id;
-        $order_finish_location_id=$LocationModel->itemMainGet('user',$order->owner_id)->location_id;
-        $delivery_distance=$LocationModel->distanceGet($order_start_location_id,$order_finish_location_id);
+        $order_start_location=$LocationModel->itemMainGet('store',$order->order_store_id);
+        $order_finish_location=$LocationModel->itemMainGet('user',$order->owner_id);
+        $delivery_distance=$LocationModel->distanceGet($order_start_location->location_id,$order_finish_location->location_id);
         if( $delivery_distance>getenv('delivery.radius') ){
             return $this->fail('too_far');
         }
@@ -463,6 +463,36 @@ class Order extends \App\Controllers\BaseController {
         if( $checkoutData->storeCorrectionAllow??0 ){
             $order_data->store_correction_allow=1;
         }
+        //DELIVERY JOB SETUP
+
+
+        //TMP FIX
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
+
+
+
+
+
+
+
+
+        $order_data->delivery_job=(object)[
+            'job_name'=>"Заказ #{$order->order_id}",
+            'start_plan'=>$routePlan->start_plan,
+            'start_prep_time'=>null,
+            
+            'start_longitude'=>$order_start_location->location_longitude,
+            'start_latitude'=>$order_start_location->location_latitude,
+            'start_address'=>$order_start_location->location_address,
+            'finish_longitude'=>$order_finish_location->location_longitude,
+            'finish_latitude'=>$order_finish_location->location_latitude,
+            'finish_address'=>$order_finish_location->location_address,
+        ];
+
+
+
+
         /**
          * Check if order is already not in confirmed state (for example returned to cart stage automatically)
          * If not - try to make confirmed

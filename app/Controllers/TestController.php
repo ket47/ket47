@@ -148,20 +148,117 @@ class TestController extends \App\Controllers\BaseController{
     //     p([$auth,$ref,$con,$paymentStatus,]);
     // }
 
-        public function courierTest(){
-            $order_id=4943;
-            $order_courier_id=12;
+        // public function courierTest(){
+        //     $order_id=4943;
+        //     $order_courier_id=12;
 
-            $OrderGroupMemberModel=model('OrderGroupMemberModel');
-            $OrderModel=model('OrderModel');
-            $CourierModel=model('CourierModel');
+        //     $OrderGroupMemberModel=model('OrderGroupMemberModel');
+        //     $OrderModel=model('OrderModel');
+        //     $CourierModel=model('CourierModel');
 
-            $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        //     $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
-            $OrderModel->itemStageAdd($order_id,'delivery_search');
+        //     $OrderModel->itemStageAdd($order_id,'delivery_search');
 
-            $CourierModel->itemUpdateStatus($order_courier_id,'ready');
+        //     $CourierModel->itemUpdateStatus($order_courier_id,'ready');
+        // }
+
+    // public function capgo(){
+    //     $request=[
+    //         "platform"=>"ios",
+    //         "device_id"=>"UUID_of_device_unique_by_install",
+    //         "custom_id"=>"your_custom_id_set_on_runtime",
+    //         "plugin_version"=>"PLUGIN_VERSION",
+    //         "version_build"=>"1.15",
+    //         "version_code"=>"15",
+    //         "version_name"=>"hastalavista",
+    //         "version_os"=>"VERSION_OF_SYSYEM_OS",
+    //         "is_emulator"=>0,
+    //         "is_prod"=>1,
+    //     ];
+    //     $this->apiExecute("https://tezkel.com/yani.php?bundle=check_new",$request);
+    // }
+
+
+
+    // public function apiExecute( string $url, array $request=null, string $method='POST' ){
+    //     $curl = curl_init(); 
+    //     switch( $method ){
+    //         case 'POST':
+    //             curl_setopt($curl, CURLOPT_POST, 1);
+    //             if( $request ){
+    //                 curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($request));
+    //                 $headers[]="Content-Type: application/json";
+    //             }
+    //             break;
+    //     }
+    //     curl_setopt($curl, CURLOPT_URL, $url);
+    //     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    //     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    //     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    //     curl_setopt($curl, CURLINFO_HEADER_OUT, true);
+    //     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+
+    //    echo  $result = curl_exec($curl);
+    //     //p(curl_getinfo($curl));
+    //     if( curl_error($curl) ){
+    //         log_message("ERROR","$url API Execute error: ".curl_error($curl));
+    //         die(curl_error($curl));
+    //     }
+    //     curl_close($curl);
+    //     return json_decode($result);
+    // }
+
+
+    public function courierNotify(){
+        $DeliveryJobModel=model("DeliveryJobModel");
+        $DeliveryJobModel->itemAvailableNotify();
+    }
+
+
+    public function color(){
+        $clasterBoundaries=getenv("location.claster1");
+        $claster=json_decode("[$clasterBoundaries]");
+        $deltaX=$claster[1][0]-$claster[0][0];
+        $deltaY=$claster[1][1]-$claster[0][1];
+
+        // $lon=$claster[0][1]+$deltaX*rand(0,1000)/1000;
+        // $lat=$claster[0][0]+$deltaY*rand(0,1000)/1000;
+
+        $col=new \App\Libraries\Coords2Color();
+        echo "<table cellspacing=0>";
+        for($i=0;$i<100;$i++){
+            echo '<tr>';
+            for($k=0;$k<100;$k++){
+                $lon=$claster[0][0]+$deltaX/100*$k;
+                $lat=$claster[0][1]+$deltaY/100*$i;
+                $color=$col->getColor('claster1',$lat,$lon);
+                echo "<td style='background-color:$color;width:15px;height:15px;'></td>";
+            }
+            echo '</tr>';
         }
+        echo "</table>";
+    }
+
+    public function colorize(){
+        $col=new \App\Libraries\Coords2Color();
+        $DeliveryJobModel=model('DeliveryJobModel');
+
+        $jobs=$DeliveryJobModel->get()->getResult();
+        foreach($jobs as $job){
+            $start_color=$col->getColor('claster1',$job->start_latitude,$job->start_longitude);
+            $finish_color=$col->getColor('claster1',$job->finish_latitude,$job->finish_longitude);
 
 
+
+            echo "$start_color=col->getColor('claster1',$job->start_latitude,$job->start_longitude);";
+
+            $DeliveryJobModel->update($job->job_id,['start_color'=>$start_color,'finish_color'=>$finish_color]);
+        }
+    }
+
+    public function chain(){
+        $DeliveryJobModel=model('DeliveryJobModel');
+        return $DeliveryJobModel->chainJobs();
+    }
 }

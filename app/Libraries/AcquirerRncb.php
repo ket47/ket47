@@ -3,8 +3,13 @@ namespace App\Libraries;
 
 class AcquirerRncb{
     public function apiExecute( string $function, array $request=null, string $method='POST' ){
-        $url = getenv('rncb.gateway')."/$function";
-        $auth=base64_encode(getenv('rncb.login').':'.getenv('rncb.password'));
+        if(getenv('test.acquirerMock')){
+            $url = getenv('rncbMock.gateway')."/$function";
+            $auth=base64_encode(getenv('rncbMock.login').':'.getenv('rncbMock.password'));
+        } else {
+            $url = getenv('rncb.gateway')."/$function";
+            $auth=base64_encode(getenv('rncb.login').':'.getenv('rncb.password'));            
+        }
         $headers=["Authorization: Basic {$auth}"];
         $curl = curl_init(); 
         switch( $method ){

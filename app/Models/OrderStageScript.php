@@ -5,13 +5,8 @@ class OrderStageScript{
     public $OrderModel;
     public $stageMap=[
         ''=>[
-            // 'customer_deleted'=>            ['Удалить','danger'],
             'customer_cart'=>               ['Создать'],
             ],
-        // 'customer_deleted'=>[
-        //     'customer_purged'=>             ['Удалить','danger'],
-        //     'customer_cart'=>               ['Восстановить'],
-        //     ],
         'customer_cart'=>[
             'customer_action_confirm'=>     ['Перейти к оформлению'],
             'customer_action_add'=>         ['Добавить товар','medium','clear'],
@@ -29,11 +24,13 @@ class OrderStageScript{
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+
+            'system_schedule'=>             [],
+            'system_await'=>                [],
             ],
         'customer_rejected'=>[
             'system_reckon'=>               []
-        ],
-        
+            ],
         'customer_disputed'=>[
             'customer_finish'=>             ['Отказаться от спора','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ','medium','outline'],
@@ -42,6 +39,19 @@ class OrderStageScript{
             ],
         'customer_finish'=>[
             'system_reckon'=>               [],
+            ],
+
+
+
+        'system_schedule'=>[
+            'system_await'=>                [],
+            'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+            ],
+        'system_await'=>[
+            'customer_start'=>              [],
+            'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
             ],
         
         
@@ -138,107 +148,6 @@ class OrderStageScript{
     ];
 
     
-    ////////////////////////////////////////////////
-    //ADMIN HANDLERS
-    ////////////////////////////////////////////////
-    public function onAdminSupervise( $order_id ){
-        return 'ok';
-    }
-    public function onAdminSanctionCustomer( $order_id ){
-        $order_data_update=(object)[
-            'sanction_customer_fee'=>1,
-            'sanction_courier_fee'=>0,
-            'sanction_supplier_fee'=>0,
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-    }
-    public function onAdminSanctionCourier( $order_id ){
-        $order_data_update=(object)[
-            'sanction_customer_fee'=>0,
-            'sanction_courier_fee'=>1,
-            'sanction_supplier_fee'=>0,
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-    }
-    public function onAdminSanctionSupplier( $order_id ){
-        $order_data_update=(object)[
-            'sanction_customer_fee'=>0,
-            'sanction_courier_fee'=>0,
-            'sanction_supplier_fee'=>1,
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-    }
-    public function onAdminRecalculate($order_id){
-        $order_data_update=(object)[
-            'finalize_settle_supplier_done'=>0,
-            'finalize_settle_courier_done'=>0,
-            'finalize_settle_system_done'=>0,            
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-
-        // $TransactionModel->where('trans_holder','order');
-        // $TransactionModel->where('trans_holder_id',$order_id); 
-        // $TransactionModel->delete(null,true);
-
-        $TransactionModel=model('TransactionModel');
-        $TransactionModel->queryDelete("order:$order_id");
-
-        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
-        return $result;
-    }
-    public function onAdminDelete($order_id){
-        $order_data=$this->OrderModel->itemDataGet($order_id);
-        $admin_email=(object)[
-            'message_transport'=>'email',
-            'message_reciever_id'=>-100,
-            'message_subject'=>"ПОЛНОЕ УДАЛЕНИЕ ЗАКАЗА №{$order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_admin_delete_ADMIN_email.php',
-            'context'=>$order_data
-        ];
-        $notification_task=[
-            'task_name'=>"customer_start Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
-                ]
-        ];
-        jobCreate($notification_task);
-
-        $this->OrderModel->itemDelete($order_id);
-        return 'ok';
-    }
-    ////////////////////////////////////////////////
-    //SYSTEM HANDLERS
-    ////////////////////////////////////////////////
-    public function onSystemReckon( $order_id, $data ){
-        $this->OrderModel->itemDataUpdate($order_id,(object)['delivery_by_courier_is_needed'=>0]);
-        $finishing_task=[
-            'task_name'=>"Order reckoning #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish',$data]]
-                ]
-        ];
-        if( $data['delay_sec']??0 ){
-            $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
-        }
-        jobCreate($finishing_task);
-        $finishing_task['task_next_start_time']=time()+5*60;//SECOND TRY AFTER 7 MIN DO WE NEED IT???
-        jobCreate($finishing_task);
-        return 'ok';
-    }
-    public function onSystemFinish( $order_id ){
-        /**
-         * we should pause db transaction so API cals can be atomized
-         */
-        $this->OrderModel->transComplete();
-        $OrderTransactionModel=model('OrderTransactionModel');
-        $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
-        $this->OrderModel->transBegin();
-        return $result;
-
-    }
     //////////////////////////////////////////////////////////////////////////
     //CUSTOMER HANDLERS
     //////////////////////////////////////////////////////////////////////////
@@ -369,14 +278,14 @@ class OrderStageScript{
     }
     
     public function onCustomerStart( $order_id, $data ){
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
-        $PrefModel=model('PrefModel');
         $order_data=$this->OrderModel->itemDataGet($order_id);
         if( !empty($order_data->payment_by_card) && empty($order_data->payment_card_fixate_sum) ){
             return 'payment_by_card_missing';
         }
         $order=$this->OrderModel->itemGet($order_id);
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $PrefModel=model('PrefModel');
         ////////////////////////////////////////////////
         //LOCATION FIXATION SECTION
         ////////////////////////////////////////////////
@@ -423,14 +332,7 @@ class OrderStageScript{
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
         if( ($order_data->delivery_by_courier??0)==1 ){
-            $job=(object)[
-                'start_plan'=>$order_data->plan_delivery_start??0,
-                'start_longitude'=>$supplierLocation->location_longitude??0,
-                'start_latitude'=>$supplierLocation->location_latitude??0,
-                'finish_longitude'=>$customerLocation->location_longitude??0,
-                'finish_latitude'=>$customerLocation->location_latitude??0,
-            ];
-            model('DeliveryJobModel')->itemStageSet( $order_id, 'inited', $job);
+            model('DeliveryJobModel')->itemStageSet( $order_id, 'inited', $order_data->delivery_job);
             $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
         }
         ///////////////////////////////////////////////////
@@ -1283,5 +1185,104 @@ class OrderStageScript{
         ];
         jobCreate($stage_reset_task);
         return 'ok';
+    }
+    ////////////////////////////////////////////////
+    //ADMIN HANDLERS
+    ////////////////////////////////////////////////
+    public function onAdminSupervise( $order_id ){
+        return 'ok';
+    }
+    public function onAdminSanctionCustomer( $order_id ){
+        $order_data_update=(object)[
+            'sanction_customer_fee'=>1,
+            'sanction_courier_fee'=>0,
+            'sanction_supplier_fee'=>0,
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+    }
+    public function onAdminSanctionCourier( $order_id ){
+        $order_data_update=(object)[
+            'sanction_customer_fee'=>0,
+            'sanction_courier_fee'=>1,
+            'sanction_supplier_fee'=>0,
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+    }
+    public function onAdminSanctionSupplier( $order_id ){
+        $order_data_update=(object)[
+            'sanction_customer_fee'=>0,
+            'sanction_courier_fee'=>0,
+            'sanction_supplier_fee'=>1,
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+    }
+    public function onAdminRecalculate($order_id){
+        $order_data_update=(object)[
+            'finalize_settle_supplier_done'=>0,
+            'finalize_settle_courier_done'=>0,
+            'finalize_settle_system_done'=>0,            
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+
+        // $TransactionModel->where('trans_holder','order');
+        // $TransactionModel->where('trans_holder_id',$order_id); 
+        // $TransactionModel->delete(null,true);
+
+        $TransactionModel=model('TransactionModel');
+        $TransactionModel->queryDelete("order:$order_id");
+
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
+        return $result;
+    }
+    public function onAdminDelete($order_id){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $admin_email=(object)[
+            'message_transport'=>'email',
+            'message_reciever_id'=>-100,
+            'message_subject'=>"ПОЛНОЕ УДАЛЕНИЕ ЗАКАЗА №{$order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_admin_delete_ADMIN_email.php',
+            'context'=>$order_data
+        ];
+        $notification_task=[
+            'task_name'=>"customer_start Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
+                ]
+        ];
+        jobCreate($notification_task);
+
+        $this->OrderModel->itemDelete($order_id);
+        return 'ok';
+    }
+    ////////////////////////////////////////////////
+    //SYSTEM HANDLERS
+    ////////////////////////////////////////////////
+    public function onSystemReckon( $order_id, $data ){
+        $finishing_task=[
+            'task_name'=>"Order reckoning #$order_id",
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish',$data]]
+                ]
+        ];
+        if( $data['delay_sec']??0 ){
+            $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
+        }
+        jobCreate($finishing_task);
+        $finishing_task['task_next_start_time']=time()+7*60;//SECOND TRY AFTER 7 MIN DO WE NEED IT???
+        jobCreate($finishing_task);
+        return 'ok';
+    }
+    public function onSystemFinish( $order_id ){
+        /**
+         * we should pause db transaction so API cals can be atomized
+         */
+        $this->OrderModel->transComplete();
+        $OrderTransactionModel=model('OrderTransactionModel');
+        $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
+        $this->OrderModel->transBegin();
+        return $result;
     }
 }
