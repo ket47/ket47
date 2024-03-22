@@ -12,9 +12,9 @@
     $heavy_bonus_moped  =$statistics->heavy_bonus??0;
     $heavy_bonus_car    =0;
     $order_count_all    =$statistics->order_count??0;
-    $order_sum_all      =r50($order_cost*$order_count_all);
-    $hour_sum_rent      =r50($total_duration*($hour_cost_rent/3600));
-    $hour_sum_own       =r50($total_duration*($hour_cost_own/3600));
+    $order_sum_all      =round($order_cost*$order_count_all);
+    $hour_sum_rent      =round($total_duration*($hour_cost_rent/3600));
+    $hour_sum_own       =round($total_duration*($hour_cost_own/3600));
 
     $total_moped_rent   =r50($hour_sum_rent+$order_sum_all+$heavy_bonus_moped);
     $total_moped_own    =r50($hour_sum_own +$order_sum_all+$heavy_bonus_moped);
