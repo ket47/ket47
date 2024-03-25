@@ -21,7 +21,7 @@ class TestController extends \App\Controllers\BaseController{
                 'eaqq_3W7S46Ia-gIGnwSiG:APA91bESLQSt7a9maARXgDPXMhNHB-H4ZGiIYuYAybHqd-c2Cl0avGiJ2RT1AVwVjIYJOClOHq3X7gzJnOS4GUPJEm0HmnStT4X8amh-V357-yueqkV0_gfPwn_MqHgzQ9rfR5di92zr',//android
                 //'cJNIK-OXTQm5hhpCTJhzIk:APA91bH2QlbVmgIdxHdJ7HF1wRzLs6DE8KCZGSTXhkROB-fch4K2zM1iXm3S0ywLr38P8J8RWxd8qqKDatLZ2URTUUn4u1tTceEmQEZvbZ6KIlzePdLZR2jAKnYdSuS0karyfKWAGnLR'
             ],
-            'title'=>'TeSt PuSh😀😀😀😀',
+            'title'=>'TeSt PuSh',
             'body'=>'Test body '.date("H:i:s"),
             'data'=>[
                  'link'=>'/catalog/product-1615',
@@ -45,7 +45,7 @@ class TestController extends \App\Controllers\BaseController{
         $result=$Messenger->itemSend((object)[
             'message_reciever_id'=>41,
             'message_transport'=>'push',
-            'message_subject'=>'TeSt PuSh😀😀😀😀',
+            'message_subject'=>'TeSt PuSh',
             'message_text'=>'Test body '.date("H:i:s"),
             'message_data'=>(object)[
                  'link'=>'https://tezkel.com/catalog/product-1615',
@@ -69,7 +69,7 @@ class TestController extends \App\Controllers\BaseController{
         $CourierShiftModel=model('CourierShiftModel');
 
 
-        $result=$CourierShiftModel->itemReportSend(457);
+        $result=$CourierShiftModel->itemReportSend(544);
         return $this->respond($result);
     }
 

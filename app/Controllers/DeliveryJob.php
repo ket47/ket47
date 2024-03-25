@@ -23,6 +23,16 @@ class DeliveryJob extends \App\Controllers\BaseController{
     public function itemDelete(){
         return false;
     }
+
+    public function itemAssign(){
+        $order_id=$this->request->getPost('order_id');
+        $courier_id=$this->request->getPost('courier_id');
+        if( !courdo() && !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $deliveryJobs=$DeliveryJobModel->listGet();
+    }
     
     public function listGet(){
         $user_id=session()->get('user_id');

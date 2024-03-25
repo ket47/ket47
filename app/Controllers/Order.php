@@ -489,10 +489,6 @@ class Order extends \App\Controllers\BaseController {
             'finish_latitude'=>$order_finish_location->location_latitude,
             'finish_address'=>$order_finish_location->location_address,
         ];
-
-
-
-
         /**
          * Check if order is already not in confirmed state (for example returned to cart stage automatically)
          * If not - try to make confirmed
@@ -503,8 +499,7 @@ class Order extends \App\Controllers\BaseController {
                 return $this->fail('wrong_stage');
             }
         }
-        $OrderModel->itemDataDelete($checkoutData->order_id);
-        $result=$OrderModel->itemDataUpdate($checkoutData->order_id,$order_data);
+        $result=$OrderModel->itemDataCreate($checkoutData->order_id,$order_data);
         $OrderModel->deliverySumUpdate($checkoutData->order_id);
         return $this->respond($result);
     }
