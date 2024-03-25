@@ -47,9 +47,9 @@ Events::on('pre_system', static function () {
     }
 });
 
-Events::on(
-    'DBQuery',
-    static function (\CodeIgniter\Database\Query $query) {
-        //log_message('critical', (string) $query);
-    }
-);
+// Events::on(
+//     'DBQuery',
+//     static function (\CodeIgniter\Database\Query $query) {
+//         log_message('critical', (string) $query);
+//     }
+// );

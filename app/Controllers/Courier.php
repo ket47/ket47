@@ -160,11 +160,11 @@ class Courier extends \App\Controllers\BaseController{
         $courier_id = $this->request->getPost('courier_id');
         $order_id = $this->request->getPost('order_id');
         
-        $OrderModel=model('OrderModel');
+        //$OrderModel=model('OrderModel');
         $CourierModel=model('CourierModel');
 
         $CourierModel->itemUpdateStatus($courier_id,'ready');
-        $OrderModel->itemStageAdd($order_id,'delivery_search');
+        //$OrderModel->itemStageAdd($order_id,'delivery_search');
         $result=$CourierModel->itemJobStart( $order_id, $courier_id );
         if( $result=='ok' ){
             return $this->respondUpdated($result);

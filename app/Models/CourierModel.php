@@ -496,7 +496,7 @@ class CourierModel extends Model{
         $this->transBegin();
         $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         $was_searching=$OrderGroupMemberModel->affectedRows()?true:false;
-        if( !$was_searching ){
+        if( !$was_searching && !sudo() ){
             $this->transRollback();
             return 'notsearching';
         }
@@ -625,14 +625,14 @@ class CourierModel extends Model{
         if(!$courier){
             return;
         }
-        $job_list=$this->listJobGet( $courier->courier_id );
+        $job_list=$this->limit(1)->listJobGet( $courier->courier_id );
         if( !is_array($job_list) ){
             pl(['itemNotify',$courier,$job_list]);
             return true;
         }
-        $context_list=[];
+
         foreach($job_list as $job){
-            $context_list[]=[
+            $context=[
                 'store'=>(object)[
                     'store_id'=>$job->store_id,
                     'store_name'=>$job->store_name,
@@ -640,49 +640,12 @@ class CourierModel extends Model{
                 'order'=>$job,
                 'courier'=>$courier
             ];
-        }
-        $transport="telegram,push";
-        return $this->listNotifyCreate($context_list,$transport);
-    }
-    /**
-     * Notifies ready couriers of particular job
-     * @param array $new_job array with data about job to send to couriers
-     * @todo We should in future check the distance between store and courier!!!
-     */
-    public function listNotify( $new_job ){
-        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
-        if( !$ready_courier_list ){
-            return false;
-        }
-        $context_list=[];
-        foreach($ready_courier_list as $courier){
-            $new_job['courier']=$courier;
-            $context_list[]=$new_job;
-        }
-        $transport="telegram,push";
-        return $this->listNotifyCreate($context_list,$transport);
-    }
 
-    /**
-     * Creates message send job from array of contexts
-     *  @param array $context_list list of contexts containing courier and job info
-     * 
-     * 
-     * 
-     * 
-     * 
-     * should rewrite so jobs will be sent only if job is still not taken!!!
-     */
-
-    private function listNotifyCreate( array $context_list, string $transport='telegram' ){
-        $notification_time_gap=0;//3min between notifications
-        $notification_index=0;
-        foreach($context_list as $context){
-            $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;
+            $reciever_id=$context['courier']->owner_id;
             $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
             $message=(object)[
                 'message_reciever_id'=>$reciever_id,
-                'message_transport'=>$transport,
+                'message_transport'=>"telegram",
                 'message_text'=>$message_text,
                 'message_data'=>[
                     'type'=>'flash',
@@ -706,16 +669,63 @@ class CourierModel extends Model{
                 ],
             ];
 
-            $next_start_time=time()+$notification_index*$notification_time_gap;
             $sms_job=[
                 'task_name'=>"Courier Notify Order",
                 'task_programm'=>[
                         ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
                     ],
-                'task_next_start_time'=>$next_start_time
             ];
             jobCreate($sms_job);
-            $notification_index++;
+        }
+    }
+    /**
+     * Notifies ready couriers of particular job
+     * @param array $new_job array with data about job to send to couriers
+     * @todo We should in future check the distance between store and courier!!!
+     */
+    public function listNotify( $new_job ){
+        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
+        if( !$ready_courier_list ){
+            return false;
+        }
+        foreach($ready_courier_list as $courier){
+            $new_job['courier']=$courier;
+
+            $reciever_id=$new_job['courier']->owner_id??$new_job['courier']->user_id;
+            $message_text=view('messages/order/on_delivery_search_COUR_sms',$new_job);
+            $message=(object)[
+                'message_reciever_id'=>$reciever_id,
+                'message_transport'=>'telegram,push',
+                'message_text'=>$message_text,
+                'message_data'=>[
+                    'type'=>'flash',
+                    'title'=>'🚀 Новое задание',
+                    'body'=>$message_text,
+                    'link'=>getenv('app.frontendUrl').'order/order-list',
+                    'sound'=>'long.wav'
+                ],
+                'telegram_options'=>[
+                    'buttons'=>[['',"onCourierJobStart-{$new_job['order']->order_id}",'🚀 Взять задание']],
+                    'disable_web_page_preview'=>1,
+                ],
+            ];
+            $copy=(object)[
+                'message_reciever_id'=>'-100',
+                'message_transport'=>'telegram',
+                'template'=>'messages/order/on_delivery_search_ADMIN_sms',
+                'context'=>$new_job,
+                'telegram_options'=>[
+                    'disable_notification'=>1,
+                ],
+            ];
+
+            $sms_job=[
+                'task_name'=>"Courier Notify Order",
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
+                    ],
+            ];
+            jobCreate($sms_job);
         }
         return true;
     }

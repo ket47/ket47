@@ -35,13 +35,13 @@ class PrefManager extends \App\Controllers\BaseController {
         return $this->fail($result);
     }
 
-    // public function itemSave(){
-    //     $data= $this->request->getJSON();
+    public function itemSave(){
+        $data= $this->request->getJSON();
         
-    //     $PrefModel=model('PrefModel');
-    //     $PrefModel->itemCreate($data->pref_name);
-    //     return $this->itemUpdate($data);
-    // }
+        $PrefModel=model('PrefModel');
+        $PrefModel->itemCreate($data->pref_name);
+        return $this->itemUpdate($data);
+    }
 
     
     public function itemDelete(){
