@@ -1,0 +1,1 @@
+<?=$courier->courier_name?> уведомлен, заказ №<?=$order->order_id?>

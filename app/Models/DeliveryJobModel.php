@@ -51,6 +51,7 @@ class DeliveryJobModel extends SecureModel{
     //STAGES SECTION
     ///////////////////////////////////////////////////
     public function itemStageSet( int $order_id, string $stage, object $data=null ){
+        return;
         $data??=(object)[];
         $data->order_id=$order_id;
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));

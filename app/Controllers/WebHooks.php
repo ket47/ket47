@@ -17,13 +17,10 @@ class Webhooks extends \App\Controllers\BaseController{
         $telegramToken=getenv('telegram.token');
         $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
         $Tbot=new \App\Libraries\Telegram\TelegramBot();
-        while(1){
-            $Telegram->getUpdates($offset = 0, $limit = 3, 1, $update = true);
-            for ($i = 0; $i < $Telegram->UpdateCount(); $i++) {
-                $Telegram->serveUpdate($i);
-                $Tbot->dispatch($Telegram);
-            }
-            break;
+        $Telegram->getUpdates($offset = 0, $limit = 3, 1, $update = true);
+        for ($i = 0; $i < $Telegram->UpdateCount(); $i++) {
+            $Telegram->serveUpdate($i);
+            $Tbot->dispatch($Telegram);
         }
     }
     public function telegramPing(){
@@ -38,7 +35,8 @@ class Webhooks extends \App\Controllers\BaseController{
             ),
         );
         while(1){
-            $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
+            $result=$this->telegramPoll();
+            //$result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
             if($result){
                 \CodeIgniter\CLI\CLI::write("W HELPER:".$result);
             }

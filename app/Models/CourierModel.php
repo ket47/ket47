@@ -675,39 +675,47 @@ class CourierModel extends Model{
      */
 
     private function listNotifyCreate( array $context_list, string $transport='telegram' ){
-
         $notification_time_gap=0;//3min between notifications
         $notification_index=0;
         foreach($context_list as $context){
             $reciever_id=$context['courier']->owner_id??$context['courier']->user_id;
             $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
             $message=(object)[
-                        'message_reciever_id'=>$reciever_id,
-                        'message_transport'=>$transport,
-                        'message_text'=>$message_text,
-                        'message_data'=>[
-                            'type'=>'flash',
-                            'title'=>'🚀 Новое задание',
-                            'body'=>$message_text,
-                            'link'=>getenv('app.frontendUrl').'order/order-list',
-                            'sound'=>'long.wav'
-                        ],
-                        'telegram_options'=>[
-                            'buttons'=>[['',"onCourierJobStart-{$context['order']->order_id}",'🚀 Взять задание']],
-                            'disable_web_page_preview'=>1,
-                        ],
-                    ];
+                'message_reciever_id'=>$reciever_id,
+                'message_transport'=>$transport,
+                'message_text'=>$message_text,
+                'message_data'=>[
+                    'type'=>'flash',
+                    'title'=>'🚀 Новое задание',
+                    'body'=>$message_text,
+                    'link'=>getenv('app.frontendUrl').'order/order-list',
+                    'sound'=>'long.wav'
+                ],
+                'telegram_options'=>[
+                    'buttons'=>[['',"onCourierJobStart-{$context['order']->order_id}",'🚀 Взять задание']],
+                    'disable_web_page_preview'=>1,
+                ],
+            ];
+            $copy=(object)[
+                'message_reciever_id'=>'-100',
+                'message_transport'=>'telegram',
+                'template'=>'messages/order/on_delivery_search_ADMIN_sms',
+                'context'=>$context,
+                'telegram_options'=>[
+                    'disable_notification'=>1,
+                ],
+            ];
+
             $next_start_time=time()+$notification_index*$notification_time_gap;
             $sms_job=[
                 'task_name'=>"Courier Notify Order",
                 'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
                     ],
                 'task_next_start_time'=>$next_start_time
             ];
             jobCreate($sms_job);
             $notification_index++;
-            break;
         }
         return true;
     }

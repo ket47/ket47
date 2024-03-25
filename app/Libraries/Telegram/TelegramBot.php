@@ -116,10 +116,15 @@ class TelegramBot{
 
 
     private function sessionSetup($chat_id){
-        session_write_close();
-        session_unset();
-        session_id(md5("telegrambot.{$chat_id}"));
-        session_start();
+        $curr_session_id=session_id();
+        $chat_session_id=md5("telegrambot.{$chat_id}");
+        if( $chat_session_id!==$curr_session_id ){
+            if($curr_session_id){
+                session_destroy();
+            }
+            session_id($chat_session_id);
+            session_start();
+        }
         session()->set('chat_id',$chat_id);
     }
 
@@ -127,9 +132,7 @@ class TelegramBot{
         $this->Telegram=$Telegram;
         $type=$Telegram->getUpdateType();
         $chat_id=$this->Telegram->ChatID();
-
-
-        w([$type,$chat_id]);
+        //w([$type,$chat_id]);
         $this->sessionSetup($chat_id);
 
         $handler="on".ucfirst($type);

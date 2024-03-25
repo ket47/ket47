@@ -46,3 +46,10 @@ Events::on('pre_system', static function () {
         Services::toolbar()->respond();
     }
 });
+
+Events::on(
+    'DBQuery',
+    static function (\CodeIgniter\Database\Query $query) {
+        //log_message('critical', (string) $query);
+    }
+);
