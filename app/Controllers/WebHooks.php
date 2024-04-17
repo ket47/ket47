@@ -35,8 +35,8 @@ class Webhooks extends \App\Controllers\BaseController{
             ),
         );
         while(1){
-            $result=$this->telegramPoll();
-            //$result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
+            //$result=$this->telegramPoll();
+            $result=@file_get_contents('http://tezkel.local/WebHooks/telegramPoll', false, stream_context_create($arrContextOptions));
             if($result){
                 \CodeIgniter\CLI\CLI::write("W HELPER:".$result);
             }

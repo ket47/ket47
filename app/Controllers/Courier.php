@@ -153,21 +153,33 @@ class Courier extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
 
+    /***
+     * This deprecated use same function in DeliveryJob
+     */
     public function itemAssign(){
         if( !sudo() ){
             return $this->failForbidden('forbidden');
         }
-        $courier_id = $this->request->getPost('courier_id');
-        $order_id = $this->request->getPost('order_id');
-        
-        //$OrderModel=model('OrderModel');
-        $CourierModel=model('CourierModel');
+        $order_id=$this->request->getPost('order_id');
+        $courier_id=$this->request->getPost('courier_id');
 
-        $CourierModel->itemUpdateStatus($courier_id,'ready');
-        //$OrderModel->itemStageAdd($order_id,'delivery_search');
-        $result=$CourierModel->itemJobStart( $order_id, $courier_id );
-        if( $result=='ok' ){
-            return $this->respondUpdated($result);
+        $OrderModel=model("OrderModel");
+        $CourierModel=model('CourierModel');
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
+
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        $courier=$CourierModel->itemGet($courier_id,'basic');
+        $CourierModel->itemUpdateStatus($courier_id,'busy');
+        $CourierModel->itemJobStartNotify( $courier->owner_id, ['courier'=>$courier,'order_id'=>$order_id] );
+
+        $OrderModel->allowWrite();//allow modifying order once
+        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
+        $OrderModel->itemUpdateOwners($order_id);
+        $OrderModel->itemCacheClear();
+        $result= $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
+
+        if($result=='ok'){
+            return $this->respond($result);
         }
         return $this->fail($result);
     }
@@ -203,9 +215,12 @@ class Courier extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
+    /**
+     * deprecated
+     */
     public function itemJobStart(){
-        $order_id=$this->request->getVar('order_id');
-        $courier_id=$this->request->getVar('courier_id');
+        $order_id=$this->request->getPost('order_id');
+        $courier_id=$this->request->getPost('courier_id');
         $CourierModel=model('CourierModel');
         $result=$CourierModel->itemJobStart($order_id,$courier_id);
         if( $result==='ok' ){

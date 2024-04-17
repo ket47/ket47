@@ -1,0 +1,1 @@
+👋 Есть задание <?=$awaitedNext->job_name?><?php if($awaitedCount-1>0): ?>, и еще <?=$awaitedCount-1?> в очереди<?php endif; ?>

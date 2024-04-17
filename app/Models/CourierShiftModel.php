@@ -75,6 +75,10 @@ class CourierShiftModel extends SecureModel{
                 ],
         ];
         jobCreate($sms_job);
+
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $DeliveryJobModel->chainJobs();
+
         return $shift_id;
     }
 
@@ -113,6 +117,9 @@ class CourierShiftModel extends SecureModel{
         }
         $this->itemReportSend($openedShift->shift_id);
 
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $DeliveryJobModel->chainJobs();
+        
         return 'ok';
     }
 
@@ -152,8 +159,9 @@ class CourierShiftModel extends SecureModel{
         jobCreate($sms_job);        
     }
     
-    public function itemUpdate(){
-        return false;
+    public function itemUpdate( object $shift ){
+        $this->update($shift->shift_id,$shift);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete(){

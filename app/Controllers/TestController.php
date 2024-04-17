@@ -261,4 +261,73 @@ class TestController extends \App\Controllers\BaseController{
         $DeliveryJobModel=model('DeliveryJobModel');
         return $DeliveryJobModel->chainJobs();
     }
+
+
+
+
+    private $job_order_id=5154;
+    public function await(){
+        $job=(object)[
+            "job_data"=> "{\"is_shipment\":1,\"distance\":12004,\"finish_plan_scheduled\":0}",
+            "job_name"=> "Посылка",
+            "start_plan"=> "1712740255",
+            "start_address"=> "ТЕСТ 45, улица Тав-Даир, Симферополь",
+            "finish_address"=> "ТЕСТ 9, Лекарственная улица, Симферополь",
+            "start_latitude"=> "44.93677551151808",
+            "finish_latitude"=> "44.99798",
+            "start_longitude"=> "34.039943263923064",
+            "start_prep_time"=> null,
+            "finish_longitude"=> "34.165643",
+            "finish_arrival_time"=> 3936,
+        ];
+        $job->order_id=$this->job_order_id;
+        $job->courier_id=12;
+
+
+
+
+
+        $DeliveryJobModel=model('DeliveryJobModel');
+        return $DeliveryJobModel->itemStageSet($job->order_id,'awaited',$job);
+    }
+    public function finish(){
+        $job=json_decode('{}');
+
+        $job->order_id=$this->job_order_id;
+        $DeliveryJobModel=model('DeliveryJobModel');
+        return $DeliveryJobModel->itemStageSet($job->order_id,'finished',$job);
+    }
+    public function cancel(){
+        $job=json_decode('{}');
+
+        $job->order_id=$this->job_order_id;
+        $DeliveryJobModel=model('DeliveryJobModel');
+        return $DeliveryJobModel->itemStageSet($job->order_id,'canceled',$job);
+    }
+
+
+
+
+
+
+    function take(){
+        $store_id=260;
+        // $StoreModel=model('StoreModel');
+        // $balance=$StoreModel->itemBalanceGet($store_id);
+
+        // p($balance);
+
+
+
+
+
+        $TransactionModel=model('TransactionModel');
+        $trans_id=$TransactionModel->itemCreate((object)[
+            'trans_amount'=>1000,
+            'trans_role'=>'supplier->profit',
+            'trans_description'=>'test replenishment',
+            'tags'=>"store:{$store_id}",
+        ]);
+        p($trans_id);
+    }
 }

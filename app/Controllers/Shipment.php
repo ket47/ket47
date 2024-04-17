@@ -29,7 +29,7 @@ class Shipment extends \App\Controllers\BaseController{
                 }
             }
             if( $order_data->finish_plan_scheduled??0 ){
-                $result->finish_plan_scheduled=date("H:i, d.m",$order_data->finish_plan_scheduled);
+                $result->finish_plan_scheduled=date("H:i, d.m.Y",$order_data->finish_plan_scheduled);
             }
             return $this->respond($result);
         }
@@ -64,7 +64,7 @@ class Shipment extends \App\Controllers\BaseController{
             }
             $data->order_id=$result;
             $OrderModel->itemStageCreate( $data->order_id, 'customer_cart' );
-            $OrderModel->itemStageCreate( $data->order_id, 'customer_confirmed' );
+            $OrderModel->itemStageCreate( $data->order_id, 'customer_confirmed', $data );
         }
         $result = $OrderModel->itemUpdate($data);
         if ($result === 'forbidden') {
@@ -348,7 +348,7 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data->delivery_heavy_bonus=$deliveryOption->deliveryHeavyBonus;
         $order->order_sum_delivery=$deliveryOption->deliverySum;
         $OrderModel->fieldUpdateAllow('order_sum_delivery');
-        
+
         //LOCATIONS DATA (SAVING IN DATA TO NOT AFFECT BY DELETION BY USER)
         $LocationModel=model('LocationModel');
         $order_data->location_start=$LocationModel->itemGet($order->order_start_location_id,'all');
@@ -367,9 +367,11 @@ class Shipment extends \App\Controllers\BaseController{
             $order_data->start_plan_mode='scheduled';
         }
         $order_data->delivery_job=(object)[
-            'job_name'=>'Вызов курьера',
+            'job_name'=>'Посылка',
+            'job_data'=>json_encode(['is_shipment'=>1,'distance'=>$checkoutData->routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
             'start_plan'=>$order_data->start_plan,
             'start_prep_time'=>null,
+            'finish_arrival_time'=>$checkoutData->routePlan->finish_arrival,
             
             'start_longitude'=>$order_data->location_start->location_longitude,
             'start_latitude'=>$order_data->location_start->location_latitude,
@@ -379,7 +381,16 @@ class Shipment extends \App\Controllers\BaseController{
             'finish_address'=>$order_data->location_finish->location_address,
         ];
 
-
+        /**
+         * Check if order is already not in confirmed state (for example returned to cart stage automatically)
+         * If not - try to make confirmed
+         */
+        if( $order->stage_current!='customer_confirmed' ){
+            $result=$OrderModel->itemStageCreate($order->order_id,'customer_confirmed');
+            if( $result!='ok' ){
+                return $this->fail('wrong_stage');
+            }
+        }
         //SAVING CHECKOUT DATA
         $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
         $result = $OrderModel->itemUpdate($order);

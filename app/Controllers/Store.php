@@ -36,6 +36,33 @@ class Store extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
+
+    private $appStoreVersionFilter='2.0.5';
+    private $appStoreWhitelist=[63,111,68,130,121,110,155,147];
+
+    private function appStoreFilter( $result ){
+        $platform=$this->request->getPost('platform');
+        $version=$this->request->getPost('version');
+        if( $this->appStoreVersionFilter==$version && in_array('ios',$platform) && in_array('capacitor',$platform)){
+            $filtered=[];
+            foreach($result as $store){
+                if( in_array($store->store_id??0,$this->appStoreWhitelist) ){
+                    $filtered[]=$store;
+                }
+            }
+            return $filtered;
+        } else {
+            $filtered=[];
+            foreach($result as $store){
+                if( !in_array($store->store_id,$this->appStoreWhitelist) ){
+                    $filtered[]=$store;
+                }
+            }
+            //return $filtered;
+        }
+        return $result;
+    }
+
     public function listNearGet(){
         $location_id=$this->request->getPost('location_id');
         $location_latitude=$this->request->getPost('location_latitude');
@@ -45,14 +72,10 @@ class Store extends \App\Controllers\BaseController{
         if( !is_array($result) ){
             return $this->failNotFound($result);
         }
-
-        $StoreModel=model('StoreModel');
-        $totalCount=$StoreModel->select('COUNT(*) totalCount')->get()->getRow('totalCount');
-        $hiddenCount=$totalCount-count($result);
+        $result=$this->appStoreFilter($result);
 
         $response=[
             'store_list'=>$result,
-            'hidden_count'=>$hiddenCount
         ];
         return $this->respond($response);
     }
@@ -60,6 +83,7 @@ class Store extends \App\Controllers\BaseController{
         $location_id=$this->request->getVar('location_id');
         $StoreModel=model('StoreModel');
         $result=$StoreModel->primaryNearGet(['location_id'=>$location_id]);
+        $result=array_pop($this->appStoreFilter([$result]));
         if( $result=='not_found' ){
             return $this->failNotFound($result);
         }

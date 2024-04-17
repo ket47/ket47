@@ -403,7 +403,9 @@ class Order extends \App\Controllers\BaseController {
          */
 
 
+        $StoreModel=model('StoreModel');
         $PromoModel=model('PromoModel');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
 
         //DELIVERY OPTIONS SET
         if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
@@ -423,8 +425,7 @@ class Order extends \App\Controllers\BaseController {
             }
         } else
         if( $checkoutData->deliveryByStore??0 ){
-            $StoreModel=model('StoreModel');
-            $store=$StoreModel->itemGet($order->order_store_id);
+
             $order_data->delivery_by_store=1;
             $order_data->delivery_by_store_cost=$store->store_delivery_cost??0;
             $PromoModel->itemUnLink($checkoutData->order_id);
@@ -478,9 +479,10 @@ class Order extends \App\Controllers\BaseController {
 
 
         $order_data->delivery_job=(object)[
-            'job_name'=>"Заказ #{$order->order_id}",
-            'start_plan'=>$routePlan->start_plan,
-            'start_prep_time'=>null,
+            'job_name'=>"Заказ из {$store->store_name}",
+            'start_plan'=>$routePlan->start_plan??0,
+            'start_prep_time'=>$store->store_time_preparation,
+            'finish_arrival_time'=>$routePlan->finish_arrival,
             
             'start_longitude'=>$order_start_location->location_longitude,
             'start_latitude'=>$order_start_location->location_latitude,

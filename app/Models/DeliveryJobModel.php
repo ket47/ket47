@@ -3,8 +3,9 @@ namespace App\Models;
 
 class DeliveryJobModel extends SecureModel{
     
-    use FilterTrait;
-    
+    use DeliveryJobNotificationTrait;
+    use DeliveryJobChainTrait;
+
     protected $table      = 'delivery_job_list';
     protected $primaryKey = 'job_id';
     protected $allowedFields = [
@@ -50,8 +51,17 @@ class DeliveryJobModel extends SecureModel{
     ///////////////////////////////////////////////////
     //STAGES SECTION
     ///////////////////////////////////////////////////
+
+    /**
+     * scheduled
+     * awaited
+     * assigned
+     * started
+     * finished
+     * canceled
+     */
+
     public function itemStageSet( int $order_id, string $stage, object $data=null ){
-        return;
         $data??=(object)[];
         $data->order_id=$order_id;
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
@@ -86,71 +96,24 @@ class DeliveryJobModel extends SecureModel{
         if( $shortestChain ){
             $data->start_plan=$shortestChain->start_plan;
             $data->courier_id=$shortestChain->courier_id;
-            $init_plan=$data->start_plan-$data->start_prep_time;
-            if($init_plan<time()){
-                return $this->initOrder($data);
-            }
         }
         $data->stage='awaited';
         $this->itemUpsert( $data );
         $this->chainJobs();
+        $this->itemNextCheck($data->courier_id);
         return $data->stage;
-    }
-
-    /**
-     * Here we init the order by changing stage to customer_start
-     */
-    private function initOrder( $data ){
-        /**
-         * Should we check if appointed courier is at work right now???
-         */
-        $order_stage_data=(object)[
-            'is_delivery_job_inited'=>1
-        ];
-        $OrderModel=model('OrderModel');
-        $OrderModel->itemStageCreate( $data->order_id, 'customer_start',  $order_stage_data);        
-    }
-
-    /**
-     * Inits job 
-     */
-    private function onInited( object $data ){
-        $data->stage='inited';
-        $this->itemUpsert( $data );
-        $this->itemAvailableNotify( $data );
-        return $data->stage;
-    }
-
-    public function itemAvailableNotify(){
-        $this->groupBy('courier_id');
-        $this->select('courier_id');
-        $this->select("SUM(stage IN ('awaited','inited')) has_unassigned");
-        $this->select("SUM(stage IN ('assigned','started')) has_assigned");
-        $couriers=$this->get()->getResult();
-
-        foreach($couriers as $cour){
-            if( $cour->has_assigned>0 ){
-                continue;
-            }
-            if( $cour->has_unassigned>0 && $cour->courier_id ){
-                model('CourierModel')->itemJobAvailableNotify($cour->courier_id);
-            }
-        }
     }
 
     private function onAssigned( object $data ){
         if( empty($data->courier_id) || empty($data->order_id) ){
             return 'invalid';
         }
-        $job=$this->itemGet(null,$data->order_id);
-        if( $job->stage=='awaited' ){
-            $job->stage=$this->onInited($data);
-        }
-        if( $job->stage!='inited' ){
-            return 'idle';
-        }
+        $CourierGroupMemberModel=model('CourierGroupMemberModel');
+        $CourierGroupMemberModel->joinGroupByType($data->courier_id,'busy',true);
+
         $data->stage='assigned';
         $this->itemUpdate( $data );
+        $this->chainJobs();
         return $data->stage;
     }
 
@@ -166,6 +129,7 @@ class DeliveryJobModel extends SecureModel{
         $this->chainJobs();
         return $data->stage;
     }
+
     /**
      * Deletes job 
      * @todo should calculate courier speed
@@ -174,22 +138,30 @@ class DeliveryJobModel extends SecureModel{
         $job=$this->itemGet(null,$data->order_id);
         $this->itemDelete(null,$data->order_id);
         $this->actualPointUpdate( $data->order_id, 'finish' );
-        $this->chainJobs();
         
-        $activeJobCount=$this->whereIn('stage',['started','assigned'])->select('COUNT(*) jnum')->get()->getRow('jnum');
-        if( !$activeJobCount ){
-            $CourierModel=model('CourierModel');
-            $CourierModel->itemUpdateStatus($job->courier_id,'ready');
+        $this->chainJobs();
+        $isCourierReadyForNext=$this->itemNextCheck($job->courier_id);
+        if( $isCourierReadyForNext ){//directly change courier group
+            $CourierGroupMemberModel=model('CourierGroupMemberModel');
+            $CourierGroupMemberModel->joinGroupByType($job->courier_id,'ready',true);
         }
-        $data->stage='finished';
-        return $data->stage;
+        return 'finished';
     }
+
+    /**
+     * Deletes job 
+     */
     private function onCanceled( object $data ){
+        $job=$this->itemGet(null,$data->order_id);
         $this->itemDelete(null,$data->order_id);
 
         $this->chainJobs();
-        $data->stage='canceled';
-        return $data->stage;
+        $isCourierReadyForNext=$this->itemNextCheck($job->courier_id);
+        if( $isCourierReadyForNext ){//directly change courier group
+            $CourierGroupMemberModel=model('CourierGroupMemberModel');
+            $CourierGroupMemberModel->joinGroupByType($job->courier_id,'ready',true);
+        }
+        return 'canceled';
     }
 
 
@@ -210,156 +182,8 @@ class DeliveryJobModel extends SecureModel{
     }
     
     /////////////////////////////////////////////////
-    //CHAINING SECTION
+    //PLANNING SECTION
     /////////////////////////////////////////////////
-    public function chainJobs(){
-        $CourierShiftModel=model('CourierShiftModel');
-        $openShifts=$CourierShiftModel->listGet( (object)['shift_status'=>'open'] );
-        if( !$openShifts ){//no open courier shifts
-            return false;
-        }
-
-        $this->whereIn('stage',['inited','awaited'])->update(null,['courier_id'=>null]);
-        $awaitedJobCount=$this->whereIn('stage',['inited','awaited'])->select("COUNT(*) cnt")->get()->getRow('cnt');
-        $awaitedPerShift=ceil($awaitedJobCount/count($openShifts));
-
-        $this->transBegin();
-        foreach( $openShifts as $shift ){
-            $shift->courier_speed=$this->avgSpeed;// m/s
-            $shift->last_finish_plan=time();
-
-            $shift=$this->chainStartedJobs($shift);
-            $shift=$this->chainAssignedJobs($shift);
-            if($awaitedJobCount){
-                $shift=$this->chainAwaitedJobs($shift,$awaitedPerShift);  
-            }
-            $CourierShiftModel->itemUpdate($shift);
-        }
-        $this->transCommit();
-    }
-
-    private function chainStartedJobs( object $shift ){
-        $this->select("job_id,start_plan,finish_arrival_time,finish_longitude,finish_latitude");
-        if($shift->actual_longitude && $shift->actual_latitude){
-            $this->select("ST_Distance_Sphere( POINT(finish_longitude,finish_latitude), POINT({$shift->actual_longitude}, {$shift->actual_latitude}) ) finish_arrival_distance");
-        } else {
-            $this->select("4000 finish_arrival_distance");//todo find better way
-        }
-        $this->where('courier_id',$shift->courier_id);
-        $this->where('stage','started');
-        $started_jobs=$this->orderBy('finish_arrival_distance')->findAll();
-        if( !$started_jobs ){//no started jobs, courier is ready now
-            return $shift;
-        }
-        foreach($started_jobs as $job){
-            $shift->last_finish_plan=time()+$job->finish_arrival_distance/$shift->courier_speed;
-            $shift->last_longitude=$job->finish_longitude;
-            $shift->last_latitude=$job->finish_latitude;
-
-            $finish_arrival_time=$shift->last_finish_plan-$job->start_plan;
-            $this->update($job->job_id,['finish_arrival_time'=>$finish_arrival_time]);
-        }
-        return $shift;
-    }
-
-    private function chainAssignedJobs( object $shift ){
-        $this->where('courier_id',$shift->courier_id);//only courier of shift
-        $nextLink=$this->chainLinkFind($shift->last_longitude,$shift->last_latitude,['assigned'],$shift->courier_speed);
-        if( !($nextLink->start_arrival_time??null)  ){
-            return $shift;
-        }
-        $start_plan=$shift->last_finish_plan+$nextLink->start_arrival_time;
-        $this->update($nextLink->job_id,['start_plan'=>$start_plan]);
-
-        $shift->last_finish_plan=$start_plan+$nextLink->finish_arrival_time;
-        $shift->last_longitude=$nextLink->finish_longitude;
-        $shift->last_latitude=$nextLink->finish_latitude;
-        return $this->chainAssignedJobs( $shift );
-    }
-
-    private function chainAwaitedJobs( object $shift, int $limit ){
-        if( $limit--<1 ){
-            return $shift;
-        }
-        //$this->having("start_arrival_distance<$shift->courier_reach");
-        $this->where('courier_id IS NULL');//skip jobs that are already chained
-        $nextLink=$this->chainLinkFind($shift->last_longitude,$shift->last_latitude,['inited','awaited'],$shift->courier_speed);
-        if( !($nextLink->start_arrival_time??null)  ){
-            return $shift;
-        }
-        $nextLink->courier_id=$shift->courier_id;
-        $nextLink->start_plan=$shift->last_finish_plan+$nextLink->start_arrival_time;
-        $init_plan=$nextLink->start_plan-$nextLink->start_prep_time;
-        if( $init_plan<time() && $nextLink->stage=='awaited' ){
-            $this->onInited($nextLink);
-        } else {
-            $job_update=[
-                'start_plan'=>$nextLink->start_plan,
-                //'start_arrival_time'=>$nextLink->start_arrival_time,
-                'start_arrival_time'=>$nextLink->start_arrival_time,
-                'finish_arrival_time'=>$nextLink->finish_arrival_time,
-                'courier_id'=>$nextLink->courier_id,
-                'owner_id'=>$shift->owner_id,//copying courier owner_id to job to give permission to courier owner ower it
-            ];
-            $this->fieldUpdateAllow('owner_id');
-            $this->update($nextLink->job_id,$job_update);
-        }
-
-        $shift->last_finish_plan=$nextLink->start_plan+$nextLink->finish_arrival_time;
-        $shift->last_longitude=$nextLink->finish_longitude;
-        $shift->last_latitude=$nextLink->finish_latitude;
-        return $this->chainAwaitedJobs( $shift, $limit );
-    }
-
-    private function chainLinkFind( float $last_longitude=null, float $last_latitude=null, array $stages, int $courier_speed ){
-        $ready_order_time_offset=15*60;//min offset if order is shipment or supplier_finish
-        $early_order_time_offset=30/15;//every 30 min gives 15 min preference
-        $this->select("delivery_job_list.*");
-
-
-
-        /**
-         * Calculating arrival times depending on courier speed.
-         * Should be optimized as store arrival distance and cour speed
-         * We can store it in job_data and make column as generated!
-         */
-        if($last_longitude && $last_latitude){
-            $this->select("ST_Distance_Sphere( POINT(start_longitude,start_latitude), POINT({$last_longitude}, {$last_latitude}) )/$courier_speed start_arrival_time");
-        } else {
-            $this->select("(4000/$courier_speed) start_arrival_time");//must find better solution for default value
-        }
-        //do we need it???
-        $this->select("ST_Distance_Sphere( POINT(start_longitude,start_latitude), POINT(finish_longitude,finish_latitude) )/$courier_speed finish_arrival_time");
-
-
-
-
-
-
-
-
-        $this->select("IF(group_type='supplier_finish' OR is_shipment,$ready_order_time_offset,0) readiness_offset");
-        $this->select("ROUND( TIMESTAMPDIFF(SECOND,delivery_job_list.created_at,NOW()) *{$early_order_time_offset} *900 )/900 earliness_offset");
-
-        $this->join('order_list','order_id');
-        $this->join('order_group_list','group_id=order_group_id');//
-        
-        $this->whereIn('stage',$stages);
-        $this->orderBy("start_arrival_time - readiness_offset - earliness_offset",'ASC',false);
-
-        return $this->limit(1)->get()->getRow();//not using primary key array s unwanted; permission check is unnecessary
-    }
-
-    private function chainShortestGet( float $start_longitude, float $start_latitude ){
-        $now=time();
-        $CourierShiftModel=model('CourierShiftModel');
-        $CourierShiftModel->select("courier_id,courier_speed");
-        $CourierShiftModel->select("COALESCE(ST_Distance_Sphere( POINT(last_longitude,last_latitude), POINT({$start_longitude}, {$start_latitude}) )/courier_speed,{$this->avgStartArrival})
-                                    + GREATEST(IFNULL(last_finish_plan,0),{$now}) start_plan");
-        $CourierShiftModel->where('shift_status','open');
-        $CourierShiftModel->orderBy('start_plan');
-        return $CourierShiftModel->limit(1)->get()->getRow();
-    }
 
     /**
      * Function estimates when courier may become ready
@@ -371,6 +195,10 @@ class DeliveryJobModel extends SecureModel{
     public function startPlanEstimate( float $start_longitude, float $start_latitude, int $finish_distance=0 ):array{
         $nowHour=(int) date('H');
         $nearestMinute=$this->avgStartArrival/60;
+        /**
+         * Customer requests before shift start. 
+         * So we offer to schedule after shift start
+         */
         if( $nowHour<$this->shiftStartHour ){
             $time=strtotime(date("Y-m-d {$this->shiftStartHour}:$nearestMinute:00"));
             return [
@@ -380,6 +208,9 @@ class DeliveryJobModel extends SecureModel{
         }
 
         $shortestChain=$this->chainShortestGet($start_longitude, $start_latitude);
+        // ql($this);
+        // pl($shortestChain);
+
         $start_plan=$shortestChain->start_plan??0;
         $startHour=(int) date('H',$start_plan+$this->shiftEndMarginMinute*60);//start_plan should be smaller than shift_end at least by margin
         $finish_arrival=round($finish_distance/($shortestChain->courier_speed??$this->avgSpeed));
@@ -465,7 +296,7 @@ class DeliveryJobModel extends SecureModel{
         $LocationModel=model('LocationModel');
         $start_point=$LocationModel->itemGet($start_location_id);
         $finish_distance=$result->deliveryDistance;//m
-        $startPlan=$this->startPlanEstimate($start_point->location_latitude,$start_point->location_longitude,$finish_distance);
+        $startPlan=$this->startPlanEstimate($start_point->location_longitude,$start_point->location_latitude,$finish_distance);
 
         $result->start_plan_mode=$startPlan['mode'];
         $result->start_plan=$startPlan['start_plan'];
@@ -538,39 +369,6 @@ class DeliveryJobModel extends SecureModel{
         return $this->shiftEndHour;
     }
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function itemGet(int $job_id=null,int $order_id=null){
         if($order_id){
             $jobsAll=$this->where('order_id',$order_id)->find();
@@ -651,7 +449,24 @@ class DeliveryJobModel extends SecureModel{
     }
     
     public function listGet(){
-        $this->select("job_id,job_name,order_id,start_plan,start_color,start_address,finish_arrival_time,finish_color,finish_address,stage");
+        $this->select("
+        job_id,
+        job_name,
+        IFNULL(job_data->>'$.is_shipment',0) is_shipment,
+        IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,
+        order_id,
+        start_plan,
+        start_color,
+        start_address,
+        start_longitude,
+        start_latitude,
+        finish_arrival_time,
+        finish_color,
+        finish_address,
+        finish_longitude,
+        finish_latitude,
+        stage
+        ");
         
         $this->orderBy('start_plan');
         return $this->get()->getResult();

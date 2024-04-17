@@ -157,20 +157,6 @@ class CourierModel extends Model{
 
 
 
-    private function itemHasActiveOrders($courier_id){
-        return false;
-        /**
-         * NOT SO EASY must have delivery finish
-         */
-
-        // $OrderModel=model('OrderModel');
-        // $OrderModel->join('order_group_list','order_group_id=group_id');
-        // $OrderModel->where('order_courier_id',$courier_id);
-        // $OrderModel->where("group_type<>'system_finish'");
-        // $OrderModel->limit(1);
-        // $OrderModel->select("1 has_orders");
-        // return $OrderModel->get()->getRow('has_orders');
-    }
     /**
      * Function changes group courier belongs to AND notifies about awating orders
      */
@@ -186,30 +172,10 @@ class CourierModel extends Model{
         if( !$is_active && $group_type!='idle' ){
             return 'notactive';
         }
-        if( $group_type=='ready' && $this->itemHasActiveOrders($courier_id) ){
-            return 'has_active_orders';
-        }
         $CourierGroupMemberModel=model('CourierGroupMemberModel');
         $leave_other_groups=true;
         $ok=$CourierGroupMemberModel->joinGroupByType( $courier_id, $group_type, $leave_other_groups );
         if( $ok ){
-            if($group_type=='ready'){
-                $courier=$this->itemGet($courier_id,'basic');
-                /**
-                 * If we will use task it will execute as guest so can't pass checks so need to execute directly
-                 */
-
-                $this->itemNotify($courier);
-
-                // $notify_of_waiting_jobs_task=[
-                //     'task_name'=>"notify_of_waiting_jobs_task",
-                //     'task_programm'=>[
-                //             ['model'=>'CourierModel','method'=>'itemNotify','arguments'=>[$courier]]//executes as guest
-                //     ],
-                //     'task_next_start_time'=>time()+5
-                // ];
-                // jobCreate($notify_of_waiting_jobs_task);
-            }
             return 'ok';
         }
         return 'error';
@@ -224,6 +190,8 @@ class CourierModel extends Model{
         if( $result=='ok' ){
             $CourierShiftModel=model('CourierShiftModel');
             return $CourierShiftModel->itemOpen($courier_id,$courier->owner_id);
+            // $courier=$this->itemGet($courier_id,'basic');
+            // $this->itemNotify($courier);
         }
 
         if( $result=='notactive' ){
@@ -326,12 +294,10 @@ class CourierModel extends Model{
         return false;
     }
 
-
+    /**
+     * DEPRECATED
+     */
     public function isCourierReady($courier_id=null){
-        $isAdmin=sudo();
-        if( $isAdmin ){
-            return true;
-        }
         $user=session()->get('user_data');
         $isCourier=str_contains($user->member_of_groups->group_types??'','courier');
         if( !$isCourier ){
@@ -406,35 +372,6 @@ class CourierModel extends Model{
     }
 
 
-    public function listJobGet2( $courier_id ){
-        //courier should be able to preview jobs
-        $isCourierReady=$this->isCourierReady();
-        if( !$isCourierReady ){
-            return 'notready';
-        }
-        $OrderModel=model('OrderModel');
-        $OrderModel->select("ll.location_latitude,ll.location_longitude,ll.location_address,llf.location_address finish_location_address,llf.location_comment finish_location_comment");
-        $OrderModel->select("order_id,order_list.created_at,order_description,'courier' user_role, 1 is_courier_job");
-        $OrderModel->select("store_id,store_name");
-        $OrderModel->select("order_data->>'$.plan_delivery_start' plan_delivery_start,'courier' user_role, 1 is_courier_job");
-
-        $OrderModel->join('order_group_member_list ogml','member_id=order_id');
-        $OrderModel->join('order_group_list ogl','group_id');
-        $OrderModel->join('location_list ll','ll.location_id=order_start_location_id');
-        $OrderModel->join('location_list llf','llf.location_id=order_finish_location_id');
-        $OrderModel->join('store_list sl','store_id=order_store_id','left');
-        
-        $OrderModel->where('group_type','delivery_search');
-        $OrderModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
-
-        $OrderModel->orderBy('plan_delivery_start');
-        $job_list=$OrderModel->get()->getResult();
-
-        if( !is_array($job_list) ){
-            return 'notfound';
-        }
-        return $job_list;
-    }
 
     public function listJobGet( $courier_id ){
         //courier should be able to preview jobs
@@ -453,14 +390,15 @@ class CourierModel extends Model{
         $LocationModel->select("location_latitude,location_longitude,location_address");
         $LocationModel->select("order_id,order_list.created_at,order_description,'courier' user_role, 1 is_courier_job");
         $LocationModel->select("store_id,store_name");
-        $LocationModel->join('store_list',"location_holder_id=store_id AND is_main=1");
-        $LocationModel->join('order_list','store_id=order_store_id');
+        $LocationModel->join('order_list','order_start_location_id=location_id');
         $LocationModel->join('order_group_member_list ogml','member_id=order_id');
         $LocationModel->join('order_group_list ogl','group_id');
+        $LocationModel->join('store_list',"order_store_id=store_id",'left');
         $LocationModel->where('group_type','delivery_search');
-        $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<4');//only 3 hours
+        $LocationModel->where('TIMESTAMPDIFF(HOUR,ogml.created_at,NOW())<5');//only 5 hours
 
-        $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance, 'store' );
+
+        $job_list=$LocationModel->distanceListGet( $courier_location->location_id, $point_distance );
         if( !is_array($job_list) ){
             return 'notfound';
         }
@@ -485,6 +423,10 @@ class CourierModel extends Model{
         return $job;
     }
 
+
+    /**
+     * Deprecated use DeliveryJobs->itemTake
+     */
     public function itemJobStart( $order_id, $courier_id ){
         $isCourierReady=$this->isCourierReady($courier_id);
         if( !$isCourierReady ){
@@ -501,7 +443,7 @@ class CourierModel extends Model{
             return 'notsearching';
         }
         $courier=$this->itemGet($courier_id,'basic');
-        $OrderModel->allowWrite();//allow modifing order once
+        $OrderModel->allowWrite();//allow modifying order once
         $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
         $OrderModel->itemUpdateOwners($order_id);
         $result=$this->itemUpdateStatus($courier_id,'busy');
@@ -516,7 +458,7 @@ class CourierModel extends Model{
         return $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
     }
 
-    private function itemJobStartNotify( $reciever_id, $context ){
+    public function itemJobStartNotify( $reciever_id, $context ){
         if( $reciever_id==session()->get('user_id') ){
             return;//if courier picked job don't send notif to himself
         }
@@ -622,6 +564,14 @@ class CourierModel extends Model{
      * @param object $courier the object of courier that is ready to send list of jobs
      */
     public function itemNotify( $courier ){
+        return;
+
+
+
+
+
+
+
         if(!$courier){
             return;
         }
@@ -684,6 +634,9 @@ class CourierModel extends Model{
      * @todo We should in future check the distance between store and courier!!!
      */
     public function listNotify( $new_job ){
+        return;
+
+
         $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
         if( !$ready_courier_list ){
             return false;

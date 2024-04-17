@@ -66,6 +66,7 @@ trait CourierTrait{
             $CourierShiftModel=model('CourierShiftModel');
             $CourierShiftModel->fieldUpdateAllow('actual_longitude');
             $CourierShiftModel->fieldUpdateAllow('actual_latitude');
+            $CourierShiftModel->allowWrite();
             $CourierShiftModel->where('courier_id',$courier->courier_id)->where('shift_status','open');
             $CourierShiftModel->update(null,['actual_longitude'=>$location['longitude'],'actual_latitude'=>$location['latitude']]);
         }

@@ -18,8 +18,6 @@ class Task extends \App\Controllers\BaseController{
         $time=time();
         $job2execute=$predis->zRangeByScore('queue.delayed', 0, $time);
         $predis->zRemRangeByScore('queue.delayed',0,$time);
-        //pl($time);
-        //pl($job2execute);
         foreach($job2execute as $job){
             $predis->lPush('queue.priority.normal', $job);
         }
@@ -37,7 +35,6 @@ class Task extends \App\Controllers\BaseController{
         $worker_id = rand(100, 999);
         
         echo "\nWorker #$worker_id Starting.".date('H:i:s');
-        echo "\nWaiting for a Job";
         $predis = new \Credis_Client();
         $this->timedJobDo($predis);
 
@@ -56,9 +53,9 @@ class Task extends \App\Controllers\BaseController{
             if( !$task ){
                 echo "\nInvalid job syntax: ".json_last_error_msg();
             }
-            echo "\nJob {($task->task_name??'-')} Started at ".date('H:i:s')." result=";
-            print_r( $this->itemExecute( $task ) );
-            echo "\nDone!";
+            //echo "\nJob {($task->task_name??'-')} Started at ".date('H:i:s')." result=";
+            $this->itemExecute( $task );
+            //echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is a job
         }
         echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
@@ -70,7 +67,7 @@ class Task extends \App\Controllers\BaseController{
     private function timedJobDo($predis){
         $this->taskPurge($predis);
         $this->taskShiftClose($predis);
-        //$this->taskCourierNotify($predis);
+        $this->taskCourierNotify($predis);
     }
 
     private function taskPurge($predis){
@@ -108,9 +105,9 @@ class Task extends \App\Controllers\BaseController{
         if( $timerNotExpired ){
             return false;
         }
-        $predis->setEx('couriernotifytimer',5*60,1);//5 min
+        $predis->setEx('couriernotifytimer',3*60,1);//3 min
         $DeliveryJobModel=model("DeliveryJobModel");
-        $DeliveryJobModel->itemAvailableNotify();
+        $DeliveryJobModel->itemNextRemind();
     }
 
 
@@ -123,7 +120,7 @@ class Task extends \App\Controllers\BaseController{
         $pending_tasks=$TaskModel->listGet($filter);
         foreach($pending_tasks as $task){
             $result=$this->itemExecute($task);
-            echo "\n".date('H:i:s')." $task->task_name: $result\n";
+            echo "\n".date('H:i:s').($task->task_name??'-')." : $result\n";
         }
         return true;
     }
@@ -156,7 +153,7 @@ class Task extends \App\Controllers\BaseController{
             try{
                 $task_result=$Class->{$command->method}(...$arguments);
             } catch (\Exception $e){
-                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task->task_name)."\n".$e->getMessage()."\n".$e->getTraceAsString() );
+                log_message('error', 'TASK EXECUTION ERROR:'. json_encode($task->task_name??'-')."\n".$e->getMessage()."\n".$e->getTraceAsString() );
             }
         }
         if( isset($task->task_id) ){//task from task_list

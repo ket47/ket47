@@ -9,7 +9,7 @@ class ShipmentStageScript{
             ],
         'customer_deleted'=>                [],
         'customer_cart'=>[
-            'customer_action_checkout'=>    ['Перейти к оформлению'],
+            'customer_action_confirm'=>    ['Перейти к оформлению'],
             'customer_deleted'=>            ['Удалить','danger','clear'],
             'customer_confirmed'=>          [],
             ],
@@ -17,7 +17,7 @@ class ShipmentStageScript{
             'system_reckon'=>               []
             ],
         'customer_confirmed'=>[
-            'customer_action_checkout'=>    ['Перейти к оформлению'],
+            'customer_action_confirm'=>    ['Перейти к оформлению'],
             'customer_cart'=>               ['Изменить','light'],
             'system_await'=>                [],
             'system_schedule'=>             [],
@@ -61,6 +61,9 @@ class ShipmentStageScript{
             ],
 
 
+        // 'admin_customer_start'=>[
+        //     'customer_start'=>              []
+        // ],
         'admin_supervise'=>[
             'system_finish'=>               ['Проблема решена','success'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
@@ -96,9 +99,9 @@ class ShipmentStageScript{
     public function onAdminSupervise( $order_id ){
         return 'ok';
     }
-    public function onAdminSystemStart( $order_id ){
+    public function onAdminCustomerStart( $order_id ){
         $order_data_update=(object)[
-            'plan_mode'=>'start'
+            'plan_mode'=>'inited'
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
@@ -208,7 +211,22 @@ class ShipmentStageScript{
         return 'ok';
     }
 
-    public function onCustomerConfirmed( $order_id ){
+    public function onCustomerConfirmed( $order_id, $data ){
+        if( $data ){
+            /**
+             * Here we are fixating data from shipmentDraft at first sync
+             * 1)Allowing save delivery sum estimation from client!
+             * But final delivery_sum will be written at checkoutDataSet
+             * 2)Fixing selected location data
+             */
+            $this->OrderModel->fieldUpdateAllow('order_sum_delivery');
+            $this->OrderModel->itemUpdate($data);
+            $LocationModel=model('LocationModel');
+            $order_data=(object)[];
+            $order_data->location_start=$LocationModel->itemGet($data->order_start_location_id,'all');
+            $order_data->location_finish=$LocationModel->itemGet($data->order_finish_location_id,'all');
+            $this->OrderModel->itemDataCreate($order_id,$order_data);
+        }
         ////////////////////////////////////////////////
         //RESET SECTION
         ////////////////////////////////////////////////
@@ -271,7 +289,7 @@ class ShipmentStageScript{
             return $this->OrderModel->itemStageCreate($order_id, 'system_await');
         }
         if( $order_data->start_plan_mode=='inited' ){
-            return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
+            return $this->OrderModel->itemStageCreate($order_id, 'system_await');//this should be customer_start but lets stuck with system_await for now
         }
         return 'no_plan_mode';
     }
@@ -288,14 +306,11 @@ class ShipmentStageScript{
         if( empty($order_data->delivery_job) ){
             return 'delivery_is_missing';
         }
-        // if( $order_data->start_plan_mode=='scheduled' ){
-        //     $result=$this->OrderModel->itemStageCreate( $order_id, 'system_schedule', $order_data );//passing $order_data
-        //     if( $result=='ok' ){
-        //         return 'ok';//Order is in Scheduled stage
-        //     }
-        // }
-        $DeliveryJobModel=model('DeliveryJobModel');
-        $DeliveryJobModel->itemStageSet( $order_id, 'awaited', $order_data->delivery_job );
+        $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
+        ]];
+        jobCreate($deliveryJob);
 
         ///////////////////////////////////////////////////
         //CREATING STAGE NOTIFICATIONS
@@ -306,7 +321,6 @@ class ShipmentStageScript{
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
-            'customer_start_time'=>$order_data->start_plan??0,
             'order'=>$order,
             'order_data'=>$order_data,
             'store'=>$store,
@@ -316,8 +330,11 @@ class ShipmentStageScript{
         $notifications[]=(object)[
             'message_transport'=>'telegram',
             'message_reciever_id'=>-100,
-            'template'=>'messages/order/on_ship_customer_start_ADMIN_sms.php',
-            'context'=>$context
+            'template'=>'messages/order/on_ship_system_await_ADMIN_sms.php',
+            'context'=>$context,
+            'telegram_options'=>[
+                'disable_notification'=>1,
+            ],
         ];
         $notification_task=[
             'task_name'=>"shipping system_await Notify #$order_id",
@@ -331,26 +348,21 @@ class ShipmentStageScript{
 
     public function onSystemSchedule( $order_id ){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        //$this->OrderModel->itemDataUpdate($order_id,(object)['start_plan_mode'=>'awaited']);
+        $this->OrderModel->itemDataUpdate($order_id,(object)['start_plan_mode'=>'awaited']);
+        
         $DeliveryJobModel=model('DeliveryJobModel');
         $start_offset=$DeliveryJobModel->avgStartArrival;//in sec
         $init_plan=$order_data->start_plan-$start_offset;
         if( $init_plan<time() ){//should be placed in awaited queue already
             //it will be done automatically
-            //return $this->OrderModel->itemStageCreate($order_id, 'system_await');
+            return $this->OrderModel->itemStageCreate($order_id, 'system_await');
         }
 
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'scheduled', $order_data->delivery_job]]
+        ]];
+        jobCreate($deliveryJob);
 
-
-        $init_plan=time()+5;
-
-
-
-
-
-
-
-        $DeliveryJobModel->itemStageSet( $order_id, 'scheduled', $order_data->delivery_job );
         $set_on_queue_task=[
             'task_name'=>"Delivery job On schedule #$order_id",
             'task_programm'=>[
@@ -367,16 +379,10 @@ class ShipmentStageScript{
         if( empty($order_data->payment_by_credit_store) && empty($order_data->payment_card_fixate_sum) ){//only prepayed orders are allowed
             return 'payment_is_missing';
         }
-        if( !empty($order_data->delivery_by_courier) && !sudo() ){//initiation only from DeliveryJobManager
-            if( empty($data->is_delivery_job_inited) ){
-                return 'customer_start_premature';
-            }
-        }
-        ///////////////////////////////////////////////////
-        //STARTING TO COURIER SEEKING
-        ///////////////////////////////////////////////////
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'inited' );
 
+        if( $order_data->start_plan_mode!=='inited' ){
+            return 'customer_start_premature';
+        }
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
         $order=$this->OrderModel->itemGet($order_id);
@@ -406,14 +412,6 @@ class ShipmentStageScript{
         $info_for_courier->customer_name=$order->customer->user_name;
         $info_for_courier->customer_email=$order->customer->user_email;
 
-        // $info_for_courier->supplier_location_address=$supplierLocation->location_address??'';
-        // $info_for_courier->supplier_location_comment=$supplierLocation->location_comment??'';
-        // $info_for_courier->supplier_location_latitude=$supplierLocation->location_latitude??'';
-        // $info_for_courier->supplier_location_longitude=$supplierLocation->location_longitude??'';
-        // $info_for_courier->supplier_phone='+'.clearPhone($order->store->);
-        // $info_for_courier->supplier_name=$order->store->store_name??'';
-        // $info_for_courier->supplier_email=$order->store->store_email??'';
-
         $update=(object)[
             'info_for_courier'=>json_encode($info_for_courier),
         ];
@@ -422,10 +420,10 @@ class ShipmentStageScript{
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
         $this->OrderModel->itemUpdateOwners($order_id);
-        ///////////////////////////////////////////////////
-        //STARTING DELIVERY SEARCH IF NEEDED
-        ///////////////////////////////////////////////////
-        if( !empty($order_data->delivery_by_courier) ){
+        /**
+         * Starting search of courier only if needed and not assigned already
+         */
+        if( !empty($order_data->delivery_by_courier) && empty($order->order_courier_id) ){
             $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
         }
         ///////////////////////////////////////////////////
@@ -466,7 +464,10 @@ class ShipmentStageScript{
         $UserModel=model('UserModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled' );
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $customer=$UserModel->itemGet($order->owner_id,'basic');
@@ -548,17 +549,25 @@ class ShipmentStageScript{
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_supplier'=>json_encode($info_for_supplier),
+            'start_plan_mode'=>'inited'
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]);
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]]]
+        ]];
+        jobCreate($deliveryJob);
+
+
+
+
 
         $context=[
             'order'=>$order,
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'telegram,push',
+            'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
@@ -569,11 +578,27 @@ class ShipmentStageScript{
                 ]
         ];
         jobCreate($notification_task);
-        return 'ok';
+        // $orderStartTask=['task_programm'=>[
+        //     ['method'=>'orderStageCreate','arguments'=>[ $order_id, 'customer_start']]
+        // ]];
+        // jobCreate($orderStartTask);
+
+        /**
+         * Here we are starting order under SYSTEM user
+         * Is it dangerous???
+         */
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+            $result=$this->OrderModel->itemStageCreate( $order_id, 'customer_start' );
+        $UserModel->systemUserLogout();
+        return $result;
     }
     
     public function onDeliveryStart( $order_id ){
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'started' );
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'started']]
+        ]];
+        jobCreate($deliveryJob);
         return 'ok';
     }
 
@@ -583,7 +608,10 @@ class ShipmentStageScript{
         $CourierModel=model('CourierModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled' );
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'all');
@@ -631,7 +659,10 @@ class ShipmentStageScript{
         $StoreModel=model('StoreModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled' );
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
@@ -678,12 +709,10 @@ class ShipmentStageScript{
     }
 
     public function onDeliveryFinish( $order_id ){
-        $order_basic=$this->OrderModel->itemGet($order_id,'basic');
-        if($order_basic->order_courier_id){//if stage changed by admin skip this
-            $CourierModel=model('CourierModel');
-            $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
-        }
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'finished' );
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'finished']]
+        ]];
+        jobCreate($deliveryJob);
 
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
     }

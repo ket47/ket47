@@ -65,6 +65,10 @@ class EntryModel extends Model{
             $product_quantity=1;
         }
 
+        $entry_text="{$product_basic->product_name} {$product_basic->product_code}";
+        if($product_basic->product_option){
+            $entry_text.=" [{$product_basic->product_option}]";
+        }
         $this->allowedFields[]='order_id';
         $this->allowedFields[]='product_id';
         $this->allowedFields[]='entry_text';
@@ -74,7 +78,7 @@ class EntryModel extends Model{
         $new_entry=[
             'order_id'=>$order_id,
             'product_id'=>$product_id,
-            'entry_text'=>"{$product_basic->product_name} {$product_basic->product_code}",
+            'entry_text'=>$entry_text,
             'entry_quantity'=>$product_quantity,
             'entry_price'=>$product_basic->product_final_price,
             'entry_comment'=>$entry_comment,
@@ -194,8 +198,8 @@ class EntryModel extends Model{
         $this->permitWhere('r');
         $this->select($this->listGetSelectedFields);
         $this->where('order_id',$order_id);
-        $this->join('image_list','image_holder_id=product_id AND image_holder="product" AND is_main=1','left');
         $this->join('product_list','product_id','left');
+        $this->join('image_list','image_holder_id=COALESCE(product_parent_id,product_id) AND image_holder="product" AND is_main=1','left');
         $entries=$this->get()->getResult();
         return $entries;
     }

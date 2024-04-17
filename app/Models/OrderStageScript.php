@@ -332,7 +332,10 @@ class OrderStageScript{
         //STARTING DELIVERY SEARCH IF NEEDED
         ///////////////////////////////////////////////////
         if( ($order_data->delivery_by_courier??0)==1 ){
-            model('DeliveryJobModel')->itemStageSet( $order_id, 'inited', $order_data->delivery_job);
+            $deliveryJob=['task_programm'=>[
+                ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
+            ]];
+            jobCreate($deliveryJob);
             $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
         }
         ///////////////////////////////////////////////////
@@ -446,7 +449,10 @@ class OrderStageScript{
 
         $EntryModel->listStockMove($order_id,'free');
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $StoreModel->itemCacheClear();
@@ -624,7 +630,11 @@ class OrderStageScript{
 
         $EntryModel->listStockMove($order_id,'free');
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
+
         
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
@@ -939,8 +949,11 @@ class OrderStageScript{
         $job=(object)[
             'courier_id'=>$order->order_courier_id
         ];
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $job]]
+        ]];
+        jobCreate($deliveryJob);
 
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'started', $job );
 
         $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();
@@ -1016,6 +1029,10 @@ class OrderStageScript{
         // if( !$order->images ){
         //     return 'photos_must_be_made';
         // }
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'started']]
+        ]];
+        jobCreate($deliveryJob);
         return 'ok';
     }
     public function onDeliveryForceStart( $order_id ){
@@ -1037,7 +1054,10 @@ class OrderStageScript{
         $CourierModel=model('CourierModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'all');
@@ -1085,7 +1105,10 @@ class OrderStageScript{
         $StoreModel=model('StoreModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'canceled');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'canceled']]
+        ]];
+        jobCreate($deliveryJob);
 
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
@@ -1169,7 +1192,10 @@ class OrderStageScript{
             ];
             $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         }
-        model('DeliveryJobModel')->itemStageSet( $order_id, 'finished');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'finished']]
+        ]];
+        jobCreate($deliveryJob);
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
@@ -1197,6 +1223,7 @@ class OrderStageScript{
             'sanction_customer_fee'=>1,
             'sanction_courier_fee'=>0,
             'sanction_supplier_fee'=>0,
+            'order_is_canceled'=>0
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
