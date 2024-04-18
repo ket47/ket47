@@ -83,7 +83,7 @@ class Store extends \App\Controllers\BaseController{
         $location_id=$this->request->getVar('location_id');
         $StoreModel=model('StoreModel');
         $result=$StoreModel->primaryNearGet(['location_id'=>$location_id]);
-        $result=array_pop($this->appStoreFilter([$result]));
+        $result=$this->appStoreFilter([$result])[0]??null;
         if( $result=='not_found' ){
             return $this->failNotFound($result);
         }

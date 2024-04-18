@@ -59,6 +59,9 @@ class TransactionModel extends Model{
         $this->join('transaction_tag_list','trans_id');
         $this->where($tagWhere);
         $this->groupBy('trans_id');
+        /**
+         * here we should limit selected columns not *
+         */
         $this->select("transaction_list.*,COUNT(link_id) matched_tags");
         $this->having("matched_tags='$tagCount'");
 

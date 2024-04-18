@@ -168,8 +168,10 @@ class UserModel extends Model{
                 $UserGroupMemberModel->joinGroupByType($user_id,'customer');
                 $this->allowedFields[]='owner_id';
                 $this->update($user_id,['owner_id'=>$user_id]);
+                $this->transCommit();
+            } else {
+                $this->transRollback();
             }
-        $this->transCommit();
         return $user_id;        
     }
     
@@ -340,13 +342,18 @@ class UserModel extends Model{
 
 
         if( !$user_id ){
+            $text="❌❌❌ Неудачная попытка регистрации: $user_name +$user_phone_cleared. ";
+            $errs=$this->errors();
+            if( ($errs['user_phone']??null) == 'notunique'){
+                $text.=" Уже зарегистрирован";
+            }
             $admin_sms=(object)[
                 'message_reciever_id'=>-100,
                 'message_transport'=>'telegram',
-                'message_text'=>"❌❌❌ Неудачная попытка регистрации: $user_name +$user_phone_cleared",
+                'message_text'=>$text,
             ];
             $notification_task=[
-                'task_name'=>"signup_welcome_sms",
+                'task_name'=>"error_sms",
                 'task_programm'=>[
                         ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
                     ]
