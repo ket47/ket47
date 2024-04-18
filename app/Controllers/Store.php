@@ -54,11 +54,11 @@ class Store extends \App\Controllers\BaseController{
         } else {
             $filtered=[];
             foreach($result as $store){
-                if( !in_array($store->store_id,$this->appStoreWhitelist) ){
+                if( !in_array($store->store_id??0,$this->appStoreWhitelist) ){
                     $filtered[]=$store;
                 }
             }
-            //return $filtered;
+            return $filtered;
         }
         return $result;
     }

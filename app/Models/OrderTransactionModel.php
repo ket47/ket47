@@ -61,9 +61,9 @@ class OrderTransactionModel extends TransactionModel{
         }
 
         $refundIsFull=false;
-        $refundSum=$fixationBalance-$order_basic->order_sum_total;
+        $refundSum=round($fixationBalance-$order_basic->order_sum_total,2);
         if( ($order_data->order_is_canceled??0) || ($order_data->sanction_courier_fee??0) || ($order_data->sanction_supplier_fee??0)  ){
-            $refundSum=$fixationBalance;
+            $refundSum=round($fixationBalance,2);
             $refundIsFull=true;
         }
         if( $refundSum<0 ){
@@ -113,7 +113,7 @@ class OrderTransactionModel extends TransactionModel{
         }
 
         $confirmIsFull=($order_basic->order_sum_total==$fixationBalance)?true:false;
-        $confirmSum=$order_basic->order_sum_total;
+        $confirmSum=round($order_basic->order_sum_total,2);
 
         if( $fixationBalance<$confirmSum || $confirmSum<0 ){
             log_message('error',"Payment confirmation failed for order #{$order_basic->order_id}. Fixation balance is smaller $fixationBalance<=$confirmSum ");

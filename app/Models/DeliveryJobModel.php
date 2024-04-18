@@ -390,7 +390,9 @@ class DeliveryJobModel extends SecureModel{
             $job_id=$this->ignore()->insert($job,true);
             return $job_id;
         } catch(\Throwable $e){
-            return $e->getMessage();
+            $err=$e->getMessage();
+            pl(['DeliveryJob->itemCreate',$err]);
+            return $err;
         }
     }
     public function itemDataCreate( int $job_id, object $data_create ){
