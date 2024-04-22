@@ -227,13 +227,20 @@ class TestController extends \App\Controllers\BaseController{
 
         $col=new \App\Libraries\Coords2Color();
         echo "<table cellspacing=0>";
-        for($i=0;$i<100;$i++){
+        for($i=100;$i>=0;$i--){
+
             echo '<tr>';
-            for($k=0;$k<100;$k++){
+            for($k=0;$k<=100;$k++){
                 $lon=$claster[0][0]+$deltaX/100*$k;
                 $lat=$claster[0][1]+$deltaY/100*$i;
-                $color=$col->getColor('claster1',$lat,$lon);
-                echo "<td style='background-color:$color;width:15px;height:15px;'></td>";
+                $color="";
+                $in=$i-50;
+                $kn=50-$k;
+                $r=round(sqrt($in*$in+$kn*$kn));
+                if( $r==0 || $r%5==0 ){
+                    $color=$col->getColor('claster1',$lat,$lon);
+                }
+                echo "<td style='background-color:$color;width:10px;height:10px;'></td>";
             }
             echo '</tr>';
         }

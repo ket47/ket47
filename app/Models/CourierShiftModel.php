@@ -13,6 +13,7 @@ class CourierShiftModel extends SecureModel{
         'courier_reach',
         'actual_longitude',
         'actual_latitude',
+        'actual_color',
         'last_finish_plan',
         'last_longitude',
         'last_latitude',
@@ -159,8 +160,18 @@ class CourierShiftModel extends SecureModel{
         jobCreate($sms_job);        
     }
     
-    public function itemUpdate( object $shift ){
-        $this->update($shift->shift_id,$shift);
+    public function itemUpdate( object $update ){
+        if( $update->actual_longitude??null && $update->actual_latitude??null ){
+            $colorMap=new \App\Libraries\Coords2Color();
+            $update->actual_color=$colorMap->getColor('claster1',$update->actual_latitude,$update->actual_longitude);
+        }
+        if($update->shift_id??null){
+            $this->update($update->shift_id,$update);
+        } else 
+        if($update->courier_id??null){
+            $this->where('courier_id',$update->courier_id)->where('shift_status','open');
+            $this->update(null,$update);
+        }
         return $this->db->affectedRows()?'ok':'idle';
     }
     

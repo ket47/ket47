@@ -50,6 +50,9 @@ trait DeliveryJobNotificationTrait{
             return false;
         }
         foreach($freeCouriers as $free){
+            if(!$free->courier_id){
+                continue;
+            }
             $awaitedNext=$this->itemNextGet($free->courier_id);
             $this->itemNextNotify($awaitedNext,$free->awaited_count);
         }
@@ -82,7 +85,10 @@ trait DeliveryJobNotificationTrait{
                 'type'=>'flash',
                 'title'=>'Следующее задание',
                 'link'=>getenv('app.frontendUrl').'order/order-list',
-                'sound'=>'long.wav'
+                'sound'=>'long.wav',
+            ],
+            'telegram_options'=>[
+                'buttons'=>[['',"onCourierJobTake-{$awaitedNext->order_id}",'🚀 Взять']]
             ],
             'template'=>'messages/events/on_delivery_job_available_sms',
             'context'=>[
@@ -91,8 +97,6 @@ trait DeliveryJobNotificationTrait{
             ]
         ];
 
-
-
         //tmp copy to admin
         $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
         $copy=(object)[
@@ -100,7 +104,9 @@ trait DeliveryJobNotificationTrait{
             'message_transport'=>'telegram',
             'message_text'=>"{$courier_name} уведомлен о {$awaitedNext->job_name} #{$awaitedNext->order_id}",
             'telegram_options'=>[
-                'disable_notification'=>1,
+                'opts'=>[
+                    'disable_notification'=>1,
+                ]
             ],
         ];
         jobCreate([

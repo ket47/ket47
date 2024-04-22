@@ -380,13 +380,13 @@ class AcquirerRncb{
         $request=[
             "tran"=>[
                 "phase"=>"Clearing",
-                "amount"=>$sum
+                "amount"=>number_format($sum,2,'.','')
             ]
         ];
         $function="order/{$docId}/exec-tran";
         $response=$this->apiExecute($function,$request);
         if($response->errorCode??null){
-            pl(['Acquirer:confirm',$docId,$response]);
+            pl(['Acquirer:confirm',$request,$docId,$response]);
             return null;
         }
 
@@ -407,13 +407,13 @@ class AcquirerRncb{
             "tran"=>[
                 "phase"=>"Auth",
                 "voidKind"=>$voidKind,
-                "amount"=>$sum
+                "amount"=>number_format($sum,2,'.','')//rounding to avoid float tail
             ]
         ];
         $function="order/{$docId}/exec-tran";
         $response=$this->apiExecute($function,$request);
         if( ($response->errorCode??null) ){
-            pl(['Error Acquirer:refund',$docId,$response]);
+            pl(['Error Acquirer:refund',$request,$docId,$response]);
             return null;
         }
 

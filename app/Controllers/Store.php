@@ -138,6 +138,9 @@ class Store extends \App\Controllers\BaseController{
     public function itemUpdate(){
         $data= $this->request->getJSON();
         $StoreModel=model('StoreModel');
+        if( $data->store_delivery_methods??null ){
+            $data->store_delivery_methods=strip_tags($data->store_delivery_methods,['<b>','<strong>','<br>','<i>','<u>','<p>','<ul>','<ol>','<li>','<h1>','<h2>','<h3>']);
+        }
         $result=$StoreModel->itemUpdate($data);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);

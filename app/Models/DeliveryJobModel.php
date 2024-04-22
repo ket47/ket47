@@ -92,15 +92,15 @@ class DeliveryJobModel extends SecureModel{
             return 'invalid';
         }
         $data->start_prep_time??=$this->minStartPreparation;
-        $shortestChain=$this->chainShortestGet($data->start_longitude,$data->start_latitude);
-        if( $shortestChain ){
-            $data->start_plan=$shortestChain->start_plan;
-            $data->courier_id=$shortestChain->courier_id;
-        }
+        // $shortestChain=$this->chainShortestGet($data->start_longitude,$data->start_latitude);
+        // if( $shortestChain ){
+        //     $data->start_plan=$shortestChain->start_plan;
+        //     $data->courier_id=$shortestChain->courier_id;
+        // }
         $data->stage='awaited';
         $this->itemUpsert( $data );
         $this->chainJobs();
-        $this->itemNextCheck($data->courier_id);
+        //$this->itemNextCheck($data->courier_id);
         return $data->stage;
     }
 
@@ -469,7 +469,7 @@ class DeliveryJobModel extends SecureModel{
         finish_latitude,
         stage
         ");
-        
+        $this->orderBy('courier_id');
         $this->orderBy('start_plan');
         return $this->get()->getResult();
     }

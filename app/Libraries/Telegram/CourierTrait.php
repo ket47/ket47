@@ -67,8 +67,13 @@ trait CourierTrait{
             $CourierShiftModel->fieldUpdateAllow('actual_longitude');
             $CourierShiftModel->fieldUpdateAllow('actual_latitude');
             $CourierShiftModel->allowWrite();
-            $CourierShiftModel->where('courier_id',$courier->courier_id)->where('shift_status','open');
-            $CourierShiftModel->update(null,['actual_longitude'=>$location['longitude'],'actual_latitude'=>$location['latitude']]);
+
+            $update=(object)[
+                'courier_id'=>$courier->courier_id,
+                'actual_longitude'=>$location['longitude'],
+                'actual_latitude'=>$location['latitude']
+            ];
+            $CourierShiftModel->itemUpdate($update);
         }
         $courier_location=[
             'location_holder'   =>'courier',
@@ -122,6 +127,10 @@ trait CourierTrait{
             $this->sendHTML($html,$opts);
         }
     }
+
+    /**
+     * @deprecated
+     */
     public function onCourierJobStart($order_id){
         $courier=$this->courierGet();
         $CourierModel=model('CourierModel');
@@ -143,8 +152,33 @@ trait CourierTrait{
         $this->sendText("Не удалось начать задание! ".$error,'','courier_message');
     }
 
+    public function onCourierJobTake($order_id){
+        if( !courdo() ){
+            $this->sendText("Не удалось начать задание!",'','courier_message');
+            return false;
+        }
+        $OrderModel=model("OrderModel");
+        $OrderGroupMemberModel=model('OrderGroupMemberModel');
 
-
+        $isSearching4Courier=$OrderGroupMemberModel->isMemberOf($order_id,'delivery_search');
+        if( !$isSearching4Courier ){
+            $this->sendText("Курьер уже не требуется.",'','courier_message');
+            return false;
+        }
+        $courier=$this->courierGet();
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
+        $OrderModel->allowWrite();//allow modifying order once
+        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier->courier_id,'order_courier_admins'=>$courier->owner_id]);
+        $OrderModel->itemUpdateOwners($order_id);
+        $OrderModel->itemCacheClear();
+        $result= $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
+        if($result=='ok'){
+            $this->onOrderOpen($order_id);
+            return true;
+        }
+        $this->sendText("Не удалось начать задание!",'','courier_message');
+        return false;
+    }
 
     private function courierGet(){
         /**

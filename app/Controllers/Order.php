@@ -423,6 +423,26 @@ class Order extends \App\Controllers\BaseController {
             if( !$deliveryIsReady ){
                 return $this->fail('no_delivery');
             }
+
+            //DELIVERY JOB SETUP
+
+
+            //TMP FIX
+            $DeliveryJobModel=model('DeliveryJobModel');
+            $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
+            $order_data->delivery_job=(object)[
+                'job_name'=>"Заказ из {$store->store_name}",
+                'job_data'=>json_encode(['distance'=>$routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
+                'start_plan'=>$routePlan->start_plan??0,
+                'start_prep_time'=>$store->store_time_preparation,
+                
+                'start_longitude'=>$order_start_location->location_longitude,
+                'start_latitude'=>$order_start_location->location_latitude,
+                'start_address'=>$order_start_location->location_address,
+                'finish_longitude'=>$order_finish_location->location_longitude,
+                'finish_latitude'=>$order_finish_location->location_latitude,
+                'finish_address'=>$order_finish_location->location_address,
+            ];
         } else
         if( $checkoutData->deliveryByStore??0 ){
 
@@ -464,33 +484,7 @@ class Order extends \App\Controllers\BaseController {
         if( $checkoutData->storeCorrectionAllow??0 ){
             $order_data->store_correction_allow=1;
         }
-        //DELIVERY JOB SETUP
 
-
-        //TMP FIX
-        $DeliveryJobModel=model('DeliveryJobModel');
-        $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
-
-
-
-
-
-
-
-
-        $order_data->delivery_job=(object)[
-            'job_name'=>"Заказ из {$store->store_name}",
-            'start_plan'=>$routePlan->start_plan??0,
-            'start_prep_time'=>$store->store_time_preparation,
-            'finish_arrival_time'=>$routePlan->finish_arrival,
-            
-            'start_longitude'=>$order_start_location->location_longitude,
-            'start_latitude'=>$order_start_location->location_latitude,
-            'start_address'=>$order_start_location->location_address,
-            'finish_longitude'=>$order_finish_location->location_longitude,
-            'finish_latitude'=>$order_finish_location->location_latitude,
-            'finish_address'=>$order_finish_location->location_address,
-        ];
         /**
          * Check if order is already not in confirmed state (for example returned to cart stage automatically)
          * If not - try to make confirmed

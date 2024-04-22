@@ -95,13 +95,7 @@ class DeliveryJob extends \App\Controllers\BaseController{
     }
     
     public function listGet(){
-        $user_id=session()->get('user_id');
         if( !courdo() && !sudo() ){
-            return $this->failForbidden('forbidden');
-        }
-        $CourierModel=model('CourierModel');
-        $courier_id=$CourierModel->where('owner_id',$user_id)->select('courier_id')->get()->getRow('courier_id');
-        if( !$courier_id ){
             return $this->failForbidden('forbidden');
         }
         $DeliveryJobModel=model('DeliveryJobModel');
@@ -111,6 +105,22 @@ class DeliveryJob extends \App\Controllers\BaseController{
         return $this->respond($deliveryJobs);
     }
     
+    public function routeListGet(){
+        if( !courdo() && !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $CourierShiftModel=model('CourierShiftModel');
+        $DeliveryJobModel=model('DeliveryJobModel');
+
+        $DeliveryJobModel->join('courier_list','courier_id','left');
+        $DeliveryJobModel->select('courier_name');
+        $routeList=[
+            'delivery_jobs'=>$DeliveryJobModel->listGet(),
+            'open_shifts'=>$CourierShiftModel->listGet((object)['shift_status'=>'open'])
+        ];
+        return $this->respond($routeList);
+    }
+
     public function listCreate(){
         return false;
     }

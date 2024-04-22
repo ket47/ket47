@@ -6,6 +6,9 @@ class StoreModel extends Model{
     
     use PermissionTrait;
     use FilterTrait;
+    protected function initialize(){
+        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
+    }
     
     protected $table      = 'store_list';
     protected $primaryKey = 'store_id';
@@ -19,6 +22,7 @@ class StoreModel extends Model{
         'store_minimal_order',
         'store_delivery_allow',
         'store_delivery_cost',
+        'store_delivery_methods',
         'store_pickup_allow',
         'store_time_preparation',
         'store_time_opens_0',
@@ -39,6 +43,23 @@ class StoreModel extends Model{
         'validity',
         'owner_ally_ids'
         ];
+    protected $selectableFields = [
+        'store_id',
+        'store_name',
+        'store_description',
+        'store_phone',
+        'store_email',
+        'store_tax_num',
+        'store_company_name',
+        'store_time_preparation',
+        'store_minimal_order',
+        'store_delivery_allow',
+        'store_delivery_cost',
+        'store_pickup_allow',
+        'is_working',
+        'owner_id',
+        'owner_ally_ids',
+    ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
     protected $validationRules    = [
@@ -64,7 +85,13 @@ class StoreModel extends Model{
         }
         $weekday=date('N')-1;
         $dayhour=date('H');
-        $this->select("*");
+
+        $is_writable=$this->permit($store_id,'w');
+        if( $is_writable ){
+            $this->select("*");
+        } else {
+            $this->select($this->selectableFields);
+        }
         $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
         $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
 
@@ -73,6 +100,7 @@ class StoreModel extends Model{
         if( !$store ){
             return 'notfound';
         }
+        $store->is_writable=$is_writable;
         if( $mode=='basic' ){
             $this->itemCache[$mode.$store_id]=$store;
             return $store;
@@ -83,7 +111,6 @@ class StoreModel extends Model{
         
         $ImageModel=model('ImageModel');
 
-        $store->is_writable=$this->permit($store_id,'w');
         $store->member_of_groups=$StoreGroupMemberModel->memberOfGroupsGet($store->store_id);
         $filter_loc=[
             'location_holder'=>'store',

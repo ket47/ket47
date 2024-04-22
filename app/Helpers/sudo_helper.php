@@ -14,7 +14,7 @@ function courdo(){
         return false;
     }
     $courier=model('CourierModel')->itemGet(null,'basic');
-    if( $courier->is_disabled==1 || $courier->deleted_at ){
+    if( !$courier || $courier->is_disabled==1 || $courier->deleted_at ){
         return false;
     }
     return true;
