@@ -183,6 +183,17 @@ class CourierShiftModel extends SecureModel{
         if( $filter->shift_status??null ){
             $this->where('shift_status',$filter->shift_status);
         }
+        $this->select("
+            shift_id,
+            courier_id,
+            actual_color,
+            actual_longitude,
+            actual_latitude,
+            last_longitude,
+            last_latitude,
+            last_finish_plan,
+            courier_shift_list.owner_id
+        ");
         return $this->findAll();
     }
     

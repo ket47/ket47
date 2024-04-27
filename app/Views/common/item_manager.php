@@ -72,7 +72,7 @@
                 }
                 if( name==='group_id' ){
                     let current_group_id=subtype;
-                    let new_group_id=value;
+                    let new_group_id=$input.val();
                     let is_joined= value>0?1:0;
                     let group_id= value>0?new_group_id:current_group_id;
                     ItemList.saveItemGroup(item_id,group_id,is_joined);

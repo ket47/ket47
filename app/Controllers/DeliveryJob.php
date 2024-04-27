@@ -112,11 +112,16 @@ class DeliveryJob extends \App\Controllers\BaseController{
         $CourierShiftModel=model('CourierShiftModel');
         $DeliveryJobModel=model('DeliveryJobModel');
 
-        $DeliveryJobModel->join('courier_list','courier_id','left');
-        $DeliveryJobModel->select('courier_name');
+        $delivery_jobs=$DeliveryJobModel->listGet();
+
+        $CourierShiftModel->allowRead();//??? allowing see couriers each other???
+        $CourierShiftModel->join('courier_list','courier_id','left');
+        $CourierShiftModel->join('image_list','courier_list.courier_id=image_holder_id AND image_holder="courier"','left');
+        $CourierShiftModel->select('courier_name,image_hash');
+        $open_shifts=$CourierShiftModel->listGet((object)['shift_status'=>'open']);
         $routeList=[
-            'delivery_jobs'=>$DeliveryJobModel->listGet(),
-            'open_shifts'=>$CourierShiftModel->listGet((object)['shift_status'=>'open'])
+            'delivery_jobs'=>$delivery_jobs,
+            'open_shifts'=>$open_shifts
         ];
         return $this->respond($routeList);
     }

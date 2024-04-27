@@ -68,7 +68,7 @@ class DeliveryJobModel extends SecureModel{
         try{
             return $this->{$stageHandlerName}($data);
         } catch (\Throwable $e){
-            log_message('error',"itemStageSet: ".$e->getMessage()." line: ".$e->getLine());
+            log_message('error',"itemStageSet: ".$e->getMessage()." line: ".$e->getLine()." ".$e->getFile());
         }
     }
 
@@ -167,17 +167,18 @@ class DeliveryJobModel extends SecureModel{
 
     private function actualPointUpdate( int $order_id, string $point_type ){
         $LocationModel=model('LocationModel');
+        $LocationModel->where('order_id',$order_id);
+        $LocationModel->select('location_longitude longitude,location_latitude latitude,order_courier_id courier_id');
         if( $point_type=='start' ){
             $LocationModel->join('order_list','location_id=order_start_location_id');
         } else {
             $LocationModel->join('order_list','location_id=order_finish_location_id');
         }
-        $point=$LocationModel->select('location_longitude longitude,location_latitude latitude,order_courier_id courier_id')->where('order_id',$order_id)->get()->getRow();
+        $point=$LocationModel->get()->getRow();
 
         $CourierShiftModel=model('CourierShiftModel');
-        $CourierShiftModel->fieldUpdateAllow('actual_longitude');
-        $CourierShiftModel->fieldUpdateAllow('actual_latitude');
         $CourierShiftModel->where('shift_status','open')->where('courier_id',$point->courier_id);
+        $CourierShiftModel->allowWrite();
         $CourierShiftModel->update(null,['actual_longitude'=>$point->longitude,'actual_latitude'=>$point->latitude]);
     }
     
@@ -454,6 +455,7 @@ class DeliveryJobModel extends SecureModel{
         $this->select("
         job_id,
         job_name,
+        courier_id,
         IFNULL(job_data->>'$.is_shipment',0) is_shipment,
         IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,
         order_id,

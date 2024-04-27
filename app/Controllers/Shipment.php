@@ -286,9 +286,17 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data=$OrderModel->itemDataGet($checkoutSettings->order_id);
         if($order_data->payment_card_fixate_id??0){
             /**
-             * Should try set payed by card stage
+             * Checking if payment is done. Add stage customer_payed_card
              */
-            //$OrderModel->itemStageCreate($checkoutSettings->order_id,'')
+            if($order_data->payment_card_acq_rncb??0){
+                $Acquirer=new \App\Libraries\AcquirerRncb();
+            } else {
+                $Acquirer=\Config\Services::acquirer();
+            }
+            $result=$Acquirer->statusCheck( $checkoutSettings->order_id );
+            if( $result!='order_not_payed' ){
+                return 'already_payed';
+            }
             return $this->failResourceExists('payment_already_done');
         }
         /**

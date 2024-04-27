@@ -93,10 +93,11 @@ class StoreModel extends Model{
             $this->select($this->selectableFields);
         }
         $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
-        $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $this->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
 
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
+
         if( !$store ){
             return 'notfound';
         }
@@ -147,7 +148,7 @@ class StoreModel extends Model{
         $beforeCloseMargin=30*60;//30 min before closing
         $weekday=date('N')-1;
         $dayhour=date('H',time()+$beforeCloseMargin);
-        $this->select("IF(is_working AND is_disabled=0 AND deleted_at IS NULL AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_ready");
+        $this->select("is_working AND is_disabled=0 AND deleted_at IS NULL AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_ready");
         $this->select("store_tax_num");
         $this->where('store_id',$store_id);
         $store = $this->get()->getRow();
@@ -349,7 +350,7 @@ class StoreModel extends Model{
         $weekday=date('N')-1;
         $dayhour=date('H');
         $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
-        $this->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $this->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
         $this->permitWhere('r');
         $this->orderBy("is_opened",'DESC');
         $this->join('image_list',"image_holder='store' AND image_holder_id=store_id AND is_main=1",'left');
@@ -405,7 +406,7 @@ class StoreModel extends Model{
         $LocationModel->select("GROUP_CONCAT(group_type) member_of_groups");
         $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,is_working");
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
-        $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
         $LocationModel->join('store_list','store_id=location_holder_id');
         $LocationModel->join('store_group_member_list sgml','store_id=member_id','left');
         $LocationModel->join('store_group_list sgl','sgl.group_id=sgml.group_id','left');
@@ -490,11 +491,9 @@ class StoreModel extends Model{
         $permission_filter=$this->permitWhereGet('r','item');
         $LocationModel=model('LocationModel');
 
-        $weekday=date('N')-1;
-        $dayhour=date('H');
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
         $LocationModel->select("store_id,store_name,store_time_preparation,is_primary,image_hash");
-        $LocationModel->select("IF(is_working AND store_time_opens_{$weekday}<=$dayhour AND store_time_closes_{$weekday}>$dayhour,1,0) is_opened");
+        $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
         $LocationModel->join('store_list','store_id=location_holder_id');
         $LocationModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
         if( $permission_filter ){

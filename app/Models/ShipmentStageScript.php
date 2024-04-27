@@ -210,6 +210,67 @@ class ShipmentStageScript{
     public function onCustomerCart($order_id){
         return 'ok';
     }
+    
+    private function isAwaitingPayment($order_id){
+        $user_id=session()->get('user_id');
+        /**
+         * If user wants to return to cart. allow
+         */
+        if( $user_id!=-100 ){
+            return false;
+        }
+        $now=time();
+        $orderData=$this->OrderModel->itemDataGet($order_id);
+        $await_payment_until=$orderData->await_payment_until??null;
+        /**
+         * If order is waiting for payment now then reset to cart after timeout
+         */
+        if( $await_payment_until && $await_payment_until>$now ){
+            $stage_reset_task=[
+                'task_name'=>"customer_confirmed Rollback #$order_id",
+                'task_programm'=>[
+                        ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
+                    ],
+                'is_singlerun'=>1,
+                'task_next_start_time'=>$await_payment_until+1
+            ];
+            jobCreate($stage_reset_task);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * offCustomerConfirmed
+     * 
+     * before exit customer confirmed stage check if card_payment is done
+     * if so reject passing to cart
+     * 
+     */
+    public function offCustomerConfirmed( $order_id, $stage_next ){
+        if( $stage_next=='customer_cart' ){
+            /**
+             * Checking if payment is done. Add stage customer_payed_card
+             */
+            $order_data=$this->OrderModel->itemDataGet($order_id);
+            if($order_data->payment_card_acq_rncb??0){
+                $Acquirer=new \App\Libraries\AcquirerRncb();
+            } else {
+                $Acquirer=\Config\Services::acquirer();
+            }
+            $result=$Acquirer->statusCheck( $order_id );
+            if( $result!='order_not_payed' ){
+                return 'already_payed';
+            }
+            /**
+             * Payment HPP may still be open so reject reset to cart
+             */
+            if( $this->isAwaitingPayment($order_id) ){
+                return 'awaiting_payment';
+            }
+        }
+        return 'ok';
+    }
 
     public function onCustomerConfirmed( $order_id, $data ){
         if( $data ){

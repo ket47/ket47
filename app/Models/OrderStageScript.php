@@ -206,7 +206,12 @@ class OrderStageScript{
             /**
              * Checking if payment is done. Add stage customer_payed_card
              */
-            $Acquirer=\Config\Services::acquirer();
+            $order_data=$this->OrderModel->itemDataGet($order_id);
+            if($order_data->payment_card_acq_rncb??0){
+                $Acquirer=new \App\Libraries\AcquirerRncb();
+            } else {
+                $Acquirer=\Config\Services::acquirer();
+            }
             $result=$Acquirer->statusCheck( $order_id );
             if( $result!='order_not_payed' ){
                 return 'already_payed';
@@ -371,7 +376,7 @@ class OrderStageScript{
 
         if( ($order_data->delivery_by_courier??0)==0 ){
             $store_sms=(object)[
-                'message_transport'=>'message',
+                'message_transport'=>'telegram,push',
                 'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
                 'message_data'=>(object)[
                     'sound'=>'long.wav'
@@ -414,7 +419,7 @@ class OrderStageScript{
 
 
         $cust_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'telegram,push',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_customer_start_CUST_sms.php',
             'context'=>$context
