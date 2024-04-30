@@ -146,8 +146,11 @@ class TransactionModel extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
+        if( !$trans_id ){//if $trans_id==0 then it deletes all transactions
+            return 'forbidden';
+        }
         $this->permitWhere('w');
-        $this->delete($trans_id);
+        $this->where('trans_id',$trans_id)->delete();
         $result=$this->db->affectedRows()?'ok':'idle';
         return $result;
     }

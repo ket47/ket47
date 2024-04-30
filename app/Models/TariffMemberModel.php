@@ -71,6 +71,8 @@ class TariffMemberModel extends Model{
         if( !sudo() ){
             return 'forbidden';
         }
+
+        $this->permitWhere('w');
         $this->where('tariff_id',$tariff_id);
         $this->where('store_id',$store_id);
         $this->delete();

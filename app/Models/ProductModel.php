@@ -240,10 +240,16 @@ class ProductModel extends Model{
     }
     
     public function itemDelete( $product_id ){
+        if( !$product_id ){
+            return 'noid';
+        }
         $ImageModel=model('ImageModel');
         $ImageModel->permitWhere('w');
         $ImageModel->listDelete('product',[$product_id]);
-        $this->delete($product_id);
+
+
+        $this->permitWhere('w');
+        $this->where('product_id',$product_id)->delete();
         $result=$this->db->affectedRows()?'ok':'idle';
 
         $this->itemOptionChildrenDelete($product_id);
@@ -251,9 +257,14 @@ class ProductModel extends Model{
     }
     
     public function itemUnDelete( $product_id ){
+        if( !$product_id ){
+            return 'noid';
+        }
         $ImageModel=model('ImageModel');
         $ImageModel->permitWhere('w');
         $ImageModel->listUnDelete('product',[$product_id]);
+
+        $this->permitWhere('w');
         $this->update($product_id,['deleted_at'=>NULL]);
         return $this->db->affectedRows()?'ok':'idle';
     }

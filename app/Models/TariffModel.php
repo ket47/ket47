@@ -63,7 +63,9 @@ class TariffModel extends SecureModel{
         if( !sudo() ){
             return 'forbidden';
         }
-        $this->delete($tariff_id);
+
+        $this->permitWhere('w');
+        $this->where('tariff_id',$tariff_id)->delete();
         return $this->db->affectedRows()?'ok':'idle';
     }
     

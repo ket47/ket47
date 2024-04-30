@@ -104,12 +104,15 @@ class ImageModel extends Model{
     }
     
     public function itemDelete( $image_id ){
+        if( !$image_id ){
+            return 'noid';
+        }
         $this->permitWhere('w');
         $this->itemUpdate([
             'image_id'=>$image_id,
             'image_order'=>9999
         ]);
-        $ok=$this->delete($image_id);
+        $ok=$this->where('image_id',$image_id)->delete();
         $this->itemUpdateMain( $image_id );
         if( $ok ){
             return 'ok';

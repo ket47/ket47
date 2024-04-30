@@ -200,9 +200,12 @@ class LocationModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
     
-    public function itemDelete( $location_id ){
+    public function itemDelete( int $location_id ){
+        if(!$location_id){
+            return 'noid';
+        }
         $this->permitWhere('w');
-        $this->delete($location_id);
+        $this->where('location_id',$location_id)->delete();
         $ok=$this->db->affectedRows()?'ok':'idle';
         $this->itemMainUpdate( $location_id );
         return $ok;

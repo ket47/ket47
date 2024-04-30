@@ -37,7 +37,7 @@ class Store extends \App\Controllers\BaseController{
     }
 
 
-    private $appStoreVersionFilter='2.0.5';
+    private $appStoreVersionFilter='2.0.6';
     private $appStoreWhitelist=[63,111,68,130,121,110,155,147];
 
     private function appStoreFilter( $result ){
@@ -93,7 +93,7 @@ class Store extends \App\Controllers\BaseController{
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
     public function itemGet(){
-        $store_id=(int) $this->request->getVar('store_id');
+        $store_id=(int) $this->request->getPost('store_id');
         $mode=$this->request->getVar('mode');
         $distance_include=$this->request->getVar('distance_include');
         $StoreModel=model('StoreModel');
@@ -106,6 +106,16 @@ class Store extends \App\Controllers\BaseController{
         }
         $ReactionModel=model('ReactionModel');
         $result->reactionSummary=$ReactionModel->summaryGet("store:$store_id");
+        return $this->respond($result);
+    }
+
+    public function itemDeliveryMethodsGet(){
+        $store_id=(int) $this->request->getPost('store_id');
+        $StoreModel=model('StoreModel');
+        $result=$StoreModel->itemDeliveryMethodsGet($store_id);
+        if( !is_object($result) ){
+            return $this->fail($result);
+        }
         return $this->respond($result);
     }
 
@@ -274,8 +284,8 @@ class Store extends \App\Controllers\BaseController{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
-        $image_holder=$this->request->getVar('image_holder');
-        $image_holder_id=$this->request->getVar('image_holder_id');
+        $image_holder=$this->request->getPost('image_holder');
+        $image_holder_id=$this->request->getPost('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
@@ -303,7 +313,9 @@ class Store extends \App\Controllers\BaseController{
     }
     
     private function fileSaveImage( $image_holder_id, $file, $image_holder='store' ){
-        $image_holder=($image_holder=='store_avatar'?'store_avatar':'store');
+        if( !in_array($image_holder,['store','store_avatar','store_dmethods']) ){
+            $image_holder='store';
+        }
         $image_data=[
             'image_holder'=>$image_holder,
             'image_holder_id'=>$image_holder_id

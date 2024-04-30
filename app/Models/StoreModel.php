@@ -144,6 +144,27 @@ class StoreModel extends Model{
         return $store;
     }
 
+    public function itemDeliveryMethodsGet(int $store_id){
+        $this->permitWhere('r');
+        $this->where('store_id',$store_id);
+        $this->select('store_id,store_delivery_methods,store_phone,store_name');
+        $store=$this->get()->getRow();
+        if( !$store ){
+            return 'notfound';
+        }
+
+        $ImageModel=model('ImageModel');
+        $filter=[
+            'image_holder'=>'store_dmethods',
+            'image_holder_id'=>$store_id,
+            'is_disabled'=>1,
+            'is_deleted'=>0,
+            'is_active'=>1
+        ];
+        $store->images=$ImageModel->listGet($filter);
+        return $store;
+    }
+
     public function itemIsReady($store_id){
         $beforeCloseMargin=30*60;//30 min before closing
         $weekday=date('N')-1;
@@ -257,7 +278,8 @@ class StoreModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('store', [$store_id]);
         
-        $this->delete($store_id);
+        $this->permitWhere('w');
+        $this->where('store_id',$store_id)->delete();
         return $this->db->affectedRows()?'ok':'idle';
     }
     

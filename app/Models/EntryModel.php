@@ -145,6 +145,9 @@ class EntryModel extends Model{
     }
     
     public function itemDelete( $entry_id ){
+        if( !$entry_id ){
+            return 'ok';
+        }
         $entry=$this->itemGet($entry_id);
         if( !$entry ){
             return 'ok';

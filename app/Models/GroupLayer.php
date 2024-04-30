@@ -125,7 +125,7 @@ class GroupLayer extends Model{
     }
     
     public function itemDelete( $group_id ){
-        if( !sudo() ){
+        if( !sudo() || !$group_id ){
             return 'forbidden';
         }
         $group_list=$this->listGet(['group_path_id'=>"/$group_id/"]);

@@ -301,7 +301,7 @@ class OrderModel extends SecureModel{
     }
     
     public function itemDelete( $order_id ){
-        if( !$this->permit($order_id,'w') ){
+        if( !$order_id || !$this->permit($order_id,'w') ){
             return 'forbidden';
         }
         $EntryModel=model('EntryModel');
