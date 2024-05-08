@@ -4,6 +4,7 @@ class CashierKitOnline{
     private $url_api = "https://api.kit-invest.ru/WebService.svc/";
     private $checkNumPrefix="#";
     public function print($order_all){
+        helper('phone_number');
         $Check=[
             'CheckId'=>$this->checkNumPrefix.$order_all->order_id,
             'TaxSystemType'=>getenv('kitonline.TaxSystemType'),
@@ -42,12 +43,12 @@ class CashierKitOnline{
                 $product_row['supplierINN']=$order_all->store->store_tax_num;
                 $product_row['supplierInfo']=[
                     'name'=>$order_all->store->store_company_name,
-                    'phoneNumbers'=>[$order_all->store->store_phone]
+                    'phoneNumbers'=>[clearPhone($order_all->store->store_phone)]
                 ];
                 $product_row['agentType']=64;
                 $product_row['agentInfo']=[
                     //'paymentAgentOperation'=>getenv('kitonline.paymentAgentOperation'),
-                    'paymentAgentPhoneNumbers'=>[getenv('kitonline.paymentAgentPhoneNumbers')]
+                    'paymentAgentPhoneNumbers'=>[clearPhone(getenv('kitonline.paymentAgentPhoneNumbers'))]
                 ];
             }
             $Check['Subjects'][]=$product_row;
@@ -66,12 +67,12 @@ class CashierKitOnline{
                 $delivery_row['supplierINN']=$order_all->store->store_tax_num;
                 $delivery_row['supplierInfo']=[
                     'name'=>$order_all->store->store_company_name,
-                    'phoneNumbers'=>[$order_all->store->store_phone]
+                    'phoneNumbers'=>[clearPhone($order_all->store->store_phone)]
                 ];
                 $delivery_row['agentType']=64;
                 $delivery_row['agentInfo']=[
                     //'paymentAgentOperation'=>getenv('kitonline.paymentAgentOperation'),
-                    'paymentAgentPhoneNumbers'=>[getenv('kitonline.paymentAgentPhoneNumbers')]
+                    'paymentAgentPhoneNumbers'=>[clearPhone(getenv('kitonline.paymentAgentPhoneNumbers'))]
                 ];
             }
             $Check['Subjects'][]=$delivery_row;

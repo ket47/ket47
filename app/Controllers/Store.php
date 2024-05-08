@@ -37,7 +37,7 @@ class Store extends \App\Controllers\BaseController{
     }
 
 
-    private $appStoreVersionFilter='2.0.6';
+    private $appStoreVersionFilter='2.0.8';
     private $appStoreWhitelist=[63,111,68,130,121,110,155,147];
 
     private function appStoreFilter( $result ){

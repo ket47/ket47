@@ -21,7 +21,7 @@ class PromoModel extends Model{
         ];
 
     protected $useSoftDeletes = false;
-    protected $promo_lifetime=183*24*60*60;
+    protected $promo_lifetime=14*24*60*60;
     
     public function itemGet($promo_id){
         if( !$promo_id ){
@@ -196,7 +196,8 @@ class PromoModel extends Model{
 
     function userNotify($user_id,$template,$promo_context){
         $context=[
-            'promo'=>$promo_context
+            'promo'=>$promo_context,
+            'expired_at'=>date('d.m.Y',time()+$this->promo_lifetime)
         ];
         helper('job');
         if( $template=='activated' ){
@@ -209,7 +210,7 @@ class PromoModel extends Model{
         }
         $cust_sms=(object)[
             'message_reciever_id'=>$user_id,
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'template'=>$template_file,
             'context'=>$context
         ];

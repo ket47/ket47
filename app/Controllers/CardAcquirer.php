@@ -11,7 +11,13 @@ class Cardacquirer extends \App\Controllers\BaseController{
 
     public function statusGet(){
         $order_id=$this->request->getVar('order_id');
-        $Acquirer=\Config\Services::acquirer();
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_id);
+        if($order_data->payment_card_acq_rncb??0){
+            $Acquirer=new \App\Libraries\AcquirerRncb();
+        } else {
+            $Acquirer=\Config\Services::acquirer();
+        }
         $result=$Acquirer->statusGet($order_id);
         if($result && isset($result->order_id)){
             return $this->statusApply($result);

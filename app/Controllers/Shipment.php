@@ -188,11 +188,12 @@ class Shipment extends \App\Controllers\BaseController{
         $tariffList=$TariffModel->where('is_shipment',1)->get()->getResult();
         $deliveryOptions=[];
         foreach( $tariffList as $tariff ){
+            $tariff->delivery_cost+=$deliveryHeavyModifier->cost;
             $orderSumDelivery=$this->itemDeliverySumGet($distance_m,$tariff);
             $rule=[
                 'tariff_id'=>$tariff->tariff_id,
                 'deliverySum'=>$orderSumDelivery,
-                'deliveryCost'=>$tariff->delivery_cost+$deliveryHeavyModifier->cost,
+                'deliveryCost'=>$tariff->delivery_cost,
                 'deliveryFee'=>$tariff->delivery_fee,
                 'deliveryHeavyCost'=>$deliveryHeavyModifier->cost,
                 'deliveryHeavyBonus'=>$deliveryHeavyModifier->bonus,
