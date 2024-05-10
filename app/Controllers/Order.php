@@ -58,6 +58,7 @@ class Order extends \App\Controllers\BaseController {
     public function itemSync() {
         $data = $this->request->getJSON();
         if(!$data){
+            madd('order','create','error',null,'malformed_request');
             return $this->fail('malformed_request');
         }
         if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
@@ -72,15 +73,18 @@ class Order extends \App\Controllers\BaseController {
         if( !$order_id_exists ){
             if( !isset($data->order_store_id) ){
                 $OrderModel->transRollback();
+                madd('order','create','error',($data->order_id??null),'nostoreid');
                 return $this->fail('nostoreid');
             }
             $result=$OrderModel->itemCreate($data->order_store_id);
             if ($result === 'forbidden') {
                 $OrderModel->transRollback();
+                madd('order','create','error',($data->order_id??null),'forbidden');
                 return $this->failForbidden($result);
             }
             if (!is_numeric($result)) {
                 $OrderModel->transRollback();
+                madd('order','create','error',($data->order_id??null),$result);
                 return $this->fail($result);
             }
             $OrderModel->itemStageCreate( $result, 'customer_cart' );
@@ -209,6 +213,7 @@ class Order extends \App\Controllers\BaseController {
             $order->order_store_id
         );
         if( $bulkResponse->Store_deliveryOptions=='not_ready' || $bulkResponse->Store_deliveryOptions=='no_tariff' ){
+            madd('order','create','error',$order_id,$bulkResponse->Store_deliveryOptions);
             return $this->fail($bulkResponse->Store_deliveryOptions);
         }
         $bulkResponse->Location_distanceHolderGet=$LocationModel->distanceHolderGet(
@@ -218,6 +223,7 @@ class Order extends \App\Controllers\BaseController {
         $bulkResponse->Store_preparationTime=$StoreModel->itemGet($order->order_store_id,'basic')->store_time_preparation??0;
 
         if($bulkResponse->Location_distanceHolderGet>getenv('delivery.radius')){
+            madd('order','create','error',$order_id,'too_far');
             return $this->fail('too_far');
         }
         // $bulkResponse->Location_count=$LocationModel->listCountGet([
@@ -237,6 +243,7 @@ class Order extends \App\Controllers\BaseController {
             $UserCardModel=model('UserCardModel');
             $bulkResponse->bankCard=$UserCardModel->itemMainGet($order->owner_id);
         //}
+        madd('order','create','ok',$order_id);
         return $this->respond($bulkResponse);
     }
 
@@ -366,18 +373,22 @@ class Order extends \App\Controllers\BaseController {
         $order = $OrderModel->itemGet($checkoutData->order_id,'basic');
         $order_data=$OrderModel->itemDataGet($checkoutData->order_id);
         if($order_data->payment_card_fixate_id??0){
+            madd('order','start','error',$checkoutData->order_id,'payment_already_done');
             return $this->failResourceExists('payment_already_done');
         }
         if ($order === 'forbidden' || !$checkoutData->order_id??0 || !$checkoutData->tariff_id??0 ) {
+            madd('order','start','error',null,'forbidden');
             return $this->failForbidden();
         }
         if ($order === 'notfound') {
+            madd('order','start','error',null,'notfound');
             return $this->failNotFound();
         }
 
         $TariffMemberModel=model('TariffMemberModel');
         $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
         if(!$tariff){
+            madd('order','start','error',$checkoutData->order_id,'no_tariff');
             return $this->fail('no_tariff');
         }
         $order_data=(object)[];
@@ -393,6 +404,7 @@ class Order extends \App\Controllers\BaseController {
         $order_finish_location=$LocationModel->itemMainGet('user',$order->owner_id);
         $delivery_distance=$LocationModel->distanceGet($order_start_location->location_id,$order_finish_location->location_id);
         if( $delivery_distance>getenv('delivery.radius') ){
+            madd('order','start','error',$checkoutData->order_id,'too_far');
             return $this->fail('too_far');
         }
         /**
@@ -421,6 +433,7 @@ class Order extends \App\Controllers\BaseController {
             ];
             $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
             if( !$deliveryIsReady ){
+                madd('order','start','error',$checkoutData->order_id,'no_delivery');
                 return $this->fail('no_delivery');
             }
 
@@ -454,11 +467,13 @@ class Order extends \App\Controllers\BaseController {
             $order_data->pickup_by_customer=1;
             $PromoModel->itemUnLink($checkoutData->order_id);
         } else {
+            madd('order','start','error',$checkoutData->order_id,'no_delivery');
             return $this->fail('no_delivery');
         }
         //PROMO SHARE CHECK
         $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
         if( $promo && ($promo->min_order_sum_product>$order->order_sum_product) ){
+            madd('order','start','error',$checkoutData->order_id,'promo_share_too_high');
             return $this->fail('promo_share_too_high');
         }
         //PAYMENT OPTIONS SET
@@ -478,6 +493,7 @@ class Order extends \App\Controllers\BaseController {
         if( $checkoutData->paymentByCashStore??0 ){
             $order_data->payment_by_cash_store=1;
         } else {
+            madd('order','start','error',$checkoutData->order_id,'no_payment');
             return $this->fail('no_payment');
         }
 
@@ -497,6 +513,7 @@ class Order extends \App\Controllers\BaseController {
         }
         $result=$OrderModel->itemDataCreate($checkoutData->order_id,$order_data);
         $OrderModel->deliverySumUpdate($checkoutData->order_id);
+        madd('order','start','ok',$checkoutData->order_id);
         return $this->respond($result);
     }
 

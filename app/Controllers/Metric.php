@@ -13,18 +13,20 @@ class Metric extends \App\Controllers\BaseController{
     
     public function itemCreate(){
         $ua=$this->request->getUserAgent();
-
-        $metrics=(object)[];
-        $metrics->come_media_id=    $this->request->getPost('come_media_id');
-        $metrics->come_inviter_id=  $this->request->getPost('come_inviter_id');
-        $metrics->come_referrer=    $this->request->getPost('come_referrer');
-        $metrics->come_url=         $this->request->getPost('come_url');
-        $metrics->device_is_mobile= $ua->isMobile();
-        $metrics->device_platform=  $ua->getPlatform();
+        $metricsHeader=(object)[];
+        $metricsHeader->come_media_id=    $this->request->getPost('come_media_id');
+        $metricsHeader->come_inviter_id=  $this->request->getPost('come_inviter_id');
+        $metricsHeader->come_referrer=    $this->request->getPost('come_referrer');
+        $metricsHeader->come_url=         $this->request->getPost('come_url');
+        $metricsHeader->device_is_mobile= $ua->isMobile();
+        $metricsHeader->device_platform=  $ua->getPlatform();
 
         $MetricModel=model('MetricModel');
-        $result=$MetricModel->itemCreate( $metrics );
-        return $this->respondCreated($result);
+        $metricsHeaderId=$MetricModel->itemSave($metricsHeader);
+        if($metricsHeaderId??0){
+            return $this->respondUpdated($metricsHeaderId);
+        }
+        return $this->fail(0);
     }
     
     public function itemUpdate(){

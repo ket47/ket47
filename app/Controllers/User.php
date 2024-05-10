@@ -165,9 +165,11 @@ class User extends \App\Controllers\BaseController{
 
         $new_user_id=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email,$metric_id);
         if( $new_user_id=='user_phone_unverified' ){
+            madd('auth','up','error',null,'user_phone_unverified');
             return $this->failForbidden('user_phone_unverified');
         }
         if( $UserModel->errors() ){
+            madd('auth','up','error');
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         if( $new_user_id ){
@@ -175,6 +177,7 @@ class User extends \App\Controllers\BaseController{
             $PromoModel->listCreate($new_user_id,$inviter_user_id??0);
         }
 
+        madd('auth','up','ok');
         $this->signInMetric( $new_user_id );
         return $this->respondCreated($new_user_id);
     }
@@ -191,22 +194,28 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $result=$UserModel->signIn($user_phone_cleared,$user_pass);
         if( $result=='user_not_found' ){
+            madd('auth','in','error',null,$result);
             return $this->failNotFound('user_not_found');
         }
         if( $result=='user_pass_wrong' ){
+            madd('auth','in','error',null,$result);
             return $this->failUnauthorized('user_pass_wrong');
         }
         if( $result=='user_is_disabled' ){
+            madd('auth','in','error',null,$result);
             return $this->failUnauthorized('user_is_disabled');
         }
         if( $result=='user_phone_unverified' ){
+            madd('auth','in','error',null,$result);
             return $this->failForbidden('user_phone_unverified');
         }
         if( $result=='ok' ){
             $user=$UserModel->getSignedUser();
             if( empty($user->user_id) ){
+                madd('auth','in','error',null,'user_data_fetch_error');
                 return $this->fail('user_data_fetch_error');
             }
+            madd('auth','in','ok');
             $this->signInMetric( $user->user_id );
             $this->signInCourier($user->user_id);
             $this->signInTokenSave($user->user_id);
@@ -271,6 +280,7 @@ class User extends \App\Controllers\BaseController{
         if (session_status() === PHP_SESSION_ACTIVE){
             session_destroy();
         }
+        madd('auth','out','ok');
         return $this->respond('ok');
     }
 
@@ -291,6 +301,7 @@ class User extends \App\Controllers\BaseController{
         $user_id=$phone_user_id??$email_user_id;
 
         if(!$user_id){
+            madd('auth','forgot','error',null,'user_notfound');
             return $this->failNotFound('user_notfound');
         }
 
@@ -313,13 +324,17 @@ class User extends \App\Controllers\BaseController{
         if( $sms_send_ok || $email_send_ok ){
             $update_ok=$UserModel->update($phone_user_id,['user_pass'=>$new_password,'user_pass_confirm'=>$new_password]);
             if( $update_ok ){
+                madd('auth','forgot','ok');
                 return $this->respondUpdated('password_updated');
             }
             if( $UserModel->errors() ){
+                madd('auth','forgot','error');
                 return $this->failValidationErrors(json_encode($UserModel->errors()));
             }
+            madd('auth','forgot','error',null,'not_updated');
             return $this->fail('not_updated');
         } else {
+            madd('auth','forgot','error',null,'was_not_sent');
             return $this->fail('was_not_sent');
         }
     }
@@ -443,10 +458,11 @@ class User extends \App\Controllers\BaseController{
     }
 
     public function locationSetMain(){
-        $location_id=$this->request->getVar('location_id');
+        $location_id=$this->request->getPost('location_id');
         $LocationModel=model('LocationModel');
         $result=$LocationModel->itemMainSet($location_id);
         if( $result=='ok' ){
+            madd('location','switch','ok',$location_id);
             return $this->respondUpdated('ok');
         }
         return $this->fail('idle');

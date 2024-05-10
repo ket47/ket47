@@ -371,7 +371,7 @@ class UserModel extends Model{
         ];
 
         $MetricModel=model('MetricModel');
-        $media=$MetricModel->itemGet($metric_id);
+        $media=$MetricModel->itemGet();
 
 
 
@@ -453,6 +453,7 @@ class UserModel extends Model{
             return 'notfound';
         }
         session()->set('user_data',$user);
+        model('MetricModel')->itemSave((object)['user_id'=>$user_id]);
         return 'ok';
     }
 

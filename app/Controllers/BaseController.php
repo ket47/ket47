@@ -39,9 +39,10 @@ class BaseController extends Controller
 	 */
 	protected $helpers = [
             'sudo',
+            'job',
             'p',
             'q',
-            'job'
+            'metrics',
         ];
 
 	/**

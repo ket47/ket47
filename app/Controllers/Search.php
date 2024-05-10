@@ -14,8 +14,10 @@ class Search extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->listNearGet(['location_id'=>$location_id]);
         if( !is_array($result) ){
+            madd('search','get','error',null,$query);
             return $this->fail($result);
         }
+        madd('search','get','ok',null,$query);
         $response=[
             'product_matches'=>$this->listStoreProductsGet($query,$result)
         ];

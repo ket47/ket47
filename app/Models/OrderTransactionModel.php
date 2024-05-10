@@ -12,6 +12,9 @@ class OrderTransactionModel extends TransactionModel{
             return false;//order not found or permission denied
         }
         $order_data=$OrderModel->itemDataGet($order_id);
+        if($order_data->order_is_canceled??0){
+            madd('order','reject','ok',$order_id);
+        }
 
         $finalized=
                $this->orderFinalizeRefund( $order_basic)
@@ -26,6 +29,10 @@ class OrderTransactionModel extends TransactionModel{
             $invoice=$this->orderFinalizeInvoice($order_basic);
             $settle=$this->orderFinalizeSettle($order_basic,$order_data);
             pl("order #$order_id Finalization FAILED orderIsCanceled:$orderIsCanceled || refund:$refund && confirm:$confirm && invoice:$invoice && settle:$settle",false);
+            madd('order','finish','error',$order_id);
+        }
+        else {
+            madd('order','finish','ok',$order_id);
         }
         return $finalized;
     }

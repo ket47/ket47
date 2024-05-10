@@ -65,11 +65,14 @@ class Product extends \App\Controllers\BaseController{
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemGet($product_id);
         if( $result==='forbidden' ){
+            madd('product','get','error',$product_id,$result);
             return $this->failForbidden($result);
         }
         if( $result==='notfound' ){
+            madd('product','get','error',$product_id,$result);
             return $this->failNotFound($result);
         }
+        madd('product','get','ok',$product_id,$result->product_name);
         if($result){
             $ReactionModel=model('ReactionModel');
             $result->reactionSummary=$ReactionModel->summaryGet("product:$product_id");

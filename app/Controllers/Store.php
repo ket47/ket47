@@ -70,10 +70,12 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]);
         if( !is_array($result) ){
+            madd('home','get','error');
             return $this->failNotFound($result);
         }
         $result=$this->appStoreFilter($result);
 
+        madd('home','get','ok');
         $response=[
             'store_list'=>$result,
         ];
@@ -99,11 +101,14 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $result=$StoreModel->itemGet($store_id,$mode??'all',$distance_include);
         if( $result==='forbidden' ){
+            madd('store','get','error',$store_id,$result);
             return $this->failForbidden($result);
         }
         if( $result==='notfound' ){
+            madd('store','get','error',$store_id,$result);
             return $this->failNotFound($result);
         }
+        madd('store','get','ok',$store_id,$result->store_name);
         $ReactionModel=model('ReactionModel');
         $result->reactionSummary=$ReactionModel->summaryGet("store:$store_id");
         return $this->respond($result);

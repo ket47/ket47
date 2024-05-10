@@ -1,11 +1,10 @@
 <?php
 namespace App\Models;
 use CodeIgniter\Model;
-
 class MetricModel extends Model{
-    
     protected $table      = 'metric_list';
     protected $primaryKey = 'metric_id';
+    protected $returnType = 'object';
     protected $allowedFields = [
         'come_referrer',
         'come_url',
@@ -23,7 +22,7 @@ class MetricModel extends Model{
     
     public function itemGet( int $metric_id=null ){
         if( !$metric_id ){
-            return null;
+            $metric_id=$this->itemIdGet();
         }
         $this->where('metric_id',$metric_id);
         $this->join('metric_media_list','come_media_id=media_tag','left');
@@ -31,8 +30,39 @@ class MetricModel extends Model{
         return $this->get()->getRow();
     }
     
-    public function itemCreate( $metric ){
-        return $this->insert($metric,true);
+    public function itemIdGet(){
+        $metricsHeaderId=session()->get('metricsHeaderId');
+        if( $metricsHeaderId ){
+            return $metricsHeaderId;
+        }
+        $metricsHeaderId=$this->itemCreate( (object) [] );//create empty header
+        session()->set('metricsHeaderId',$metricsHeaderId);
+        return $metricsHeaderId;
+    }
+
+    public function itemSave( object $metricsHeader ):int{
+        $metricsHeaderId=session()->get('metricsHeaderId');
+        if($metricsHeaderId??0){
+            $metricsHeader->metric_id=$metricsHeaderId;
+            $result=$this->itemUpdate( $metricsHeader );
+            if( $result=='ok' ){
+                return $metricsHeaderId;
+            }
+            return 0;
+        }
+        $metricsHeaderId=$this->itemCreate($metricsHeader);
+        if($metricsHeaderId){
+            session()->set('metricsHeaderId',$metricsHeaderId);
+        }
+        return $metricsHeaderId;
+    }
+
+    public function itemCreate( object $metricsHeader ):int{
+        try{
+            return $this->insert($metricsHeader,true);
+        } catch(\Throwable $e){
+            return 0;
+        }
     }
     
     public function itemUpdate( $metric ){

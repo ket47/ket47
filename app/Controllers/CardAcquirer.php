@@ -58,6 +58,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
             case 'authorized':
             case 'paid':
                 if( $this->paymentIsDone($order_id) ){
+                    madd('order','pay','ok',$order_id);
                     return $this->respond('OK');
                 }
                 $result=$OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $incomingStatus, false );
@@ -79,7 +80,9 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
+        madd('order','pay','error',$order_id,$incomingStatus->status);
         if( $result=='ok' ){
+            madd('order','pay','ok',$order_id);
             return $this->respond('OK'); 
         }
         $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id; STAGE CANT BE CHANGED $result=='ok'");
