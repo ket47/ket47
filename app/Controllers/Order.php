@@ -243,7 +243,9 @@ class Order extends \App\Controllers\BaseController {
             $UserCardModel=model('UserCardModel');
             $bulkResponse->bankCard=$UserCardModel->itemMainGet($order->owner_id);
         //}
-        madd('order','create','ok',$order_id);
+
+        $entry_count=model('EntryModel')->where('order_id',$order_id)->select('COUNT(*) c')->get()->getRow('c');
+        madd('order','create','ok',$order_id,null,(object)['act_data'=>['entry_count'=>$entry_count,'store_id'=>$order->order_store_id]]);
         return $this->respond($bulkResponse);
     }
 

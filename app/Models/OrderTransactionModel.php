@@ -32,7 +32,8 @@ class OrderTransactionModel extends TransactionModel{
             madd('order','finish','error',$order_id);
         }
         else {
-            madd('order','finish','ok',$order_id);
+            $entry_count=model('EntryModel')->where('order_id',$order_id)->select('COUNT(*) c')->get()->getRow('c');
+            madd('order','finish','ok',$order_id,null,(object)['act_data'=>['entry_count'=>$entry_count,'store_id'=>$order_basic->order_store_id]]);
         }
         return $finalized;
     }

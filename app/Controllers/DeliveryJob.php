@@ -24,6 +24,11 @@ class DeliveryJob extends \App\Controllers\BaseController{
         return false;
     }
 
+    public function itemDetailGet(){
+        
+    }
+
+
     /**
      * This is intended for couriers
      */
