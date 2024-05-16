@@ -51,18 +51,38 @@ trait CourierTrait{
         $bound_latitude_min=44.894650;
         $bound_latitude_max=44.996708;
 
+
+
+
         $location_is_distorted=0;
-        if( $location['longitude']<$bound_longitude_min || $location['longitude']>$bound_longitude_max ){
-            $location['longitude']= ($bound_longitude_min+$bound_longitude_max)/2;//set at midpoint
+        if( $location['longitude']<$bound_longitude_min || $location['longitude']>$bound_longitude_max || $location['latitude']<$bound_latitude_min || $location['latitude']>$bound_latitude_max ){
+            //looking if ouside of square
             $location_is_distorted=1;
-        }
-        if( $location['latitude']<$bound_latitude_min || $location['latitude']>$bound_latitude_max ){
-            $location['latitude']= ($bound_latitude_min+$bound_latitude_max)/2;//set at midpoint
-            $location_is_distorted=1;
+        } else {
+            //looking if ouside of octagon
+            $octo_lat_third=($bound_latitude_max-$bound_latitude_min)/3;
+            $octo_lat_top=$bound_latitude_min+$octo_lat_third*2;
+            $octo_lat_bottom=$bound_latitude_min+$octo_lat_third;
+            
+            $octo_lon_third=($bound_longitude_max-$bound_longitude_min)/3;
+            $octo_lon_left=$bound_longitude_min+$octo_lon_third;
+            $octo_lon_right=$bound_longitude_min+$octo_lon_third*2;
+
+            if( $location['longitude']<$octo_lon_left && ($location['latitude']<$octo_lat_bottom || $location['latitude']>$octo_lat_top) || $location['longitude']>$octo_lon_right && ($location['latitude']<$octo_lat_bottom || $location['latitude']>$octo_lat_top) ){
+                $location_is_distorted=1;
+            }
         }
 
+
         $courier=$this->courierGet();
-        if( !$location_is_distorted ){
+        if($location_is_distorted){
+            $location_lon_midpoint=($bound_longitude_min+$bound_longitude_max)/2;//set at midpoint
+            $location_lat_midpoint=($bound_latitude_min+$bound_latitude_max)/2;//set at midpoint
+            
+            $location['latitude']= $location_lat_midpoint;
+            $location['longitude']= $location_lon_midpoint;
+            
+        } else {
             $CourierShiftModel=model('CourierShiftModel');
             $CourierShiftModel->fieldUpdateAllow('actual_longitude');
             $CourierShiftModel->fieldUpdateAllow('actual_latitude');
