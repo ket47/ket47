@@ -8,9 +8,9 @@ class Statistics extends \App\Controllers\BaseController{
     use ResponseTrait;
     private $reports_path='../writable/reports';
     public function sellParametersGet(){
-        $store_id=$this->request->getPost('store_id');
-        $point_span=$this->request->getPost('point_span');
-        $point_num=$this->request->getPost('point_num');
+        $store_id=  (int) $this->request->getPost('store_id');
+        $point_span=(int) $this->request->getPost('point_span');
+        $point_num= (int) $this->request->getPost('point_num');
 
         $StoreModel=model('StoreModel');
         if( !$StoreModel->permit($store_id,'w') ){
@@ -180,7 +180,7 @@ class Statistics extends \App\Controllers\BaseController{
         if( $search_query ){
             $OrderModel->like('entry_text',$search_query);
         }
-        $body=$OrderModel->findAll();
+        $body=$OrderModel->get()->getResult();
         
         $total_quantity=0;
         $total_sum=0;
@@ -269,7 +269,6 @@ class Statistics extends \App\Controllers\BaseController{
             [null,null,'<style border="none none medium#000000 none">'.$app_title.'</style>']
         ];
         $data=array_merge($header,$body,$footer);
-        $this->folderClean($this->reports_path);
         $tmp_file_name=md5(microtime().rand(0,1000));
         \App\Libraries\xlsx\SimpleXLSXGen::fromArray($data)
             ->setDefaultFontSize(12)
@@ -292,6 +291,7 @@ class Statistics extends \App\Controllers\BaseController{
         }
     }
     public function download($hash,$filename){
+        $this->folderClean($this->reports_path);
         $filepath=$this->reports_path.'/'.$hash;
         if(!file_exists($filepath)){
             http_response_code(404);

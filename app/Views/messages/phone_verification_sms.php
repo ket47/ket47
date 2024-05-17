@@ -1,1 +1,3 @@
-<?=$verification_code?> Ваш код подтверждения из приложения <?=getenv('app.title')?>
+<?=getenv('app.title')?>: <?=$verification_code?> - код для входа
+
+@tezkel.com #<?=$verification_code?>
