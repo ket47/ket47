@@ -109,13 +109,13 @@ class OrderStageScript{
         ],
         'delivery_finish'=>[
             'customer_disputed'=>           [],
-            'customer_finish'=>             ['Завершить заказ','success'],
+            'customer_finish'=>             ['Принять заказ','success'],
             'customer_action_objection'=>   ['Открыть спор','light'],
             ],
 
 
         'admin_supervise'=>[
-            'customer_finish'=>             ['Проблема решена','success'],
+            'customer_finish'=>             ['Принять заказ','success'],
             'supplier_corrected'=>          ['Исправить заказ'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
@@ -1292,6 +1292,13 @@ class OrderStageScript{
     ////////////////////////////////////////////////
     //SYSTEM HANDLERS
     ////////////////////////////////////////////////
+    public function onSystemPostpay( $order_id, $data=null ){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( $order_data->payment_card_fixate_id??null ){
+            return 'already_payed';
+        }
+
+    }
     public function onSystemReckon( $order_id, $data ){
         $finishing_task=[
             'task_name'=>"Order reckoning #$order_id",

@@ -20,6 +20,7 @@ class Statistics extends \App\Controllers\BaseController{
         $tmp_create_sql="
             CREATE TEMPORARY TABLE tmp_sell_parameters AS (
                 SELECT
+                MAX(created_at) point_finish,
                 FLOOR(DATEDIFF(NOW(),created_at)/(:point_span:+0.001)) point_index,
                 COUNT(order_id) order_count,
                 ROUND(SUM(order_sum_product)) order_sum,
@@ -78,6 +79,7 @@ class Statistics extends \App\Controllers\BaseController{
         $tmp_create_sql="
             CREATE TEMPORARY TABLE tmp_sell_parameters AS (
             SELECT
+                MAX(created_at) point_finish,
                 FLOOR(DATEDIFF(NOW(),created_at)/(:point_span:+0.001)) point_index,
                 SUM(IF(act_type='get',:store_product_count:,0)) product_viewed,
                 SUM(IF(act_type='create',entry_count,0)) product_added,

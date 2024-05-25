@@ -120,7 +120,19 @@ class Cardacquirer extends \App\Controllers\BaseController{
         $order_id=$this->request->getPost('order_id');
         $enable_auto_cof=$this->request->getPost('enable_auto_cof');
 
-        $Acquirer=\Config\Services::acquirer();
+        $ua=$this->request->getUserAgent();
+        $platform=$ua->getPlatform();
+        $browser=$ua->getBrowser();
+
+        if( $platform=='iOS' && $browser=='Mozilla' ){
+            //from webview
+            $Acquirer=new \App\Libraries\AcquirerUniteller();
+        } else {
+            $Acquirer=new \App\Libraries\AcquirerRncb();
+        }
+
+
+        //$Acquirer=\Config\Services::acquirer();
         $isAlreadyPayed=$Acquirer->statusCheck( $order_id );
         if( 'ok'==$isAlreadyPayed ){//order is already payed and started
             return $this->fail('already_payed');

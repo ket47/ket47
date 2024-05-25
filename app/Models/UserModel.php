@@ -523,7 +523,7 @@ class UserModel extends Model{
         if( !$user ){
             return null;
         }
-        if($user->user_name==$user_name){
+        if( trim(mb_strtolower($user->user_name, 'UTF-8'))==trim(mb_strtolower($user_name, 'UTF-8')) ){
             return $user->user_id;
         }
         $sms=(object)[
