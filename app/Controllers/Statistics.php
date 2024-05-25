@@ -39,6 +39,7 @@ class Statistics extends \App\Controllers\BaseController{
                 WHERE
                     order_list.created_at>DATE_SUB(NOW(), INTERVAL :overall_span: DAY)
                     AND order_status='finished'
+                    AND order_store_id=:store_id:
                 GROUP BY order_id) inner_t
             GROUP BY point_index
             )";
@@ -53,7 +54,7 @@ class Statistics extends \App\Controllers\BaseController{
         
         $db = db_connect();
         $db->query($tmp_drop_sql);
-        $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num]);
+        $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num,'store_id'=>$store_id]);
 
         $response=[
             'head'=>[
