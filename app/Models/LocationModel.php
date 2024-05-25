@@ -360,7 +360,7 @@ class LocationModel extends Model{
         return 0;
     }
 
-    public function distanceListGet( int $center_location_id, float $point_distance_limit, string $point_holder=null ){
+    public function distanceListGet( int $center_location_id, int $point_distance_limit, string $point_holder=null ){
         if($center_location_id>0){//If location_id<0 use temporary point from itemTemporaryCreate
             $this->query("SET @center_point:=(SELECT location_point FROM location_list WHERE location_id=$center_location_id)");
         }
@@ -374,7 +374,15 @@ class LocationModel extends Model{
             if( $point_holder ){
                 $this->where('location_holder',$point_holder);
             }
-            $this->having('distance<=',$point_distance_limit);
+            if( $point_holder=='store' ){
+                /**
+                 * @todo rewrite this function 
+                 */
+                $this->select('store_delivery_radius,store_delivery_allow');
+                $this->having('distance<=',"GREATEST(IFNULL(store_delivery_radius*store_delivery_allow,0),$point_distance_limit)",false);
+            } else {
+                $this->having('distance<=',$point_distance_limit);
+            }
             $this->orderBy('distance');
             return $this->get()->getResult();
         }catch(Throwable $e){
