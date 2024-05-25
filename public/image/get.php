@@ -27,9 +27,9 @@ $file_optimised=$images_path.'optimised/'."$hash.$width.$height.$extension";
 if ( !file_exists($file_optimised) ) {
     $file_source=$images_path.$hash.'.webp';
     if(!file_exists($file_source)){
-        $file_source="$images_path-notfound.webp";
-        //http_response_code(410);
-        //die;
+        //$file_source="$images_path-notfound.webp";
+        http_response_code(404);
+        die;
     }
 
     $thumb= image_resize($file_source, $width, $height);

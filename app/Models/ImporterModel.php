@@ -167,6 +167,7 @@ class ImporterModel extends Model{
         }
         $rowcount=0;
         if($target==='product'){
+            $product_option_children=[];
             $ProductModel=model('ProductModel');
             $ProductModel->itemCreateAsDisabled=$this->itemCreateAsDisabled;
             $ProductModel->itemImageCreateAsDisabled=$this->itemCreateAsDisabled;
@@ -177,9 +178,37 @@ class ImporterModel extends Model{
                     $this->update($product->id,['action'=>'done','target_id'=>$product_id]);
                     $rowcount++;
                 }
+                if($product->product_external_parent_id??null){
+                    $product_option_children[]= $product_id;
+                }
             }
+            $this->importCreateOptionLinks($product_option_children,$colconfig->product_external_parent_id);
         }
         return $rowcount;
+    }
+    private function importCreateOptionLinks( array $product_option_children, string $ext_parent_id_col ){
+        if( !$product_option_children ){
+            return;
+        }
+        $this->whereIn('imported_list.target_id',$product_option_children);
+        $this->join('imported_list il2',"imported_list.`$ext_parent_id_col`=il2.target_external_id");
+        $this->select("imported_list.target_id AS product_id, il2.target_id AS parent_product_id");
+        $optionLinks=$this->get()->getResult();
+        if(!$optionLinks){
+            return;
+        }
+        $parent_ids=[];
+        $ProductModel=model('ProductModel');
+        foreach($optionLinks as $link){
+            $ProductModel->itemOptionSave( $link->product_id, $link->parent_product_id );
+            if( !in_array($link->parent_product_id,$parent_ids) ){
+                /**
+                 * mark parent product as parent to itself to indicate it has options
+                 */
+                $ProductModel->itemOptionSave( $link->parent_product_id, $link->parent_product_id );
+            }
+            $parent_ids[]=$link->parent_product_id;
+        }
     }
     
     public function importUpdate($holder,$holder_id,$target,$colconfig){

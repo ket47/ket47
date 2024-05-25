@@ -337,4 +337,25 @@ class TestController extends \App\Controllers\BaseController{
         ]);
         p($trans_id);
     }
+
+
+    function flowwowDig(){
+        //https://store.tildaapi.com/api/getproductslist/?storepartuid=513610670921&recid=721095268&c=1716550130770&getparts=true&getoptions=true&slice=1&size=36
+        $url="https://store.tildaapi.com/api/getproductslist/?storepartuid=513610670921&recid=720272320&c=1716549613535&getparts=true&getoptions=true&slice=1&size=360";
+        $json=file_get_contents($url);
+        $obj=json_decode($json);
+
+
+        echo count($obj->products);
+        p($obj->products);
+
+        $dom = new \DomDocument();
+        $dom->load($url);
+        $finder = new \DomXPath($dom);
+        $classname="store_category_visible_area";
+        $nodes = $finder->query("//*[contains(@class, '$classname')]");
+
+
+        p($nodes);
+    }
 }
