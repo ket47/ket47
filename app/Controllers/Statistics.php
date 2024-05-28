@@ -76,13 +76,18 @@ class Statistics extends \App\Controllers\BaseController{
         $ProductModel=model('ProductModel');
         $store_product_count=$ProductModel->where('store_id',$store_id)->where('is_disabled',0)->select('COUNT(*) c')->get()->getRow('c');
 
+
+
+        /**
+         * @todo product_viewed is actually store_viewed
+         */
         $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_sell_parameters";
         $tmp_create_sql="
             CREATE TEMPORARY TABLE tmp_sell_parameters AS (
             SELECT
                 MAX(created_at) point_finish,
                 FLOOR(DATEDIFF(NOW(),created_at)/(:point_span:+0.001)) point_index,
-                SUM(IF(act_type='get',:store_product_count:,0)) product_viewed,
+                SUM(IF(act_type='get',1,0)) product_viewed,
                 SUM(IF(act_type='create',entry_count,0)) product_added,
                 SUM(IF(act_type='finish',entry_count,0)) product_purchased
             FROM
