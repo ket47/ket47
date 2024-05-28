@@ -30,6 +30,7 @@ class ProductModel extends Model{
         'product_promo_start',
         'product_promo_finish',
         'is_counted',
+        'is_hidden',
         'deleted_at',
         'updated_by',
         ];
@@ -43,6 +44,9 @@ class ProductModel extends Model{
     ];
     public $itemCreateAsDisabled=true;
     public $itemImageCreateAsDisabled=false;
+    protected function initialize(){
+        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
+    }
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -71,6 +75,7 @@ class ProductModel extends Model{
             product_list.product_promo_start,
             product_list.product_promo_finish,
             product_list.is_counted,
+            product_list.is_hidden,
             product_list.is_disabled,
             product_list.deleted_at,
             product_list.validity,
@@ -348,18 +353,20 @@ class ProductModel extends Model{
                 $this->where('validity>','50');
             }
         }
-        //if( !($filter['order']??0) ){
-            $this->orderBy("validity",'DESC');
-            $this->orderBy("{$this->table}.updated_at",'DESC');
-            $this->orderBy("product_final_price<>product_price",'DESC',false);
-        //}
+        $this->orderBy("validity",'DESC');
+        //$this->orderBy("{$this->table}.updated_at",'DESC');
+        $this->orderBy("product_final_price<>product_price",'DESC',false);
+
         $this->filterMake( $filter );
+        if( !$filter['is_disabled'] ){
+            //if disabled products are not shown then not show hidden products 
+            $this->where('is_hidden',0);
+        }
         $this->permitWhere('r');
         $this->join('product_group_member_list','member_id=product_id','left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND is_main=1",'left');
         $this->select("product_list.*,image_hash,group_id");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
-        //$this->select("IF(`product_parent_id`=`product_id`,(SELECT GROUP_CONCAT(DISTINCT product_option SEPARATOR '~|~') FROM product_list ppl WHERE ppl.product_parent_id=product_id AND is_disabled=0 AND deleted_at IS NULL),NULL) product_options");
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $product_list= $this->get()->getResult();
 
