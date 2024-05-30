@@ -209,23 +209,20 @@ class Order extends \App\Controllers\BaseController {
         $StoreModel=model('StoreModel');
 
         $bulkResponse=(object)[];
-        $bulkResponse->Store_deliveryOptions=$this->itemDeliveryOptionsGet(
-            $order->order_store_id
-        );
-        if( $bulkResponse->Store_deliveryOptions=='not_ready' || $bulkResponse->Store_deliveryOptions=='no_tariff' ){
-            madd('order','create','error',$order_id,$bulkResponse->Store_deliveryOptions);
-            return $this->fail($bulkResponse->Store_deliveryOptions);
-        }
         $bulkResponse->Location_distanceHolderGet=$LocationModel->distanceHolderGet(
             'store',$order->order_store_id,
             'user',$order->owner_id
         );
+        $bulkResponse->Store_deliveryOptions=$this->itemDeliveryOptionsGet(
+            $order->order_store_id,
+            $bulkResponse->Location_distanceHolderGet
+        );
+        if( in_array($bulkResponse->Store_deliveryOptions,['not_ready','no_tariff','too_far']) ){
+            madd('order','create','error',$order_id,$bulkResponse->Store_deliveryOptions);
+            return $this->fail($bulkResponse->Store_deliveryOptions);
+        }
         $bulkResponse->Store_preparationTime=$StoreModel->itemGet($order->order_store_id,'basic')->store_time_preparation??0;
 
-        if($bulkResponse->Location_distanceHolderGet>getenv('delivery.radius')){
-            madd('order','create','error',$order_id,'too_far');
-            return $this->fail('too_far');
-        }
         // $bulkResponse->Location_count=$LocationModel->listCountGet([
         //     'location_holder'=>'user',
         //     'location_holder_id'=>$order->owner_id
@@ -269,7 +266,7 @@ class Order extends \App\Controllers\BaseController {
         ];
     }
 
-    private function itemDeliveryOptionsGet( $store_id ){
+    private function itemDeliveryOptionsGet( $store_id, int $delivery_distance=null ){
         $StoreModel=model('StoreModel');
         if(!$StoreModel->itemIsReady($store_id)){
             return 'not_ready';
@@ -288,13 +285,26 @@ class Order extends \App\Controllers\BaseController {
         $store=$StoreModel->itemGet($store_id,'basic');
         $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id,$tariff_order_mode);
 
+        $courier_delivery_radius=$store_delivery_radius=getenv('delivery.radius');
+        if( $store->store_delivery_radius>0 ){
+            $store_delivery_radius=(int)$store->store_delivery_radius;
+        }
+
+        $default_error_code='no_tariff';
         if(!$storeTariffRuleList){
-            return 'no_tariff';
+            return $default_error_code;
         }
         $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
+                if( $delivery_distance>$courier_delivery_radius ){
+                    /**
+                     * Delivery distance is bigger than maximum courier reach
+                     */
+                    $default_error_code='too_far';
+                    continue;
+                }
                 if( !$deliveryIsReady ){
                     $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
                 }
@@ -321,6 +331,13 @@ class Order extends \App\Controllers\BaseController {
                 $deliveryOptions[]=$rule;
             } else {
                 if($store->store_delivery_allow==1){
+                    if( $delivery_distance>$store_delivery_radius ){
+                        /**
+                         * Delivery distance is bigger than maximum store courier reach
+                         */
+                        $default_error_code='too_far';
+                        continue;
+                    }
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
                         'order_sum_delivery'=>(int)$store->store_delivery_cost,
@@ -358,11 +375,13 @@ class Order extends \App\Controllers\BaseController {
                 }
             }
         }
-        $result='no_tariff';
-        if( count($deliveryOptions)>0 ){
-            $result=$deliveryOptions;
+        if( !count($deliveryOptions) ){
+            /**
+             * If no rules are found then return error code no_tariff or too_far
+             */
+            return $default_error_code;
         }
-        return $result;
+        return $deliveryOptions;
     }
 
     private function itemSumMinimalGet( $mode='delivery_by_courier' ){
