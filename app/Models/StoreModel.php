@@ -56,6 +56,7 @@ class StoreModel extends Model{
         'store_minimal_order',
         'store_delivery_allow',
         'store_delivery_cost',
+        'store_delivery_radius',
         'store_pickup_allow',
         'is_working',
         'owner_id',
