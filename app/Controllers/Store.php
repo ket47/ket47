@@ -416,7 +416,7 @@ class Store extends \App\Controllers\BaseController{
     
     public function locationDelete(){
         //$location_holder_id=$this->request->getVar('location_holder_id');
-        $location_id=$this->request->getVar('location_id');
+        $location_id=$this->request->getPost('location_id');
         $LocationModel=model('LocationModel');
 
         $result=$LocationModel->itemDelete($location_id);
@@ -424,5 +424,22 @@ class Store extends \App\Controllers\BaseController{
             return $this->respondDeleted('ok');
         }
         return $this->fail($result);
+    }
+
+    public function qrGet(){
+        $store_id=$this->request->getGet('store_id');
+        $type=$this->request->getGet('type');
+
+        $data=null;
+        if( $type=='store' ){
+            $data=getenv('app.frontendUrl')."catalog/store-{$store_id}";
+        } else 
+        if( $type=='menu' ){
+            $data=getenv('app.frontendUrl')."catalog/store-{$store_id}/menu";
+        }
+
+        $qr=new \App\Libraries\QRCode($data,['w'=>500,'h'=>500]);
+        $qr->output_image();
+        exit;
     }
 }

@@ -464,9 +464,14 @@ class Order extends \App\Controllers\BaseController {
             //TMP FIX
             $DeliveryJobModel=model('DeliveryJobModel');
             $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
+            $payment_by_cash=($tariff->cash_allow && ($checkoutData->paymentByCash??0))?1:0;
             $order_data->delivery_job=(object)[
                 'job_name'=>"Заказ из {$store->store_name}",
-                'job_data'=>json_encode(['distance'=>$routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
+                'job_data'=>json_encode([
+                    'distance'=>$routePlan->deliveryDistance,
+                    'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
+                    'payment_by_cash'=>$payment_by_cash
+                ]),
                 'start_plan'=>$routePlan->start_plan??0,
                 'start_prep_time'=>$store->store_time_preparation,
                 

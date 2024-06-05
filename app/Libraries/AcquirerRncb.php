@@ -277,6 +277,7 @@ class AcquirerRncb{
         $OrderModel=model('OrderModel');
         $UserCardModel=model('UserCardModel');
         $orderData=$OrderModel->itemDataGet($order_all->order_id);
+        $orderDataUpdate=(object)[];
 
         $orderTitle="Заказ #{$order_all->order_id}";
         $orderDescription="Служба доставки tezkel.com ".($order_all->store->store_name??null);
@@ -313,11 +314,9 @@ class AcquirerRncb{
                 }
                 return 'error';
             }
-            $orderData=(object)[
-                "payment_card_acq_rncb"=>1,
-                "payment_card_acq_order_id"=>$acqOrder->order->id,
-                "payment_card_fixate_iscof"=>1,
-            ];
+            $orderDataUpdate->payment_card_acq_rncb=1;
+            $orderDataUpdate->payment_card_acq_order_id=$acqOrder->order->id;
+            $orderDataUpdate->payment_card_fixate_iscof=1;
         }
 
         //Auth money on card
@@ -339,11 +338,11 @@ class AcquirerRncb{
             }
             return 'error';
         }
-        $orderData->payment_card_fixate_id=$orderData->payment_card_acq_order_id;
-        $orderData->payment_card_fixate_sum=$order_all->order_sum_total;
+        $orderDataUpdate->payment_card_fixate_id=$orderData->payment_card_acq_order_id;
+        $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
+        $orderDataUpdate->payment_by_card=1;
         
-        $OrderModel->fieldUpdateAllow('order_data');
-        $OrderModel->itemDataUpdate($order_all->order_id,$orderData);
+        $OrderModel->itemDataUpdate($order_all->order_id,$orderDataUpdate);
         return 'ok';
     }
 

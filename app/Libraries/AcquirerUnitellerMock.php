@@ -80,4 +80,17 @@ class AcquirerUnitellerMock{
             'approvalCode'=>000,
         ];
     }
+
+    public function pay( object $order_all ){
+        $OrderModel=model('OrderModel');
+        $update=(object)[
+            'payment_card_fixate_mock'=>'mock',
+            'payment_card_fixate_id'=>rand(11111,99999),
+            'payment_card_fixate_sum'=>$order_all->order_sum_total,
+            'payment_by_card'=>1,
+        ];
+        $OrderModel->fieldUpdateAllow('order_data');
+        $OrderModel->itemDataUpdate($order_all->order_id,$update);
+        return 'ok';
+    }
 }

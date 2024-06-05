@@ -10,7 +10,7 @@ class SmsP1{
                     'phone'=>$phone,
                     'text'=>$text,
                     'channel'=>'char',
-                    'sender'=>'TEZKEL'
+                    'sender'=>'VIRTA'
                 ]
             ]
         ];

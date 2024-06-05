@@ -7,8 +7,23 @@ class DeliveryJob extends \App\Controllers\BaseController{
 
     use ResponseTrait;
     
-    public function itemGet(){
-        return false;
+    public function itemCustomerDetailGet(){
+        $job_id=$this->request->getPost('job_id');
+        if( !courdo() ){
+            return $this->failForbidden('notacourier');
+        }
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $DeliveryJobModel->join('order_list','order_id');
+        $DeliveryJobModel->join('user_list','order_list.owner_id=user_id');
+        $DeliveryJobModel->select('user_name,user_phone');
+
+        $DeliveryJobModel->where('job_id',$job_id);
+        $DeliveryJobModel->where("job_data->>'$.payment_by_cash'=1",null,false);
+        $customerContacts=$DeliveryJobModel->get()->getRow();
+        if( !$customerContacts ){
+            return $this->failNotFound('not_found');
+        }
+        return $this->respond($customerContacts);
     }
     
     public function itemCreate(){
@@ -24,9 +39,6 @@ class DeliveryJob extends \App\Controllers\BaseController{
         return false;
     }
 
-    public function itemDetailGet(){
-        
-    }
 
 
     /**

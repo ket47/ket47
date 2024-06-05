@@ -182,7 +182,9 @@ class ImporterModel extends Model{
                     $product_option_children[]= $product_id;
                 }
             }
-            $this->importCreateOptionLinks($product_option_children,$colconfig->product_external_parent_id);
+            if($colconfig->product_external_parent_id??null){
+                $this->importCreateOptionLinks($product_option_children,$colconfig->product_external_parent_id);
+            }
         }
         return $rowcount;
     }

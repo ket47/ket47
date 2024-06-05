@@ -4,17 +4,24 @@ namespace App\Models;
 
 trait OrderStageTrait{
 
-    protected $ScriptLibraryName="App\\Models\\OrderStageScript";
+    protected $ScriptLibraryName=null;//"App\\Models\\OrderStageScript";
     private $StageScript=null;
     private function itemStageScriptLoad($order_id){
-        if( !$this->StageScript ){
+        //if( !$this->StageScript ){
             $order_basic=$this->itemGet($order_id,'basic');
+            if( !is_object($order_basic) ){
+                die();//forbidden notfound etc
+                //return null;
+            }
             if($order_basic->is_shipment??null){
                 $this->ScriptLibraryName="App\\Models\\ShipmentStageScript";
+            } else {
+                $this->ScriptLibraryName="App\\Models\\OrderStageScript";
             }
+            //pl([$this->ScriptLibraryName,'itemStageScriptLoad',$order_basic]);
             $this->StageScript=new $this->ScriptLibraryName();
             $this->StageScript->OrderModel=$this;
-        }
+        //}
         return $this->StageScript;
     }
 
@@ -25,8 +32,24 @@ trait OrderStageTrait{
         foreach($unfiltered_stage_next as $stage=>$config){
             $valid=$user_role=='admin' 
             || strpos($stage, $user_role)===0 
-            || strpos($stage, 'action')===0 
-            || strpos($stage, 'system')===0;
+            || strpos($stage, 'action')===0 ;
+            //|| strpos($stage, 'system')===0
+            
+
+
+
+
+
+
+
+
+
+
+
+
+            /**
+             * system should be accessible only for admins!!! || strpos($stage, 'system')===0;
+             */
             if($valid){
                 $filtered_stage_next[$stage]=$config;
             }
@@ -39,7 +62,7 @@ trait OrderStageTrait{
         if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
             return 'ok';
         }
-        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages]);
+        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages,'order',$order]);
         return 'invalid_next_stage';
     }
 

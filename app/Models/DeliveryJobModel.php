@@ -457,7 +457,7 @@ class DeliveryJobModel extends SecureModel{
         job_name,
         courier_id,
         IFNULL(job_data->>'$.is_shipment',0) is_shipment,
-        IFNULL(job_data->>'$.payment_is_cash',0) payment_is_cash,
+        IFNULL(job_data->>'$.payment_by_cash',0) payment_by_cash,
         IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,
         order_id,
         start_plan,

@@ -113,7 +113,12 @@ class ShipmentStageScript{
             'sanction_supplier_fee'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
     public function onAdminSanctionCourier( $order_id ){
         $order_data_update=(object)[
@@ -122,7 +127,12 @@ class ShipmentStageScript{
             'sanction_supplier_fee'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
     // public function onAdminSanctionSupplier( $order_id ){
     //     $order_data_update=(object)[
@@ -147,9 +157,12 @@ class ShipmentStageScript{
 
         $TransactionModel=model('TransactionModel');
         $TransactionModel->queryDelete("order:$order_id");
-
-        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
-        return $result;
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon', ['delay_sec'=>1]]]
+                ]
+        ]);
+        return 'ok';
     }
     public function onAdminDelete($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
@@ -172,21 +185,22 @@ class ShipmentStageScript{
         return 'ok';
     }
     ////////////////////////////////////////////////
-    //SYSTEM HANDLERS
+    //SYSTEM HANDLERS ONLY UNDER ADMIN LEVEL USER
     ////////////////////////////////////////////////
     public function onSystemReckon( $order_id, $data ){
-        $finishing_task=[
-            'task_name'=>"Order reckoning #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish',$data]]
-                ]
-        ];
         if( $data['delay_sec']??0 ){
-            $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
+            sleep($data['delay_sec']);//DO AFTER DELAY
         }
-        jobCreate($finishing_task);
-        $finishing_task['task_next_start_time']=time()+3*60;//SECOND TRY AFTER 3 MIN DO WE NEED IT???
-        jobCreate($finishing_task);
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_finish');
+        if( $result!='ok' ){
+            $retry_delay_min=7;
+            jobCreate([
+                'task_programm'=>[
+                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+                ],
+                'task_next_start_time'=>time()+$retry_delay_min*60
+            ]);
+        }
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
@@ -232,7 +246,8 @@ class ShipmentStageScript{
                         ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                     ],
                 'is_singlerun'=>1,
-                'task_next_start_time'=>$await_payment_until+1
+                'task_next_start_time'=>$await_payment_until+1,
+                'task_priority'=>'low'
             ];
             jobCreate($stage_reset_task);
             return true;
@@ -300,7 +315,8 @@ class ShipmentStageScript{
                     ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                 ],
             'is_singlerun'=>1,
-            'task_next_start_time'=>$next_start_time
+            'task_next_start_time'=>$next_start_time,
+            'task_priority'=>'low'
         ];
         jobCreate($stage_reset_task);
         return 'ok';
@@ -343,16 +359,24 @@ class ShipmentStageScript{
 
     private function systemBegin($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
+        $next_stage=null;
         if( $order_data->start_plan_mode=='scheduled' ){
-            return $this->OrderModel->itemStageCreate($order_id, 'system_schedule');
-        }
+            $next_stage='system_schedule';
+        } else 
         if( $order_data->start_plan_mode=='awaited' ){
-            return $this->OrderModel->itemStageCreate($order_id, 'system_await');
-        }
+            $next_stage='system_await';
+        } else 
         if( $order_data->start_plan_mode=='inited' ){
-            return $this->OrderModel->itemStageCreate($order_id, 'system_await');//this should be customer_start but lets stuck with system_await for now
+            $next_stage='system_await';//this should be customer_start but lets stuck with system_await for now
+        } else {
+            return 'no_plan_mode';
         }
-        return 'no_plan_mode';
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,$next_stage]]
+                ]
+        ]);
+        return 'ok';
     }
 
     public function onSystemAwait( $order_id, $data ){
@@ -429,7 +453,8 @@ class ShipmentStageScript{
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['system_schedule','system_await',$order_id]]
                 ],
-            'task_next_start_time'=>$init_plan
+            'task_next_start_time'=>$init_plan,
+            'task_priority'=>'low'
         ];
         jobCreate($set_on_queue_task);
         return 'ok';
@@ -515,7 +540,8 @@ class ShipmentStageScript{
             'task_name'=>"shipping customer_start Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -549,7 +575,8 @@ class ShipmentStageScript{
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cour_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
 
         $courier_freeing_task=[
@@ -564,11 +591,21 @@ class ShipmentStageScript{
 
         jobCreate($courier_freeing_task);
         jobCreate($notification_task);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
         
     public function onCustomerFinish( $order_id ){
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }   
     //////////////////////////////////////////////////////////////////////////
     //DELIVERY HANDLERS
@@ -636,7 +673,8 @@ class ShipmentStageScript{
             'task_name'=>"delivery_found Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         // $orderStartTask=['task_programm'=>[
@@ -702,7 +740,8 @@ class ShipmentStageScript{
             'task_name'=>"delivery_rejected Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
 
@@ -763,10 +802,16 @@ class ShipmentStageScript{
             'task_name'=>"delivery_notfound Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms,$cust_sms,$store_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
 
     public function onDeliveryFinish( $order_id ){
@@ -775,6 +820,11 @@ class ShipmentStageScript{
         ]];
         jobCreate($deliveryJob);
 
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
 }

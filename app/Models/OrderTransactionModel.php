@@ -17,7 +17,7 @@ class OrderTransactionModel extends TransactionModel{
         }
 
         $finalized=
-               $this->orderFinalizeRefund( $order_basic)
+               $this->orderFinalizeRefund($order_basic)
             && $this->orderFinalizeConfirm($order_basic)
             && $this->orderFinalizeInvoice($order_basic)
             && $this->orderFinalizeSettle($order_basic,$order_data);

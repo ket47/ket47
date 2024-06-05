@@ -171,7 +171,7 @@ class Task extends \App\Controllers\BaseController{
         return $task_result;
     }
 
-    private function orderStageCreate($order_id,$new_stage,$data){
+    private function orderStageCreate($order_id,$new_stage,$data=null){
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
         $UserModel->systemUserLogin();

@@ -87,7 +87,11 @@ class TildaWorm1 extends \App\Controllers\BaseController{
     private function productListFill():array{
         //$url="https://store.tildaapi.com/api/getproductslist/?storepartuid=949752710411&recid=720272320&c=1716618962040&getparts=true&getoptions=true&slice=1&size=36";
         $url="https://store.tildaapi.com/api/getproductslist/?storepartuid=513610670921&getparts=true&getoptions=true&size=360";
-        $response=json_decode(file_get_contents($url));
+        $json=@file_get_contents($url);
+        if(!$json){
+            return null;
+        }
+        $response=json_decode($json);
         $categories=$response->parts??[];
         $products=$response->products;
         $productList=[];
@@ -166,6 +170,9 @@ class TildaWorm1 extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         $productList=$this->productListFill();
+        if( !$productList ){//cant open url
+            return ;
+        }
         $token_data=session()->get('token_data');
 
         $colconfig=(object)[

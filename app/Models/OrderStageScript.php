@@ -39,8 +39,10 @@ class OrderStageScript{
             ],
         'customer_finish'=>[
             'system_reckon'=>               [],
+            'delivery_deposit_compensate'=> ['Внести оплату','success'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
+            'admin_supervise'=>             ['Решить спор','danger'],
             ],
-
 
 
         'system_schedule'=>[
@@ -81,8 +83,8 @@ class OrderStageScript{
             'supplier_corrected'=>          ['Изменить','medium','clear'],
             'delivery_start'=>              ['Начать доставку'],
             'delivery_no_courier'=>         [],
-            'delivery_finish'=>             [],//if dispute is ongoing then fartforward 
-            'system_reckon'=>               [],
+            'delivery_finish'=>             [],//if dispute is ongoing then fastforward 
+            'system_reckon'=>               [],//if store delivery
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_force_start'=>            [
@@ -93,7 +95,6 @@ class OrderStageScript{
             'delivery_finish'=>             ['Завершить доставку','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
-            //'delivery_action_cust_push'=>   ['Написать покупателю','primary','clear'],
             'delivery_rejected'=>           [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
@@ -101,7 +102,8 @@ class OrderStageScript{
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа'],
             'admin_supervise'=>             ['Решить спор','danger'],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
             ],
         'delivery_no_courier'=>[
             'system_reckon'=>               [],
@@ -112,6 +114,9 @@ class OrderStageScript{
             'customer_finish'=>             ['Принять заказ','success'],
             'customer_action_objection'=>   ['Открыть спор','light'],
             ],
+        'delivery_deposit_compensate'=>[
+            'system_reckon'=>               [],
+        ],
 
 
         'admin_supervise'=>[
@@ -186,7 +191,8 @@ class OrderStageScript{
                         ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                     ],
                 'is_singlerun'=>1,
-                'task_next_start_time'=>$await_payment_until+1
+                'task_next_start_time'=>$await_payment_until+1,
+                'task_priority'=>'low'
             ];
             jobCreate($stage_reset_task);
             return true;
@@ -254,7 +260,8 @@ class OrderStageScript{
                     ['method'=>'orderResetStage','arguments'=>['customer_confirmed','customer_cart',$order_id]]
                 ],
             'is_singlerun'=>1,
-            'task_next_start_time'=>$next_start_time
+            'task_next_start_time'=>$next_start_time,
+            'task_priority'=>'low'
         ];
         jobCreate($stage_reset_task);
         return 'ok';
@@ -307,6 +314,8 @@ class OrderStageScript{
             return 'address_not_set';
         }
         helper('phone_number');
+
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
         $info_for_courier=(object)json_decode($order_data->info_for_courier??'[]');
 
         $info_for_courier->customer_location_address=$customerLocation->location_address??'';
@@ -325,7 +334,12 @@ class OrderStageScript{
         $info_for_courier->supplier_name=$order->store->store_name??'';
         $info_for_courier->supplier_email=$order->store->store_email??'';
 
+        if( $order_data->payment_by_cash??null ){
+            $info_for_customer->tariff_info=view('order/customer_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
+            $info_for_courier->tariff_info=view('order/delivery_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
+        }
         $update=(object)[
+            'info_for_customer'=>json_encode($info_for_customer),
             'info_for_courier'=>json_encode($info_for_courier),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
@@ -342,20 +356,23 @@ class OrderStageScript{
             ]];
             jobCreate($deliveryJob);
             $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
+            /**
+             * @todo delete delivery_job_data from order_data
+             */
         }
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////
-        $timeout_min=$PrefModel->itemGet('customer_start_timeout_min','pref_value',0);
-        $next_start_time=time()+$timeout_min*60;
-        $stage_reset_task=[
-            'task_name'=>"customer_start Rollback #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
-                ],
-            'task_next_start_time'=>$next_start_time
-        ];
-        jobCreate($stage_reset_task);
+        // $timeout_min=$PrefModel->itemGet('customer_start_timeout_min','pref_value',0);
+        // $next_start_time=time()+$timeout_min*60;
+        // $stage_reset_task=[
+        //     'task_name'=>"customer_start Rollback #$order_id",
+        //     'task_programm'=>[
+        //             ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
+        //         ],
+        //     'task_next_start_time'=>$next_start_time
+        // ];
+        // jobCreate($stage_reset_task);
         ///////////////////////////////////////////////////
         //LOCKING PROMOTION
         ///////////////////////////////////////////////////
@@ -428,7 +445,8 @@ class OrderStageScript{
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms,$admin_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
 
@@ -441,7 +459,8 @@ class OrderStageScript{
                     ['model'=>'OrderModel','method'=>'itemStageAdd','arguments'=>[$order_id,'supplier_overdue']],
                     ['model'=>'UserModel','method'=>'systemUserLogout'],
                 ],
-            'task_next_start_time'=>$timer_supplier_overdue
+            'task_next_start_time'=>$timer_supplier_overdue,
+            'task_priority'=>'low'
         ];
         jobCreate($stage_reset_task);
         return 'ok';
@@ -501,7 +520,8 @@ class OrderStageScript{
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cour_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
 
         $courier_freeing_task=[
@@ -596,7 +616,8 @@ class OrderStageScript{
             'task_name'=>"customer_disputed Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$store_email,$store_sms,$cust_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -613,15 +634,25 @@ class OrderStageScript{
         $timeout_min=30;
         $next_start_time=time()+$timeout_min*60;
         $notification_task=[
-            'task_name'=>"delivery_notfound Notify #$order_id",
+            'task_name'=>"leave_comment",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
                 ],
-            'task_next_start_time'=>$next_start_time
+            'task_next_start_time'=>$next_start_time,
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>0]);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( $order_data->payment_by_cash??null ){
+            return 'ok';
+        }
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
     
 
@@ -688,7 +719,8 @@ class OrderStageScript{
             'task_name'=>"supplier_rejected Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms,$store_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
 
 
@@ -704,7 +736,12 @@ class OrderStageScript{
 
         jobCreate($courier_freeing_task);
         jobCreate($notification_task);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
         
     public function onSupplierStart($order_id){
@@ -778,7 +815,8 @@ class OrderStageScript{
             'task_name'=>"supplier_corrected Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -823,7 +861,8 @@ class OrderStageScript{
             'task_name'=>"supplier_overdue Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$customer_sms/**,$store_sms*/]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -869,19 +908,20 @@ class OrderStageScript{
         $this->onSupplierFinishPrepTimeUpdate( $order_id, $order->order_store_id );
 
         if( !isset($order_data->delivery_by_courier) ){
-            return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+            jobCreate([
+                'task_programm'=>[
+                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                    ]
+            ]);
+            return 'ok';
         }
         if( $order_data->is_dispute_opened??0 ){
-            $fastforward_delfinish_task=[
-                'task_name'=>"fastforward delivery finish by store",
+            jobCreate([
                 'task_programm'=>[
-                    ['model'=>'UserModel','method'=>'systemUserLogin'],
-                    ['model'=>'OrderModel','method'=>'itemStageCreate','arguments'=>[$order_id,'delivery_finish']],
-                    ['model'=>'UserModel','method'=>'systemUserLogout'],
+                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'delivery_finish']]
                 ],
                 'task_next_start_time'=>time()+1
-            ];
-            jobCreate($fastforward_delfinish_task);
+            ]);
         }
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
@@ -1019,7 +1059,8 @@ class OrderStageScript{
             'task_name'=>"delivery_found Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms,$store_email]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -1092,7 +1133,8 @@ class OrderStageScript{
             'task_name'=>"delivery_rejected Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
 
@@ -1153,10 +1195,16 @@ class OrderStageScript{
             'task_name'=>"delivery_notfound Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms,$cust_sms,$store_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
 
     private function itemDeliveryHeavyGet(){
@@ -1216,6 +1264,34 @@ class OrderStageScript{
         ];
         jobCreate($stage_reset_task);
         return 'ok';
+    }
+    /**
+     * Courier pays in place of customer
+     */
+    public function onDeliveryDepositCompensate( $order_id ){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( !($order_data->payment_by_cash??null) ){
+            return 'deposit_inapplicable';
+        }
+        $user_id=session()->get('user_id');
+        $UserCardModel=model('UserCardModel');
+        $main_card=$UserCardModel->itemMainGet($user_id);
+        if( !$main_card ){
+            return 'deposit_error_nocof';
+        }
+        $Acquirer=\Config\Services::acquirer();
+        $order_all=$this->OrderModel->itemGet($order_id,'all');
+        $result=$Acquirer->pay($order_all,$main_card->card_id);
+        if( $result!='ok' ){
+            return "deposit_{$result}";
+        }
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        sleep(1);
+        return 'ok';        
     }
     ////////////////////////////////////////////////
     //ADMIN HANDLERS
@@ -1282,7 +1358,8 @@ class OrderStageScript{
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
 
@@ -1300,18 +1377,19 @@ class OrderStageScript{
 
     }
     public function onSystemReckon( $order_id, $data ){
-        $finishing_task=[
-            'task_name'=>"Order reckoning #$order_id",
-            'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish',$data]]
-                ]
-        ];
         if( $data['delay_sec']??0 ){
-            $finishing_task['task_next_start_time']=time()+$data['delay_sec'];//DO AFTER DELAY
+            sleep($data['delay_sec']);//DO AFTER DELAY
         }
-        jobCreate($finishing_task);
-        $finishing_task['task_next_start_time']=time()+7*60;//SECOND TRY AFTER 7 MIN DO WE NEED IT???
-        jobCreate($finishing_task);
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_finish');
+        if( $result!='ok' ){
+            $retry_delay_min=7;
+            jobCreate([
+                'task_programm'=>[
+                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+                ],
+                'task_next_start_time'=>time()+$retry_delay_min*60
+            ]);
+        }
         return 'ok';
     }
     public function onSystemFinish( $order_id ){

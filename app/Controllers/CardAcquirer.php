@@ -80,11 +80,11 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
-        madd('order','pay','error',$order_id,$incomingStatus->status);
         if( $result=='ok' ){
             madd('order','pay','ok',$order_id);
             return $this->respond('OK'); 
         }
+        madd('order','pay','error',$order_id,$incomingStatus->status);
         $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id; STAGE CANT BE CHANGED $result=='ok'");
         return $this->fail('cant_change_order_stage');     
     }
@@ -124,15 +124,9 @@ class Cardacquirer extends \App\Controllers\BaseController{
         $platform=$ua->getPlatform();
         $browser=$ua->getBrowser();
 
-        if( $platform=='iOS' && $browser=='Mozilla' ){
-            //from webview
-            $Acquirer=new \App\Libraries\AcquirerUniteller();
-        } else {
-            $Acquirer=new \App\Libraries\AcquirerRncb();
-        }
 
-
-        //$Acquirer=\Config\Services::acquirer();
+        $is_ios_webview=$platform=='iOS' && $browser=='Mozilla';
+        $Acquirer=\Config\Services::acquirer(true,$is_ios_webview);
         $isAlreadyPayed=$Acquirer->statusCheck( $order_id );
         if( 'ok'==$isAlreadyPayed ){//order is already payed and started
             return $this->fail('already_payed');

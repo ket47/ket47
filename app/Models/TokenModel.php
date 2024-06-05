@@ -81,9 +81,7 @@ class TokenModel extends Model{
                 return 'forbidden';
             }
         }
-        if($token_holder=='user'){
-            //
-        } else {
+        if( !in_array($token_holder,['user','store']) ){
             return 'forbidden';
         }
 
