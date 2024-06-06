@@ -210,45 +210,46 @@ class AcquirerUniteller{
     //     ];
     // }
 
-    public function pay( object $order_all, int $card_id){
-        $request=(object)[
-            'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
-            'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
-            'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
-            'Parent_Order_IDP'=>getenv('uniteller.orderPreffix').'REG'.$card_id,
-//            'Parent_Order_IDP'=>'loc_1077',
-        ];
-        $request->Signature = strtoupper(
-            md5(
-                md5($request->Shop_IDP) . "&" .
-                md5($request->Order_IDP) . "&" .
-                md5($request->Subtotal_P) . "&" .
-                md5($request->Parent_Order_IDP) . "&" .
-                md5( getenv('uniteller.password') )
-            )
-        );
-        $context  = stream_context_create([
-            'http' => [
-                'header'  => "Content-type: application/x-www-form-urlencoded",
-                'method'  => 'POST',
-                'content' => http_build_query($request)
-                ]
-        ]);
-        $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
-        $rows=str_getcsv($result,"\n");
-        $response=str_getcsv($rows[1],";");
-        //error_log("\n\n#{$order_all->order_id}".date(" H:i:s")."\n".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
-        if(!$result || str_contains($result,'Error_Code') || !$response){
-            log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
-            return null;
-        }
-        return (object)[
-            'order_id'=>$response[0],
-            'status'=>$response[1],
-            'total'=>$response[2],
-            'approvalCode'=>$response[3],
-            'billNumber'=>$response[4]
-        ];
+    public function pay( object $order_all, int $card_id=null){
+        return false;
+//         $request=(object)[
+//             'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
+//             'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
+//             'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
+//             'Parent_Order_IDP'=>getenv('uniteller.orderPreffix').'REG'.$card_id,
+// //            'Parent_Order_IDP'=>'loc_1077',
+//         ];
+//         $request->Signature = strtoupper(
+//             md5(
+//                 md5($request->Shop_IDP) . "&" .
+//                 md5($request->Order_IDP) . "&" .
+//                 md5($request->Subtotal_P) . "&" .
+//                 md5($request->Parent_Order_IDP) . "&" .
+//                 md5( getenv('uniteller.password') )
+//             )
+//         );
+//         $context  = stream_context_create([
+//             'http' => [
+//                 'header'  => "Content-type: application/x-www-form-urlencoded",
+//                 'method'  => 'POST',
+//                 'content' => http_build_query($request)
+//                 ]
+//         ]);
+//         $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
+//         $rows=str_getcsv($result,"\n");
+//         $response=str_getcsv($rows[1],";");
+//         //error_log("\n\n#{$order_all->order_id}".date(" H:i:s")."\n".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
+//         if(!$result || str_contains($result,'Error_Code') || !$response){
+//             log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
+//             return null;
+//         }
+//         return (object)[
+//             'order_id'=>$response[0],
+//             'status'=>$response[1],
+//             'total'=>$response[2],
+//             'approvalCode'=>$response[3],
+//             'billNumber'=>$response[4]
+//         ];
     }
 
 

@@ -88,13 +88,12 @@ class Statistics extends \App\Controllers\BaseController{
                 MAX(created_at) point_finish,
                 FLOOR(DATEDIFF(NOW(),created_at)/(:point_span:+0.001)) point_index,
                 SUM(IF(act_type='get',1,0)) product_viewed,
-                SUM(IF(act_type='create',entry_count,0)) product_added,
-                SUM(IF(act_type='finish',entry_count,0)) product_purchased
+                SUM(IF(act_type='create',1,0)) product_added,
+                SUM(IF(act_type='finish',1,0)) product_purchased
             FROM
                 (SELECT
                     created_at,
-                    act_type,
-                    IFNULL(act_data->>'$.entry_count',0) entry_count
+                    act_type
                 FROM
                     metric_act_list
                 WHERE

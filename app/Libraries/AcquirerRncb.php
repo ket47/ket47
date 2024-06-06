@@ -273,7 +273,7 @@ class AcquirerRncb{
         return 'order_not_payed';
     }
 
-    public function pay( object $order_all ){
+    public function pay( object $order_all, int $paying_user_id=null ){
         $OrderModel=model('OrderModel');
         $UserCardModel=model('UserCardModel');
         $orderData=$OrderModel->itemDataGet($order_all->order_id);
@@ -281,11 +281,14 @@ class AcquirerRncb{
 
         $orderTitle="Заказ #{$order_all->order_id}";
         $orderDescription="Служба доставки tezkel.com ".($order_all->store->store_name??null);
-        $CoF=$UserCardModel->where('card_acquirer','rncbCard')->itemMainGet($order_all->customer->user_id);
+        if( !$paying_user_id ){
+            $paying_user_id=$order_all->customer->user_id;
+        }
+        $CoF=$UserCardModel->where('card_acquirer','rncbCard')->itemMainGet($paying_user_id);
         if( !($CoF->card_remote_id??null) ){
             return "error_nocof";
         }
-        if( !($orderData->payment_card_acq_order_id??null) ){
+        if( empty($orderData->payment_card_acq_order_id) ){
             //Creating new cof order
             $request=[
                 'order'=>[
@@ -329,7 +332,7 @@ class AcquirerRncb{
                 ],
             ],
         ];
-        $function="order/{$orderData->payment_card_acq_order_id}/exec-tran";
+        $function="order/{$orderDataUpdate->payment_card_acq_order_id}/exec-tran";
         $response=$this->apiExecute($function,$request);
         if($response->errorCode??null){
             pl(['Acquirer:pay Auth',$function,$request,$response]);
@@ -338,7 +341,7 @@ class AcquirerRncb{
             }
             return 'error';
         }
-        $orderDataUpdate->payment_card_fixate_id=$orderData->payment_card_acq_order_id;
+        $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
         $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
         $orderDataUpdate->payment_by_card=1;
         

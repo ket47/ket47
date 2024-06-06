@@ -1273,15 +1273,10 @@ class OrderStageScript{
         if( !($order_data->payment_by_cash??null) ){
             return 'deposit_inapplicable';
         }
-        $user_id=session()->get('user_id');
-        $UserCardModel=model('UserCardModel');
-        $main_card=$UserCardModel->itemMainGet($user_id);
-        if( !$main_card ){
-            return 'deposit_error_nocof';
-        }
+        $paying_user_id=session()->get('user_id');
         $Acquirer=\Config\Services::acquirer();
         $order_all=$this->OrderModel->itemGet($order_id,'all');
-        $result=$Acquirer->pay($order_all,$main_card->card_id);
+        $result=$Acquirer->pay($order_all,$paying_user_id);
         if( $result!='ok' ){
             return "deposit_{$result}";
         }

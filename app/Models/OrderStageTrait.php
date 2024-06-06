@@ -231,7 +231,8 @@ trait OrderStageTrait{
             'task_name'=>"onStageChanged to $stage. background push Notify #$order->order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$push]]]
-                ]
+            ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
     }
