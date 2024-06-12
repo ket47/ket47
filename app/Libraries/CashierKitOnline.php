@@ -13,10 +13,18 @@ class CashierKitOnline{
             'Phone'=>$order_all->customer->user_phone,
             'Pay'=>[
                 'CashSum'=>0,
-                'EMoneySum'=>$order_all->order_sum_total*100,
+                'EMoneySum'=>0,
             ],
             'Subjects'=>[]
         ];
+        if( $order_all->payment_by_card ){
+            $Check['Pay']['EMoneySum']=$order_all->order_sum_total*100;
+        } else 
+        if( $order_all->payment_by_cash ){
+            $Check['Pay']['CashSum']=$order_all->order_sum_total*100;
+        } else {
+            return 'nopayment';
+        }
         $order_sum_calculated=0;
         $discount_modifier=1;
         if($order_all->order_sum_promo>0){

@@ -153,12 +153,15 @@ class OrderTransactionModel extends TransactionModel{
                 ($order_data->finalize_invoice_done??0)
             ||  ($order_data->order_is_canceled??0)
             ||  ($order_data->sanction_courier_fee??0) 
-            ||  ($order_data->sanction_supplier_fee??0)
-            ||  !($order_data->payment_by_card??0);
+            ||  ($order_data->sanction_supplier_fee??0);
+        $skip= $skip && ($order_data->payment_by_card??0) || $skip && ($order_data->payment_by_cash_accepted??0);
         if( $skip ){
             return true;
         }
-
+        /**
+         * Skip if order is canceled or has invoice already
+         * Allowing card and cash payments (only if admin accepted cash sum) 
+         */
         $order_all=model('OrderModel')->itemGet($order_basic->order_id);
         $invoiceSum=$order_all->order_sum_total;
 
@@ -166,6 +169,8 @@ class OrderTransactionModel extends TransactionModel{
             'finalize_invoice_done'=>1
         ];
         if($invoiceSum!==0){
+            $order_all->payment_by_card=$order_data->payment_by_card??0;
+            $order_all->payment_by_cash=$order_data->payment_by_cash??0;
             $order_all->store=model('StoreModel')->itemGet($order_all->order_store_id,'basic');
             $order_all->print_delivery_as_agent=$order_data->delivery_by_store??0;
             $Cashier=\Config\Services::cashier();
