@@ -127,8 +127,134 @@ class Statistics extends \App\Controllers\BaseController{
         return $this->respond($response);
     }
 
-    
+    public function totalOrderAnalysisGet(){
+        $point_span=(int) $this->request->getPost('point_span');
+        $point_num= (int) $this->request->getPost('point_num');
 
+        $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_order_analysis";
+        $tmp_create_sql="
+            CREATE TEMPORARY TABLE tmp_order_analysis AS (
+                SELECT
+                    FLOOR(DATEDIFF(NOW(),created_at)/(:point_span: + 0.001)) point_index,
+                    MAX(created_at) point_finish,
+                    SUM(case when act_type = 'create' and act_result = 'ok' then 1 else 0 end) as create_success,
+                    SUM(case when act_type = 'create' and act_result = 'error' then 1 else 0 end) as create_failure,
+                    SUM(case when act_type = 'start' and act_result = 'ok' then 1 else 0 end) as start_success,
+                    SUM(case when act_type = 'start' and act_result = 'error' then 1 else 0 end) as start_failure,
+                    SUM(case when act_type = 'pay' and act_result = 'ok' then 1 else 0 end) as pay_success,
+                    SUM(case when act_type = 'pay' and act_result = 'error' then 1 else 0 end) as pay_failure,
+                    SUM(case when act_type = 'reject' and act_result = 'ok' then 1 else 0 end) as reject_success,
+                    SUM(case when act_type = 'reject' and act_result = 'error' then 1 else 0 end) as reject_failure,
+                    SUM(case when act_type = 'finish' and act_result = 'ok' then 1 else 0 end) as finish_success,
+                    SUM(case when act_type = 'finish' and act_result = 'error' then 1 else 0 end) as finish_failure
+                FROM
+                    (SELECT
+                        act_group, 
+                        act_type,
+                        created_at,
+                        act_result
+                    FROM
+                        metric_act_list
+                    WHERE
+                        created_at > DATE_SUB(NOW(), INTERVAL :overall_span: DAY)
+                        AND act_group = 'order'
+                    GROUP BY act_id) inner_t
+                GROUP BY point_index 
+            )";
+        $points_sql="SELECT * FROM tmp_order_analysis ORDER BY point_index ASC";
+        
+        $db = db_connect();
+        $db->query($tmp_drop_sql);
+        $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num]);
+
+        $response=[
+            'head'=>[],
+            'body'=>$db->query($points_sql)->getResult()
+        ];
+        return $this->respond($response);
+    }
+
+    public function ratingAnalysisGet(){
+        $point_span=(int) $this->request->getPost('point_span');
+        $point_num= (int) $this->request->getPost('point_num');
+
+        $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_top_list";
+        $tmp_create_sql="
+            CREATE TEMPORARY TABLE tmp_top_list AS (
+                SELECT 
+                    COUNT(*) as total,
+                    act_group,
+                    MAX(metric_act_list.created_at) AS created_at,
+                    act_description,
+                    act_target_id
+                FROM
+                    metric_act_list
+                WHERE
+                    metric_act_list.created_at > DATE_SUB(NOW(), INTERVAL :point_span: DAY)
+                    AND act_group IN ('store', 'product') AND act_result = 'ok' AND act_description IS NOT NULL
+                GROUP BY act_group, act_target_id 
+            )";
+        $top_stores_sql="SELECT total, act_description, act_group, act_target_id FROM tmp_top_list JOIN store_list sl ON tmp_top_list.act_target_id = sl.store_id AND sl.is_disabled = 0  WHERE act_group = 'store' ORDER BY total DESC LIMIT 10 ";
+        $antitop_stores_sql="SELECT total, act_description, act_group, act_target_id FROM tmp_top_list JOIN store_list sl ON tmp_top_list.act_target_id = sl.store_id AND sl.is_disabled = 0  WHERE act_group = 'store' ORDER BY total ASC LIMIT 10 ";
+        $top_products_sql="SELECT total, CONCAT(act_description, ' (', store_name, ')') as act_description, act_group, act_target_id FROM tmp_top_list JOIN product_list pl ON tmp_top_list.act_target_id = pl.product_id AND pl.is_disabled = 0 JOIN store_list sl ON sl.store_id = pl.store_id WHERE act_group = 'product' ORDER BY total DESC LIMIT 10 ";
+        
+        $db = db_connect();
+        $db->query($tmp_drop_sql);
+        $db->query($tmp_create_sql, ['point_span'=> $point_span]);
+
+        $response=[
+            'head'=>[],
+            'body'=> [
+                'top_stores'        => $db->query($top_stores_sql)->getResult(),
+                'antitop_stores'    => $db->query($antitop_stores_sql)->getResult(),
+                'top_products'      => $db->query($top_products_sql)->getResult()
+            ]
+        ];
+        return $this->respond($response);
+    }
+
+    public function rejectionAnalysisGet(){
+        $point_span=(int) $this->request->getPost('point_span');
+        $point_num= (int) $this->request->getPost('point_num');
+
+        $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_rejection_analysis";
+        $tmp_create_sql="
+            CREATE TEMPORARY TABLE tmp_rejection_analysis AS (
+                SELECT 
+                    point_index,
+                    point_finish,
+                    SUM(case when act_group = 'home' then total_rejections else 0 end) as home,
+                    SUM(case when act_group = 'store' then total_rejections else 0 end) as store,
+                    SUM(case when act_group = 'location' then total_rejections else 0 end) as location,
+                    SUM(case when act_group = 'product' then total_rejections else 0 end) as product,
+                    SUM(case when act_group = 'search' then total_rejections else 0 end) as search,
+                    SUM(case when act_group = 'auth' then total_rejections else 0 end) as auth
+                FROM (    
+                    SELECT 
+                        FLOOR(DATEDIFF(NOW(),created_at)/(:point_span: + 0.001)) point_index,
+                        COUNT(*) total_rejections,
+                        MAX(created_at) point_finish,
+                        act_group
+                    FROM metric_act_list ml
+                    JOIN (SELECT MAX(act_id) as act_id, SUM(IF(act_group = 'order', 1,0)) as is_ordered, COUNT(*) as depth
+                        FROM metric_act_list
+                        GROUP BY metric_id
+                        HAVING is_ordered = 0) t ON t.act_id = ml.act_id 
+                    WHERE ml.created_at > DATE_SUB(NOW(), INTERVAL :overall_span: DAY)       
+                    GROUP BY point_index, act_group) inner_t
+                GROUP BY point_index 
+            )";
+        $list_sql="SELECT * FROM tmp_rejection_analysis ORDER BY point_index ASC";
+        $db = db_connect();
+        $db->query($tmp_drop_sql);
+        $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num]);
+
+        $response=[
+            'head'=>[],
+            'body'=>$db->query($list_sql)->getResult()
+        ];
+        return $this->respond($response);
+    }
 
     /**
      * Generates sell report 
