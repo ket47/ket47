@@ -41,6 +41,7 @@ class OrderStageScript{
             'system_reckon'=>               [],
             'delivery_deposit_compensate'=> ['Внести оплату','success'],
             'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
+            'admin_deposit_accept'=>        ['Принять наличные','danger'],
             'admin_supervise'=>             ['Решить спор','danger'],
             ],
 
@@ -140,6 +141,9 @@ class OrderStageScript{
             ],
         'admin_delete'=>[
             ],
+        'admin_deposit_accept'=>[
+            'system_reckon'=>               [],
+        ],
             
 
         'system_reckon'=>[
