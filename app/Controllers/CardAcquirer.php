@@ -16,7 +16,26 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if($order_data->payment_card_acq_rncb??0){
             $Acquirer=new \App\Libraries\AcquirerRncb();
         } else {
-            $Acquirer=\Config\Services::acquirer();
+
+
+
+
+            $ua=$this->request->getUserAgent();
+            $platform=$ua->getPlatform();
+            $browser=$ua->getBrowser();
+    
+    
+            $is_ios_webview= ($platform=='iOS' && $browser=='Mozilla');
+            if($platform=='iOS'){
+                pl(['paymentLinkGet IOS',$order_id,$browser]);
+            }
+    
+            if($is_ios_webview){
+                $Acquirer=new \App\Libraries\AcquirerUniteller();
+            } else {
+                $Acquirer=new \App\Libraries\AcquirerRncb();
+            }
+    
         }
         $result=$Acquirer->statusGet($order_id);
         if($result && isset($result->order_id)){
@@ -125,8 +144,24 @@ class Cardacquirer extends \App\Controllers\BaseController{
         $browser=$ua->getBrowser();
 
 
-        $is_ios_webview=$platform=='iOS' && $browser=='Mozilla';
-        $Acquirer=\Config\Services::acquirer(true,$is_ios_webview);
+        $is_ios_webview= ($platform=='iOS' && $browser=='Mozilla');
+        if($platform=='iOS'){
+            pl(['paymentLinkGet IOS',$order_id,$browser]);
+        }
+
+        if($is_ios_webview){
+            $Acquirer=new \App\Libraries\AcquirerUniteller();
+        } else {
+            $Acquirer=new \App\Libraries\AcquirerRncb();
+        }
+
+        //$Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
+
+
+
+
+
+
         $isAlreadyPayed=$Acquirer->statusCheck( $order_id );
         if( 'ok'==$isAlreadyPayed ){//order is already payed and started
             return $this->fail('already_payed');
@@ -153,18 +188,14 @@ class Cardacquirer extends \App\Controllers\BaseController{
 
     public function paymentDo(){
         $order_id=$this->request->getPost('order_id');
-        $card_id=$this->request->getPost('card_id');
         $result=$this->orderValidate($order_id);
         if( $result!='ok' ){
             return $this->fail($result);
         }
-        if( !$card_id ){
-            return $this->fail('error_nocof');
-        }
         $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
         $OrderModel=model('OrderModel');
         $order_all=$OrderModel->itemGet($order_id,'all');
-        $result=$Acquirer->pay($order_all,$card_id);
+        $result=$Acquirer->pay($order_all);
         if( $result=='ok' ){
             return $this->respond('ok');
         }
