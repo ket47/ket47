@@ -234,7 +234,7 @@ class OrderTransactionModel extends TransactionModel{
             'order_data'=>$order_data
         ];
 
-        if($order_data->payment_by_card??0){//if only marketplace don't do this transaction
+        if( ($order_data->payment_by_card??0) || ($order_data->payment_by_cash??0) ){//if only marketplace don't do this transaction
             $invoiceDescription=view('transactions/supplier_invoice',$context);
             $invoiceTrans=(object)[
                 'trans_date'=>$order_basic->updated_at,

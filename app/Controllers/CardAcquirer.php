@@ -29,13 +29,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
             if($platform=='iOS'){
                 pl(['paymentLinkGet IOS',$order_id,$browser]);
             }
-    
-            if($is_ios_webview){
-                $Acquirer=new \App\Libraries\AcquirerUniteller();
-            } else {
-                $Acquirer=new \App\Libraries\AcquirerRncb();
-            }
-    
+            $Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
         }
         $result=$Acquirer->statusGet($order_id);
         if($result && isset($result->order_id)){
@@ -148,14 +142,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if($platform=='iOS'){
             pl(['paymentLinkGet IOS',$order_id,$browser]);
         }
-
-        if($is_ios_webview){
-            $Acquirer=new \App\Libraries\AcquirerUniteller();
-        } else {
-            $Acquirer=new \App\Libraries\AcquirerRncb();
-        }
-
-        //$Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
+        $Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
 
 
 
