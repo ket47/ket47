@@ -509,7 +509,7 @@ class OrderStageScript{
         ];
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_data'=>(object)[
                 'sound'=>'short.wav'
             ],
@@ -536,7 +536,12 @@ class OrderStageScript{
 
         jobCreate($courier_freeing_task);
         jobCreate($notification_task);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';
     }
         
     public function onCustomerDisputed( $order_id ){
@@ -586,7 +591,7 @@ class OrderStageScript{
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>'-100,'.$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'long.wav',
@@ -608,7 +613,7 @@ class OrderStageScript{
         ];
         $cust_sms=(object)[
             'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'template'=>'messages/order/on_customer_disputed_CUST_sms.php',
             'context'=>$context
         ];
@@ -682,7 +687,7 @@ class OrderStageScript{
             'customer'=>$customer
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'medium.wav'
@@ -708,7 +713,7 @@ class OrderStageScript{
         ];
         $cour_sms=(object)[
             'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_data'=>(object)[
                 'sound'=>'short.wav'
             ],
@@ -803,7 +808,7 @@ class OrderStageScript{
             'order'=>$order,
         ];
         $cust_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>"-100,{$order->owner_id}",
             'message_data'=>(object)[
                 'sound'=>'short.wav'
@@ -846,7 +851,7 @@ class OrderStageScript{
             'store'=>$store
         ];
         $customer_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_supplier_overdue_CUSTOMER_sms.php',
             'context'=>$context
@@ -1009,7 +1014,7 @@ class OrderStageScript{
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
+            'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
@@ -1125,7 +1130,7 @@ class OrderStageScript{
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
+            'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_rejected_ADMIN_sms.php',
             'context'=>$context
         ];
@@ -1175,12 +1180,12 @@ class OrderStageScript{
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
-            'message_transport'=>'message',
+            'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_nocourier_ADMIN_sms.php',
             'context'=>$context
         ];
         $cust_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
             'context'=>$context
@@ -1285,7 +1290,6 @@ class OrderStageScript{
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
                 ]
         ]);
-        sleep(1);
         return 'ok';        
     }
     ////////////////////////////////////////////////
@@ -1360,6 +1364,25 @@ class OrderStageScript{
 
         $this->OrderModel->itemDelete($order_id);
         return 'ok';
+    }
+    /**
+     * Courier brings cash to admin
+     */
+    public function onAdminDepositAccept( $order_id ){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( !($order_data->payment_by_cash??null) ){
+            return 'deposit_inapplicable';
+        }
+        $order_data_update=(object)[
+            'payment_by_cash_accepted'=>1          
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ]
+        ]);
+        return 'ok';        
     }
     ////////////////////////////////////////////////
     //SYSTEM HANDLERS

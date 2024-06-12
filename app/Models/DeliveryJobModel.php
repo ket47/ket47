@@ -204,7 +204,7 @@ class DeliveryJobModel extends SecureModel{
             $time=strtotime(date("Y-m-d {$this->shiftStartHour}:$nearestMinute:00"));
             return [
                 'mode'=>'scheduled',
-                'time'=>$time,
+                'start_plan'=>$time,
             ];
         }
 

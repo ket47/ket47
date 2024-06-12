@@ -488,7 +488,7 @@ class UserModel extends Model{
         return 'verification_error';
     }
 
-    public function verifyByCallNeeded($user_id){
+    private function verifyByCallNeeded($user_id){
         $this->systemUserLogin();
         $this->where('(user_phone_verified IS NULL OR user_phone_verified=0)');
         $user=$this->itemGet($user_id,'basic');

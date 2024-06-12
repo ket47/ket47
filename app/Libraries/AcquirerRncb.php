@@ -232,7 +232,6 @@ class AcquirerRncb{
             pl(['Acquirer:statusGet',$response]);
             return null;
         }
-        pl(['Acquirer:statusGet',$response]);
         $statusDict=[
             'Preparing'=>'not authorized',
             'Authorized'=>'authorized',

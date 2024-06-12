@@ -73,7 +73,7 @@ class Store extends \App\Controllers\BaseController{
             madd('home','get','error');
             return $this->failNotFound($result);
         }
-        $result=$this->appStoreFilter($result);
+        //$result=$this->appStoreFilter($result);
 
         madd('home','get','ok');
         $response=[
