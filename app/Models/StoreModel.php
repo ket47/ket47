@@ -70,6 +70,9 @@ class StoreModel extends Model{
         'store_company_name'    => 'min_length[3]',
         'store_tax_num'         => 'exact_length[10,12]|integer'
     ];
+    public function fieldUpdateAllow($field){
+        $this->allowedFields[]=$field;
+    }
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
@@ -261,6 +264,8 @@ class StoreModel extends Model{
         if( !$target_group ){
             return 'not_found';
         }
+        $this->itemCacheGroupDelete( $store_id );
+
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
         $StoreGroupMemberModel->tableSet('store_group_member_list');
         $ok=$StoreGroupMemberModel->itemUpdate( $store_id, $group_id, $is_joined );
@@ -268,6 +273,72 @@ class StoreModel extends Model{
             return 'ok';
         }
         return 'error';
+    }
+
+    public function itemCacheGroupGet( int $store_id ){
+        $this->where('store_id',$store_id);
+        $cache_group_json=$this->select("store_data->>'$.cache_groups' cache_groups")->get()->getRow('cache_groups');
+        $cache_group=json_decode($cache_group_json);
+        if( $cache_group && $cache_group->expired_at<time() ){
+            return $cache_group;
+        }
+        return $this->itemCacheGroupCreate($store_id);
+    }
+
+    private $cacheGroupLiveTime=24*60*60;
+    public function itemCacheGroupCreate( int $store_id ){
+        $store_groups=[];
+        $product_groups=[];
+
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $StoreGroupMemberModel->where('member_id',$store_id);
+        $store_group_rows=$StoreGroupMemberModel->select('group_id')->get()->getResult();
+        foreach($store_group_rows as $row){
+            if( empty($row->group_id) ){
+                continue;
+            }
+            $store_groups[]=$row->group_id;
+        }
+
+        $ProductGroupMemberModel=model('ProductGroupMemberModel');
+        $ProductGroupMemberModel->join('product_group_list','group_id');
+        $ProductGroupMemberModel->join('product_list','member_id=product_id');
+        $ProductGroupMemberModel->where('store_id',$store_id)->groupBy('group_id');
+        $product_group_paths=$ProductGroupMemberModel->select('group_path_id')->get()->getResult();
+        foreach($product_group_paths as $path){
+            $parts=explode('/',$path->group_path_id??'');
+            if( !$parts[1] ){
+                continue;
+            }
+            $product_groups[]=$parts[1];//user parent group_id
+        }
+
+        $cache=(object) [
+            'store_groups'=>$store_groups,
+            'product_groups'=>array_values(array_unique($product_groups,SORT_NUMERIC)),
+            'expired_at'=>time()+$this->cacheGroupLiveTime
+        ];
+        $this->itemDataSave($store_id,(object) ['cache_groups'=>$cache]);
+        return $cache;
+    }
+
+    public function itemCacheGroupDelete( int $store_id ){
+        $this->itemDataSave($store_id,(object) ['cache_group'=>null]);
+    }
+
+    public function itemDataSave( int $store_id, object $data_update ){
+        $path_value='';
+        foreach($data_update as $path=>$value){
+            if( is_object($value) ){
+                $path_value.=','.$this->db->escape("$.$path").",CAST('".json_encode($value)."' AS JSON)";
+            } else {
+                $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
+            }
+        }
+        $this->set("store_data","JSON_SET(IFNULL(`store_data`,'{}'){$path_value})",false);
+        $this->fieldUpdateAllow('store_data');
+        $this->update($store_id);
+        return $this->db->affectedRows()?'ok':'idle';
     }
     
     public function itemDelete( $store_id ){
@@ -426,11 +497,17 @@ class StoreModel extends Model{
 
         $permission_filter=$this->permitWhereGet('r','item');
         
-
-        $LocationModel->select("GROUP_CONCAT(group_type) member_of_groups");
+        $LocationModel->select("store_data->>'$.cache_groups' cache_groups");
         $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,is_working");
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
         $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
+
+
+
+        /**
+         * @deprecated
+         */
+        $LocationModel->select("GROUP_CONCAT(group_type) member_of_groups");
         $LocationModel->join('store_list','store_id=location_holder_id');
         $LocationModel->join('store_group_member_list sgml','store_id=member_id','left');
         $LocationModel->join('store_group_list sgl','sgl.group_id=sgml.group_id','left');

@@ -67,20 +67,67 @@ class Store extends \App\Controllers\BaseController{
         $location_id=$this->request->getPost('location_id');
         $location_latitude=$this->request->getPost('location_latitude');
         $location_longitude=$this->request->getPost('location_longitude');
-        $StoreModel=model('StoreModel');
-        $result=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]);
-        if( !is_array($result) ){
+        $response=$this->listNearCache($location_id,$location_latitude,$location_longitude);
+        if( !is_array($response['store_list']) ){
             madd('home','get','error');
-            return $this->failNotFound($result);
+            return $this->failNotFound('notfound');
         }
         //$result=$this->appStoreFilter($result);
 
         madd('home','get','ok');
-        $response=[
-            'store_list'=>$result,
-        ];
         return $this->respond($response);
     }
+
+    private function listNearCache( int $location_id=null, float $location_latitude=null, float $location_longitude=null ){
+        $cachehash=md5("$location_id,$location_latitude,$location_longitude");
+        $storenearcache=session()->get('storenearcache')??[];
+        if( isset($storenearcache[$cachehash]['expired_at']) && $storenearcache[$cachehash]['expired_at']>time() ){
+            return $storenearcache[$cachehash];
+        }
+        $cache_live_time=15*60;//minutes
+        $till_end_of_hour=(60-date('i'))*60-1;//till the hh:59:59 when store can close
+        $expired_at=time()+min($cache_live_time,$till_end_of_hour);
+
+        $StoreModel=model('StoreModel');
+        $store_list=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]); 
+        $store_groups_htable=[];
+        $product_groups_htable=[];
+
+        foreach($store_list as $store){
+            $store->cache_groups=json_decode($store->cache_groups);
+            if( !$store->cache_groups || $store->cache_groups->expired_at>time() ){
+                $store->cache_groups=$StoreModel->itemCacheGroupCreate($store->store_id);
+            }
+            foreach($store->cache_groups->store_groups as $group_id){
+                $store_groups_htable[$group_id]=1;
+            }
+            foreach($store->cache_groups->product_groups as $group_id){
+                $product_groups_htable[$group_id]=1;
+            }
+        }
+
+        $ProductGroupModel=model('ProductGroupModel');
+        $ProductGroupModel->join('image_list','group_id=image_holder_id');
+        $ProductGroupModel->where('image_holder','product_group_list');
+        $ProductGroupModel->whereIn('group_id',array_keys($product_groups_htable));
+        $product_groups=$ProductGroupModel->select('group_id,group_type,group_name,image_hash')->get()->getResult();
+
+        $StoreGroupModel=model('StoreGroupModel');
+        $StoreGroupModel->join('image_list','group_id=image_holder_id');
+        $StoreGroupModel->where('image_holder','store_group_list');
+        $StoreGroupModel->whereIn('group_id',array_keys($store_groups_htable));
+        $store_groups=$StoreGroupModel->select('group_id,group_type,group_name,image_hash')->get()->getResult();
+
+        $list=[
+            'store_list'=>$store_list,
+            'store_groups'=>$store_groups,
+            'product_groups'=>$product_groups,
+            'expired_at'=>$expired_at,
+        ];
+        session()->set('storenearcache',["$cachehash"=>$list]);
+        return $list;
+    }
+
     public function primaryNearGet(){
         $location_id=$this->request->getVar('location_id');
         $StoreModel=model('StoreModel');
