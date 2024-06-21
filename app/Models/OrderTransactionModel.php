@@ -63,7 +63,7 @@ class OrderTransactionModel extends TransactionModel{
             $Acquirer=new \App\Libraries\AcquirerRncb();
             $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
         } else {
-            $Acquirer=\Config\Services::acquirer();
+            $Acquirer=new \App\Libraries\AcquirerUniteller();
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
@@ -115,7 +115,7 @@ class OrderTransactionModel extends TransactionModel{
             $Acquirer=new \App\Libraries\AcquirerRncb();
             $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
         } else {
-            $Acquirer=\Config\Services::acquirer();
+            $Acquirer=new \App\Libraries\AcquirerUniteller();
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
@@ -154,8 +154,10 @@ class OrderTransactionModel extends TransactionModel{
             ||  ($order_data->order_is_canceled??0)
             ||  ($order_data->sanction_courier_fee??0) 
             ||  ($order_data->sanction_supplier_fee??0);
-        $skip= $skip && ($order_data->payment_by_card??0) || $skip && ($order_data->payment_by_cash_accepted??0);
         if( $skip ){
+            return true;
+        }
+        if( !($order_data->payment_by_card??0) && !($order_data->payment_by_cash_accepted??0) ){
             return true;
         }
         /**
@@ -250,6 +252,26 @@ class OrderTransactionModel extends TransactionModel{
                 $result=$this->itemCreate($invoiceTrans);
                 if( !$result ){
                     log_message('error',"Making #orderInvoice transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
+                    return false;
+                }
+            }
+        }
+        if( $order_data->delivery_by_store_cost??0 ){//count for store delivery sum
+            $deliveryDescription=view('transactions/supplier_delivery_sum',$context);
+            $deliveryTrans=(object)[
+                'trans_date'=>$order_basic->updated_at,
+                'trans_amount'=>$order_data->delivery_by_store_cost,
+                'trans_role'=>'supplier->site',
+                'tags'=>"order:{$order_basic->order_id}:invoice store:{$order_basic->order_store_id}",
+                'trans_description'=>$deliveryDescription,
+                'owner_id'=>0,//customer should not see
+                'owner_ally_ids'=>$order_basic->order_store_admins,
+                'is_disabled'=>0,
+            ];
+            if($deliveryTrans->trans_amount!=0){
+                $result=$this->itemCreate($deliveryTrans);
+                if( !$result ){
+                    log_message('error',"Making #orderdelivery transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
                     return false;
                 }
             }

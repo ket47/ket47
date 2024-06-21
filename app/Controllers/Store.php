@@ -90,6 +90,12 @@ class Store extends \App\Controllers\BaseController{
 
         $StoreModel=model('StoreModel');
         $store_list=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]); 
+        /**
+         * @todo rewrite notfound handling
+         */
+        if( !$store_list || !is_array($store_list) ){
+            return ['store_list'=>$store_list];
+        }
         $store_groups_htable=[];
         $product_groups_htable=[];
 
@@ -105,7 +111,6 @@ class Store extends \App\Controllers\BaseController{
                 $product_groups_htable[$group_id]=1;
             }
         }
-
         $ProductGroupModel=model('ProductGroupModel');
         $ProductGroupModel->join('image_list','group_id=image_holder_id');
         $ProductGroupModel->where('image_holder','product_group_list');
