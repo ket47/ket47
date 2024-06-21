@@ -2,9 +2,6 @@
 
 namespace App\Controllers;
 use \CodeIgniter\API\ResponseTrait;
-
-use function PHPUnit\Framework\stringContains;
-
 class Cardacquirer extends \App\Controllers\BaseController{
 
     use ResponseTrait;
@@ -43,7 +40,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
     //ACQUIRER INCOMING REQUESTS SECTION
     ///////////////////////////////////////////////////////////////////////
     public function statusSet(){
-        $Acquirer=\Config\Services::acquirer();
+        $Acquirer=new \App\Libraries\AcquirerUniteller();
         $result=$Acquirer->statusParse($this->request);
         if( $result=='unauthorized' ){
             return $this->failUnauthorized();
@@ -59,7 +56,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         return $this->statusApply($result);
     }
 
-    private function statusApply($incomingStatus){
+    private function statusApply( object $incomingStatus ){
         $order_id=$incomingStatus->order_id;
         if( !$this->authorizeAsSystem($order_id) ){
             $this->log_message('error', "paymentStatusSet $incomingStatus->status; order_id:#$order_id  CANT AUTORIZE AS SYSTEM. (ORDER_ID MAY BE WRONG)");

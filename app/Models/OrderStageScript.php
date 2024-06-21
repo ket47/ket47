@@ -908,7 +908,7 @@ class OrderStageScript{
                 return 'order_sum_exceeded';
             }
         }
-        if( !($order->order_sum_product>0) ){
+        if( !($order->order_sum_product>0) || !($order->order_sum_total>0) ){
             return 'order_sum_zero';
         }
         $EntryModel=model('EntryModel');

@@ -178,6 +178,7 @@ class ProductModel extends Model{
         if($product->product_category_name??null){
             $this->itemCreateCategory($product_id,$product->product_category_name);
         }
+        $StoreModel->itemCacheGroupDelete( $product->store_id );
         return $product_id;
     }
 
