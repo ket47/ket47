@@ -256,7 +256,7 @@ class OrderTransactionModel extends TransactionModel{
                 }
             }
         }
-        if( $order_data->delivery_by_store_cost??0 ){//count for store delivery sum
+        if( ($order_data->payment_by_card??0) && ($order_data->delivery_by_store_cost??0) ){//count for store delivery sum
             $deliveryDescription=view('transactions/supplier_delivery_sum',$context);
             $deliveryTrans=(object)[
                 'trans_date'=>$order_basic->updated_at,
