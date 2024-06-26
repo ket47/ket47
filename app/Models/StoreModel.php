@@ -743,4 +743,52 @@ class StoreModel extends Model{
         }
         return 'error';
     }
+
+
+
+        /**
+     * Nightly calculations
+     */
+    public function nightlyCalculate(){
+        $this->nightlyCalculatePerks();
+    }
+
+    private function nightlyCalculatePerks( int $store_id=null ){
+        $PerkModel=model('PerkModel');
+
+        if($store_id){
+            $PerkModel->where('perk_holder_id',$store_id);
+        }
+        $PerkModel->where('perk_holder','store');
+        $PerkModel->delete();
+
+
+        
+        if($store_id){
+            $PerkModel->where('perk_holder_id',$store_id);
+        }
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->whereIn('perk_type',['product_new','product_top']);
+        $PerkModel->join('product_list','product_id=perk_holder_id');
+        $PerkModel->where('product_list.is_disabled','0');
+        $PerkModel->where('product_list.is_hidden','0');
+        $PerkModel->where('(NOT product_list.is_counted OR product_list.is_counted AND product_list.product_quantity)',null,false);
+        $PerkModel->select('store_id,perk_type,expired_at');
+        $PerkModel->groupBy('store_id,perk_type');
+        $rows=$PerkModel->get()->getResult();
+
+        ql($PerkModel);
+
+        $PerkModel->transStart();
+        foreach( $rows as $row ){
+            $perk=[
+                'perk_holder'=>'store',
+                'perk_holder_id'=>$row->store_id,
+                'perk_type'=>$row->perk_type,
+                'expired_at'=>$row->expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
 }

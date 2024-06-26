@@ -636,4 +636,76 @@ class ProductModel extends Model{
         }
         return $parent_groups;
     }
+
+
+    /**
+     * Nightly calculations
+     */
+    public function nightlyCalculate(){
+        $this->nightlyCalculateTopSale();
+        $this->nightlyCalculateNew();
+    }
+
+    private function nightlyCalculateNew(){
+        $started_span=7;
+        $started_at=date("Y-m-d H:i:s",time()-$started_span*24*60*60);
+        $expired_at=date("Y-m-d H:i:s",time()+$started_span*24*60*60);
+
+        $this->where("created_at>'$started_at'");
+        $this->select('product_id');
+        $rows=$this->get()->getResult();
+
+        $PerkModel=model('PerkModel');
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_new');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_new',
+                'expired_at'=>$expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
+
+    private function nightlyCalculateTopSale(){
+        $top_percentage=10;
+        $started_span=7;
+        $started_at=date("Y-m-d H:i:s",time()-$started_span*24*60*60);
+        $expired_at=date("Y-m-d H:i:s",time()+24*60*60);
+
+        $EntryModel=model('EntryModel');
+        $EntryModel->join('order_list','order_id');
+        $EntryModel->where("order_list.created_at>'$started_at'");
+        $EntryModel->where("order_status","finished");
+        $EntryModel->groupBy("product_id");
+        $EntryModel->select("product_id,SUM(entry_quantity*entry_price) product_sum");
+        $EntryModel->orderBy('product_sum','DESC');
+
+        $rows=$EntryModel->get()->getResult();
+        $rows_total=count($rows);
+        $rows_top=array_slice($rows,0,(int) $rows_total*$top_percentage);
+        
+        $PerkModel=model('PerkModel');
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_top');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows_top as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_top',
+                'expired_at'=>$expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
 }

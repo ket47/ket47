@@ -1,7 +1,9 @@
 <?php
 namespace App\Models;
 use CodeIgniter\Model;
-
+/**
+ * Without permission control
+ */
 class PerkModel extends Model{
     
     use PermissionTrait;
@@ -10,18 +12,21 @@ class PerkModel extends Model{
     protected $table      = 'perk_list';
     protected $primaryKey = 'perk_id';
     protected $allowedFields = [
-
+        'perk_holder',
+        'perk_holder_id',
+        'perk_type',
+        'expired_at',
         ];
 
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     
     
     public function itemGet(){
         return false;
     }
     
-    public function itemCreate(){
-        return false;
+    public function itemCreate( $perk ){
+        return $this->insert($perk);
     }
     
     public function itemUpdate(){

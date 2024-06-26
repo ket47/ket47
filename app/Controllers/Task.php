@@ -64,6 +64,11 @@ class Task extends \App\Controllers\BaseController{
         }
     }
 
+    public function jobNightlyDo(){
+        model('ProductModel')->nightlyCalculate();
+        model('StoreModel')->nightlyCalculate();
+    }
+
     private function timedJobDo($predis){
         $this->taskPurge($predis);
         $this->taskShiftClose($predis);
