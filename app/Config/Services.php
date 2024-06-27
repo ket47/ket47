@@ -29,7 +29,7 @@ class Services extends BaseService
 	//     return new \CodeIgniter\Example();
 	// }
 
-	public static function acquirer($getShared = true,$is_ios_webview=false){
+	public static function acquirer($getShared = true,$type=null){
 	    if ($getShared)
 	    {
 	        return static::getSharedInstance('acquirer');
@@ -37,7 +37,7 @@ class Services extends BaseService
 		if( getenv('test.acquirerMock')==1 ){
 			return new \App\Libraries\AcquirerUnitellerMock();
 		}
-		if( $is_ios_webview ){
+		if( $type=='Uniteller' ){
 			return new \App\Libraries\AcquirerUniteller();
 		}
 		return new \App\Libraries\AcquirerRncb();
