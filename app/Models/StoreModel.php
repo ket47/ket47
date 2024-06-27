@@ -749,8 +749,8 @@ class StoreModel extends Model{
         /**
      * Nightly calculations
      */
-    public function nightlyCalculate(){
-        $this->nightlyCalculatePerks();
+    public function nightlyCalculate( int $store_id=null ){
+        $this->nightlyCalculatePerks($store_id);
     }
 
     private function nightlyCalculatePerks( int $store_id=null ){
@@ -762,8 +762,9 @@ class StoreModel extends Model{
         $PerkModel->where('perk_holder','store');
         $PerkModel->delete();
 
-
-        
+        /**
+         * Product perks
+         */
         if($store_id){
             $PerkModel->where('perk_holder_id',$store_id);
         }
@@ -775,17 +776,39 @@ class StoreModel extends Model{
         $PerkModel->where('(NOT product_list.is_counted OR product_list.is_counted AND product_list.product_quantity)',null,false);
         $PerkModel->select('store_id,perk_type,expired_at');
         $PerkModel->groupBy('store_id,perk_type');
-        $rows=$PerkModel->get()->getResult();
+        $prods=$PerkModel->get()->getResult();
 
-        ql($PerkModel);
+        /**
+         * Halal perk
+         */
+        $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        $StoreGroupMemberModel->join('store_group_list','group_id');
+        $StoreGroupMemberModel->where('group_type','halal');
+        $halals=$StoreGroupMemberModel->select("member_id store_id,'store_halal' perk_type")->get()->getResult();
 
+        /**
+         * Rating
+         */
+        $ReactionModel=model('ReactionModel');
+        if($store_id){
+            $ReactionModel->where('tag_id',$store_id);
+        }
+        $ReactionModel->join('reaction_tag_list','reaction_id=member_id');
+        $ReactionModel->where('tag_name','store');
+        $ReactionModel->select("tag_id store_id,'store_rating' perk_type,SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) perk_value");
+        $ReactionModel->groupBy('tag_id');
+        $reacts=$ReactionModel->get()->getResult();
+
+        $def_expired_at=date('Y-m-d H:i:s',time()+24*60*60);
+        $perks=array_merge($prods,$halals,$reacts);
         $PerkModel->transStart();
-        foreach( $rows as $row ){
+        foreach( $perks as $row ){
             $perk=[
                 'perk_holder'=>'store',
                 'perk_holder_id'=>$row->store_id,
                 'perk_type'=>$row->perk_type,
-                'expired_at'=>$row->expired_at,
+                'perk_value'=>$row->perk_value??null,
+                'expired_at'=>$row->expired_at??$def_expired_at,
             ];
             $PerkModel->itemCreate($perk);
         }

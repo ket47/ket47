@@ -644,6 +644,7 @@ class ProductModel extends Model{
     public function nightlyCalculate(){
         $this->nightlyCalculateTopSale();
         $this->nightlyCalculateNew();
+        $this->nightlyCalculatePromo();
     }
 
     private function nightlyCalculateNew(){
@@ -667,6 +668,29 @@ class ProductModel extends Model{
                 'perk_holder_id'=>$row->product_id,
                 'perk_type'=>'product_new',
                 'expired_at'=>$expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
+
+    private function nightlyCalculatePromo(){
+        $this->where("IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW()");
+        $this->select('product_id,product_promo_finish');
+        $rows=$this->get()->getResult();
+
+        $PerkModel=model('PerkModel');
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_promo');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_promo',
+                'expired_at'=>$row->product_promo_finish,
             ];
             $PerkModel->itemCreate($perk);
         }
