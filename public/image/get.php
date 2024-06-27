@@ -28,7 +28,7 @@ if ( !file_exists($file_optimised) ) {
     $file_source=$images_path.$hash.'.webp';
     if(!file_exists($file_source)){
         //$file_source="$images_path-notfound.webp";
-        http_response_code(404);
+        http_response_code(204);
         die;
     }
 

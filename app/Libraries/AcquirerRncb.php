@@ -240,6 +240,7 @@ class AcquirerRncb{
             'Rejected'=>'not authorized',
             'Expired'=>'Expired',
             'Closed'=>'Closed',
+            'Cancelled'=>'not authorized',
         ];
 
         $needConfirm=in_array($response->order->status,['Authorized'])?1:0;
