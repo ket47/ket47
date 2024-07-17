@@ -15,7 +15,6 @@ class UserModel extends Model{
         'user_middlename',
         'user_phone',
         'user_email',
-        'user_pass',
         'user_avatar_name',
         'user_data',
         'deleted_at'
@@ -55,7 +54,7 @@ class UserModel extends Model{
         ],
         'user_pass'     => [
             'label' =>'user_pass',
-            'rules' =>'required|min_length[4]',
+            'rules' =>'if_exist|permit_empty|min_length[4]',
             'errors'=>[
                 'required'=>'required',
                 'min_length'=>'short'
@@ -63,7 +62,7 @@ class UserModel extends Model{
         ],
         'user_pass_confirm'     => [
             'label' =>'user_pass',
-            'rules' =>'required_with[user_pass]|matches[user_pass]',
+            'rules' =>'if_exist|permit_empty|matches[user_pass]',
             'errors'=>[
                 'required_with'=>'required',
                 'matches'=>'notmatches'
@@ -161,12 +160,12 @@ class UserModel extends Model{
     
     public function itemCreate( $user_data ){
         $this->transBegin();
+            $this->fieldUpdateAllow('user_pass');
             $user_id=$this->insert($user_data,true);
             if( $user_id ){
                 $UserGroupMemberModel=model('UserGroupMemberModel');
-                $UserGroupMemberModel->tableSet('user_group_member_list');
                 $UserGroupMemberModel->joinGroupByType($user_id,'customer');
-                $this->allowedFields[]='owner_id';
+                $this->fieldUpdateAllow('owner_id');
                 $this->update($user_id,['owner_id'=>$user_id]);
                 $this->transCommit();
             } else {
@@ -192,6 +191,15 @@ class UserModel extends Model{
         }
         if( isset($data->user_name) ){
             $data->user_name=trim($data->user_name);
+        }
+        if( isset($data->user_pass) ){
+            $this->where('user_id',$data->user_id);
+            $this->select('user_pass');
+            $user_pass_hash=$this->get()->getRow('user_pass');
+            if( $user_pass_hash!=null && !password_verify($data->user_pass_current??null, $user_pass_hash) ){
+                return 'user_pass_wrong';//password wrong
+            }
+            $this->fieldUpdateAllow('user_pass');
         }
         $this->update(['user_id'=>$data->user_id],$data);
         $this->protect(true);
@@ -324,17 +332,16 @@ class UserModel extends Model{
     /////////////////////////////////////////////////////
     //USER HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email,$metric_id){
-        if( $this->getUnverifiedUserIdByPhone($user_phone_cleared) ){
-            return 'user_phone_unverified';
-        }
+    public function signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email){
         $user_data=[
             'user_phone'=>$user_phone_cleared,
             'user_name'=>trim($user_name),
-            'user_pass'=>$user_pass,
-            'user_pass_confirm'=>$user_pass_confirm,
             'is_disabled'=>0
             ];
+        if( strlen($user_pass)>=4 ){
+            $user_data['user_pass']=$user_pass;
+            $user_data['user_pass_confirm']=$user_pass_confirm ;
+        }
         if( $user_email && strlen($user_email)>5 ){
             $user_data['user_email']=$user_email;
         }
@@ -363,19 +370,9 @@ class UserModel extends Model{
         }
 
 
-        $user_sms=(object)[
-            'message_reciever_id'=>$user_id,
-            'message_transport'=>'message',
-            'template'=>'messages/signup_welcome_sms.php',
-            'context'=>$user_data
-        ];
 
         $MetricModel=model('MetricModel');
         $media=$MetricModel->itemGet();
-
-
-
-
         $admin_sms=(object)[
             'message_reciever_id'=>-100,
             'message_transport'=>'telegram',
@@ -387,14 +384,27 @@ class UserModel extends Model{
                 ]
             ]
         ];
+
+        // $user_sms=(object)[
+        //     'message_reciever_id'=>$user_id,
+        //     'message_transport'=>'message',
+        //     'template'=>'messages/signup_welcome_sms.php',
+        //     'context'=>$user_data
+        // ];
         $notification_task=[
             'task_name'=>"signup_welcome_sms",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$user_sms,$admin_sms]]]
-                ]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[/*$user_sms,*/$admin_sms]]]
+                    ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
 
+
+
+        /**
+         * @todo remove this
+         */
         $phoneverify_by_call=[
             'task_name'=>"check if user verified",
             'task_programm'=>[
@@ -417,10 +427,13 @@ class UserModel extends Model{
         return false;
     }
     
-    public function signIn($user_phone,$user_pass){
+    public function signIn( int $user_phone, string $user_pass ){
         $user=$this->where('user_phone',$user_phone)->get()->getRow();
         if( !$user || !$user->user_id ){
             return 'user_not_found';//user_phone not found
+        }
+        if( $user->user_pass==null ){
+            return 'user_pass_absent';//password is absent so only login by ota code
         }
         if( !password_verify($user_pass, $user->user_pass) ){
             return 'user_pass_wrong';//password wrong
@@ -428,20 +441,41 @@ class UserModel extends Model{
         if( !$user->user_phone_verified ){
             return 'user_phone_unverified';
         }
-        if( $user->deleted_at ){
-            return 'user_is_deleted';
-        }
-        if( $user->is_disabled ){
-            return 'user_is_disabled';
-        }
 
-        $this->signInInit( $user->user_id );
-        return 'ok' ;
+        return $this->signInInit( $user->user_id );
+    }
+
+    public function signInByOta( int $user_phone, string $user_ota_code ){
+        $user=$this->where('user_phone',$user_phone)->get()->getRow();
+        if( !$user || !$user->user_id ){
+            return 'user_not_found';//user_phone not found
+        }
+        $UserVerificationModel=model('UserVerificationModel');
+        $verification=$UserVerificationModel->itemFind($user_phone,'phone',$user_ota_code);
+
+        if( !$verification ){
+            return 'user_code_wrong';//ota code wrong
+        }
+        if( !$user->user_phone_verified ){
+            $this->verifyUser( $user->user_id, 'phone' );
+        }
+        return $this->signInInit( $user->user_id );
+    }
+
+    public function signInByToken(string $token_hash, string $holder=null){
+        $TokenModel=model('TokenModel');
+        $token_data=$TokenModel->itemAuth($token_hash, $holder);
+        if( !$token_data || !$token_data->owner_id ){
+            return 'token_not_found';//token_hash not found
+        }
+        session()->set('token_data',$token_data);
+
+        return $this->signInInit( $token_data->owner_id );
     }
 
     private function signInInit( int $user_id=null ){
         if( !$user_id ){
-            return 'notfound';
+            return 'user_not_found';
         }
         $PermissionModel=model('PermissionModel');
         $PermissionModel->listFillSession();
@@ -450,23 +484,19 @@ class UserModel extends Model{
         session()->set('user_id',$user_id);
         $user=$this->itemGet($user_id);
         if( $user=='notfound' ){
-            return 'notfound';
+            return 'user_not_found';
+        }
+        if( $user->deleted_at ){
+            return 'user_is_deleted';
+        }
+        if( $user->is_disabled ){
+            return 'user_is_disabled';
         }
         session()->set('user_data',$user);
-        model('MetricModel')->itemSave((object)['user_id'=>$user_id]);
+        model('MetricModel')->itemSave((object)['user_id'=>$user_id]);//marking all metrics in session as belonging to this user
         return 'ok';
     }
 
-    public function signInByToken(string $token_hash, string $holder=null){
-        $TokenModel=model('TokenModel');
-        $token_data=$TokenModel->itemAuth($token_hash, $holder);
-        if($token_data && $token_data->owner_id){
-            session()->set('token_data',$token_data);
-            $this->signInInit( $token_data->owner_id );
-            return 'ok';
-        }
-        return 'token_not_found';//token_hash not found
-    }
     
     public function getSignedUser(){
         return $this->itemGet( session()->get('user_id') );
@@ -479,8 +509,8 @@ class UserModel extends Model{
         return $user_id;
     }
     
-    public function verifyUser( $user_id ){
-        $this->allowedFields[]='user_phone_verified';
+    public function verifyUser( int $user_id, $type='phone' ){
+        $this->fieldUpdateAllow('user_phone_verified');
         $ok=$this->update(['user_id'=>$user_id],['user_phone_verified'=>1]);
         if( $ok ){
             return 'verification_completed';
@@ -488,7 +518,13 @@ class UserModel extends Model{
         return 'verification_error';
     }
 
-    private function verifyByCallNeeded($user_id){
+    // public function verifyPhone( $user_id ){
+    //     $this->fieldUpdateAllow('user_phone_verified');
+    //     $this->update(['user_id'=>$user_id],['user_phone_verified'=>1]);
+    //     return $this->db->affectedRows()>0?'ok':'idle';
+    // }
+
+    public function verifyByCallNeeded($user_id){
         $this->systemUserLogin();
         $this->where('(user_phone_verified IS NULL OR user_phone_verified=0)');
         $user=$this->itemGet($user_id,'basic');

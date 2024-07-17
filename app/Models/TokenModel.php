@@ -117,10 +117,13 @@ class TokenModel extends Model{
         ];
     }
     
-    public function itemDelete($token_id=null,$token_hash=null){
+    public function itemDelete($token_id=null,$token_hash=null,$token_hash_raw=null){
         if($token_id){
             $this->where('token_id',$token_id);
         } elseif($token_hash){
+            $this->where('token_hash',$token_hash);
+        } elseif($token_hash_raw){
+            $token_hash=hash('sha256',$token_hash_raw);
             $this->where('token_hash',$token_hash);
         } else {
             return 'notfound';
