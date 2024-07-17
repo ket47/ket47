@@ -809,7 +809,7 @@ class ShipmentStageScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+            ]
         ]);
         return 'ok';
     }
@@ -823,7 +823,8 @@ class ShipmentStageScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+                ],
+            'task_next_start_time'=>time()
         ]);
         return 'ok';
     }

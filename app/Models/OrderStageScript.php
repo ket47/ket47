@@ -920,7 +920,8 @@ class OrderStageScript{
             jobCreate([
                 'task_programm'=>[
                         ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                    ]
+                    ],
+                'task_next_start_time'=>time()+1
             ]);
             return 'ok';
         }

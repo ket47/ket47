@@ -30,6 +30,9 @@ class SmsP1{
         $out = curl_exec($curl);
         $response=json_decode($out);
 
+        if( $response->data[0]->errorCode??null ){
+            pl([$url,$data,$response]);
+        }
         if($response?->status=='success'){
             return 'ok';
         }
