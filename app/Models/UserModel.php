@@ -176,7 +176,8 @@ class UserModel extends Model{
     
     public function itemUpdate( $data ){
         if( sudo() ){
-            $this->protect(false);//allow all fields to be updated
+            $this->fieldUpdateAllow('user_phone_verified');
+            $this->fieldUpdateAllow('user_email_verified');
         }
         if( isset($data->user_phone) ){
             $this->allowedFields[]='user_phone_verified';
@@ -202,7 +203,6 @@ class UserModel extends Model{
             $this->fieldUpdateAllow('user_pass');
         }
         $this->update(['user_id'=>$data->user_id],$data);
-        $this->protect(true);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
