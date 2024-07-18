@@ -309,7 +309,7 @@ class Statistics extends \App\Controllers\BaseController{
         $OrderModel->orderBy('order_id','DESC');
         $OrderModel->where('order_list.order_status','finished');
         $OrderModel->where('order_list.created_at>',$start_at);
-        $OrderModel->where('order_list.created_at<',$finish_at);
+        $OrderModel->where('order_list.created_at<',$finish_at.' 23:59:59');
         if( $search_query ){
             $OrderModel->like('entry_text',$search_query);
         }
