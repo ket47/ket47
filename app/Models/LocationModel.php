@@ -60,6 +60,17 @@ class LocationModel extends Model{
         }
         return $this->where('location_id',$location_id)->get()->getRow();
     }
+
+    private function itemRestrictedFilterout( $address ){
+        return trim(str_replace([
+            'Симферополь,',
+            'Симферополь',
+            'Симферопольский район,',
+            'Симферопольский район',
+            'Республика Крым,',
+            'Республика Крым',
+        ],'',$address));
+    }
     
     public function itemCreate( $data, $limit=5 ){
         $inserted_count=$this
@@ -71,6 +82,9 @@ class LocationModel extends Model{
                 ->getRow('inserted_count');
         if( $inserted_count>=$limit ){
             return 'limit_exeeded';
+        }
+        if( $data['location_address']??null ){
+            $data['location_address']=$this->itemRestrictedFilterout($data['location_address']);
         }
         $this->set($data);
         $this->set('location_point',"POINT({$data['location_longitude']},{$data['location_latitude']})",false);

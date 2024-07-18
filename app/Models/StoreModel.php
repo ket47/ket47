@@ -236,6 +236,16 @@ class StoreModel extends Model{
         return 0;
     }
     
+    private function itemRestrictedFilterout( $text ){
+        return trim(str_replace([
+            'Симф',
+            'Крым',
+            'симф',
+            'крым',
+        ],'***',$text));
+    }
+
+
     public function itemUpdate( $store ){
         if( empty($store->store_id) ){
             return 'noid';
@@ -250,6 +260,12 @@ class StoreModel extends Model{
         if( sudo() ){
             $this->allowedFields[]='is_primary';
             $this->allowedFields[]='owner_id';
+        }
+        if($store->store_description_new??null ){
+            $store->store_description_new=$this->itemRestrictedFilterout($store->store_description_new);
+        }
+        if($store->store_name_new??null ){
+            $store->store_name_new=$this->itemRestrictedFilterout($store->store_name_new);
         }
         $this->update($store->store_id,$store);
         return $this->db->affectedRows()?'ok':'idle';
