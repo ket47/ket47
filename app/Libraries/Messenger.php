@@ -29,7 +29,7 @@ class Messenger{
                 return true;
             }
         }
-        $this->itemSend($message);
+        return $this->itemSend($message);
     }
 
     public function itemSend( $message ){
@@ -53,6 +53,9 @@ class Messenger{
         }
         if( str_contains($message->message_transport,'push') ){
             $ok*=$this->itemSendPush($message);
+        }
+        if( str_contains($message->message_transport,'voice') ){
+            $ok*=$this->itemSendVoice($message);
         }
         if( $ok ){
             return $ok;
@@ -163,6 +166,21 @@ class Messenger{
         return true;
     }
     
+    private function itemSendVoice( $message ){
+        $phone_to=$message->message_reciever_phone??$message->reciever->user_phone??'';
+        if(!$phone_to){
+            pl(['voice cant be send: no phone number',$message]);
+            return false;
+        }
+        $Sms=\Config\Services::voice();
+        $result=$Sms->send($phone_to,strip_tags($message->message_text));
+        if( $result!=='ok' ){
+            log_message('error', "Cant send voice to {$phone_to}:". json_encode($message).$result );
+            return false;
+        }
+        return true;
+    }
+
     private function itemPushTokensGet($user_id){
         $MessageSubModel=model('MessageSubModel');
         $MessageSubModel->select('sub_registration_id');

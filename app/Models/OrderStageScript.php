@@ -416,6 +416,8 @@ class OrderStageScript{
                 'template'=>'messages/order/on_customer_start_STORE_email.php',
                 'context'=>$context
             ];
+            $timer_supplier_passive=time()+5*60;//5min
+            $this->onSupplierCalled($order_id,(object)['start_at'=>$timer_supplier_passive,'attempts_left'=>3]);
         } else {
             $store_sms=null;
             $store_email=null;
@@ -843,6 +845,68 @@ class OrderStageScript{
         return 'ok';
     }
 
+    public function onSupplierCalled( $order_id, $data ){
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        if( !$data || !in_array($order->stage_current??'',['customer_start']) ){
+            return 'idle';
+        }
+
+        $schedule_only=true;
+        if( $data->start_at<=time() ){
+            $schedule_only=false;
+        }
+        if( $data->attempts_left && $data->attempts_left>1 ){
+            $data->attempts_left--;
+            $data->start_at=time()+3*60;//5min
+            $stage_reset_task=[
+                'task_programm'=>[
+                        ['model'=>'UserModel','method'=>'systemUserLogin'],
+                        ['model'=>'OrderModel','method'=>'itemStageAdd','arguments'=>[$order_id,'supplier_called',$data]],
+                        ['model'=>'UserModel','method'=>'systemUserLogout'],
+                    ],
+                'task_next_start_time'=>$data->start_at
+            ];
+            jobCreate($stage_reset_task);
+        }
+        if( $schedule_only ){
+            return 'scheduled';
+        }
+        $StoreModel=model('StoreModel');
+        $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        $store_voice=(object)[
+            'message_transport'=>'voice',
+            'template'=>'messages/order/on_supplier_passive_STORE_voice.php',
+            'context'=>[],
+        ];
+
+        helper('phone_number');
+        $store_phone_cleared= clearPhone($store->store_phone);
+        if( $store_phone_cleared ){
+            $store_voice->message_reciever_phone=$store_phone_cleared;
+        } else {
+            $store_voice->message_reciever_id=$store->owner_id;//.','.$store->owner_ally_ids,
+        }
+        $copy=(object)[
+            'message_reciever_id'=>'-100',
+            'message_transport'=>'telegram',
+            'message_text'=>"{$store->store_name} прозвон о заказе",
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1,
+                ]
+            ],
+        ];
+        $notification_task=[
+            'task_name'=>"supplier_passive Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_voice,$copy]]]
+                ],
+            'task_priority'=>'low'
+        ];
+        jobCreate($notification_task);
+        return 'ok';
+    }
+
     public function onSupplierOverdue( $order_id  ){
         $order=$this->OrderModel->itemGet($order_id,'basic');
         if( !in_array($order->stage_current??'',['customer_start','supplier_start','supplier_corrected']) ){
@@ -1061,7 +1125,8 @@ class OrderStageScript{
                 'template'=>'messages/order/on_customer_start_STORE_email.php',
                 'context'=>$context
             ];
-
+            $timer_supplier_passive=time()+5*60;//5min
+            $this->onSupplierCalled($order_id,(object)['start_at'=>$timer_supplier_passive,'attempts_left'=>3]);
 
 
 

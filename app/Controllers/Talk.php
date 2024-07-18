@@ -132,7 +132,16 @@ class Talk extends \App\Controllers\BaseController{
                 'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
             ],
         ];
+
+        $voice_greeting="Вас приветствует тез кель.";
+        $voice=(object)[
+            'message_transport'=>'voice',
+            'message_reciever_id'=>$reciever_id,
+            'message_subject'=> "Прозвон по заказу #$order_id",
+            'message_text'=>$voice_greeting.$body,
+        ];
         $Messenger=new \App\Libraries\Messenger();
+        $ok=$Messenger->itemSend($voice);
         $ok=$Messenger->itemSend($sms);
         if( $ok ){
             return $this->respond('ok');

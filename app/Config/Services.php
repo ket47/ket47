@@ -62,4 +62,13 @@ class Services extends BaseService
 	
 	    return new \App\Libraries\SmsP1();
 	}
+
+	public static function voice($getShared = true){
+	    if ($getShared)
+	    {
+	        return static::getSharedInstance('voice');
+	    }
+	
+	    return new \App\Libraries\SmsCVoice();
+	}
 }
