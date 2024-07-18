@@ -339,23 +339,27 @@ class TestController extends \App\Controllers\BaseController{
     }
 
 
-    function flowwowDig(){
-        //https://store.tildaapi.com/api/getproductslist/?storepartuid=513610670921&recid=721095268&c=1716550130770&getparts=true&getoptions=true&slice=1&size=36
-        $url="https://store.tildaapi.com/api/getproductslist/?storepartuid=513610670921&recid=720272320&c=1716549613535&getparts=true&getoptions=true&slice=1&size=360";
-        $json=file_get_contents($url);
-        $obj=json_decode($json);
+    function cache(){
+        set_time_limit(300);
+        $StoreModel=model('StoreModel');
 
+        p($StoreModel->itemCacheGroupCreate(119));
+    }
+    function perk(){
+        set_time_limit(300);
+        model('ProductModel')->nightlyCalculate();
+        model('StoreModel')->nightlyCalculate();
+    }
 
-        echo count($obj->products);
-        p($obj->products);
+    function voice(){
+        $Messenger=new \App\Libraries\Messenger();
 
-        $dom = new \DomDocument();
-        $dom->load($url);
-        $finder = new \DomXPath($dom);
-        $classname="store_category_visible_area";
-        $nodes = $finder->query("//*[contains(@class, '$classname')]");
-
-
-        p($nodes);
+        echo $Messenger->itemSend(
+            (object)[
+                'message_transport'=>'voice',
+                'message_reciever_id'=>41,
+                'message_text'=>"вас приветствует тез кель. вам поступил заказ"
+            ]
+        );
     }
 }
