@@ -79,14 +79,17 @@ class Cardacquirer extends \App\Controllers\BaseController{
             case 'partly canceled':
             case 'waiting':
                 $this->log_message('error', "paymentStatusSet $incomingStatus->status; Waiting what?");
+                madd('order','pay','error',$order_id,$incomingStatus->status);
                 return $this->failValidationErrors('waiting');
                 break;
             case 'not authorized':
                 $this->log_message('error', " order_id:#$order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
+                madd('order','pay','error',$order_id,$incomingStatus->status);
                 return $this->failValidationErrors('not_authorized');
                 break;
             default:
                 $this->log_message('error', "paymentStatusSet $incomingStatus->status; wrong_status");
+                madd('order','pay','error',$order_id,$incomingStatus->status);
                 return $this->failValidationErrors('wrong_status');
                 break;
         }
