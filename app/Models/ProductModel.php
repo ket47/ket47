@@ -698,10 +698,10 @@ class ProductModel extends Model{
     }
 
     private function nightlyCalculateTopSale(){
-        $top_percentage=10;
+        $top_percentage=5;
         $started_span=7;
         $started_at=date("Y-m-d H:i:s",time()-$started_span*24*60*60);
-        $expired_at=date("Y-m-d H:i:s",time()+24*60*60);
+        $expired_at=date("Y-m-d H:i:s",time()+25*60*60);//one day plus hour
 
         $EntryModel=model('EntryModel');
         $EntryModel->join('order_list','order_id');

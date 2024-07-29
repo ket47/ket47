@@ -785,7 +785,7 @@ class StoreModel extends Model{
             $PerkModel->where('perk_holder_id',$store_id);
         }
         $PerkModel->where('perk_holder','product');
-        $PerkModel->whereIn('perk_type',['product_new','product_top']);
+        $PerkModel->whereIn('perk_type',['product_new','product_top','product_promo']);
         $PerkModel->join('product_list','product_id=perk_holder_id');
         $PerkModel->where('product_list.is_disabled','0');
         $PerkModel->where('product_list.is_hidden','0');
