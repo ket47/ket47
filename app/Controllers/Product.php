@@ -47,7 +47,44 @@ class Product extends \App\Controllers\BaseController{
         $result=$ProductGroupModel->listGet();
         return $this->respond($result);
     }
-    
+
+    public function listNearGet(){
+        $location_id=$this->request->getPost('location_id');
+        $location_latitude=$this->request->getPost('location_latitude');
+        $location_longitude=$this->request->getPost('location_longitude');
+        $offset=$this->request->getPost('offset');
+        $limit=$this->request->getPost('limit');
+        $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
+        if( !is_array($storeCache['store_list_ids']??null) || $offset>40 ){
+            return $this->failNotFound('notfound');
+        }
+
+        $day=date('d');
+        $ProductModel=model('ProductModel');
+        $ProductModel->whereIn('store_id',$storeCache['store_list_ids']);
+        $ProductModel->where('is_hidden',0);
+        $ProductModel->where('(is_counted=0 OR is_counted=1 AND product_quantity>0)');
+        $ProductModel->where('image_hash IS NOT NULL');
+
+        $ProductModel->orderBy("md5(CONCAT(product_id,$day))");//random within day order
+        $product_list=$ProductModel->listGet([
+            'offset'=>$offset,
+            'limit'=>$limit,
+            'is_active'=>1
+        ]);
+        return $this->respond($product_list);
+    }
+
+    private function listNearCache( int $location_id=null, float $location_latitude=null, float $location_longitude=null ){
+        $cachehash=md5("$location_id,$location_latitude,$location_longitude");
+        $storenearcache=session()->get('storenearcache')??[];
+
+        if( isset($storenearcache[$cachehash]['expired_at']) && $storenearcache[$cachehash]['expired_at']>time() ){
+            return $storenearcache[$cachehash];
+        }
+        return null;
+    }
+
     public function listCreate(){
         return false;
     }

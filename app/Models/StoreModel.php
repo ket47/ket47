@@ -813,6 +813,7 @@ class StoreModel extends Model{
         $ReactionModel->where('tag_name','store');
         $ReactionModel->select("tag_id store_id,'store_rating' perk_type,SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) perk_value");
         $ReactionModel->groupBy('tag_id');
+        $ReactionModel->having('perk_value>0.6',null,false);
         $reacts=$ReactionModel->get()->getResult();
 
         $def_expired_at=date('Y-m-d H:i:s',time()+24*60*60);

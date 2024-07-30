@@ -96,6 +96,7 @@ class Store extends \App\Controllers\BaseController{
         if( !$store_list || !is_array($store_list) ){
             return ['store_list'=>$store_list];
         }
+        $store_list_ids=[];
         $store_groups_htable=[];
         $product_groups_htable=[];
 
@@ -110,6 +111,7 @@ class Store extends \App\Controllers\BaseController{
             foreach($store->cache_groups->product_groups as $group_id){
                 $product_groups_htable[$group_id]=1;
             }
+            $store_list_ids[]=$store->store_id;
         }
         $ProductGroupModel=model('ProductGroupModel');
         $ProductGroupModel->join('image_list','group_id=image_holder_id');
@@ -125,6 +127,7 @@ class Store extends \App\Controllers\BaseController{
 
         $list=[
             'store_list'=>$store_list,
+            'store_list_ids'=>$store_list_ids,
             'store_groups'=>$store_groups,
             'product_groups'=>$product_groups,
             'expired_at'=>$expired_at,
@@ -146,8 +149,8 @@ class Store extends \App\Controllers\BaseController{
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
-    public function itemGet(){
-        $store_id=(int) $this->request->getPost('store_id');
+    public function itemGet(){//should handle get requests
+        $store_id=(int) $this->request->getVar('store_id');
         $mode=$this->request->getVar('mode');
         $distance_include=$this->request->getVar('distance_include');
         $StoreModel=model('StoreModel');

@@ -492,8 +492,8 @@ class User extends \App\Controllers\BaseController{
             return $this->failNotFound('verification_not_found');
         }
 
-        $UserModel=model('UserModel');
-        $UserModel->verifyUser($verification->user_id);
+        //$UserModel=model('UserModel');
+        //$UserModel->verifyUser($verification->user_id);
         return $this->respond('verification_completed');
     }
 
