@@ -55,7 +55,7 @@ class Product extends \App\Controllers\BaseController{
         $offset=$this->request->getPost('offset');
         $limit=$this->request->getPost('limit');
         $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
-        if( !is_array($storeCache['store_list_ids']??null) || $offset>40 ){
+        if( !is_array($storeCache['store_list_ids']??null) ){
             return $this->failNotFound('notfound');
         }
 
