@@ -69,23 +69,6 @@ class BaseController extends Controller
         }
     }
 
-    public function batch(){
-        $responses=[];
-        $methods=$this->request->getJSON();
-        if(!$methods){
-            die('batch_is_empty');
-        }
-        foreach($methods as $method=>$arguments){
-            if($arguments){
-                foreach($arguments as $argname=>$argval){
-                    $_REQUEST[$argname]=$argval;
-                }
-            }
-            $responses[$method]=$this->{$method}();
-        }
-        echo json_encode($responses);
-        die;
-    }
     private function handleSession($request,$response){
         $session_id=$request->getHeaderLine('x-sid');
         if( $session_id && strlen($session_id)>30 ){
@@ -95,26 +78,6 @@ class BaseController extends Controller
         session();
         $response->setHeader('x-sid',session_id());
     }
-    
-    // private function handleCors(){
-    //     if( !function_exists('getallheaders') ){
-    //         return 'fromCli';
-    //     }
-    //     foreach (getallheaders() as $name => $value) {
-    //         if( strtolower($name)=='origin' && (str_contains($value, 'tezkel') || str_contains($value, 'localhost')) ){
-    //             header("Access-Control-Allow-Origin: $value");
-    //             break;
-    //         }
-    //     }
-    //     header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x-sid");
-    //     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-    //     header("Access-Control-Allow-Credentials: true");
-    //     header("Access-Control-Expose-Headers: x-sid");
-    //     $method = isset($_SERVER['REQUEST_METHOD'])?$_SERVER['REQUEST_METHOD']:'';
-    //     if( $method == "OPTIONS" ) {
-    //         die();
-    //     }
-    // }
     
     private function guestUserInit(){
         $PermissionModel=model('PermissionModel');

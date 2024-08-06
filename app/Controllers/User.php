@@ -273,6 +273,7 @@ class User extends \App\Controllers\BaseController{
             madd('auth','in','ok');
             $this->signInMetric( $user->user_id );
             $this->signInCourier($user->user_id);
+            $this->xSidRegenerate();
             $this->signInTokenSave($user->user_id);
             return $this->respond($user->user_id);
         }
@@ -307,6 +308,7 @@ class User extends \App\Controllers\BaseController{
             madd('auth','in','ok');
             $this->signInMetric( $user->user_id );
             $this->signInCourier( $user->user_id );
+            $this->xSidRegenerate();
             $this->signInTokenSave( $user->user_id );
             return $this->respond($user->user_id);
         }
@@ -363,17 +365,6 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->respond($result);
     }
-    
-
-    // private function signOutCourier(){
-    //     $user_id=session()->get('user_id');
-    //     $CourierModel=model('CourierModel');
-    //     if( $CourierModel->isIdle(null,$user_id) ){
-    //         return 'ok';
-    //     }
-    //     $courier_id=$CourierModel->where('owner_id',$user_id)->get()->getRow('courier_id');
-    //     return $CourierModel->itemUpdateStatus($courier_id,'idle');
-    // }
 
     public function signOut(){
         $user_id=session()->get('user_id');
@@ -383,12 +374,31 @@ class User extends \App\Controllers\BaseController{
 
         $UserModel->signOut($user_id);
         $TokenModel->itemDelete(null,null,session_id());
+        $this->xSidRegenerate();
 
-        session_unset();//clear all session variables
         madd('auth','out','ok');
         return $this->respond('ok');
     }
 
+    /**
+     * Here we are changing session id and setting it as header
+     * to save that id as apikey on client
+     */
+    private function xSidRegenerate(){
+        session_unset();//clear all session variables
+        session_regenerate_id(true);
+        $this->response->setHeader('x-sid',session_id());
+    }
+
+
+    // public function signOut(){
+    //     $this->signOutUser();
+    //     if (session_status() === PHP_SESSION_ACTIVE){
+    //         session_destroy();
+    //     }
+    //     madd('auth','out','ok');
+    //     return $this->respond('ok');
+    // }
     
     public function passwordReset(){
         $user_phone=$this->request->getVar('user_phone');
