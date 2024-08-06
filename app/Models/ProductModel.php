@@ -359,7 +359,7 @@ class ProductModel extends Model{
         $this->orderBy("product_final_price<>product_price",'DESC',false);
 
         $this->filterMake( $filter );
-        if( !empty($filter['is_disabled']) ){
+        if( empty($filter['is_disabled']) ){
             //if disabled products are not shown then not show hidden products 
             $this->where('is_hidden',0);
         }
