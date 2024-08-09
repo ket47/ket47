@@ -219,7 +219,7 @@ class App extends BaseConfig
      *
      * @var int
      */
-    public $sessionTimeToUpdate = 300;
+    public $sessionTimeToUpdate = 300000;//this is dangerous
 
     /**
      * --------------------------------------------------------------------------

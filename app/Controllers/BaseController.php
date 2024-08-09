@@ -71,7 +71,7 @@ class BaseController extends Controller
 
     private function handleSession($request,$response){
         $session_id=$request->getHeaderLine('x-sid');
-        if( $session_id && strlen($session_id)>30 ){
+        if( $session_id && strlen($session_id)>10 ){
             //session_id must be valid string not 'null'
             session_id($session_id);
         }
