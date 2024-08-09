@@ -661,7 +661,8 @@ class OrderStageScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+            ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
@@ -857,7 +858,7 @@ class OrderStageScript{
         }
         if( $data->attempts_left && $data->attempts_left>1 ){
             $data->attempts_left--;
-            $data->start_at=time()+3*60;//5min
+            $data->start_at=time()+5*60;//5min
             $stage_reset_task=[
                 'task_programm'=>[
                         ['model'=>'UserModel','method'=>'systemUserLogin'],
