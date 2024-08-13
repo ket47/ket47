@@ -362,4 +362,8 @@ class TestController extends \App\Controllers\BaseController{
             ]
         );
     }
+    function sms(){
+        $sms=new \App\Libraries\Sms4B();
+        echo $sms->send('79186414455','test sms4b'.rand(1,1000));
+    }
 }

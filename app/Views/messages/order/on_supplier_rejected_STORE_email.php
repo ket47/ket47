@@ -14,6 +14,9 @@
             Заказ от клиента  для "<?= $store->store_name ?>", был отменен вами!
         </p>
         <p>
+            Магазин <?= $store->store_name ?> будет заблокирован до <?=$store_block_finish_at?>
+        </p>
+        <p>
             С уважением, команда <?= getenv('app.title') ?>.
         </p>
     </body>

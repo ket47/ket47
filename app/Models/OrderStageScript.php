@@ -684,6 +684,7 @@ class OrderStageScript{
         jobCreate($deliveryJob);
 
         
+        $store_block_finish_at=time()+80;//+24*60*60;//24 hours
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
@@ -691,7 +692,8 @@ class OrderStageScript{
         $context=[
             'order'=>$order,
             'store'=>$store,
-            'customer'=>$customer
+            'customer'=>$customer,
+            'store_block_finish_at'=>date('d.m.Y H:i:s',$store_block_finish_at)
         ];
         $store_sms=(object)[
             'message_transport'=>'push,telegram',
@@ -736,17 +738,39 @@ class OrderStageScript{
         ];
 
 
-        $courier_freeing_task=[
+        $courier_freeing_n_store_blocking_task=[
             'task_name'=>"free the courier",
             'task_programm'=>[
                 ['model'=>'UserModel','method'=>'systemUserLogin'],
                 ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
                 ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                ['model'=>'StoreModel','method'=>'itemDisable','arguments'=>[$order->order_store_id,1]],
                 ['model'=>'UserModel','method'=>'systemUserLogout'],
                 ]
         ];
 
-        jobCreate($courier_freeing_task);
+        $store_unblocking_sms=(object)[
+            'message_transport'=>'push,telegram',
+            'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'short.wav'
+            ],
+            'message_text'=>"Время блокировки {$store->store_name} истекло",
+        ];
+        $store_unblocking_task=[
+            'task_name'=>"free the courier",
+            'task_programm'=>[
+                ['model'=>'UserModel','method'=>'systemUserLogin'],
+                ['model'=>'StoreModel','method'=>'itemDisable','arguments'=>[$order->order_store_id,0]],
+                ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_unblocking_sms]]],
+            ],
+            'task_priority'=>'low',
+            'task_next_start_time'=>$store_block_finish_at
+        ];
+
+        jobCreate($courier_freeing_n_store_blocking_task);
+        jobCreate($store_unblocking_task);
         jobCreate($notification_task);
         jobCreate([
             'task_programm'=>[

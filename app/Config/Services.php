@@ -30,12 +30,6 @@ class Services extends BaseService
 	// }
 
 	public static function acquirer($getShared = true,$type=null){
-
-
-
-		pl("$getShared = true,$type=null");
-
-
 	    if ($getShared)
 	    {
 			$getShared=0;

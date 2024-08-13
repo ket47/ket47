@@ -240,6 +240,11 @@ class User extends \App\Controllers\BaseController{
         if( !$user_phone || !$user_pass ){
             return $this->fail('empty_phone_or_pass');
         }
+
+
+        $this->signOut();//clear and regenerate session
+
+
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');
@@ -273,7 +278,7 @@ class User extends \App\Controllers\BaseController{
             madd('auth','in','ok');
             $this->signInMetric( $user->user_id );
             $this->signInCourier($user->user_id);
-            $this->xSidRegenerate();
+            //$this->xSidRegenerate();
             $this->signInTokenSave($user->user_id);
             return $this->respond($user->user_id);
         }
@@ -286,6 +291,8 @@ class User extends \App\Controllers\BaseController{
         if( !$user_phone || !$user_ota_code ){
             return $this->fail('empty_phone_or_pass');
         }
+
+        $this->signOut();//clear and regenerate session
 
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
@@ -308,7 +315,7 @@ class User extends \App\Controllers\BaseController{
             madd('auth','in','ok');
             $this->signInMetric( $user->user_id );
             $this->signInCourier( $user->user_id );
-            $this->xSidRegenerate();
+            //$this->xSidRegenerate();
             $this->signInTokenSave( $user->user_id );
             return $this->respond($user->user_id);
         }
@@ -477,8 +484,16 @@ class User extends \App\Controllers\BaseController{
         $msg_data=[
             'verification_code'=>$verification->verification_value
         ];
+
+        $sms_text=view('messages/phone_verification_sms.php',$msg_data);
+        $sms=new \App\Libraries\Sms4B();
+        $response=$sms->send($user_phone_cleared,$sms_text);
+        if($response=='ok'){
+            return $this->respond('ok');
+        }
+
         $Sms=\Config\Services::sms();
-        $ok=$Sms->send($user_phone_cleared,view('messages/phone_verification_sms.php',$msg_data));
+        $ok=$Sms->send($user_phone_cleared,$sms_text);
         if( $ok ){
             return $this->respond('ok');
         }
