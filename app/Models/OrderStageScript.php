@@ -684,7 +684,7 @@ class OrderStageScript{
         jobCreate($deliveryJob);
 
         
-        $store_block_finish_at=time()+80;//+24*60*60;//24 hours
+        $store_block_finish_at=time()+24*60*60;//24 hours
         $StoreModel->itemCacheClear();
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
