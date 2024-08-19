@@ -473,6 +473,13 @@ class UserModel extends Model{
         return $this->signInInit( $token_data->owner_id );
     }
 
+    /**
+     * Should be used carefully
+     */
+    public function signInById( int $user_id ){
+        return $this->signInInit( $user_id );
+    }
+
     private function signInInit( int $user_id=null ){
         if( !$user_id ){
             return 'user_not_found';

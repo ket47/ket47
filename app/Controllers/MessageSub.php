@@ -23,11 +23,20 @@ class Messagesub extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
-    public function listGet($user_id){
+    public function listGet($user_id=null){
         $user_id=$this->request->getVar('user_id');
         $MessageSubModel=model('MessageSubModel');
 
         $result=$MessageSubModel->listGet($user_id);
+        if( is_array($result) ){
+            $ua= new \CodeIgniter\HTTP\UserAgent;
+            foreach($result as $sub){
+                $ua->parse($sub->sub_device);
+                $sub->platform=$ua->getPlatform();
+                $sub->browser=$ua->getBrowser();
+                $sub->mobile=$ua->getMobile();
+            }
+        }
         return $this->respond($result);
     }
 

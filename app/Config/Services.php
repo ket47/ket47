@@ -61,7 +61,7 @@ class Services extends BaseService
 	        return static::getSharedInstance('sms');
 	    }
 	
-	    return new \App\Libraries\SmsP1();
+	    return new \App\Libraries\Sms4B();
 	}
 
 	public static function voice($getShared = true){

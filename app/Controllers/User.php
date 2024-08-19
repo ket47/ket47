@@ -57,6 +57,18 @@ class User extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
+        if( sudo() ){
+            $new_user=[
+                'user_phone'=>$this->request->getPost('user_phone'),
+                'user_name'=>$this->request->getPost('user_name')
+            ];
+            $UserModel=model('UserModel');
+            $user_id=$UserModel->itemCreate($new_user);
+            if( $UserModel->errors() ){
+                return $this->failValidationErrors(json_encode($UserModel->errors()));
+            }
+            return $this->respondCreated($user_id);
+        }
         return $this->signUp();
     }
     
@@ -112,13 +124,13 @@ class User extends \App\Controllers\BaseController{
     
     public function itemDelete(){
         $user_id=$this->request->getPost('user_id');
-        $user_pass=$this->request->getPost('user_pass');
+//        $user_pass=$this->request->getPost('user_pass');
 
         $UserModel=model('UserModel');
-        $user_pass_hash=$UserModel->where('user_id',$user_id)->get()->getRow('user_pass');
-        if( !password_verify($user_pass,$user_pass_hash) ){
-            return $this->failForbidden('wrong pass');
-        }
+        // $user_pass_hash=$UserModel->where('user_id',$user_id)->get()->getRow('user_pass');
+        // if( !password_verify($user_pass,$user_pass_hash) ){
+        //     return $this->failForbidden('wrong pass');
+        // }
 
         $UserModel->transStart();
         $UserModel->fieldUpdateAllow('is_disabled');
@@ -135,6 +147,9 @@ class User extends \App\Controllers\BaseController{
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         $UserModel->transComplete();
+
+        $this->signOut();
+        
         return $this->respondDeleted($ok);        
     }
     
@@ -149,6 +164,26 @@ class User extends \App\Controllers\BaseController{
             return $this->failForbidden($result);
         }
         return $this->fail($result);   
+    }
+
+    public function listGet(){
+        $filter=[
+            'name_query'=>$this->request->getVar('name_query'),
+            'name_query_fields'=>$this->request->getVar('name_query_fields'),
+            'is_disabled'=>$this->request->getVar('is_disabled'),
+            'is_deleted'=>$this->request->getVar('is_deleted'),
+            'is_active'=>$this->request->getVar('is_active'),
+            'limit'=>$this->request->getVar('limit'),
+            'offset'=>$this->request->getVar('offset'),
+            'order'=>$this->request->getVar('order'),
+            'status'=>$this->request->getPost('status'),
+        ];
+        $UserModel=model('UserModel');
+        $user_list=$UserModel->listGet($filter);
+        if( $UserModel->errors() ){
+            return $this->failValidationErrors(json_encode($UserModel->errors()));
+        }
+        return $this->respond($user_list);
     }
     /////////////////////////////////////////////
     //LOGIN SECTION
@@ -322,6 +357,37 @@ class User extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
 
+    public function signInById(){
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+
+        $user_id=$this->request->getPost('user_id');
+
+        $this->signOut();//clear and regenerate session
+
+        $UserModel=model('UserModel');
+        $result=$UserModel->signInById($user_id);
+        if( $result=='user_not_found' ){
+            madd('auth','in','error',null,$result);
+            return $this->failNotFound('user_not_found');
+        }
+        if( $result=='user_is_disabled' ){
+            madd('auth','in','error',null,$result);
+            return $this->failUnauthorized('user_is_disabled');
+        }
+        if( $result=='ok' ){
+            $user=$UserModel->getSignedUser();
+            if( empty($user->user_id) ){
+                madd('auth','in','error',null,'user_data_fetch_error');
+                return $this->fail('user_data_fetch_error');
+            }
+            madd('auth','in','ok');
+            return $this->respond($user->user_id);
+        }
+        return $this->fail($result);
+    }
+
     private function signInMetric( $user_id ){
         $metric_id=$this->request->getPost('metric_id');
         if($metric_id){
@@ -486,14 +552,14 @@ class User extends \App\Controllers\BaseController{
         ];
 
         $sms_text=view('messages/phone_verification_sms.php',$msg_data);
-        $sms=new \App\Libraries\Sms4B();
+        $sms=\Config\Services::sms();
         $response=$sms->send($user_phone_cleared,$sms_text);
         if($response=='ok'){
             return $this->respond('ok');
         }
 
-        $Sms=\Config\Services::sms();
-        $ok=$Sms->send($user_phone_cleared,$sms_text);
+        $sms=new \App\Libraries\SmsP1();
+        $ok=$sms->send($user_phone_cleared,$sms_text);
         if( $ok ){
             return $this->respond('ok');
         }

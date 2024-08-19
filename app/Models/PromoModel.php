@@ -210,7 +210,7 @@ class PromoModel extends Model{
         }
         $cust_sms=(object)[
             'message_reciever_id'=>$user_id,
-            'message_transport'=>'push,telegram',
+            'message_transport'=>'message',
             'template'=>$template_file,
             'context'=>$context
         ];

@@ -3,6 +3,9 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class MessageSubModel extends Model{
+
+    use PermissionTrait;
+
     protected $table      = 'message_sub_list';
     protected $primaryKey = 'sub_id';
     protected $allowedFields = [
@@ -42,6 +45,7 @@ class MessageSubModel extends Model{
     }
 
     public function listGet($user_id){
+        $this->permitWhere('r');
         return $this->where('sub_user_id',$user_id)->get()->getResult();
     }
     
