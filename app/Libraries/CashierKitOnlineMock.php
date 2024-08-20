@@ -108,7 +108,7 @@ class CashierKitOnlineMock{
         $response=$this->print($order_all);
         if( $response?->ResultCode!=0 ){
             pl(["MOCK CHECK PRINT FAILED",$response],false);
-            return $response;
+            //return $response;
         }
         //MOCKING
         $response->Registration=(object)[

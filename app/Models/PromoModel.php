@@ -12,6 +12,7 @@ class PromoModel extends Model{
     protected $allowedFields = [
         'promo_name',
         'promo_value',
+        'promo_share',
         'promo_order_id',
         'promo_activator_id',
         'is_disabled',
@@ -22,7 +23,22 @@ class PromoModel extends Model{
 
     protected $useSoftDeletes = false;
     protected $promo_lifetime=14*24*60*60;
+    protected $promo_share=50;
+
+    public function setLifetime( int $lifetime_day ){
+        if( $lifetime_day>100 || $lifetime_day<1 ){
+            return false;
+        }
+        $this->promo_lifetime=$lifetime_day*24*60*60;
+    }
     
+    public function setShare( int $share ){
+        if( $share>100 || $share<10 ){
+            return false;
+        }
+        $this->promo_share=$share;
+    }
+
     public function itemGet($promo_id){
         if( !$promo_id ){
             return null;
@@ -38,6 +54,7 @@ class PromoModel extends Model{
             'owner_id'=>$owner_id,
             'promo_name'=>$promo_name,
             'promo_value'=>$promo_value,
+            'promo_share'=>$this->promo_share,
             'promo_activator_id'=>$promo_activator_id,
             'is_disabled'=>$promo_activator_id?1:0,
             'expired_at'=>date('Y-m-d H:i:s',time()+$this->promo_lifetime)

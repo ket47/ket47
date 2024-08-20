@@ -76,6 +76,9 @@ class User extends \App\Controllers\BaseController{
         $data= $this->request->getJSON();
         
         $UserModel=model('UserModel');
+        if( sudo() ){
+            $UserModel->fieldUpdateAllow('user_birthday');
+        }
         $result=$UserModel->itemUpdate($data);
         if( $result==='forbidden' ){
             return $this->failForbidden($result);
@@ -148,7 +151,9 @@ class User extends \App\Controllers\BaseController{
         }
         $UserModel->transComplete();
 
-        $this->signOut();
+        if( session()->get('user_id')==$user_id ){
+            $this->signOut();//user deleting itself so logout
+        }
         
         return $this->respondDeleted($ok);        
     }
@@ -459,7 +464,9 @@ class User extends \App\Controllers\BaseController{
      */
     private function xSidRegenerate(){
         session_unset();//clear all session variables
-        session_regenerate_id(true);
+        if (session_status() === PHP_SESSION_ACTIVE){
+            session_regenerate_id(true);
+        }
         $this->response->setHeader('x-sid',session_id());
     }
 

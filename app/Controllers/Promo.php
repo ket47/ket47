@@ -12,8 +12,19 @@ class Promo extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        
-        return false;
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $owner_id=$this->request->getPost('owner_id');
+        $promo_name=$this->request->getPost('promo_name');
+        $promo_share=$this->request->getPost('promo_share');
+        $promo_value=$this->request->getPost('promo_value');
+        $promo_lifetime=$this->request->getPost('promo_lifetime');
+        $PromoModel=model('PromoModel');
+        $PromoModel->setLifetime($promo_lifetime);
+        $PromoModel->setShare($promo_share);
+        $result=$PromoModel->itemCreate($owner_id,$promo_value,$promo_name, null);
+        return $this->respond($result);
     }
     
     public function itemUpdate(){
