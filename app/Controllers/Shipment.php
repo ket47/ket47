@@ -53,7 +53,7 @@ class Shipment extends \App\Controllers\BaseController{
         }
         $OrderModel->transBegin();
         if( !$order_id_exists ){
-            $result=$OrderModel->itemCreate(null,1);
+            $result=$OrderModel->itemCreate(null,'shipment');
             if ($result === 'forbidden') {
                 $OrderModel->transRollback();
                 return $this->failForbidden($result);
@@ -83,24 +83,24 @@ class Shipment extends \App\Controllers\BaseController{
         return $this->respond($data->order_id);
     }
 
-    public function itemCreate(){
-        $data = $this->request->getJSON();
-        if(!$data){
-            return $this->fail('malformed_request');
-        }
-        if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
-            return $this->failUnauthorized('unauthorized');
-        }
-        $OrderModel = model('OrderModel');
-        $result=$OrderModel->itemCreate($data);
-        if (is_numeric($result)) {
-            return $this->respondCreated($result);
-        }
-        if ($result === 'forbidden') {
-            return $this->failForbidden($result);
-        }
-        return $this->fail($result);
-    }
+    // public function itemCreate(){
+    //     $data = $this->request->getJSON();
+    //     if(!$data){
+    //         return $this->fail('malformed_request');
+    //     }
+    //     if( session()->get('user_id')<=0 && session()->get('user_id')!=-100 ){//system user
+    //         return $this->failUnauthorized('unauthorized');
+    //     }
+    //     $OrderModel = model('OrderModel');
+    //     $result=$OrderModel->itemCreate($data);
+    //     if (is_numeric($result)) {
+    //         return $this->respondCreated($result);
+    //     }
+    //     if ($result === 'forbidden') {
+    //         return $this->failForbidden($result);
+    //     }
+    //     return $this->fail($result);
+    // }
     
     public function itemUpdate(){
         $data = $this->request->getJSON();
@@ -377,7 +377,7 @@ class Shipment extends \App\Controllers\BaseController{
         }
         $order_data->delivery_job=(object)[
             'job_name'=>'Посылка',
-            'job_data'=>json_encode(['is_shipment'=>1,'distance'=>$checkoutData->routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
+            'job_data'=>json_encode(['is_shipment'=>1,'order_script'=>$order->order_script,'distance'=>$checkoutData->routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
             'start_plan'=>$order_data->start_plan,
             'start_prep_time'=>null,
             'finish_arrival_time'=>$checkoutData->routePlan->finish_arrival,

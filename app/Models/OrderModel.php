@@ -24,6 +24,7 @@ class OrderModel extends SecureModel{
         'order_description',
         'order_objection',
         'order_stock_status',
+        'order_script',
         'updated_by',
         'deleted_at'
     ];
@@ -133,12 +134,13 @@ class OrderModel extends SecureModel{
         }
     }
 
-    public function itemCreate( int $store_id=null, int $is_shipment=0 ){
+    public function itemCreate( int $store_id=null, string $order_script='order_delivery' ){
         $user_id=session()->get('user_id');
         $new_order=[
             'owner_id'=>$user_id,
             'order_sum_delivery'=>0,
-            'is_shipment'=>$is_shipment,
+            'is_shipment'=>($order_script=='shipment'?1:0),//backward compatibility
+            'order_script'=>$order_script,
             'order_data'=>'{}',
         ];
         
@@ -151,12 +153,13 @@ class OrderModel extends SecureModel{
             $new_order['order_store_id']=$store_id;
             $new_order['order_store_admins']=ownersAll($store);
             $new_order['order_sum_delivery']=$StoreModel->tariffRuleDeliveryCostGet( $store_id );//Possible delivery cost
-        } else if( !$is_shipment ){
+        } else if( $order_script!='shipment' ){
             return 'nostore';
         }
         $this->fieldUpdateAllow('owner_id');
         $this->fieldUpdateAllow('order_data');
-        $this->fieldUpdateAllow('is_shipment');
+        $this->fieldUpdateAllow('is_shipment');//backward compatibility
+        $this->fieldUpdateAllow('order_script');
         $this->fieldUpdateAllow('order_store_admins');
         $this->fieldUpdateAllow('order_sum_delivery');
 

@@ -104,22 +104,38 @@ class CashierKitOnlineMock{
         return $this->apiExecute($CheckNumber,'StateCheck',$data);
     }
 
-    public function printAndGet($order_all){
-        $response=$this->print($order_all);
-        if( $response?->ResultCode!=0 ){
-            pl(["MOCK CHECK PRINT FAILED",$response],false);
-            //return $response;
-        }
-        //MOCKING
-        $response->Registration=(object)[
+
+    private function mock(){
+        return (object)[
             'ResultCode'=>0,
-            'Link'=>"https://online.kit-invest.ru/Public/Check?link=1234",
-            'FiscalData'=>(object)[
-                'CheckNumber'=>1234,
-                'Date'=>"11.05.2019 12:45"
+            'Registration'=>(object)[
+                'ResultCode'=>0,
+                'Link'=>"https://online.kit-invest.ru/Public/Check?link=1234",
+                'FiscalData'=>(object)[
+                    'CheckNumber'=>1234,
+                    'Date'=>"11.05.2019 12:45"
+                ]
             ]
         ];
-        return $response;
+    }
+
+    public function printAndGet($order_all){
+        return $this->mock();
+        // $response=$this->print($order_all);
+        // if( $response?->ResultCode!=0 ){
+        //     pl(["MOCK CHECK PRINT FAILED",$response],false);
+        //     return $response;
+        // }
+        // //MOCKING
+        // $response->Registration=(object)[
+        //     'ResultCode'=>0,
+        //     'Link'=>"https://online.kit-invest.ru/Public/Check?link=1234",
+        //     'FiscalData'=>(object)[
+        //         'CheckNumber'=>1234,
+        //         'Date'=>"11.05.2019 12:45"
+        //     ]
+        // ];
+        // return $response;
     }
 
     private function apiExecute($CheckNumber,$method,$data){

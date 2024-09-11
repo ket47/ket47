@@ -192,7 +192,7 @@ class StoreModel extends Model{
 
     public function itemOwnedGet( int $owner_id ){
         $this->where('owner_id',$owner_id);
-        $this->orWhere("FIND_IN_SET({$owner_id},owner_ally_ids)");
+        $this->orWhere("FIND_IN_SET({$owner_id},owner_ally_ids)>0");
         $this->select('store_id,store_name,owner_id,owner_ally_ids');
         $this->limit(1);
         $store=$this->find();

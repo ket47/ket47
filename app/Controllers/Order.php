@@ -38,22 +38,22 @@ class Order extends \App\Controllers\BaseController {
         ]);
     }
 
-    public function itemCreate($order_store_id=null) {
-        $order_store_id = $this->request->getVar('order_store_id');
-        $OrderModel = model('OrderModel');
-        $result = $OrderModel->itemCreate($order_store_id);
-        if ($result === 'forbidden') {
-            return $this->failForbidden($result);
-        }
-        if ($result === 'noorder') {
-            return $this->fail($result);
-        }
-        if ($OrderModel->errors()) {
-            return $this->failValidationErrors($OrderModel->errors());
-        }
-        $OrderModel->itemStageCreate( $result, 'customer_cart' );
-        return $this->respond($result);
-    }
+    // public function itemCreate($order_store_id=null) {
+    //     $order_store_id = $this->request->getVar('order_store_id');
+    //     $OrderModel = model('OrderModel');
+    //     $result = $OrderModel->itemCreate($order_store_id);
+    //     if ($result === 'forbidden') {
+    //         return $this->failForbidden($result);
+    //     }
+    //     if ($result === 'noorder') {
+    //         return $this->fail($result);
+    //     }
+    //     if ($OrderModel->errors()) {
+    //         return $this->failValidationErrors($OrderModel->errors());
+    //     }
+    //     $OrderModel->itemStageCreate( $result, 'customer_cart' );
+    //     return $this->respond($result);
+    // }
 
     public function itemSync() {
         $data = $this->request->getJSON();
@@ -76,7 +76,7 @@ class Order extends \App\Controllers\BaseController {
                 madd('order','create','error',($data->order_id??null),'nostoreid');
                 return $this->fail('nostoreid');
             }
-            $result=$OrderModel->itemCreate($data->order_store_id);
+            $result=$OrderModel->itemCreate($data->order_store_id,'order_delivery');
             if ($result === 'forbidden') {
                 $OrderModel->transRollback();
                 madd('order','create','error',($data->order_id??null),'forbidden');
