@@ -132,7 +132,30 @@ class Messenger{
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo($email_to);
         $email->setSubject($message->message_subject??getenv('email_sendername'));
-        $email->setMessage($message->message_text);
+        
+
+        $images = (object) [
+            'header' => ROOTPATH.'/public/img/tezbanner.jpg', 
+            'buttonPM' => ROOTPATH.'/public/img/playgoogle.png'
+        ];
+
+
+        $email->attach($images->header);
+        $email->attach($images->buttonPM);
+
+        $message->images = (object) [
+            'buttonPM' => $email->setAttachmentCID($images->buttonPM),
+            'header' =>  $email->setAttachmentCID($images->header)
+        ];
+        if(!empty($message->message_data->image)){
+            $image_hash = basename($message->message_data->image, '.1000.1000.webp');
+            file_get_contents(base_url('/image/get.php/').'/'.$image_hash.'.450.450.jpg', false, stream_context_create(["ssl"=>["verify_peer"=>false,"verify_peer_name"=>false]]));
+            $images->content = WRITEPATH.'images/optimised/'.$image_hash.'.450.450.jpg';
+            $email->attach($images->content);
+            $message->images->content = $email->setAttachmentCID($images->content);
+        }
+        $email_html = view('messages/mailing/email_basic', (array) $message);
+        $email->setMessage($email_html);
         $email_send_ok=$email->send();
         if( !$email_send_ok ){
             //log_message('error', 'Cant send email:'. $email->printDebugger(['headers']) );
@@ -222,6 +245,12 @@ class Messenger{
     private function itemSendTelegram( $message ){
         if( !isset($message->reciever->user_data->telegramChatId) ){
             return false;
+        }
+        if(!empty($message->message_data->image)){
+            $message->telegram_options = (object) ['opts' => (object)[
+                'caption' => '<b>'.$message->message_subject.'</b> '.$message->message_text, 
+                'photo' => $message->message_data->image]
+            ];
         }
         $telegramToken=getenv('telegram.token');
         $TelegramBot = new \App\Libraries\Telegram\TelegramBot();

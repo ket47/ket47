@@ -30,7 +30,7 @@ class MailingMessageModel extends SecureModel{
             return 'forbidden';
         }
         try{
-            return $this->ignore()->insert($message,true);
+            return $this->insert($message);
         } catch(\Exception $e){
             return $e->getMessage();
         }
@@ -93,6 +93,9 @@ class MailingMessageModel extends SecureModel{
         $MailingModel=model('MailingModel');
         $mailing=$MailingModel->itemGet($mailing_id);
         $UserModel=model('UserModel');
+
+        $this->where('mailing_id', $mailing_id)->delete();
+
         if( $mailing->user_filter->phones??null ){
             $UserModel->whereIn('user_phone',explode(',',$mailing->user_filter->phones));
         }
@@ -148,6 +151,7 @@ class MailingMessageModel extends SecureModel{
                 ],
                 'message_text'=>$this->render($mailing->text_template,$context),
             ];
+            pl($message);
             $is_sent=$Messenger->itemSend( $message );
             $this->where('mailing_id',$mailing->mailing_id);
             $this->where('reciever_id',$reciever_id);
@@ -161,6 +165,9 @@ class MailingMessageModel extends SecureModel{
             return $template;
         }
         foreach($context as $key=>$value){
+            if(empty($value)){ 
+                continue;
+            }
             $template=str_replace('{{'.$key.'}}',$value,$template);
         }
         return preg_replace('/{{\w+}}/','',$template);

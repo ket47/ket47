@@ -158,6 +158,7 @@ class TelegramBot{
 
     public function sendNotification($ChatID,$content,$options=null){
         session()->set('chat_id',$ChatID);//Dont use incoming session !!!
+        
         $opts=(array)($options->opts??[]);
         if( $options->buttons??null ){
             $menu=array_merge(
@@ -223,7 +224,11 @@ class TelegramBot{
         if($content['message_id']??null){
             $result=$this->Telegram->editMessageText($content);
         } else {
-            $result=$this->Telegram->sendMessage($content);
+            if(!empty($content['photo'])){
+                $result=$this->Telegram->sendPhoto($content);
+            } else {
+                $result=$this->Telegram->sendMessage($content);
+            }
         }
 
         if( $permanent_message_name ){

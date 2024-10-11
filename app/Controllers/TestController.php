@@ -65,6 +65,53 @@ class TestController extends \App\Controllers\BaseController{
         echo $result;
     }
 
+    public function emailSend(){
+        $Messenger=new \App\Libraries\Messenger;
+        $result=$Messenger->itemSend((object)[
+            'message_reciever_id'=>43,
+            'message_transport'=>'email',
+            'message_subject'=>'TeSt PuSh',
+            'message_text'=>'Test body '.date("H:i:s"),
+            'message_data'=>(object)[
+                'link'=>"",
+                'image'=>"https:\/\/tezkel.local\/image\/get.php\/57a7c251bc189a5ca8681176b3827d81.1000.1000.webp",
+                'sound'=>""
+            ],
+        ]);
+
+        //header("Refresh:15");
+        echo $result;
+    }
+    public function telegramSend(){
+        $Messenger=new \App\Libraries\Messenger;
+        $result=$Messenger->itemSend((object)[
+            'message_reciever_id'=>43,
+            'message_transport'=>'telegram',
+            'message_subject'=>'TeSt PuShs',
+            'message_text'=>'Test body '.date("H:i:s"),
+            'message_data'=>(object)[
+                'link'=>"",
+                'image'=>"https://api.tezkel.com/image/get.php/b3bf2e8c1b58c3f381b1d2c64f6ac844.150.150.webp",
+                'sound'=>""
+            ],
+        ]);
+
+        //header("Refresh:15");
+        echo $result;
+    }
+    public function testMailingNightly(){
+        
+        $MailingModel=model('MailingModel');
+
+
+        $result=$MailingModel->nightlyCalculate();
+        
+
+        //header("Refresh:15");
+        echo $result;
+    }
+    
+
     public function shiftCalc(){
         $CourierShiftModel=model('CourierShiftModel');
 

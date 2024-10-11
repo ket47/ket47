@@ -34,6 +34,20 @@ class Mailing extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+    public function itemCopy(){
+        $mailing_id=$this->request->getPost('mailing_id');
+        if( !$mailing_id ){
+            return $this->fail('noid');
+        }
+        $MailingModel=model('MailingModel');
+        
+        $result=$MailingModel->itemCopy($mailing_id);
+
+        if(is_numeric($result)){
+            return $this->respond($result);
+        }
+        return $this->fail($result);
+    }
     
     public function itemUpdate(){
         $mailing=$this->request->getJSON();
@@ -80,29 +94,7 @@ class Mailing extends \App\Controllers\BaseController{
             return $this->fail('empty');
         }
         //$ids=explode(',',$row[0]->reciever_ids);
-        $id_batches=array_chunk($ids,100);
-
-
-
-        //pl($id_batches);die;
-
-
-        $start_time=time();
-        foreach($id_batches as $batch){
-            $start_time+=2*60;//5 min
-            $mailing_task=[
-                'task_name'=>"send mailing",
-            //    'task_priority'=>'low',
-                'task_programm'=>[
-                        ['model'=>'UserModel','method'=>'systemUserLogin'],
-                        ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],
-                        ['model'=>'UserModel','method'=>'systemUserLogout'],
-                ],
-                'task_next_start_time'=>$start_time
-            ];
-            jobCreate($mailing_task);
-            $result='ok';
-        }
+        $result = $MailingModel->itemJobCreate($ids, $mailing);
         if($result=='ok'){
             return $this->respond($result);
         }
