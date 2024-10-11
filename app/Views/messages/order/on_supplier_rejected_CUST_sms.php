@@ -1,1 +1,1 @@
-<?= $reciever->user_name??'' ?>, продавец "<?= $store->store_name ?>" отменил ваш заказ №<?=$order->order_id?>
+<?= $reciever->user_name??'' ?>, "<?= $store->store_name ?>" отменил заказ №<?=$order->order_id?>. <?=$order->order_objection?>

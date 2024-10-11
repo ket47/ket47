@@ -237,6 +237,13 @@ class Shipment extends \App\Controllers\BaseController{
         $data->validUntil=time()+10*60;//10 min
         return $data;
     }
+    private function finishPlanTimetableGet( $finish_plan_calculated, $timetable ){
+        $finish_plan_offset=time()+90*60;//now + 1.5 hours
+        $finish_plan=max($finish_plan_calculated,$finish_plan_offset);
+        list($finish_plan_day,$finish_plan_time)=explode(',',date('Y-m-d,H:i',$finish_plan));
+        $timetable[$finish_plan_day]['begin'][]=$finish_plan_time;
+        return $timetable;
+    }
 
     public function itemCheckoutDataGet(){
         $order_id = $this->request->getVar('order_id');
@@ -267,9 +274,10 @@ class Shipment extends \App\Controllers\BaseController{
             /**
              * For shipment it is more logical to use start_plan instead of finish_plan
              */
-            $start_plan=$bulkResponse->routePlan->start_plan;//+$bulkResponse->routePlan->finish_arrival;
             $DeliveryJobModel=model('DeliveryJobModel');
-            $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($start_plan);
+            $timetable=$DeliveryJobModel->shiftTimetableGet();
+            $timetable=$this->finishPlanTimetableGet($bulkResponse->routePlan->start_plan+$bulkResponse->routePlan->finish_arrival,$timetable);
+            $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($timetable);//limiting by shift and store working hours
         }
         return $this->respond($bulkResponse);
     }

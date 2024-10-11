@@ -20,9 +20,6 @@ class TariffModel extends SecureModel{
         'delivery_allow',
         'delivery_fee',
         'delivery_cost',
-        'order_fee',
-        'card_fee',
-        'delivery_cost',
 
         'is_disabled'
         ];

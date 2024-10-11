@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 
-class ShipmentStageScript{
+class OrderStageShipmentScript{
     public $OrderModel;
     public $stageMap=[
         ''=>[
@@ -342,12 +342,10 @@ class ShipmentStageScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->systemBegin($order_id);
-        //return $this->OrderModel->itemStageCreate($order_id,'system_await');
     }
 
     public function onCustomerPayedCredit( $order_id, $data ){
         return $this->systemBegin($order_id);
-        //return $this->OrderModel->itemStageCreate($order_id,'system_await');
     }
 
     /**
@@ -425,7 +423,8 @@ class ShipmentStageScript{
             'task_name'=>"shipping system_await Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
-                ]
+            ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
         return 'ok';
@@ -662,6 +661,8 @@ class ShipmentStageScript{
 
         $context=[
             'order'=>$order,
+            'store'=>$order->store,
+            'courier'=>$courier,
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
@@ -686,10 +687,10 @@ class ShipmentStageScript{
          * Here we are starting order under SYSTEM user
          * Is it dangerous???
          */
-        $UserModel=model('UserModel');
-        $UserModel->systemUserLogin();
-            $result=$this->OrderModel->itemStageCreate( $order_id, 'customer_start' );
-        $UserModel->systemUserLogout();
+        // $UserModel=model('UserModel');
+        // $UserModel->systemUserLogin();
+            $result=$this->OrderModel->itemStageCreate( $order_id, 'customer_start',null,'as_admin' );
+        // $UserModel->systemUserLogout();
         return $result;
     }
     
@@ -824,7 +825,7 @@ class ShipmentStageScript{
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
                 ],
-            'task_next_start_time'=>time()
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }

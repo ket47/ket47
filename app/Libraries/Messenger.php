@@ -220,6 +220,9 @@ class Messenger{
     }
     
     private function itemSendTelegram( $message ){
+        if(getenv('test.telegramMock')==1){
+            return true;
+        }
         if( !isset($message->reciever->user_data->telegramChatId) ){
             return false;
         }

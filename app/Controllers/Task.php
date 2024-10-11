@@ -179,6 +179,7 @@ class Task extends \App\Controllers\BaseController{
     private function orderStageCreate($order_id,$new_stage,$data=null){
         $OrderModel=model('OrderModel');
         $UserModel=model('UserModel');
+        $OrderModel->itemCacheClear();
         $UserModel->systemUserLogin();
             $result=$OrderModel->itemStageCreate( $order_id, $new_stage, $data );
         $UserModel->systemUserLogout();

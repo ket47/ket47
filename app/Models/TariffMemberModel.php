@@ -27,20 +27,6 @@ class TariffMemberModel extends Model{
         return $this->get()->getRow();
     }
 
-    // private $itemCurrentCache=[];
-    // public function itemCurrentGet( int $store_id ){
-    //     if( isset($this->itemCurrentCache[$store_id]) ){
-    //         return $this->itemCurrentCache[$store_id];
-    //     }
-    //     $this->where('start_at<=NOW()');
-    //     $this->where('finish_at>=NOW()');
-    //     $this->where('store_id',$store_id);
-    //     $this->join('tariff_list','tariff_id');
-    //     $this->orderBy('start_at');
-    //     $this->itemCurrentCache[$store_id]=$this->get(1)->getRow();//only first tariff
-    //     return $this->itemCurrentCache[$store_id];
-    // }
-
     public function itemCreate( int $tariff_id, int $store_id, string $start_at=null, string $finish_at=null ){
         if( !sudo() ){
             return 'forbidden';

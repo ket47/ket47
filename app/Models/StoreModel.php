@@ -149,6 +149,34 @@ class StoreModel extends Model{
         return $store;
     }
 
+    public function itemTimetableGet(int $store_id){
+        $this->permitWhere('r');
+        $this->where('store_id',$store_id);
+        $this->select('
+            (is_working AND is_disabled=0) is_active,
+            store_time_opens_0,
+            store_time_closes_0,
+            store_time_opens_1,
+            store_time_closes_1,
+            store_time_opens_2,
+            store_time_closes_2,
+            store_time_opens_3,
+            store_time_closes_3,
+            store_time_opens_4,
+            store_time_closes_4,
+            store_time_opens_5,
+            store_time_closes_5,
+            store_time_opens_6,
+            store_time_closes_6,
+            store_time_preparation,
+        ');
+        $store=$this->get()->getRow();
+        if( !$store ){
+            return 'notfound';
+        }
+        return $store;
+    }
+
     public function itemDeliveryMethodsGet(int $store_id){
         $this->permitWhere('r');
         $this->where('store_id',$store_id);
@@ -170,24 +198,14 @@ class StoreModel extends Model{
         return $store;
     }
 
-    public function itemIsReady($store_id){
+    public function itemIsReady( int $store_id ){
         $beforeCloseMargin=30*60;//30 min before closing
         $weekday=date('N')-1;
         $dayhour=date('H',time()+$beforeCloseMargin);
-        $this->select("is_working AND is_disabled=0 AND deleted_at IS NULL AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_ready");
-        $this->select("store_tax_num");
+        $this->select("(is_working AND is_disabled=0 AND deleted_at IS NULL AND LENGTH(store_tax_num)>=10) AS is_ready");
+        $this->select("IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_open");
         $this->where('store_id',$store_id);
-        $store = $this->get()->getRow();
-        if( !$store || $store->is_ready==0 ){
-            return 0;
-        }
-        if( empty($store->store_tax_num) || strlen($store->store_tax_num)<10 ){
-            return 0;
-        }
-        // if($storeBalance<0){
-        //     //return 0; until bug is fixed
-        // }        
-        return 1;     
+        return $this->get()->getRow();
     }
 
     public function itemOwnedGet( int $owner_id ){
@@ -420,7 +438,7 @@ class StoreModel extends Model{
         $this->where('tariff_list.is_disabled',0);
         $this->where('order_allow',1);
         $this->where('is_shipment',0);
-        $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost");
+        $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost,delivery_fee,order_cost,order_fee,card_fee,cash_fee,credit_fee");
         if( $tariff_order_mode=='delivery_by_courier_first' ){
             $this->orderBy("delivery_allow DESC");
         } else {
@@ -805,15 +823,17 @@ class StoreModel extends Model{
         /**
          * Rating
          */
+        $minimum_reaction_count=10;
         $ReactionModel=model('ReactionModel');
         if($store_id){
             $ReactionModel->where('tag_id',$store_id);
         }
         $ReactionModel->join('reaction_tag_list','reaction_id=member_id');
         $ReactionModel->where('tag_name','store');
-        $ReactionModel->select("tag_id store_id,'store_rating' perk_type,SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) perk_value");
+        $ReactionModel->select("tag_id store_id,'store_rating' perk_type,SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) perk_value,SUM(reaction_is_like+reaction_is_dislike) total_reactions");
         $ReactionModel->groupBy('tag_id');
-        $ReactionModel->having('perk_value>0.6',null,false);
+        $ReactionModel->having('perk_value>0.7',null,false);//>3.5
+        $ReactionModel->having("total_reactions>$minimum_reaction_count",null,false);
         $reacts=$ReactionModel->get()->getResult();
 
         $def_expired_at=date('Y-m-d H:i:s',time()+24*60*60);
