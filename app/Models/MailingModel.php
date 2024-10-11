@@ -16,7 +16,8 @@ class MailingModel extends SecureModel{
         'sound',
         'link',
         'start_at',
-        'is_started'
+        'is_started',
+        'regular_group'
         ];
 
     protected $useSoftDeletes   = true;
@@ -46,7 +47,10 @@ class MailingModel extends SecureModel{
         if($mailing->images[0]->image_hash??null){
             $mailing->image=getenv('app.backendUrl')."image/get.php/{$mailing->images[0]->image_hash}.1000.1000.webp";
         }
-        $mailing->user_filter=json_decode($mailing->user_filter);
+        if(!empty($mailing->user_filter)){
+            $mailing->user_filter=json_decode($mailing->user_filter);
+        }
+        
         return $mailing;
     }
     
@@ -65,7 +69,7 @@ class MailingModel extends SecureModel{
         if( !sudo() ){
             return 'forbidden';
         }
-        $mailing->user_filter=json_encode($mailing->user_filter);
+        if(!empty($mailing->user_filter)) $mailing->user_filter=json_encode($mailing->user_filter);
         $this->update($mailing->mailing_id,$mailing);
         return $this->db->affectedRows()>0?'ok':'idle';
     }
@@ -86,6 +90,24 @@ class MailingModel extends SecureModel{
         }
         $this->update($mailing_id,['is_started'=>1]);
         return 'ok';
+    }
+
+    public function itemCopy( $mailing_id ){
+        $mailing=$this->where('mailing_id', $mailing_id)->get()->getRowArray();
+        
+        $mailing['subject_template'] .= ' (Copy '.rand(100, 999).')';
+
+        $mailing['is_started'] = 0;
+        $mailing['owner_id']=session()->get('user_id');
+
+        $new_mailing_id=$this->itemCreate($mailing);
+        $this->imageCopy($mailing['mailing_id'], $new_mailing_id);
+        if(!empty($mailing['user_filter'])){
+            $MailingMessageModel=model('MailingMessageModel');
+            $MailingMessageModel->listDelete($new_mailing_id);
+            $MailingMessageModel->listRecieverFill($new_mailing_id);
+        }
+        return $new_mailing_id;
     }
     
     public function listGet( $filter ){
@@ -121,6 +143,24 @@ class MailingModel extends SecureModel{
         }
         return 0;
     }
+    public function imageCopy( $image_holder_id, $new_image_holder_id ){
+        if( !sudo() ){
+            return 'forbidden';
+        }
+        $ImageModel=model('ImageModel');
+
+        $images = $ImageModel->where('image_holder_id', $image_holder_id)->get()->getResultArray();
+        $ok=1;
+        foreach($images as $image){
+            $image['image_holder_id'] = $new_image_holder_id;
+            $image['owner_id']=session()->get('user_id');
+            $ok = $ImageModel->itemCreate($image);
+        }  
+        if($ok){
+            return $ok;
+        }
+        return 0;
+    }
     
     public function imageDelete( $image_id ){
         if( !sudo() ){
@@ -139,5 +179,83 @@ class MailingModel extends SecureModel{
             return 'ok';
         }
         return 'idle';
+    }
+    public function itemJobCreate($ids, $mailing){
+        $result = 0;
+        $id_batches=array_chunk($ids,100);
+        $start_time = strtotime($mailing->start_at);
+        foreach($id_batches as $batch){
+            $start_time+=2*60;//5 min
+            $mailing_task=[
+                'task_name'=>"send mailing",
+            //    'task_priority'=>'low',
+                'task_programm'=>[
+                        ['model'=>'UserModel','method'=>'systemUserLogin'],
+                        ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],
+                        ['model'=>'UserModel','method'=>'systemUserLogout'],
+                ],
+               'task_next_start_time'=>$start_time
+            ];
+            jobCreate($mailing_task);
+            $result='ok';
+        }
+        return $result;
+    }
+    
+    public function nightlyCalculate(){
+        
+        $UserModel=model('UserModel');
+        $UserModel->systemUserLogin();
+        
+        $OrderModel=model('OrderModel');
+        $PromoModel=model('PromoModel');
+        $MailingMessageModel=model('MailingMessageModel');
+        $mailing_config = [];
+        
+        $mailing_config['cart23'] = $OrderModel->where('order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) < 6')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        
+        $mailing_config['cart47'] = $OrderModel->where('order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) BETWEEN 24 AND 47')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+
+        
+        $mailing_config['promo-10'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 10')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['promo-3'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 3')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['promo-1'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 1')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+
+        $mailing_config['forgot14'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 14')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['forgot30'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 30')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['forgot90'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 90')->groupBy('user_id')->select('user_id')->get()->getResult();
+        
+        $willsend_at = date("Y-m-d 09:00:00");
+        $willsend_at = date("Y-m-d H:i:s", strtotime("+1 minute"));
+        foreach( $mailing_config as $regular_group => $mailing_receivers ){
+            $mailing = $this->where('regular_group', $regular_group)->get()->getRow();
+
+            $MailingMessageModel->where('mailing_id', $mailing->mailing_id)->delete();
+
+            $receivers = [];
+
+            $MailingMessageModel->transStart();
+            foreach( $mailing_receivers as $user ){
+                $receivers[] = $user->user_id;
+                $mailing_message = [
+                    'reciever_id' => $user->user_id,
+                    'mailing_id' => $mailing->mailing_id,
+                    'willsend_at' => $willsend_at
+                ];
+                $MailingMessageModel->itemCreate($mailing_message);
+            }
+            $MailingMessageModel->transComplete();
+
+            $mailing->start_at = $willsend_at;
+            $mailing->is_started = 1;
+            $this->itemUpdate((object)[
+                'mailing_id' => $mailing->mailing_id,
+                'user_filter' => [],
+                'start_at' => $mailing->start_at,
+                'is_started' => $mailing->is_started
+            ]);
+            $this->itemJobCreate($receivers, $mailing);
+        }
+        $UserModel->systemUserLogout();
     }
 }

@@ -46,7 +46,9 @@ class ImageModel extends Model{
         $this->allowedFields[]='owner_ally_ids';
         $data['image_order']=1;//in the start of list
         //$data['owner_id']=session()->get('user_id');
-        $data['image_hash']=md5(microtime().rand(1,1000));
+        if(empty($data['image_hash'])){
+            $data['image_hash']=md5(microtime().rand(1,1000));
+        }
         if( $this->insert($data) ){
             $this->itemUpdateMainOfHolder($data['image_holder'],$data['image_holder_id']);
             return $data['image_hash'];
