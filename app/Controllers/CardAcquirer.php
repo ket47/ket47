@@ -24,7 +24,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
     
             $is_ios_webview= ($platform=='iOS' && $browser=='Mozilla');
             if($platform=='iOS'){
-                pl(['paymentLinkGet IOS',$order_id,$browser]);
+                //pl(['paymentLinkGet IOS',$order_id,$browser]);
             }
             $Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
         }

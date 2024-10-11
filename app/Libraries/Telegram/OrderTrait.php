@@ -125,7 +125,7 @@ trait OrderTrait{
         $OrderModel=model('OrderModel');
         $result=$OrderModel->itemGet($order_id);
 
-        if( $result->is_shipment??0 ){
+        if( $result->is_shipment??0 || ($result->order_script??null)=='shipment' ){
             $order_data=$OrderModel->itemDataGet($order_id);
             $result->locationStart=$order_data->location_start??[];
             $result->locationFinish=$order_data->location_finish??[];

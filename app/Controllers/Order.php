@@ -23,6 +23,11 @@ class Order extends \App\Controllers\BaseController {
         if ($result === 'notfound') {
             return $this->failNotFound($result);
         }
+
+        $order_data=$OrderModel->itemDataGet($order_id);
+        if( $order_data->finish_plan_scheduled??0 ){
+            $result->finish_plan_scheduled=date("H:i, d.m",$order_data->finish_plan_scheduled);
+        }
         return $this->respond($result);
     }
 
@@ -38,22 +43,22 @@ class Order extends \App\Controllers\BaseController {
         ]);
     }
 
-    public function itemCreate($order_store_id=null) {
-        $order_store_id = $this->request->getVar('order_store_id');
-        $OrderModel = model('OrderModel');
-        $result = $OrderModel->itemCreate($order_store_id);
-        if ($result === 'forbidden') {
-            return $this->failForbidden($result);
-        }
-        if ($result === 'noorder') {
-            return $this->fail($result);
-        }
-        if ($OrderModel->errors()) {
-            return $this->failValidationErrors($OrderModel->errors());
-        }
-        $OrderModel->itemStageCreate( $result, 'customer_cart' );
-        return $this->respond($result);
-    }
+    // public function itemCreate($order_store_id=null) {
+    //     $order_store_id = $this->request->getVar('order_store_id');
+    //     $OrderModel = model('OrderModel');
+    //     $result = $OrderModel->itemCreate($order_store_id);
+    //     if ($result === 'forbidden') {
+    //         return $this->failForbidden($result);
+    //     }
+    //     if ($result === 'noorder') {
+    //         return $this->fail($result);
+    //     }
+    //     if ($OrderModel->errors()) {
+    //         return $this->failValidationErrors($OrderModel->errors());
+    //     }
+    //     $OrderModel->itemStageCreate( $result, 'customer_cart' );
+    //     return $this->respond($result);
+    // }
 
     public function itemSync() {
         $data = $this->request->getJSON();
@@ -76,7 +81,7 @@ class Order extends \App\Controllers\BaseController {
                 madd('order','create','error',($data->order_id??null),'nostoreid');
                 return $this->fail('nostoreid');
             }
-            $result=$OrderModel->itemCreate($data->order_store_id);
+            $result=$OrderModel->itemCreate($data->order_store_id,'order_delivery');
             if ($result === 'forbidden') {
                 $OrderModel->transRollback();
                 madd('order','create','error',($data->order_id??null),'forbidden');
@@ -124,8 +129,8 @@ class Order extends \App\Controllers\BaseController {
     }
 
     public function itemStageCreate() {
-        $order_id = $this->request->getVar('order_id');
-        $new_stage = $this->request->getVar('new_stage');
+        $order_id = $this->request->getPost('order_id');
+        $new_stage = $this->request->getPost('new_stage');
         return $this->itemStage($order_id, $new_stage);
     }
 
@@ -172,28 +177,24 @@ class Order extends \App\Controllers\BaseController {
         return $this->fail($result);   
     }
 
-    // public function itemInfoGet(){
-    //     $order_id = $this->request->getVar('order_id');
-    //     $OrderModel=model('OrderModel');
-    //     $OrderModel->permitWhere('r');
-    //     $OrderModel->where('order_id',$order_id);
-    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_customer') info_for_customer");
-    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_supplier') info_for_supplier");
-    //     $OrderModel->select("JSON_EXTRACT(`order_data`,'$.info_for_courier') info_for_courier");
-    //     $info=$OrderModel->get()->getRow();
+    private function itemDeliverySumGet( int $distance_m, object $tariff ){
+        $distance_km=round($distance_m/1000,1);
+        return $tariff->delivery_cost+round($tariff->delivery_fee*$distance_km);
+    }
 
-    //     if(!$info || !$info->info_for_customer || !$info->info_for_supplier || !$info->info_for_courier){
-    //         return $this->failNotFound();
-    //     }
-    //     $response=(object)[
-    //         'info_for_customer'=>$info->info_for_customer?json_decode($info->info_for_customer):null,
-    //         'info_for_supplier'=>$info->info_for_supplier?json_decode($info->info_for_supplier):null,
-    //         'info_for_courier'=>$info->info_for_customer?json_decode($info->info_for_courier):null,
-    //     ];
-    //     return $this->respond($response);
-    // }
+    public function itemScheduleRangeGet(){
+        $timetable=$this->request->getPost('timetable');
+        $timetable=json_decode($timetable,true);
+        if( !$timetable ){
+            return $this->fail('notimetable');
+        }
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $DeliveryJobPlan->schedule->timetableSet($timetable);
+        $scheduleRange=$DeliveryJobPlan->planScheduleGet();
+        return $this->respond($scheduleRange);
+    }
 
-    public function itemCheckoutDataGet(){
+    public function itemCheckoutDataGet_DEPRECATED(){
         $order_id = $this->request->getVar('order_id');
         $OrderModel = model('OrderModel');
         $order = $OrderModel->itemGet($order_id,'basic');
@@ -266,9 +267,16 @@ class Order extends \App\Controllers\BaseController {
         ];
     }
 
-    private function itemDeliveryOptionsGet( $store_id, int $delivery_distance=null ){
+    /**
+     * Looking for available tariffs of store
+     */
+    private function itemDeliveryOptionsGet( $store_id, int $delivery_distance=null, $features=null ){
         $StoreModel=model('StoreModel');
-        if(!$StoreModel->itemIsReady($store_id)){
+        $store_readyness=$StoreModel->itemIsReady($store_id);
+        if( !$store_readyness->is_ready ){
+            return 'not_ready';
+        }
+        if( !$store_readyness->is_open && !str_contains($features,'schedule') ){
             return 'not_ready';
         }
 
@@ -285,16 +293,15 @@ class Order extends \App\Controllers\BaseController {
         $store=$StoreModel->itemGet($store_id,'basic');
         $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id,$tariff_order_mode);
 
-        $courier_delivery_radius=$store_delivery_radius=getenv('delivery.radius');
-        if( $store->store_delivery_radius>0 ){
-            $store_delivery_radius=(int)$store->store_delivery_radius;
-        }
-
         $default_error_code='no_tariff';
         if(!$storeTariffRuleList){
             return $default_error_code;
         }
-        $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
+
+        $courier_delivery_radius=$store_delivery_radius=getenv('delivery.radius');
+        if( $store->store_delivery_radius>0 ){
+            $store_delivery_radius=(int)$store->store_delivery_radius;
+        }
         $deliveryOptions=[];
         foreach($storeTariffRuleList as $tariff){
             if($tariff->delivery_allow==1){
@@ -308,19 +315,23 @@ class Order extends \App\Controllers\BaseController {
                 if( !$deliveryIsReady ){
                     $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
                 }
+                $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
                 $order_sum_delivery=(int)$tariff->delivery_cost+$deliveryHeavyModifier->cost;
+                $tariff->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
                 $rule=[
                     'tariff_id'=>$tariff->tariff_id,
-                    'order_sum_delivery'=>$order_sum_delivery,
+                    'reckonParameters'=>$tariff,
+                    'order_sum_delivery'=>(int)$order_sum_delivery,
                     'order_sum_minimal'=>$this->itemSumMinimalGet('delivery_by_courier'),
-                    'deliveryHeavyCost'=>$deliveryHeavyModifier->cost,
+                    'deliverySum'=>(int)$order_sum_delivery,
+                    'deliveryHeavyCost'=>(int)$deliveryHeavyModifier->cost,
                     'deliveryByCourier'=>1,
                     'deliveryIsReady'=>$deliveryIsReady,
                     'deliveryByStore'=>0,
                     'pickupByCustomer'=>0,
                     'paymentByCard'=>0,
                     'paymentByCash'=>0,
-                    'paymentByCashStore'=>0
+                    'paymentByCashStore'=>0,
                 ];
                 if($tariff->card_allow==1){
                     $rule['paymentByCard']=1;
@@ -331,6 +342,10 @@ class Order extends \App\Controllers\BaseController {
                 $deliveryOptions[]=$rule;
             } else {
                 if($store->store_delivery_allow==1){
+                    if( !$store_readyness->is_open ){
+                        $default_error_code='not_ready';
+                        continue;
+                    }
                     if( $delivery_distance>$store_delivery_radius ){
                         /**
                          * Delivery distance is bigger than maximum store courier reach
@@ -340,8 +355,10 @@ class Order extends \App\Controllers\BaseController {
                     }
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
+                        'reckonParameters'=>$tariff,
                         'order_sum_delivery'=>(int)$store->store_delivery_cost,
                         'order_sum_minimal'=>$store->store_minimal_order,
+                        'deliverySum'=>(int)$store->store_delivery_cost,
                         'deliveryByCourier'=>0,
                         'deliveryByStore'=>1,
                         'pickupByCustomer'=>0,
@@ -358,8 +375,13 @@ class Order extends \App\Controllers\BaseController {
                     $deliveryOptions[]=$rule;
                 }
                 if($store->store_pickup_allow==1){
+                    if( !$store_readyness->is_open ){
+                        $default_error_code='not_ready';
+                        continue;
+                    }
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
+                        'reckonParameters'=>$tariff,
                         'order_sum_delivery'=>0,
                         'deliveryByCourier'=>0,
                         'deliveryByStore'=>0,
@@ -377,156 +399,255 @@ class Order extends \App\Controllers\BaseController {
         }
         if( !count($deliveryOptions) ){
             /**
-             * If no rules are found then return error code no_tariff or too_far
+             * If no rules are found then return error code no_tariff or too_far or not_ready
              */
             return $default_error_code;
         }
         return $deliveryOptions;
     }
 
-    private function itemSumMinimalGet( $mode='delivery_by_courier' ){
+    private function itemSumMinimalGet(){
         return 200;
     }
 
-    public function itemCheckoutDataSet(){
-        $checkoutData = $this->request->getJSON();
-        $OrderModel = model('OrderModel');
-        $order = $OrderModel->itemGet($checkoutData->order_id,'basic');
-        $order_data=$OrderModel->itemDataGet($checkoutData->order_id);
-        if($order_data->payment_card_fixate_id??0){
-            madd('order','start','error',$checkoutData->order_id,'payment_already_done');
-            return $this->failResourceExists('payment_already_done');
+
+    private function routePlanGet( object $order, int $start_location_id, int $finish_location_id ){
+        $StoreModel=model('StoreModel');
+        $storeTimetable=$StoreModel->itemTimetableGet($order->order_store_id,'basic');
+
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $DeliveryJobPlan->scheduleFillShift();
+        $DeliveryJobPlan->scheduleFillTimetable($storeTimetable);
+
+        $routePlan=$DeliveryJobPlan->routePlanGet($start_location_id,$finish_location_id);
+        if( empty($routePlan->error) ){
+            $routePlan->init_finish_offset=1.5*60*60;//minimum offset between init_plan and finish_plan
+            $DeliveryJobPlan->schedule->begin(time(),'before');//offsetting today work window from now
+            $DeliveryJobPlan->schedule->offset( $routePlan->init_finish_offset );//offsetting all day windows
+            $routePlan->finish_plan_timetable=$DeliveryJobPlan->schedule->timetableGet();
         }
-        if ($order === 'forbidden' || !$checkoutData->order_id??0 || !$checkoutData->tariff_id??0 ) {
-            madd('order','start','error',null,'forbidden');
-            return $this->failForbidden();
+        return $routePlan;
+    }
+
+    /**
+     * Collects all data needed for checkout in one object
+     */
+    private function checkoutDataGet( $order, $features ){
+        $data=(object)[];
+        $data->validUntil=time()+10*60;//10 min
+        $LocationModel=model('LocationModel');
+        
+        /**
+         * Here we are fixating start and finish location ids
+         */
+        $owner_id=session()->get('user_id');
+        $data->location_start=$LocationModel->itemMainGet('store',$order->order_store_id);
+        $data->location_finish=$LocationModel->itemMainGet('user',$owner_id);
+        $start_finish_distance=(int) $LocationModel->distanceGet($data->location_start->location_id,$data->location_finish->location_id);
+
+        $data->Store_deliveryOptions=$this->itemDeliveryOptionsGet( $order->order_store_id, $start_finish_distance, $features );
+        if( !is_array($data->Store_deliveryOptions) ){
+            return $data->Store_deliveryOptions;
+        }
+
+        $PromoModel=model('PromoModel');
+        $UserCardModel=model('UserCardModel');
+
+        $data->bankCard=$UserCardModel->itemMainGet($order->owner_id);
+        $data->Promo_itemLinkGet=$PromoModel->itemLinkGet(
+            $order->order_id
+        );
+        $data->Promo_listGet=$PromoModel->listGet(
+            $order->owner_id,
+            'active',
+            'count'
+        );
+        /**
+         * ROUTE PLANNING AND SCHEDULING ONLY FOR DELIVERY BY COURIER (FOR NOW)
+         */
+        foreach( $data->Store_deliveryOptions as $i=>$option){
+            if( $option['deliveryByCourier'] ){
+                $data->Store_deliveryOptions[$i]['routePlan']=$this->routePlanGet($order,$data->location_start->location_id,$data->location_finish->location_id);
+            }
+        }
+        return $data;
+    }
+
+    public function itemCheckoutDataGet(){
+        $order_id = $this->request->getVar('order_id');
+        $features = $this->request->getVar('features');
+        if(!$order_id){
+            return $this->fail('noid');
+        }
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($order_id,'all');
+        if ($order === 'forbidden') {
+            return $this->failForbidden('forbidden');
         }
         if ($order === 'notfound') {
-            madd('order','start','error',null,'notfound');
+            return $this->failNotFound('notfound');
+        }
+
+        $bulkResponse=$this->checkoutDataGet($order,$features);
+        if( !is_object($bulkResponse) ){
+            return $this->fail($bulkResponse);
+        }
+        $OrderModel->itemDataUpdate($order_id,(object)['checkoutDataCache'=>$bulkResponse]);
+        $bulkResponse->order=$order;
+        /**
+         * DELETING RECKON PARAMETERS FROM RESPONSE
+         */
+        foreach( $bulkResponse->Store_deliveryOptions as $i=>$option){
+            unset($bulkResponse->Store_deliveryOptions[$i]['reckonParameters']);
+        }
+        return $this->respond($bulkResponse);
+    }
+
+    public function itemCheckoutDataSet(){
+        $checkoutSettings = $this->request->getJSON();
+        $OrderModel = model('OrderModel');
+        $order = $OrderModel->itemGet($checkoutSettings->order_id,'basic');
+        if ( $order === 'forbidden' || !$checkoutSettings->order_id??0 || !$checkoutSettings->tariff_id??0 ) {
+            return $this->failForbidden();
+        }
+        if ( $order === 'notfound' ) {
             return $this->failNotFound();
         }
-
-        $TariffMemberModel=model('TariffMemberModel');
-        $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
-        if(!$tariff){
-            madd('order','start','error',$checkoutData->order_id,'no_tariff');
+        $order_data=$OrderModel->itemDataGet($checkoutSettings->order_id);
+        if($order_data->payment_card_fixate_id??0){
+            /**
+             * Checking if payment is done. Add stage customer_payed_card
+             */
+            if($order_data->payment_card_acq_rncb??0){
+                $Acquirer=new \App\Libraries\AcquirerRncb();
+            } else {
+                $Acquirer=\Config\Services::acquirer();
+            }
+            $result=$Acquirer->statusCheck( $checkoutSettings->order_id );
+            if( $result!='order_not_payed' ){
+                return $this->failResourceExists('payment_already_done');
+            }
+        }
+        /**
+         * Try to use checkout cache data. If it is outdated create new
+         */
+        if( isset($order_data->checkoutDataCache->validUntil) && $order_data->checkoutDataCache->validUntil>time() ){
+            $checkoutData=$order_data->checkoutDataCache;
+        } else {
+            $checkoutData=$this->checkoutDataGet($order,'schedule');
+        }
+        if( !is_object($checkoutData) ){
+            return $this->fail($checkoutData);
+        }
+        /**
+         * Here we are controlling if user selected options are valid
+         */
+        $deliveryOption=null;
+        foreach($checkoutData->Store_deliveryOptions as $opt){
+            $option=(object) $opt;
+            if( $checkoutSettings?->tariff_id==$option->tariff_id ){
+                $deliveryOption=$option;
+                break;
+            }
+        }
+        if( !$deliveryOption ){
             return $this->fail('no_tariff');
         }
+
+        //CONSTRUCTING ORDER DATA
         $order_data=(object)[];
-        if( $tariff->order_cost ){
-            $order_data->order_cost=$tariff->order_cost;
-        }
-        if( $tariff->order_fee ){
-            $order_data->order_fee=$tariff->order_fee;
-        }
-        $LocationModel=model('LocationModel');
+        $order_data->order_cost=$deliveryOption->reckonParameters->order_cost;
+        $order_data->order_fee= $deliveryOption->reckonParameters->order_fee;
 
-        $order_start_location=$LocationModel->itemMainGet('store',$order->order_store_id);
-        $order_finish_location=$LocationModel->itemMainGet('user',$order->owner_id);
-        $delivery_distance=$LocationModel->distanceGet($order_start_location->location_id,$order_finish_location->location_id);
-        if( $delivery_distance>getenv('delivery.radius') ){
-            madd('order','start','error',$checkoutData->order_id,'too_far');
-            return $this->fail('too_far');
-        }
-        /**
-         * RACING CONDITION CAN OCCUR!!! WHEN MODIFYING ORDER DATA FROM LOADED PREVIOUSLY OBJECT
-         */
-        /**
-         * Should use shipment system!
-         */
-
-
-        $StoreModel=model('StoreModel');
-        $PromoModel=model('PromoModel');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-
-        //DELIVERY OPTIONS SET
-        if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
-            $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
-            $order_data->delivery_by_courier=1;
-            $order_data->delivery_fee=$tariff->delivery_fee;
-            $order_data->delivery_cost=$tariff->delivery_cost+$deliveryHeavyModifier->cost;
-            $order_data->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
-            $CourierModel=model('CourierModel');
-            $lookForCourierAroundLocation=(object)[
-                'location_holder'=>'store',
-                'location_holder_id'=>$order->order_store_id
-            ];
-            $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
-            if( !$deliveryIsReady ){
-                madd('order','start','error',$checkoutData->order_id,'no_delivery');
-                return $this->fail('no_delivery');
-            }
-
-            //DELIVERY JOB SETUP
-
-
-            //TMP FIX
-            $DeliveryJobModel=model('DeliveryJobModel');
-            $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
-            $payment_by_cash=($tariff->cash_allow && ($checkoutData->paymentByCash??0))?1:0;
-            $order_data->delivery_job=(object)[
-                'job_name'=>"Заказ из {$store->store_name}",
-                'job_data'=>json_encode([
-                    'distance'=>$routePlan->deliveryDistance,
-                    'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
-                    'payment_by_cash'=>$payment_by_cash
-                ]),
-                'start_plan'=>$routePlan->start_plan??0,
-                'start_prep_time'=>$store->store_time_preparation,
-                
-                'start_longitude'=>$order_start_location->location_longitude,
-                'start_latitude'=>$order_start_location->location_latitude,
-                'start_address'=>$order_start_location->location_address,
-                'finish_longitude'=>$order_finish_location->location_longitude,
-                'finish_latitude'=>$order_finish_location->location_latitude,
-                'finish_address'=>$order_finish_location->location_address,
-            ];
-        } else
-        if( $checkoutData->deliveryByStore??0 ){
-
-            $order_data->delivery_by_store=1;
-            $order_data->delivery_by_store_cost=$store->store_delivery_cost??0;
-            $PromoModel->itemUnLink($checkoutData->order_id);
-        } else
-        if( $checkoutData->pickupByCustomer??0 ){
-            $order_data->pickup_by_customer=1;
-            $PromoModel->itemUnLink($checkoutData->order_id);
-        } else {
-            madd('order','start','error',$checkoutData->order_id,'no_delivery');
-            return $this->fail('no_delivery');
-        }
-        //PROMO SHARE CHECK
-        $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
-        if( $promo && ($promo->min_order_sum_product>$order->order_sum_product) ){
-            madd('order','start','error',$checkoutData->order_id,'promo_share_too_high');
-            return $this->fail('promo_share_too_high');
-        }
-        //PAYMENT OPTIONS SET
-        if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow ){
+        //PAYMENT OPTIONS CHECK
+        if( $checkoutSettings->paymentByCardRecurrent??0 && $deliveryOption->paymentByCardRecurrent??0 ){
             $order_data->payment_by_card_recurrent=1;
             $order_data->payment_by_card=1;
-            $order_data->payment_fee=$tariff->card_fee;
+            $order_data->payment_fee=$deliveryOption->reckonParameters->card_fee;
         } else
-        if( $checkoutData->paymentByCard??0 && $tariff->card_allow ){
+        if( $checkoutSettings->paymentByCard??0 && $deliveryOption->paymentByCard??0 ){
             $order_data->payment_by_card=1;
-            $order_data->payment_fee=$tariff->card_fee;
+            $order_data->payment_fee=$deliveryOption->reckonParameters->card_fee;
         } else
-        if( $checkoutData->paymentByCash??0 && $tariff->cash_allow ){
+        if( $checkoutSettings->paymentByCash??0 && $deliveryOption->paymentByCash??0 ){
             $order_data->payment_by_cash=1;
-            $order_data->payment_fee=$tariff->cash_fee;
+            $order_data->payment_fee=$deliveryOption->reckonParameters->cash_fee;
         } else 
-        if( $checkoutData->paymentByCashStore??0 ){
+        if( $checkoutSettings->paymentByCashStore??0 && $deliveryOption->paymentByCashStore??0 ){
             $order_data->payment_by_cash_store=1;
         } else {
-            madd('order','start','error',$checkoutData->order_id,'no_payment');
             return $this->fail('no_payment');
         }
 
-        if( $checkoutData->storeCorrectionAllow??0 ){
-            $order_data->store_correction_allow=1;
-        }
+        $order_data->location_start=$checkoutData->location_start;
+        $order_data->location_finish=$checkoutData->location_finish;
+        //DELIVERY OPTIONS CHECK
+        if( $checkoutSettings->deliveryByCourier??0 && $deliveryOption->deliveryByCourier??0 ){
+            $order->order_script='order_delivery';
+            $order->order_sum_delivery=$deliveryOption->deliverySum;
+            $OrderModel->fieldUpdateAllow('order_sum_delivery');
+            $OrderModel->fieldUpdateAllow('order_script');
 
+            $order_data->delivery_by_courier=1;
+            $order_data->delivery_fee=$deliveryOption->reckonParameters->delivery_fee;
+            $order_data->delivery_cost=$deliveryOption->reckonParameters->delivery_cost;
+            $order_data->delivery_heavy_bonus=$deliveryOption->reckonParameters->delivery_heavy_bonus;
+
+            //DELIVERY JOB SETUP
+            $order_data->start_plan=$deliveryOption->routePlan->start_plan;
+            $order_data->start_plan_mode='awaited';//$deliveryOption->routePlan->start_plan_mode;//inited | awaited | scheduled 
+            if( $checkoutSettings->deliveryFinishScheduled??null ){
+                /**
+                 * finish_plan_scheduled must be saved in order_data to show in order view
+                 */
+                $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+                $order_data->init_plan_scheduled=$order_data->finish_plan_scheduled-$deliveryOption->routePlan->init_finish_offset;
+                //if scheduled time is lesser than start_plan use start_plan
+                $order_data->start_plan=max($order_data->finish_plan_scheduled-$deliveryOption->routePlan->finish_arrival,$deliveryOption->routePlan->start_plan);
+                $order_data->start_plan_mode='scheduled';
+            }
+
+            $StoreModel=model('StoreModel');
+            $store=$StoreModel->itemGet($order->order_store_id,'basic');
+            $order_data->delivery_job=(object)[
+                'job_name'=>"{$store->store_name}",
+                'job_data'=>json_encode([
+                    'payment_by_cash'=>$order_data->payment_by_cash??0,
+                    'distance'=>$deliveryOption->routePlan->deliveryDistance,
+                    'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0
+                ]),
+                'start_plan'=>$order_data->start_plan,
+                'start_prep_time'=>null,
+                'finish_arrival_time'=>$deliveryOption->routePlan->finish_arrival,
+                
+                'start_longitude'=>$order_data->location_start->location_longitude,
+                'start_latitude'=>$order_data->location_start->location_latitude,
+                'start_address'=>$order_data->location_start->location_address,
+                'finish_longitude'=>$order_data->location_finish->location_longitude,
+                'finish_latitude'=>$order_data->location_finish->location_latitude,
+                'finish_address'=>$order_data->location_finish->location_address,
+            ];
+        } else
+        if( $checkoutSettings->deliveryByStore??0 && $deliveryOption->deliveryByStore??0 ){
+            $order->order_script='order_supplier';
+            $order->order_sum_delivery=$deliveryOption->deliverySum;
+            $OrderModel->fieldUpdateAllow('order_sum_delivery');
+            $OrderModel->fieldUpdateAllow('order_script');
+
+            $order_data->start_plan_mode='inited';
+            $order_data->delivery_by_store=1;
+        } else
+        if( $checkoutSettings->pickupByCustomer??0 && $deliveryOption->pickupByCustomer??0 ){
+            $order->order_script='order_supplier';
+            $order->order_sum_delivery=0;
+            $OrderModel->fieldUpdateAllow('order_sum_delivery');
+            $OrderModel->fieldUpdateAllow('order_script');
+
+            $order_data->start_plan_mode='inited';
+            $order_data->pickup_by_customer=1;
+        } else {
+            return $this->fail('no_delivery');
+        }
         /**
          * Check if order is already not in confirmed state (for example returned to cart stage automatically)
          * If not - try to make confirmed
@@ -537,11 +658,186 @@ class Order extends \App\Controllers\BaseController {
                 return $this->fail('wrong_stage');
             }
         }
-        $result=$OrderModel->itemDataCreate($checkoutData->order_id,$order_data);
-        $OrderModel->deliverySumUpdate($checkoutData->order_id);
-        madd('order','start','ok',$checkoutData->order_id);
-        return $this->respond($result);
+        //FIXING LOCATION IDS
+        $order->order_start_location_id=$checkoutData->location_start->location_id;
+        $order->order_finish_location_id=$checkoutData->location_finish->location_id;
+        //SAVING CHECKOUT DATA
+        $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
+        $result = $OrderModel->itemUpdate($order);
+        if ($result === 'notfound') {
+            return $this->failNotFound($result);
+        }
+        if ($result != 'ok') {
+            return $this->respondNoContent($result);
+        }
+        //AUTOSTART FOR CASH PAYMENTS
+        if( isset($order_data->payment_by_cash_store) || isset($order_data->payment_by_cash) ){
+            return $OrderModel->itemStageCreate($order->order_id,'customer_start');
+        }
+        return $this->respondUpdated('ok');
     }
+
+    // public function itemCheckoutDataSet_OLD(){
+    //     $checkoutData = $this->request->getJSON();
+    //     $OrderModel = model('OrderModel');
+    //     $order = $OrderModel->itemGet($checkoutData->order_id,'basic');
+    //     $order_data=$OrderModel->itemDataGet($checkoutData->order_id);
+    //     if($order_data->payment_card_fixate_id??0){
+    //         madd('order','start','error',$checkoutData->order_id,'payment_already_done');
+    //         return $this->failResourceExists('payment_already_done');
+    //     }
+    //     if ($order === 'forbidden' || !$checkoutData->order_id??0 || !$checkoutData->tariff_id??0 ) {
+    //         madd('order','start','error',null,'forbidden');
+    //         return $this->failForbidden();
+    //     }
+    //     if ($order === 'notfound') {
+    //         madd('order','start','error',null,'notfound');
+    //         return $this->failNotFound();
+    //     }
+
+    //     $TariffMemberModel=model('TariffMemberModel');
+    //     $tariff=$TariffMemberModel->itemGet($checkoutData->tariff_id,$order->order_store_id);
+    //     if(!$tariff){
+    //         madd('order','start','error',$checkoutData->order_id,'no_tariff');
+    //         return $this->fail('no_tariff');
+    //     }
+    //     $order_data=(object)[];
+    //     if( $tariff->order_cost ){
+    //         $order_data->order_cost=$tariff->order_cost;
+    //     }
+    //     if( $tariff->order_fee ){
+    //         $order_data->order_fee=$tariff->order_fee;
+    //     }
+    //     $LocationModel=model('LocationModel');
+
+    //     $order_start_location=$LocationModel->itemMainGet('store',$order->order_store_id);
+    //     $order_finish_location=$LocationModel->itemMainGet('user',$order->owner_id);
+    //     $delivery_distance=$LocationModel->distanceGet($order_start_location->location_id,$order_finish_location->location_id);
+    //     if( $delivery_distance>getenv('delivery.radius') ){
+    //         madd('order','start','error',$checkoutData->order_id,'too_far');
+    //         return $this->fail('too_far');
+    //     }
+    //     /**
+    //      * RACING CONDITION CAN OCCUR!!! WHEN MODIFYING ORDER DATA FROM LOADED PREVIOUSLY OBJECT
+    //      */
+    //     /**
+    //      * Should use shipment system!
+    //      */
+
+
+    //     $StoreModel=model('StoreModel');
+    //     $PromoModel=model('PromoModel');
+    //     $store=$StoreModel->itemGet($order->order_store_id,'basic');
+
+    //     //DELIVERY OPTIONS SET
+    //     if( $checkoutData->deliveryByCourier??0 && $tariff->delivery_allow ){
+    //         $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
+    //         $order_data->delivery_by_courier=1;
+    //         $order_data->delivery_fee=$tariff->delivery_fee;
+    //         $order_data->delivery_cost=$tariff->delivery_cost+$deliveryHeavyModifier->cost;
+    //         $order_data->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
+    //         $CourierModel=model('CourierModel');
+    //         $lookForCourierAroundLocation=(object)[
+    //             'location_holder'=>'store',
+    //             'location_holder_id'=>$order->order_store_id
+    //         ];
+    //         $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
+    //         if( !$deliveryIsReady ){
+    //             madd('order','start','error',$checkoutData->order_id,'no_delivery');
+    //             return $this->fail('no_delivery');
+    //         }
+
+    //         //DELIVERY JOB SETUP
+
+
+    //         //TMP FIX
+    //         $DeliveryJobModel=model('DeliveryJobModel');
+    //         $routePlan=$DeliveryJobModel->routePlanGet($order_start_location->location_id,$order_finish_location->location_id);
+    //         $payment_by_cash=($tariff->cash_allow && ($checkoutData->paymentByCash??0))?1:0;
+    //         $order_data->delivery_job=(object)[
+    //             'job_name'=>"Заказ из {$store->store_name}",
+    //             'job_data'=>json_encode([
+    //                 'distance'=>$routePlan->deliveryDistance,
+    //                 'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
+    //                 'payment_by_cash'=>$payment_by_cash
+    //             ]),
+    //             'start_plan'=>$routePlan->start_plan??0,
+    //             'start_prep_time'=>$store->store_time_preparation,
+                
+    //             'start_longitude'=>$order_start_location->location_longitude,
+    //             'start_latitude'=>$order_start_location->location_latitude,
+    //             'start_address'=>$order_start_location->location_address,
+    //             'finish_longitude'=>$order_finish_location->location_longitude,
+    //             'finish_latitude'=>$order_finish_location->location_latitude,
+    //             'finish_address'=>$order_finish_location->location_address,
+    //         ];
+    //     } else
+    //     if( $checkoutData->deliveryByStore??0 ){
+            
+    //         $OrderModel->fieldUpdateAllow('order_script');
+    //         $OrderModel->itemUpdate((object)['order_id'=>$order->order_id,'order_script'=>'order_supplier']);
+
+    //         $order_data->delivery_by_store=1;
+    //         $order_data->delivery_by_store_cost=$store->store_delivery_cost??0;
+    //         $PromoModel->itemUnLink($checkoutData->order_id);
+    //     } else
+    //     if( $checkoutData->pickupByCustomer??0 ){
+            
+    //         $OrderModel->fieldUpdateAllow('order_script');
+    //         $OrderModel->itemUpdate((object)['order_id'=>$order->order_id,'order_script'=>'order_supplier']);
+
+    //         $order_data->pickup_by_customer=1;
+    //         $PromoModel->itemUnLink($checkoutData->order_id);
+    //     } else {
+    //         madd('order','start','error',$checkoutData->order_id,'no_delivery');
+    //         return $this->fail('no_delivery');
+    //     }
+    //     //PROMO SHARE CHECK
+    //     $promo=$PromoModel->itemLinkGet($checkoutData->order_id);
+    //     if( $promo && ($promo->min_order_sum_product>$order->order_sum_product) ){
+    //         madd('order','start','error',$checkoutData->order_id,'promo_share_too_high');
+    //         return $this->fail('promo_share_too_high');
+    //     }
+    //     //PAYMENT OPTIONS SET
+    //     if( $checkoutData->paymentByCardRecurrent??0 && $tariff->card_allow ){
+    //         $order_data->payment_by_card_recurrent=1;
+    //         $order_data->payment_by_card=1;
+    //         $order_data->payment_fee=$tariff->card_fee;
+    //     } else
+    //     if( $checkoutData->paymentByCard??0 && $tariff->card_allow ){
+    //         $order_data->payment_by_card=1;
+    //         $order_data->payment_fee=$tariff->card_fee;
+    //     } else
+    //     if( $checkoutData->paymentByCash??0 && $tariff->cash_allow ){
+    //         $order_data->payment_by_cash=1;
+    //         $order_data->payment_fee=$tariff->cash_fee;
+    //     } else 
+    //     if( $checkoutData->paymentByCashStore??0 ){
+    //         $order_data->payment_by_cash_store=1;
+    //     } else {
+    //         madd('order','start','error',$checkoutData->order_id,'no_payment');
+    //         return $this->fail('no_payment');
+    //     }
+
+    //     // if( $checkoutData->storeCorrectionAllow??0 ){
+    //     //     $order_data->store_correction_allow=1;
+    //     // }
+
+    //     /**
+    //      * Check if order is already not in confirmed state (for example returned to cart stage automatically)
+    //      * If not - try to make confirmed
+    //      */
+    //     if( $order->stage_current!='customer_confirmed' ){
+    //         $result=$OrderModel->itemStageCreate($order->order_id,'customer_confirmed');
+    //         if( $result!='ok' ){
+    //             return $this->fail('wrong_stage');
+    //         }
+    //     }
+    //     $result=$OrderModel->itemDataCreate($checkoutData->order_id,$order_data);
+    //     $OrderModel->deliverySumUpdate($checkoutData->order_id);
+    //     madd('order','start','ok',$checkoutData->order_id);
+    //     return $this->respond($result);
+    // }
 
     public function itemMetaGet(){
         $order_id=$this->request->getVar('order_id');

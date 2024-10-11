@@ -193,6 +193,9 @@ class DeliveryJobModel extends SecureModel{
      * 
      * output is used to respond to user about delivery start mode
      */
+    /**
+     * @deprecated
+     */
     public function startPlanEstimate( float $start_longitude, float $start_latitude, int $finish_distance=0 ):array{
         $nowHour=(int) date('H');
         $nearestMinute=$this->avgStartArrival/60;
@@ -254,6 +257,9 @@ class DeliveryJobModel extends SecureModel{
         ];
     }
 
+    /**
+     * @deprecated
+     */
     public function routeStatsGet(int $start_location_id, int $finish_location_id){
         $LocationModel=model('LocationModel');
         $default_location_id=$LocationModel->where('location_holder','default_location')->get()->getRow('location_id');
@@ -289,6 +295,9 @@ class DeliveryJobModel extends SecureModel{
         return $result;
     }
 
+    /**
+     * @deprecated
+     */
     public function routePlanGet(int $start_location_id, int $finish_location_id){
         $result=$this->routeStatsGet($start_location_id, $finish_location_id);
         if( isset($result->error) ){
@@ -301,13 +310,13 @@ class DeliveryJobModel extends SecureModel{
 
         $result->start_plan_mode=$startPlan['mode'];
         $result->start_plan=$startPlan['start_plan'];
-        $result->finish_arrival=$startPlan['finish_arrival'];
+        $result->finish_arrival=$startPlan['finish_arrival']??0;
         return $result;
     }
 
     /**
      * Function calculates courier arrival ranges to start or finish location
-     * 
+     * @deprecated
      */
     public function planScheduleGet( int $plan ){
         $timeArrivalRounded=ceil($plan/$this->deliveryDurationDelta)*$this->deliveryDurationDelta;
@@ -452,10 +461,12 @@ class DeliveryJobModel extends SecureModel{
     }
     
     public function listGet(){
+        // is_shipment deprecated
         $this->select("
         job_id,
         job_name,
         courier_id,
+        IFNULL(job_data->>'$.order_script',null) order_script,
         IFNULL(job_data->>'$.is_shipment',0) is_shipment,
         IFNULL(job_data->>'$.payment_by_cash',0) payment_by_cash,
         IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,

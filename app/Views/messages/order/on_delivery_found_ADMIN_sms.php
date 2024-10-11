@@ -1,1 +1,1 @@
-<?=getenv('app.title')?>: Курьер найден. Заказ #<?=$order->order_id?> 
+Курьер <?=$courier->courier_name?> назначен. Заказ #<?=$order->order_id?> из <?=$store->store_name??'-'?>

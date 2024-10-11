@@ -3,7 +3,7 @@ namespace App\Models;
 
 trait DeliveryJobChainTrait{
 
-    private function chainShortestGet( float $start_longitude, float $start_latitude ){
+    public function chainShortestGet( float $start_longitude, float $start_latitude ){
         $now=time();
         $CourierShiftModel=model('CourierShiftModel');
         $CourierShiftModel->select("courier_id,courier_speed");
@@ -125,7 +125,7 @@ trait DeliveryJobChainTrait{
         $this->select("CEIL( IFNULL(job_data->>'$.distance',0)/$courier_speed ) finish_arrival_time");
         $this->select("ROUND( TIMESTAMPDIFF(SECOND,delivery_job_list.created_at,NOW()) *{$early_order_time_offset} *900 )/900 earliness_offset");
 
-        $this->select("IF(group_type='supplier_finish' OR is_shipment,$ready_order_time_offset,0) readiness_offset");
+        $this->select("IF(group_type='supplier_finish' OR is_shipment OR order_script='shipment',$ready_order_time_offset,0) readiness_offset");
         $this->join('order_list','order_id');
         $this->join('order_group_list','group_id=order_group_id');//
         

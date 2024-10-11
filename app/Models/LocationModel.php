@@ -66,7 +66,6 @@ class LocationModel extends Model{
             'Симферопольский район,',
             'Симферопольский район',
             'Симферополь,',
-            'Симферополь',
             'Республика Крым,',
             'Республика Крым',
         ],'',$address));
@@ -253,6 +252,7 @@ class LocationModel extends Model{
             location_longitude,
             location_address,
             location_comment,
+            location_phone,
             location_list.is_main,
             group_name,
             group_type,

@@ -277,10 +277,18 @@ class AcquirerRncb{
         $OrderModel=model('OrderModel');
         $UserCardModel=model('UserCardModel');
         $orderData=$OrderModel->itemDataGet($order_all->order_id);
+
+        $is_allowed=$orderData->payment_by_card??0;
+        if( !$is_allowed && in_array($order_all->user_role,['courier','admin']) ){
+            $is_allowed=1;//payment_by_cash (courier paying in place of customer)
+        }
+        if( !$is_allowed ){
+            return 'forbidden';
+        }
         $orderDataUpdate=(object)[];
 
         $orderTitle="Заказ #{$order_all->order_id}";
-        $orderDescription="Служба доставки tezkel.com ".($order_all->store->store_name??null);
+        $orderDescription=($order_all->store->store_name??null);
         if( !$paying_user_id ){
             $paying_user_id=$order_all->customer->user_id;
         }
@@ -341,12 +349,17 @@ class AcquirerRncb{
             }
             return 'error';
         }
-        $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
-        $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
+        // $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
+        // $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
         $orderDataUpdate->payment_by_card=1;
         
         $OrderModel->itemDataUpdate($order_all->order_id,$orderDataUpdate);
-        return 'ok';
+        $payment_data=(object)[
+            'status'=>'authorized',
+            'total'=>$order_all->order_sum_total,
+            'billNumber'=>$orderDataUpdate->payment_card_acq_order_id,
+        ];
+        return $OrderModel->itemStageAdd( $order_all->order_id, 'customer_payed_card', $payment_data, false );
     }
 
     private function getSlugByDescription( $error_description ){

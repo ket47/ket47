@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 
-class OrderStageScript{
+class OrderStageDeliveryScript{
     public $OrderModel;
     public $stageMap=[
         ''=>[
@@ -20,13 +20,10 @@ class OrderStageScript{
             'customer_start'=>              [],
             ],
         'customer_start'=>[
-            'supplier_start'=>              ['Начать подготовку'],
-            'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
-            'customer_rejected'=>           ['Отменить заказ','danger','clear'],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
-
             'system_schedule'=>             [],
-            'system_await'=>                [],
+            'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'system_start'=>                ['Запустить','danger','clear'],
+            'admin_action_courier_assign'=> ['Назначить курьера','','clear'],
             ],
         'customer_rejected'=>[
             'system_reckon'=>               []
@@ -47,16 +44,16 @@ class OrderStageScript{
 
 
         'system_schedule'=>[
-            'system_await'=>                [],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+            'system_await'=>                ['В очередь','danger','clear'],
             ],
-        'system_await'=>[
-            'customer_start'=>              [],
+        'system_start'=>[
+            'supplier_start'=>              ['Начать подготовку'],
+            'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+            'admin_action_courier_assign'=> ['Назначить курьера','','clear'],
             ],
-        
+                    
         
         'supplier_rejected'=>[
             'system_reckon'=>               [],
@@ -66,11 +63,10 @@ class OrderStageScript{
             ],
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
+            'supplier_action_take_photo'=>  ['Сфотографировать','light'],
             'supplier_corrected'=>          ['Изменить','medium','clear'],
-            'supplier_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
-            'delivery_no_courier'=>         [],
-            'delivery_force_start'=>        ['Заказ готов к доставке','light'],
+            'delivery_force_start'=>        ['Заказ готов к доставке','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_corrected'=>[
@@ -80,12 +76,11 @@ class OrderStageScript{
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_finish'=>[
-            'supplier_action_take_photo'=>  ['Сфотографировать'],
-            'supplier_corrected'=>          ['Изменить','medium','clear'],
             'delivery_start'=>              ['Начать доставку'],
             'delivery_no_courier'=>         [],
             'delivery_finish'=>             [],//if dispute is ongoing then fastforward 
-            'system_reckon'=>               [],//if store delivery
+            'supplier_action_take_photo'=>  ['Сфотографировать','light'],
+            'supplier_corrected'=>          ['Изменить','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_force_start'=>            [
@@ -94,7 +89,7 @@ class OrderStageScript{
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
-            'delivery_action_take_photo'=>  ['Сфотографировать','medium','clear'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
@@ -102,9 +97,9 @@ class OrderStageScript{
         
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
             'admin_supervise'=>             ['Решить спор','danger'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
-            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
             ],
         'delivery_no_courier'=>[
             'system_reckon'=>               [],
@@ -148,11 +143,11 @@ class OrderStageScript{
 
         'system_reckon'=>[
             'system_finish'=>               [],
-            'admin_supervise'=>             ['Установить статус','danger','outline'],
+            'admin_supervise'=>             ['Установить статус','danger','clear'],
             ],
         'system_finish'=>[
-            'admin_recalculate'=>           ['Перепровести','danger','outline'],
-            'admin_delete'=>                ['Удалить полностью','danger','outline'],
+            'admin_recalculate'=>           ['Перепровести','danger','clear'],
+            'admin_delete'=>                ['Удалить полностью','danger','clear'],
         ]
     ];
 
@@ -217,6 +212,9 @@ class OrderStageScript{
              * Checking if payment is done. Add stage customer_payed_card
              */
             $order_data=$this->OrderModel->itemDataGet($order_id);
+            if( empty($order_data->payment_by_card) ){
+                return 'ok';
+            }
             if($order_data->payment_card_acq_rncb??0){
                 $Acquirer=new \App\Libraries\AcquirerRncb();
             } else {
@@ -292,48 +290,113 @@ class OrderStageScript{
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
     }
-    
+
     public function onCustomerStart( $order_id, $data ){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( !empty($order_data->payment_by_card) && empty($order_data->payment_card_fixate_sum) ){
-            return 'payment_by_card_missing';
+        if( empty($order_data->payment_card_fixate_sum) && empty($order_data->payment_by_cash) ){
+            return 'payment_is_missing';
         }
-        $order=$this->OrderModel->itemGet($order_id);
+        ///////////////////////////////////////////////////
+        //LOCKING PROMOTION
+        ///////////////////////////////////////////////////
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemOrderDisable($order_id,1);
+        ///////////////////////////////////////////////////
+        //JUMPING TO SCHEDULED
+        ///////////////////////////////////////////////////
+        if( $order_data->start_plan_mode=='scheduled' && $order_data->init_plan_scheduled>time() ){
+            return $this->OrderModel->itemStageCreate($order_id,'system_scheduled',$order_data,'as_admin');
+        }
+        ///////////////////////////////////////////////////
+        //MARK AS SEARCHING FOR COURIER
+        ///////////////////////////////////////////////////
+        $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
+        ///////////////////////////////////////////////////
+        //CREATING STAGE NOTIFICATIONS
+        ///////////////////////////////////////////////////
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
-        $PrefModel=model('PrefModel');
-        ////////////////////////////////////////////////
-        //LOCATION FIXATION SECTION
-        ////////////////////////////////////////////////
-        $LocationModel=model('LocationModel');
-        $supplierLocation=$LocationModel->itemMainGet('store',$order->order_store_id);
-        $customerLocation=$LocationModel->itemMainGet('user',$order->owner_id);
-        try{
-            $order_update=[
-                'order_start_location_id'=>$supplierLocation->location_id,
-                'order_finish_location_id'=>$customerLocation->location_id
-            ];
-            $this->OrderModel->update($order_id,$order_update);
-        } catch (\Exception $e){
-            return 'address_not_set';
-        }
-        helper('phone_number');
+        $order=$this->OrderModel->itemGet($order_id);
+        $store=$StoreModel->itemGet($order->order_store_id);
+        $customer=$UserModel->itemGet($order->owner_id);
+        $context=[
+            'order'=>$order,
+            'order_data'=>$order_data,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+        $notifications=[];
+        $notifications[]=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>-100,
+            'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
+            'context'=>$context,
+        ];
+        $notification_task=[
+            'task_name'=>"system_await Notify #$order_id",
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
+            ],
+            'task_priority'=>'low'
+        ];
+        jobCreate($notification_task);
 
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
+        ]];
+        jobCreate($deliveryJob);
+
+        if( $order_data->start_plan_mode=='inited' ){
+            return $this->OrderModel->itemStageCreate($order_id,'system_start',$order_data,'as_admin');
+        }
+        return 'ok';
+    }
+
+    public function onSystemSchedule( $order_id ){
+        $this->OrderModel->itemDataUpdate($order_id,(object)['start_plan_mode'=>'awaited']);
+
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'scheduled', $order_data->delivery_job]]
+        ]];
+        $set_on_queue_task=[
+            'task_programm'=>[
+                    ['method'=>'orderResetStage','arguments'=>['system_schedule','customer_start',$order_id]]
+                ],
+            'task_next_start_time'=>$order_data->init_plan_scheduled
+        ];
+        jobCreate($deliveryJob);
+        jobCreate($set_on_queue_task);
+        return 'ok';
+    }
+
+    // public function onSystemAwait( $order_id ){
+    //     $order_data=$this->OrderModel->itemDataGet($order_id);
+    //     $deliveryJob=['task_programm'=>[
+    //         ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
+    //     ]];
+    //     jobCreate($deliveryJob);
+    //     $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
+    //     return 'ok';
+    // }
+
+    private function onSystemStartInfoSet( object $order, object $order_data ){
+        helper('phone_number');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
         $info_for_courier=(object)json_decode($order_data->info_for_courier??'[]');
 
-        $info_for_courier->customer_location_address=$customerLocation->location_address??'';
-        $info_for_courier->customer_location_comment=$customerLocation->location_comment??'';
-        $info_for_courier->customer_location_latitude=$customerLocation->location_latitude??'';
-        $info_for_courier->customer_location_longitude=$customerLocation->location_longitude??'';
+        $info_for_courier->customer_location_address=$order_data->location_finish->location_address??'';
+        $info_for_courier->customer_location_comment=$order_data->location_finish->location_comment??'';
+        $info_for_courier->customer_location_latitude=$order_data->location_finish->location_latitude??'';
+        $info_for_courier->customer_location_longitude=$order_data->location_finish->location_longitude??'';
         $info_for_courier->customer_phone='+'.clearPhone($order->customer->user_phone);
         $info_for_courier->customer_name=$order->customer->user_name;
         $info_for_courier->customer_email=$order->customer->user_email;
 
-        $info_for_courier->supplier_location_address=$supplierLocation->location_address??'';
-        $info_for_courier->supplier_location_comment=$supplierLocation->location_comment??'';
-        $info_for_courier->supplier_location_latitude=$supplierLocation->location_latitude??'';
-        $info_for_courier->supplier_location_longitude=$supplierLocation->location_longitude??'';
+        $info_for_courier->supplier_location_address=$order_data->location_start->location_address??'';
+        $info_for_courier->supplier_location_comment=$order_data->location_start->location_comment??'';
+        $info_for_courier->supplier_location_latitude=$order_data->location_start->location_latitude??'';
+        $info_for_courier->supplier_location_longitude=$order_data->location_start->location_longitude??'';
         $info_for_courier->supplier_phone='+'.clearPhone($order->store->store_phone);
         $info_for_courier->supplier_name=$order->store->store_name??'';
         $info_for_courier->supplier_email=$order->store->store_email??'';
@@ -345,46 +408,25 @@ class OrderStageScript{
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_courier'=>json_encode($info_for_courier),
+            'delivery_job'=>null,
         ];
-        $this->OrderModel->itemDataUpdate($order_id,$update);
+        $this->OrderModel->itemDataUpdate($order->order_id,$update);
+    }
+
+    public function onSystemStart( $order_id, $order_data ){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
         ///////////////////////////////////////////////////
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
         $this->OrderModel->itemUpdateOwners($order_id);
         ///////////////////////////////////////////////////
-        //STARTING DELIVERY SEARCH IF NEEDED
+        //COPYING INFO INTO ORDER
         ///////////////////////////////////////////////////
-        if( ($order_data->delivery_by_courier??0)==1 ){
-            $deliveryJob=['task_programm'=>[
-                ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
-            ]];
-            jobCreate($deliveryJob);
-            $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
-            /**
-             * @todo delete delivery_job_data from order_data
-             */
-        }
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        // $timeout_min=$PrefModel->itemGet('customer_start_timeout_min','pref_value',0);
-        // $next_start_time=time()+$timeout_min*60;
-        // $stage_reset_task=[
-        //     'task_name'=>"customer_start Rollback #$order_id",
-        //     'task_programm'=>[
-        //             ['method'=>'orderResetStage','arguments'=>['customer_start','supplier_rejected',$order_id]]
-        //         ],
-        //     'task_next_start_time'=>$next_start_time
-        // ];
-        // jobCreate($stage_reset_task);
-        ///////////////////////////////////////////////////
-        //LOCKING PROMOTION
-        ///////////////////////////////////////////////////
-        $PromoModel=model('PromoModel');
-        $PromoModel->itemOrderDisable($order_id,1);
-        ///////////////////////////////////////////////////
-        //CREATING STAGE NOTIFICATIONS
-        ///////////////////////////////////////////////////
+        $order=$this->OrderModel->itemGet($order_id);
+        $this->onSystemStartInfoSet( $order, $order_data );
+
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
@@ -395,51 +437,27 @@ class OrderStageScript{
             'customer'=>$customer
         ];
 
-        if( ($order_data->delivery_by_courier??0)==0 ){
-            $store_sms=(object)[
-                'message_transport'=>'telegram,push',
-                'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-                'message_data'=>(object)[
-                    'sound'=>'long.wav'
-                ],
-                'telegram_options'=>[
-                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
-                ],
-                'template'=>'messages/order/on_customer_start_STORE_sms.php',
-                'context'=>$context
-            ];
-            $store_email=(object)[
-                'message_transport'=>'email',
-                //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-                'message_reciever_email'=>$store->store_email,
-                'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-                'template'=>'messages/order/on_customer_start_STORE_email.php',
-                'context'=>$context
-            ];
-            $timer_supplier_passive=time()+5*60;//5min
-            $this->onSupplierCalled($order_id,(object)['start_at'=>$timer_supplier_passive,'attempts_left'=>3]);
-        } else {
-            $store_sms=null;
-            $store_email=null;
-        }
-
-
-
-        $admin_sms=(object)[
-            'message_transport'=>'telegram',
-            'message_reciever_id'=>-100,
-            'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
+        $store_sms=(object)[
+            'message_transport'=>'telegram,push',
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+            'message_data'=>(object)[
+                'sound'=>'long.wav'
+            ],
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
+            'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context
         ];
-        // $admin_email=(object)[
-        //     'message_transport'=>'email',
-        //     'message_reciever_id'=>-100,
-        //     'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-        //     'template'=>'messages/order/on_customer_start_ADMIN_email.php',
-        //     'context'=>$context
-        // ];
-
-
+        $store_email=(object)[
+            'message_transport'=>'email',
+            'message_reciever_email'=>$store->store_email,
+            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_start_STORE_email.php',
+            'context'=>$context
+        ];
+        $timer_supplier_passive=time()+5*60;//5min
+        $this->onSupplierCalled($order_id,(object)['start_at'=>$timer_supplier_passive,'attempts_left'=>3]);
 
         $cust_sms=(object)[
             'message_transport'=>'telegram,push',
@@ -448,9 +466,8 @@ class OrderStageScript{
             'context'=>$context
         ];
         $notification_task=[
-            'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms,$admin_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cust_sms]]]
                 ],
             'task_priority'=>'low'
         ];
@@ -459,7 +476,6 @@ class OrderStageScript{
         $store_preparation_time=$store->store_time_preparation??30;
         $timer_supplier_overdue=time()+$store_preparation_time*60*1.2;//preparation time +20%
         $stage_reset_task=[
-            'task_name'=>"Notify user that supplier overdue order #$order_id",
             'task_programm'=>[
                     ['model'=>'UserModel','method'=>'systemUserLogin'],
                     ['model'=>'OrderModel','method'=>'itemStageAdd','arguments'=>[$order_id,'supplier_overdue']],
@@ -537,15 +553,17 @@ class OrderStageScript{
                 ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
                 ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
                 ['model'=>'UserModel','method'=>'systemUserLogout'],
-                ]
+                ],
+            'task_priority'=>'low'
         ];
 
         jobCreate($courier_freeing_task);
         jobCreate($notification_task);
         jobCreate([
             'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']],
+            ],
+            'task_next_start_time'=>time()+3
         ]);
         return 'ok';
     }
@@ -781,42 +799,14 @@ class OrderStageScript{
     }
         
     public function onSupplierStart($order_id){
-        $order_data=$this->OrderModel->itemDataGet($order_id);
-        $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
-        if( isset($order_data->delivery_by_store) || isset($order_data->pickup_by_customer) ){
-            $order=$this->OrderModel->itemGet($order_id);
-            $LocationModel=model("LocationModel");
-            $customerLocation=$LocationModel->itemGet($order->order_finish_location_id);
-
-            helper('phone_number');
-            $info_for_supplier->customer_location_address=$customerLocation->location_address;
-            $info_for_supplier->customer_location_comment=$customerLocation->location_comment;
-            $info_for_supplier->customer_location_latitude=$customerLocation->location_latitude;
-            $info_for_supplier->customer_location_longitude=$customerLocation->location_longitude;
-
-            $info_for_supplier->customer_phone='+'.clearPhone($order->customer->user_phone);
-            $info_for_supplier->customer_name=$order->customer->user_name;
-            $info_for_supplier->customer_email=$order->customer->user_email;
-        }
-        $info_for_supplier->tariff_info=view('order/supplier_tariff_info.php',['order_data'=>$order_data]);
-        if($order_data->pickup_by_customer??0){
-            $info_for_supplier->pickup_by_customer=$order_data->pickup_by_customer;
-        }
-        if($order_data->payment_card_fixate_sum??0){
-            $info_for_supplier->payment_card_fixate_sum=$order_data->payment_card_fixate_sum;
-        }
-        $update=(object)[
-            'info_for_supplier'=>json_encode($info_for_supplier)
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$update);
         return 'ok';
     }
     
     public function onSupplierCorrected($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( !($order_data->store_correction_allow??0) ){
-            return 'forbidden_bycustomer';
-        }
+        // if( !($order_data->store_correction_allow??0) ){
+        //     return 'forbidden_bycustomer';
+        // }
         helper('phone_number');
 
         $order=$this->OrderModel->itemGet($order_id,'all');
@@ -1005,15 +995,6 @@ class OrderStageScript{
 
         $this->onSupplierFinishPrepTimeUpdate( $order_id, $order->order_store_id );
 
-        if( !isset($order_data->delivery_by_courier) ){
-            jobCreate([
-                'task_programm'=>[
-                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                    ],
-                'task_next_start_time'=>time()+1
-            ]);
-            return 'ok';
-        }
         if( $order_data->is_dispute_opened??0 ){
             jobCreate([
                 'task_programm'=>[
@@ -1022,21 +1003,6 @@ class OrderStageScript{
                 'task_next_start_time'=>time()+1
             ]);
         }
-        ///////////////////////////////////////////////////
-        //CREATING STAGE RESET JOB
-        ///////////////////////////////////////////////////
-        // $PrefModel=model('PrefModel');
-        // $timeout_min=$PrefModel->itemGet('delivery_no_courier_timeout_min','pref_value',0);
-        // $next_start_time=time()+$timeout_min*60;
-        // $stage_reset_task=[
-        //     'task_name'=>"check if Courier was not found #$order_id",
-        //     'task_programm'=>[
-        //             ['method'=>'orderResetStage','arguments'=>['supplier_finish','delivery_no_courier',$order_id]]
-        //         ],
-        //     'task_next_start_time'=>$next_start_time
-        // ];
-        // helper('job');
-        // jobCreate($stage_reset_task);
         return 'ok';
     }
     
@@ -1045,34 +1011,22 @@ class OrderStageScript{
     //DELIVERY HANDLERS
     //////////////////////////////////////////////////////////////////////////
     public function onDeliverySearch( $order_id ){
-        $order=$this->OrderModel->itemGet($order_id);
-        $StoreModel=model('StoreModel');
-        $CourierModel=model('CourierModel');
-        $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $context=[
-            'store'=>$store,
-            'order'=>$order
-        ];
-        $CourierModel->listNotify($context);
         return 'ok';
     }
 
     public function onDeliveryFound( $order_id ){
-        // $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        // $was_searching=$OrderGroupMemberModel->isMemberOf($order_id,'delivery_search');
-        // if( !$was_searching ){
-        //     return '';
-        // }
-        // $OrderGroupMemberModel=model('OrderGroupMemberModel');
-        // $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         helper('phone_number');
-
         $order=$this->OrderModel->itemGet($order_id);
+        $job=(object)[
+            'courier_id'=>$order->order_courier_id
+        ];
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $job]]
+        ]];
+        jobCreate($deliveryJob);
+
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($order->order_courier_id);
-
-        helper('phone_number');
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
@@ -1090,21 +1044,12 @@ class OrderStageScript{
             'info_for_supplier'=>json_encode($info_for_supplier),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
-        $job=(object)[
-            'courier_id'=>$order->order_courier_id
-        ];
-        $deliveryJob=['task_programm'=>[
-            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $job]]
-        ]];
-        jobCreate($deliveryJob);
 
 
-        $StoreModel=model('StoreModel');
-        $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $context=[
             'order'=>$order,
-            'store'=>$store
+            'store'=>$order->store,
+            'courier'=>$courier,
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
@@ -1112,65 +1057,22 @@ class OrderStageScript{
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
             'context'=>$context
         ];
-        // $store_sms=(object)[
-        //     'message_transport'=>'message',
-        //     'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-        //     'template'=>'messages/order/on_delivery_found_STORE_sms.php',
-        //     'context'=>$context
-        // ];
-
-        $store=$StoreModel->itemGet($order->order_store_id);
-        $context=[
-            'order'=>$order,
-            'store'=>$store,
-        ];
-
-
-
-
-
-
-            $store_sms=(object)[
-                'message_transport'=>'message',
-                'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-                'message_data'=>(object)[
-                    'sound'=>'long.wav'
-                ],
-                'telegram_options'=>[
-                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
-                ],
-                'template'=>'messages/order/on_customer_start_STORE_sms.php',
-                'context'=>$context
-            ];
-            $store_email=(object)[
-                'message_transport'=>'email',
-                //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-                'message_reciever_email'=>$store->store_email,
-                'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
-                'template'=>'messages/order/on_customer_start_STORE_email.php',
-                'context'=>$context
-            ];
-            $timer_supplier_passive=time()+5*60;//5min
-            $this->onSupplierCalled($order_id,(object)['start_at'=>$timer_supplier_passive,'attempts_left'=>3]);
-
-
-
         $notification_task=[
             'task_name'=>"delivery_found Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$store_sms,$store_email]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms]]]
                 ],
             'task_priority'=>'low'
         ];
         jobCreate($notification_task);
+
+        if( $order->stage_current=='customer_start' || $order->stage_current=='system_scheduled' ){
+            return $this->OrderModel->itemStageCreate($order_id,'system_start',$order_data,'as_admin');
+        }
         return 'ok';
     }
     
     public function onDeliveryStart( $order_id ){
-        //$CourierModel=model('CourierModel');
-        // if( !$CourierModel->isBusy() ){
-        //     return 'wrong_courier_status';
-        // }
         // $order=$this->OrderModel->itemGet($order_id);
         // if( !$order->images ){
         //     return 'photos_must_be_made';
@@ -1302,7 +1204,8 @@ class OrderStageScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+            ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
@@ -1356,7 +1259,6 @@ class OrderStageScript{
         $timeout_min=(int)$PrefModel->itemGet('delivery_finish_timeout_min','pref_value',0);
         $next_start_time=time()+$timeout_min*60;
         $stage_reset_task=[
-            'task_name'=>"system_reckon Fastforward #$order_id",
             'task_programm'=>[
                     ['method'=>'orderResetStage','arguments'=>['delivery_finish','customer_finish',$order_id]]
                 ],
@@ -1383,7 +1285,8 @@ class OrderStageScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+            ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';        
     }

@@ -13,10 +13,26 @@ trait OrderStageTrait{
                 die();//forbidden notfound etc
                 //return null;
             }
-            if($order_basic->is_shipment??null){
-                $this->ScriptLibraryName="App\\Models\\ShipmentStageScript";
-            } else {
-                $this->ScriptLibraryName="App\\Models\\OrderStageScript";
+            if( empty($order_basic->order_script) ){//for backward compatibility???
+                if($order_basic->is_shipment??null){
+                    $order_basic->order_script='shipment';
+                } else {
+                    $order_basic->order_script='deprecatedscript';
+                }
+            }
+            switch( $order_basic->order_script ){
+                case 'order_delivery':
+                    $this->ScriptLibraryName="App\\Models\\OrderStageDeliveryScript";
+                    break;
+                case 'order_supplier':
+                    $this->ScriptLibraryName="App\\Models\\OrderStageSupplierScript";
+                    break;
+                case 'shipment':
+                    $this->ScriptLibraryName="App\\Models\\OrderStageShipmentScript";
+                    break;
+                default://deprecatedscript
+                    $this->ScriptLibraryName="App\\Models\\OrderStageDefaultScript";
+                    break;
             }
             //pl([$this->ScriptLibraryName,'itemStageScriptLoad',$order_basic]);
             $this->StageScript=new $this->ScriptLibraryName();
@@ -62,10 +78,13 @@ trait OrderStageTrait{
         if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
             return 'ok';
         }
-        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages,'order',$order]);
+        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages]);//,'order',$order
         return 'invalid_next_stage';
     }
 
+    /**
+     * Not accessible from frontend, only from order scripts
+     */
     public function itemStageAdd( $order_id, $stage, $data=null, $check_permission=true ){
         //only adds member group to order and executes handler
         if( $check_permission ){
@@ -86,63 +105,7 @@ trait OrderStageTrait{
         return $handled;
     }
 
-    /**
-     * Now this system works on on stage handler
-     * This should be rewrited as onStageHandler and offStageHandler
-     */
-    // private $itemStageUnconfirmedGroupId=null;
-    // private $itemStageUnconfirmedOrderId=null;
-    // public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
-    //     $this->itemStageConfirm();//confirms previous stage if any
-    //     $order=$this->itemGet( $order_id, 'basic' );
-    //     if( !is_object($order) ){
-    //         return $order;
-    //     }
-    //     if($order->stage_current==$stage){
-    //         return 'ok';
-    //     }
-    //     $offHandled=$this->itemStageOffHandle( $order_id,  $stage, $order->stage_current, $data );
-    //     if( 'ok'!=$offHandled ){
-    //         return $offHandled;
-    //     }
-    //     $OrderGroupModel=model('OrderGroupModel');
-    //     $this->itemStageUnconfirmedGroupId=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
-    //     $result=$this->itemStageValidate($stage,$order,$this->itemStageUnconfirmedGroupId);
-    //     if( $result!=='ok' ){
-    //         return $result;
-    //     }
-    //     if( $check_permission ){
-    //         $this->permitWhere('w');
-    //     }
-
-    //     $this->itemStageUnconfirmedOrderId=$order_id;
-    //     $this->transBegin();
-    //         $handled=$this->itemStageHandle( $order_id, $stage, $data );
-    //         if($handled==='ok'){
-    //             $this->itemStageConfirm();
-    //         } else {//failed
-    //             $this->transRollback();
-    //             return $handled;
-    //         }
-    //     $this->transCommit();
-    //     $this->itemStageChangeNotify($order, $stage);
-    //     $this->itemStageUnconfirmedOrderId=null;
-    //     return 'ok';
-    // }
-
-    // public function itemStageConfirm(){
-    //     if(!$this->itemStageUnconfirmedOrderId || !$this->itemStageUnconfirmedGroupId){
-    //         return;
-    //     }
-    //     $this->allowedFields[]='order_group_id';
-    //     $this->update($this->itemStageUnconfirmedOrderId,['order_group_id'=>$this->itemStageUnconfirmedGroupId]);
-    //     $this->itemCacheClear();//because order properties have changed
-        
-    //     $OrderGroupMemberModel=model('OrderGroupMemberModel');
-    //     $OrderGroupMemberModel->joinGroup($this->itemStageUnconfirmedOrderId,$this->itemStageUnconfirmedGroupId);
-    // }
-
-    public function itemStageCreate( $order_id, $stage, $data=null, $check_permission=true ){
+    public function itemStageCreate( $order_id, $stage, $data=null, $permission='as_user' ){
         $order=$this->itemGet( $order_id, 'basic' );
         if( !is_object($order) ){
             return $order;
@@ -154,6 +117,18 @@ trait OrderStageTrait{
         if( 'ok'!=$offHandled ){
             return $offHandled;
         }
+
+        /**
+         * Check permission false cant be set at controller
+         * so only internal calls can be unchecked
+         */
+        if( $permission=='as_user' ){
+            $this->permitWhere('w');
+        } else 
+        if( $permission=='as_admin' ){
+            $order->user_role='admin';//will it work???
+        }
+        
         $OrderGroupModel=model('OrderGroupModel');
         $next_stage_group_id=$OrderGroupModel->select('group_id')->itemGet(null,$stage)?->group_id;
         $result=$this->itemStageValidate($stage,$order,$next_stage_group_id);
@@ -163,9 +138,6 @@ trait OrderStageTrait{
         
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
         $this->allowedFields[]='order_group_id';
-        if( $check_permission ){
-            $this->permitWhere('w');
-        }
 
         $this->transBegin();
             $updated=$this->update($order_id,['order_group_id'=>$next_stage_group_id]);

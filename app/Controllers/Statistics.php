@@ -432,8 +432,9 @@ class Statistics extends \App\Controllers\BaseController{
         }
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header("Content-Transfer-Encoding: Binary"); 
-        header("Content-disposition: attachment; filename=\"" . basename($filename) . "\""); 
-        readfile($filepath); 
+        header("Content-disposition: attachment; filename=\"" . iconv("UTF-8", "ISO-8859-1//TRANSLIT", basename($filename)) . "\""); 
+        readfile($filepath);
+        die;
     }
  
 }
