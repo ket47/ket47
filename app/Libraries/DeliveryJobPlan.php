@@ -145,8 +145,12 @@ class DeliveryJobPlan{
             $weekday=($todayweekday+$dayIndex)%7;
             $openHour=$store->{"store_time_opens_$weekday"};
             $closeHour=$store->{"store_time_closes_$weekday"};
-            $this->schedule->beginHour($dayIndex,$openHour);
-            $this->schedule->endHour($dayIndex,$closeHour);
+            if( $openHour!=null ){
+                $this->schedule->beginHour($dayIndex,$openHour);
+            }
+            if( $closeHour!=null ){
+                $this->schedule->endHour($dayIndex,$closeHour);
+            }
         }
     }
 
