@@ -364,10 +364,13 @@ class Order extends \App\Controllers\BaseController {
                         'pickupByCustomer'=>0,
                         'paymentByCard'=>0,
                         'paymentByCash'=>0,
-                        'paymentByCashStore'=>1
+                        'paymentByCashStore'=>0
                     ];
                     if($tariff->card_allow==1){
                         $rule['paymentByCard']=1;
+                    }
+                    if($tariff->cash_allow==1){
+                        $rule['paymentByCashStore']=1;
                     }
                     $deliveryOptions[]=$rule;
                 }
