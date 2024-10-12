@@ -279,7 +279,7 @@ class AcquirerRncb{
         $orderData=$OrderModel->itemDataGet($order_all->order_id);
 
         $is_allowed=$orderData->payment_by_card??0;
-        if( !$is_allowed && in_array($order_all->user_role,['courier','admin']) ){
+        if( !$is_allowed && in_array($order_all->user_role,['delivery','admin']) ){
             $is_allowed=1;//payment_by_cash (courier paying in place of customer)
         }
         if( !$is_allowed ){

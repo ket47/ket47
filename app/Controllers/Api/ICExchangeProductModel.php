@@ -62,7 +62,7 @@ class ICExchangeProductModel extends Model{
             $product_quantity=isset($xml_product->Количество)?(float)$xml_product->Количество:0;
             if(isset($xml_product->Склад)){
                 foreach($xml_product->Склад as $store_xml){
-                    if($store_xml['ИдСклада'] == $this->store_exceptions[$holder_id]){
+                    if(isset($this->store_exceptions[$holder_id]) && $store_xml['ИдСклада'] == $this->store_exceptions[$holder_id]){
                         $product_quantity = $store_xml['КоличествоНаСкладе'];
                     }
                 }

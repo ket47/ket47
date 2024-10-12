@@ -288,7 +288,8 @@ class OrderStageDeliveryScript{
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
+        $this->OrderModel->itemStageCreate($order_id, 'customer_start');
+        return 'ok';
     }
 
     public function onCustomerStart( $order_id, $data ){
@@ -305,7 +306,7 @@ class OrderStageDeliveryScript{
         //JUMPING TO SCHEDULED
         ///////////////////////////////////////////////////
         if( $order_data->start_plan_mode=='scheduled' && $order_data->init_plan_scheduled>time() ){
-            return $this->OrderModel->itemStageCreate($order_id,'system_scheduled',$order_data,'as_admin');
+            return $this->OrderModel->itemStageCreate($order_id,'system_schedule',$order_data,'as_admin');
         }
         ///////////////////////////////////////////////////
         //MARK AS SEARCHING FOR COURIER
@@ -1066,7 +1067,7 @@ class OrderStageDeliveryScript{
         ];
         jobCreate($notification_task);
 
-        if( $order->stage_current=='customer_start' || $order->stage_current=='system_scheduled' ){
+        if( $order->stage_current=='customer_start' || $order->stage_current=='system_schedule' ){
             return $this->OrderModel->itemStageCreate($order_id,'system_start',$order_data,'as_admin');
         }
         return 'ok';
