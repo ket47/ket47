@@ -675,7 +675,7 @@ class OrderStageSupplierScript{
 
     public function onSupplierCalled( $order_id, $data ){
         $order=$this->OrderModel->itemGet($order_id,'basic');
-        if( !$data || !in_array($order->stage_current??'',['customer_start']) ){
+        if( !$data || !in_array($order->stage_current??'',['system_start']) ){
             return 'idle';
         }
 
