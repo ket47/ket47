@@ -244,7 +244,8 @@ class OrderStageSupplierScript{
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
+        $this->OrderModel->itemStageCreate($order_id, 'customer_start');
+        return 'ok';
     }
     
     /**

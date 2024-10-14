@@ -45,7 +45,7 @@ class OrderStageDeliveryScript{
 
         'system_schedule'=>[
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
-            'system_await'=>                ['В очередь','danger','clear'],
+            'customer_start'=>              ['В очередь','danger','clear'],
             ],
         'system_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
@@ -303,6 +303,12 @@ class OrderStageDeliveryScript{
         $PromoModel=model('PromoModel');
         $PromoModel->itemOrderDisable($order_id,1);
         ///////////////////////////////////////////////////
+        //COPYING INFO INTO ORDER
+        ///////////////////////////////////////////////////
+        $order=$this->OrderModel->itemGet($order_id);
+        $this->onSystemStartInfoSet( $order, $order_data );
+        
+        ///////////////////////////////////////////////////
         //JUMPING TO SCHEDULED
         ///////////////////////////////////////////////////
         if( $order_data->start_plan_mode=='scheduled' && $order_data->init_plan_scheduled>time() ){
@@ -317,7 +323,6 @@ class OrderStageDeliveryScript{
         ///////////////////////////////////////////////////
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
-        $order=$this->OrderModel->itemGet($order_id);
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
@@ -334,7 +339,6 @@ class OrderStageDeliveryScript{
             'context'=>$context,
         ];
         $notification_task=[
-            'task_name'=>"system_await Notify #$order_id",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
             ],
@@ -420,15 +424,11 @@ class OrderStageDeliveryScript{
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
         $this->OrderModel->itemUpdateOwners($order_id);
-        ///////////////////////////////////////////////////
-        //COPYING INFO INTO ORDER
-        ///////////////////////////////////////////////////
-        $order=$this->OrderModel->itemGet($order_id);
-        $this->onSystemStartInfoSet( $order, $order_data );
 
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
         $StoreModel->itemCacheClear();
+        $order=$this->OrderModel->itemGet($order_id);
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
         $context=[
@@ -510,61 +510,71 @@ class OrderStageDeliveryScript{
             'store'=>$store,
             'customer'=>$customer
         ];
-        $store_sms=(object)[
-            'message_transport'=>'message',
-            'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
-            'message_data'=>(object)[
-                'sound'=>'short.wav'
-            ],
-            'telegram_options'=>[
-                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
-            ],
+        $messages[]=(object)[
+            'message_transport'=>'push,telegram',
+            'message_reciever_id'=>'-100',
             'template'=>'messages/order/on_customer_rejected_STORE_sms.php',
             'context'=>$context
         ];
-        $store_email=(object)[
-            'message_transport'=>'email',
-            //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'message_reciever_email'=>$store->store_email,
-            'message_subject'=>"Отмена заказа №{$order->order_id} от ".getenv('app.title'),
-            'template'=>'messages/order/on_customer_rejected_STORE_email.php',
-            'context'=>$context
-        ];
-        $cour_sms=(object)[
-            'message_reciever_id'=>$order->order_courier_admins,
-            'message_transport'=>'push,telegram',
-            'message_data'=>(object)[
-                'sound'=>'short.wav'
-            ],
-            'template'=>'messages/order/on_customer_rejected_COUR_sms.php',
-            'context'=>$context
-        ];
+        if( $order->order_store_admins ){
+            $messages[]=(object)[
+                'message_transport'=>'push,telegram',
+                'message_reciever_id'=>$order->order_store_admins,
+                'message_data'=>(object)[
+                    'sound'=>'short.wav'
+                ],
+                'telegram_options'=>[
+                    'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+                ],
+                'template'=>'messages/order/on_customer_rejected_STORE_sms.php',
+                'context'=>$context
+            ];
+            $messages[]=(object)[
+                'message_transport'=>'email',
+                //'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
+                'message_reciever_email'=>$store->store_email,
+                'message_subject'=>"Отмена заказа №{$order->order_id} от ".getenv('app.title'),
+                'template'=>'messages/order/on_customer_rejected_STORE_email.php',
+                'context'=>$context
+            ];
+        }
+        if( $order->order_courier_admins ){
+            $messages[]=(object)[
+                'message_reciever_id'=>$order->order_courier_admins,
+                'message_transport'=>'push,telegram',
+                'message_data'=>(object)[
+                    'sound'=>'short.wav'
+                ],
+                'template'=>'messages/order/on_customer_rejected_COUR_sms.php',
+                'context'=>$context
+            ];
+
+            $courier_freeing_task=[
+                'task_name'=>"free the courier",
+                'task_programm'=>[
+                    ['model'=>'UserModel','method'=>'systemUserLogin'],
+                    ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
+                    ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
+                    ['model'=>'UserModel','method'=>'systemUserLogout'],
+                    ],
+                'task_priority'=>'low'
+            ];
+            jobCreate($courier_freeing_task);
+        }
+
         $notification_task=[
             'task_name'=>"customer_start Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms,$store_email,$cour_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$messages]]
                 ],
             'task_priority'=>'low'
         ];
-
-        $courier_freeing_task=[
-            'task_name'=>"free the courier",
-            'task_programm'=>[
-                ['model'=>'UserModel','method'=>'systemUserLogin'],
-                ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
-                ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
-                ['model'=>'UserModel','method'=>'systemUserLogout'],
-                ],
-            'task_priority'=>'low'
-        ];
-
-        jobCreate($courier_freeing_task);
         jobCreate($notification_task);
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']],
             ],
-            'task_next_start_time'=>time()+3
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
