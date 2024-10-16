@@ -100,9 +100,10 @@ class Store extends \App\Controllers\BaseController{
         $store_groups_htable=[];
         $product_groups_htable=[];
 
+        $now=time();
         foreach($store_list as $store){
             $store->cache_groups=json_decode($store->cache_groups);
-            if( !$store->cache_groups || $store->cache_groups->expired_at>time() ){
+            if( !$store->cache_groups || $store->cache_groups->expired_at<$now ){
                 $store->cache_groups=$StoreModel->itemCacheGroupCreate($store->store_id);
             }
             foreach($store->cache_groups->store_groups as $group_id){

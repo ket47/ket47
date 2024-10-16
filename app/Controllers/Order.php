@@ -555,6 +555,7 @@ class Order extends \App\Controllers\BaseController {
         }
 
         //CONSTRUCTING ORDER DATA
+        $order_update=(object)['order_id'=>$order->order_id];
         $order_data=(object)[];
         $order_data->order_cost=$deliveryOption->reckonParameters->order_cost;
         $order_data->order_fee= $deliveryOption->reckonParameters->order_fee;
@@ -583,8 +584,8 @@ class Order extends \App\Controllers\BaseController {
         $order_data->location_finish=$checkoutData->location_finish;
         //DELIVERY OPTIONS CHECK
         if( $checkoutSettings->deliveryByCourier??0 && $deliveryOption->deliveryByCourier??0 ){
-            $order->order_script='order_delivery';
-            $order->order_sum_delivery=$deliveryOption->deliverySum;
+            $order_update->order_script='order_delivery';
+            $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
             $OrderModel->fieldUpdateAllow('order_script');
 
@@ -629,8 +630,8 @@ class Order extends \App\Controllers\BaseController {
             ];
         } else
         if( $checkoutSettings->deliveryByStore??0 && $deliveryOption->deliveryByStore??0 ){
-            $order->order_script='order_supplier';
-            $order->order_sum_delivery=$deliveryOption->deliverySum;
+            $order_update->order_script='order_supplier';
+            $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
             $OrderModel->fieldUpdateAllow('order_script');
 
@@ -638,8 +639,8 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_by_store=1;
         } else
         if( $checkoutSettings->pickupByCustomer??0 && $deliveryOption->pickupByCustomer??0 ){
-            $order->order_script='order_supplier';
-            $order->order_sum_delivery=0;
+            $order_update->order_script='order_supplier';
+            $order_update->order_sum_delivery=0;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
             $OrderModel->fieldUpdateAllow('order_script');
 
@@ -659,11 +660,11 @@ class Order extends \App\Controllers\BaseController {
             }
         }
         //FIXING LOCATION IDS
-        $order->order_start_location_id=$checkoutData->location_start->location_id;
-        $order->order_finish_location_id=$checkoutData->location_finish->location_id;
+        $order_update->order_start_location_id=$checkoutData->location_start->location_id;
+        $order_update->order_finish_location_id=$checkoutData->location_finish->location_id;
         //SAVING CHECKOUT DATA
         $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
-        $result = $OrderModel->itemUpdate($order);
+        $result = $OrderModel->itemUpdate($order_update);
         if ($result === 'notfound') {
             return $this->failNotFound($result);
         }
