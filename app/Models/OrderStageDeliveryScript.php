@@ -413,7 +413,6 @@ class OrderStageDeliveryScript{
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_courier'=>json_encode($info_for_courier),
-            'delivery_job'=>null,
         ];
         $this->OrderModel->itemDataUpdate($order->order_id,$update);
     }
@@ -424,6 +423,10 @@ class OrderStageDeliveryScript{
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
         $this->OrderModel->itemUpdateOwners($order_id);
+        $update=(object)[
+            'delivery_job'=>null
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
 
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');
