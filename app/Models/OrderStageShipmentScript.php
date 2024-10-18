@@ -66,7 +66,7 @@ class OrderStageShipmentScript{
         //     'customer_start'=>              []
         // ],
         'admin_supervise'=>[
-            'system_finish'=>               ['Проблема решена','success'],
+            'delivery_finish'=>             ['Посылка доставлена','success'],//must set is_canceled to 0
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
             ],
@@ -112,6 +112,7 @@ class OrderStageShipmentScript{
             'sanction_customer_fee'=>1,
             'sanction_courier_fee'=>0,
             'sanction_supplier_fee'=>0,
+            'order_is_canceled'=>0,//money should not be returned
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         jobCreate([
@@ -126,6 +127,7 @@ class OrderStageShipmentScript{
             'sanction_customer_fee'=>0,
             'sanction_courier_fee'=>1,
             'sanction_supplier_fee'=>0,
+            'order_is_canceled'=>1,//money should be returned
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         jobCreate([
@@ -135,15 +137,7 @@ class OrderStageShipmentScript{
         ]);
         return 'ok';
     }
-    // public function onAdminSanctionSupplier( $order_id ){
-    //     $order_data_update=(object)[
-    //         'sanction_customer_fee'=>0,
-    //         'sanction_courier_fee'=>0,
-    //         'sanction_supplier_fee'=>1,
-    //     ];
-    //     $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-    //     return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
-    // }
+
     public function onAdminRecalculate($order_id){
         $order_data_update=(object)[
             'finalize_settle_supplier_done'=>0,
@@ -817,6 +811,7 @@ class OrderStageShipmentScript{
     }
 
     public function onDeliveryFinish( $order_id ){
+        $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>0]);
         $deliveryJob=['task_programm'=>[
             ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'finished']]
         ]];
