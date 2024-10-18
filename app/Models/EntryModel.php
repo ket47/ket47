@@ -23,7 +23,10 @@ class EntryModel extends Model{
         'entry_price' => 'greater_than_equal_to[1]',
         //'entry_quantity' => 'greater_than_equal_to[1]'
     ];
-    
+
+    protected function initialize(){
+        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4,  character_set_server = utf8mb4");
+    }
     public function itemGet( $entry_id ){
         $this->permitWhere('r');
         $this->where('entry_id',$entry_id);

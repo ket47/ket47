@@ -45,7 +45,7 @@ class ProductModel extends Model{
     public $itemCreateAsDisabled=true;
     public $itemImageCreateAsDisabled=false;
     protected function initialize(){
-        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
+        $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4,  character_set_server = utf8mb4");
     }
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
