@@ -54,7 +54,8 @@ class OrderStageShipmentScript{
             ],
         'delivery_rejected'=>[
             'admin_supervise'=>             ['Решить спор','danger'],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
+            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
             ],
         'delivery_finish'=>[
             'system_reckon'=>               [],
