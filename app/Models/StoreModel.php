@@ -255,7 +255,7 @@ class StoreModel extends Model{
     }
     
     private function itemRestrictedFilterout( $text ){
-        return trim(str_replace([
+        return trim(str_ireplace([
             'Симф',
             'Крым',
             'симф',

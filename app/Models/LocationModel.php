@@ -62,7 +62,7 @@ class LocationModel extends Model{
     }
 
     private function itemRestrictedFilterout( $address ){
-        return trim(str_replace([
+        return trim(str_ireplace([
             'Симферопольский район,',
             'Симферопольский район',
             'Симферополь,',

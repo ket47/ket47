@@ -24,6 +24,8 @@ class OrderStageShipmentScript{
             ],
         'customer_start'=>[
             'delivery_start'=>              ['Начать доставку'],
+            'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
+            'delivery_rejected'=>           [],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
             ],
@@ -31,6 +33,8 @@ class OrderStageShipmentScript{
         'system_await'=>[
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
             'customer_start'=>              [],
+            'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
+            'delivery_rejected'=>           [],
             'admin_action_customer_start'=> ['Запустить заказ','medium','clear'],
             ],
         'system_schedule'=>[
@@ -68,7 +72,7 @@ class OrderStageShipmentScript{
         'admin_supervise'=>[
             'delivery_finish'=>             ['Посылка доставлена','success'],//must set is_canceled to 0
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
-            'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
+            'admin_sanction_courier'=>      ['Возврат ден. клиенту','danger'],
             ],
         'admin_sanction_customer'=>[
             'system_reckon'=>               [],
@@ -98,6 +102,10 @@ class OrderStageShipmentScript{
     //ADMIN HANDLERS
     ////////////////////////////////////////////////
     public function onAdminSupervise( $order_id ){
+        $order_data_update=(object)[
+            'order_is_canceled'=>0,//money should not be returned
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         return 'ok';
     }
     public function onAdminCustomerStart( $order_id ){
