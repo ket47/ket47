@@ -490,7 +490,11 @@ class OrderStageShipmentScript{
             return 'address_not_set';
         }
         helper('phone_number');
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
+        $info_for_customer->tariff_info=view('order/customer_shipment_rules_info.php');
+
         $info_for_courier=(object)json_decode($order_data->info_for_courier??'[]');
+        $info_for_courier->tariff_info=view('order/delivery_shipment_rules_info.php');
 
         $info_for_courier->customer_location_address=$customerLocation->location_address??'';
         $info_for_courier->customer_location_comment=$customerLocation->location_comment??'';
@@ -502,6 +506,7 @@ class OrderStageShipmentScript{
 
         $update=(object)[
             'info_for_courier'=>json_encode($info_for_courier),
+            'info_for_customer'=>json_encode($info_for_customer),
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
         ///////////////////////////////////////////////////
