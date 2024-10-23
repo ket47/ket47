@@ -430,6 +430,8 @@ class Order extends \App\Controllers\BaseController {
         foreach( $bulkResponse->Store_deliveryOptions as $i=>$option){
             unset($bulkResponse->Store_deliveryOptions[$i]['reckonParameters']);
         }
+        $entry_count=model('EntryModel')->where('order_id',$order_id)->select('COUNT(*) c')->get()->getRow('c');
+        madd('order','create','ok',$order_id,null,(object)['act_data'=>['entry_count'=>$entry_count,'store_id'=>$order->order_store_id]]);
         return $this->respond($bulkResponse);
     }
 
@@ -438,9 +440,11 @@ class Order extends \App\Controllers\BaseController {
         $OrderModel = model('OrderModel');
         $order = $OrderModel->itemGet($checkoutSettings->order_id,'basic');
         if ( $order === 'forbidden' || !$checkoutSettings->order_id??0 || !$checkoutSettings->tariff_id??0 ) {
+            madd('order','start','error',$checkoutSettings->order_id,'forbidden');
             return $this->failForbidden();
         }
         if ( $order === 'notfound' ) {
+            madd('order','start','error',$checkoutSettings->order_id,'forbidden');
             return $this->failNotFound();
         }
         $order_data=$OrderModel->itemDataGet($checkoutSettings->order_id);
@@ -455,6 +459,7 @@ class Order extends \App\Controllers\BaseController {
             }
             $result=$Acquirer->statusCheck( $checkoutSettings->order_id );
             if( $result!='order_not_payed' ){
+                madd('order','start','error',$checkoutSettings->order_id,'payment_already_done');
                 return $this->failResourceExists('payment_already_done');
             }
         }
@@ -481,6 +486,7 @@ class Order extends \App\Controllers\BaseController {
             }
         }
         if( !$deliveryOption ){
+            madd('order','start','error',$checkoutSettings->order_id,'no_tariff');
             return $this->fail('no_tariff');
         }
 
@@ -601,6 +607,7 @@ class Order extends \App\Controllers\BaseController {
         if ($result != 'ok') {
             return $this->respondNoContent($result);
         }
+        madd('order','start','ok',$checkoutSettings->order_id);
         //AUTOSTART FOR CASH PAYMENTS
         if( isset($order_data->payment_by_cash_store) || isset($order_data->payment_by_cash) ){
             return $OrderModel->itemStageCreate($order->order_id,'customer_start');
