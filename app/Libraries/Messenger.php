@@ -126,13 +126,14 @@ class Messenger{
             'SMTPHost'=>getenv('email_server'),
             'SMTPUser'=>getenv('email_username'),
             'SMTPPass'=>getenv('email_password'),
+            'SMTPPort'=>getenv('email_port'),
+            'SMTPCrypto'=>getenv('email_encryption'),
             'mailType'=>'html',
         ];
         $email->initialize($config);
         $email->setFrom(getenv('email_from'), getenv('email_sendername'));
         $email->setTo($email_to);
         $email->setSubject($message->message_subject??getenv('email_sendername'));
-        
 
         $images = (object) [
             'header' => ROOTPATH.'/public/img/tezbanner.jpg', 

@@ -212,49 +212,46 @@ class MailingModel extends SecureModel{
         $MailingMessageModel=model('MailingMessageModel');
         $mailing_config = [];
         
-        $mailing_config['cart23'] = $OrderModel->where('order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) < 6')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['cart23'] = $OrderModel->where('(order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) < 23) OR owner_id = 43')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
         
-        $mailing_config['cart47'] = $OrderModel->where('order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) BETWEEN 24 AND 47')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['cart47'] = $OrderModel->where('(order_group_id = 24 AND TIMESTAMPDIFF(HOUR,  updated_at, NOW()) BETWEEN 24 AND 47) OR owner_id = 43')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
 
-        
-        $mailing_config['promo-10'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 10')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
-        $mailing_config['promo-3'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 3')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
-        $mailing_config['promo-1'] = $PromoModel->where('TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 1')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['promo-10'] = $PromoModel->where('(TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 10) OR owner_id = 43')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['promo-3'] = $PromoModel->where('(TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 3) OR owner_id = 43')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
+        $mailing_config['promo-1'] = $PromoModel->where('(TIMESTAMPDIFF(HOUR, NOW(), expired_at) = 1) OR owner_id = 43')->groupBy('owner_id')->select('owner_id as user_id')->get()->getResult();
 
-        $mailing_config['forgot14'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 14')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['forgot30'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 30')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['forgot90'] = $UserModel->where('TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 90')->groupBy('user_id')->select('user_id')->get()->getResult();
-        
+        $mailing_config['forgot14'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 14) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['forgot30'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 30) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['forgot90'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 90) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
         $willsend_at = date("Y-m-d 09:00:00");
-        $willsend_at = date("Y-m-d H:i:s", strtotime("+1 minute"));
         foreach( $mailing_config as $regular_group => $mailing_receivers ){
             $mailing = $this->where('regular_group', $regular_group)->get()->getRow();
-
-            $MailingMessageModel->where('mailing_id', $mailing->mailing_id)->delete();
-
-            $receivers = [];
-
-            $MailingMessageModel->transStart();
-            foreach( $mailing_receivers as $user ){
-                $receivers[] = $user->user_id;
-                $mailing_message = [
-                    'reciever_id' => $user->user_id,
+    
+            if(!empty($mailing)){
+                $MailingMessageModel->where('mailing_id', $mailing->mailing_id)->delete();
+    
+                $receivers = [];
+    
+                foreach( $mailing_receivers as $user ){
+                    $receivers[] = $user->user_id;
+                    $mailing_message = [
+                        'reciever_id' => $user->user_id,
+                        'mailing_id' => $mailing->mailing_id,
+                        'willsend_at' => $willsend_at
+                    ];
+                    $MailingMessageModel->itemCreate($mailing_message);
+                }
+    
+                $mailing->start_at = $willsend_at;
+                $mailing->is_started = 1;
+                $this->itemUpdate((object)[
                     'mailing_id' => $mailing->mailing_id,
-                    'willsend_at' => $willsend_at
-                ];
-                $MailingMessageModel->itemCreate($mailing_message);
-            }
-            $MailingMessageModel->transComplete();
-
-            $mailing->start_at = $willsend_at;
-            $mailing->is_started = 1;
-            $this->itemUpdate((object)[
-                'mailing_id' => $mailing->mailing_id,
-                'user_filter' => [],
-                'start_at' => $mailing->start_at,
-                'is_started' => $mailing->is_started
-            ]);
-            $this->itemJobCreate($receivers, $mailing);
+                    'user_filter' => [],
+                    'start_at' => $mailing->start_at,
+                    'is_started' => $mailing->is_started
+                ]);
+                $this->itemJobCreate($receivers, $mailing);
+            } 
         }
         $UserModel->systemUserLogout();
     }
