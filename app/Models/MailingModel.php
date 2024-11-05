@@ -223,10 +223,10 @@ class MailingModel extends SecureModel{
         $mailing_config['forgot14'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 14) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
         $mailing_config['forgot30'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 30) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
         $mailing_config['forgot90'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 90) OR owner_id = 43')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $willsend_at = date("Y-m-d 09:00:00");
+        
         foreach( $mailing_config as $regular_group => $mailing_receivers ){
             $mailing = $this->where('regular_group', $regular_group)->get()->getRow();
-    
+            $willsend_at = date("Y-m-d ".explode(' ', $mailing->start_at)[1]);
             if(!empty($mailing)){
                 $MailingMessageModel->where('mailing_id', $mailing->mailing_id)->delete();
     
