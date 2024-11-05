@@ -244,12 +244,7 @@ class MailingModel extends SecureModel{
     
                 $mailing->start_at = $willsend_at;
                 $mailing->is_started = 1;
-                $this->itemUpdate((object)[
-                    'mailing_id' => $mailing->mailing_id,
-                    'user_filter' => [],
-                    'start_at' => $mailing->start_at,
-                    'is_started' => $mailing->is_started
-                ]);
+                $this->itemUpdate((object) $mailing);
                 $this->itemJobCreate($receivers, $mailing);
             } 
         }
