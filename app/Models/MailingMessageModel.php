@@ -16,7 +16,7 @@ class MailingMessageModel extends SecureModel{
         'is_failed',
         ];
 
-    protected $useSoftDeletes   = true;
+    protected $useSoftDeletes   = false;
     protected $useTimestamps    = true;
     protected $returnType       = 'object';
     
