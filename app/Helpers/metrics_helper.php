@@ -24,7 +24,8 @@ function madd( string $group, string $type, string $result, int $target_id=null,
         'act_type'=>$type,
         'act_result'=>$result,
         'act_description'=>$description,
-        'act_target_id'=>$target_id
+        'act_target_id'=>$target_id,
+        'append'=>$props->append??0
     ];
 
     if( $props->act_data??null ){

@@ -44,7 +44,7 @@ class AcquirerRncb{
         $result = curl_exec($curl);
         //pl(curl_getinfo($curl));
         if( curl_error($curl) ){
-            log_message("ERROR","$url API Execute error: ".curl_error($curl));
+            log_message("error","$url API Execute error: ".curl_error($curl));
             die(curl_error($curl));
         }
         curl_close($curl);

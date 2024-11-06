@@ -17,7 +17,9 @@ class Search extends \App\Controllers\BaseController{
             madd('search','get','error',null,$query);
             return $this->fail($result);
         }
-        madd('search','get','ok',null,$query);
+        if( $query ){
+            madd('search','get','ok',null,$query,(object) ['append'=>1]);
+        }
         $response=[
             'product_matches'=>$this->listStoreProductsGet($query,$result)
         ];
@@ -30,7 +32,7 @@ class Search extends \App\Controllers\BaseController{
         foreach($store_list as $store){
             $filter=[
                 'search_query'=>$query,
-                'limit'=>4,
+                'limit'=>6,
                 'store_id'=>$store->store_id
             ];
             $ProductModel->where('(validity<>0 OR validity IS NULL)');
