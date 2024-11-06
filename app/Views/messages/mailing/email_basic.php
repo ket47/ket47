@@ -14,43 +14,43 @@
                                         <tr>
                                             <td style="width: 5%" bgcolor="#F5F7FA">&nbsp;</td>
                                             <td style="max-width: 420px" align="center">
-                                                <table style="width: 100%; max-width: 420px; font-family: Arial, sans-serif; font-size: 16px; line-height: 24px; color: #0b1f33; box-shadow: rgba(0, 0, 0, 0.14) 0px 0px 15px -5px; height: 392px"
+                                                <table style="width: 100%; max-width: 420px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 16px; line-height: 24px; color: #0b1f33; box-shadow: rgba(0, 0, 0, 0.14) 0px 0px 15px -5px; margin: 10px;"
                                                     border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff">
                                                     <tbody>
-                                                        <tr style="height: 120px">
-                                                            <td style="font-size: 20px; line-height: 28px; height: 120px" align="center">
+                                                        <tr>
+                                                            <td>
                                                                 <img src="cid:<?= $images->header ?>" 
-                                                                style="margin-right: 0px; width: 100%"
+                                                                style="margin-right: 0px; width: 100%; border-radius: 8px 8px 0 0;"
                                                                 alt="logo_top.png" width="500"/>
                                                              </td>
                                                         </tr>
-                                                        <tr style="height: 56px">
+                                                        <tr>
                                                             <td style="padding: 32px 30px 0px; font-size: 20px; line-height: 28px; height: 56px" align="center">
                                                                 <strong><?= $message_subject ?></strong>
                                                             </td>
                                                         </tr>
                                                         <?php if(!empty($images->content)){ ?>
-                                                        <tr style="height: 96px" >
-                                                            <td style="padding: 0px 30px 0px; height: 96px" align="center">
+                                                        <tr>
+                                                            <td style="padding: 0px 25px 0px; height: 96px" align="center">
                                                                 <p>
-                                                                    <img style="border-radius: 10px"  src="cid:<?= $images->content ?>"  width="450">
+                                                                    <img style="border-radius: 10px; width: 100%;"  src="cid:<?= $images->content ?>"  width="450">
                                                                 </p>
                                                             </td>
                                                         </tr>
                                                         <?php } ?>
-                                                        <tr style="height: 48px">
+                                                        <tr>
                                                             <td style="padding: 12px 30px 0px; height: 48px" align="center">
                                                                 <?= $message_text ?>
                                                             </td>
                                                         </tr>
-                                                        <tr style="height: 24px">
-                                                            <td style="padding: 12px 30px 0px; height: 24px"
+                                                        <tr>
+                                                            <td style="padding: 12px 30px 0px;"
                                                                 align="center">С заботой о Вас, команда Tezkel.</td>
                                                         </tr>
                                                         
                                                         <?php if(!empty($message_data->link)){ ?>
-                                                        <tr style="height: 24px">
-                                                            <td style="padding: 32px 30px; height: 24px" align="center">
+                                                        <tr>
+                                                            <td style="padding: 32px 30px;" align="center">
                                                                 <a style="text-decoration: none; background-color: #009dcd; padding: 10px 15px; border-radius: 10px; color: white; font-weight: bold"
                                                                     href="<?= $message_data->link ?>"
                                                                     target="_blank" rel="noreferrer">ПОДРОБНЕЕ</a></td>
