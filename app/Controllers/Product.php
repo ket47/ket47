@@ -98,7 +98,7 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemGet(){
-        $product_id=$this->request->getVar('product_id');
+        $product_id=(int) $this->request->getVar('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemGet($product_id);
         if( $result==='forbidden' ){

@@ -9,7 +9,7 @@
  * @props may contain target, target_id, owner_ally_ids
  * @debounce in seconds
  */
-function madd( string $group, string $type, string $result, int $target_id=null, string $description=null, object $props=null, int $debounce=180 ){
+function madd( string $group, string $type, string $result, $target_id=null, string $description=null, object $props=null, int $debounce=180 ){
     if( $debounce ){
         $clock_id="madd_clock".md5("$group $type $target_id $result $description");
         $clock_val=session()->get($clock_id)??0;

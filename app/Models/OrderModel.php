@@ -225,7 +225,7 @@ class OrderModel extends SecureModel{
         $path_value='';
         foreach($data_update as $path=>$value){
             if( is_object($value) ){
-                $path_value.=','.$this->db->escape("$.$path").",CAST('".json_encode($value,JSON_UNESCAPED_UNICODE)."' AS JSON)";
+                $path_value.=','.$this->db->escape("$.$path").",CAST('".json_encode($value,JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE)."' AS JSON)";
             } else {
                 $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
             }

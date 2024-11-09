@@ -264,6 +264,17 @@ class Messenger{
             return true;
         }
         log_message('error', 'Telegram message failed: '.json_encode([$result,$message]));
+        if( 403==($result['error_code']??0) ){
+            pl($message);
+            $this->itemUnsubscribeTelegram($message->message_reciever_id);
+            log_message('error', "Telegram reciever was UNSUBSCRIBED: {$message->reciever->user_phone} {$message->reciever->user_name}");
+        }
         return false;
+    }
+
+    private function itemUnsubscribeTelegram( int $user_id ){
+        $UserModel=model('UserModel');
+        $UserModel->set("user_data","JSON_REMOVE(`user_data`,'$.telegramChatId')",false);
+        $UserModel->update($user_id);
     }
 }

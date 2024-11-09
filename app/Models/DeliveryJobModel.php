@@ -66,7 +66,11 @@ class DeliveryJobModel extends SecureModel{
         $data->order_id=$order_id;
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
         try{
-            return $this->{$stageHandlerName}($data);
+            $result=$this->{$stageHandlerName}($data);
+            if( $result=='invalid' ){
+                pl(["DeliveryJob itemStageSet",$order_id, $stage, $data]);
+            }
+            return $result;
         } catch (\Throwable $e){
             log_message('error',"itemStageSet: ".$e->getMessage()." line: ".$e->getLine()." ".$e->getFile());
         }
@@ -85,9 +89,14 @@ class DeliveryJobModel extends SecureModel{
      * Corrects start_plan and places on stack as awaited 
      */
     private function onAwaited( object $data ){
-        if( empty($data->start_plan) && empty($data->finish_plan) ){
-            return 'invalid';
-        }
+        /**
+         * sometimes start_plan is null untill figuring out let comment it
+         */
+
+
+        // if( empty($data->start_plan) && empty($data->finish_plan) ){
+        //     return 'invalid';
+        // }
         if( empty($data->start_longitude) || empty($data->start_latitude) || empty($data->finish_longitude) || empty($data->finish_latitude) ){
             return 'invalid';
         }

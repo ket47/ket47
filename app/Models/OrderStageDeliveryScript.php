@@ -375,15 +375,6 @@ class OrderStageDeliveryScript{
         return 'ok';
     }
 
-    // public function onSystemAwait( $order_id ){
-    //     $order_data=$this->OrderModel->itemDataGet($order_id);
-    //     $deliveryJob=['task_programm'=>[
-    //         ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
-    //     ]];
-    //     jobCreate($deliveryJob);
-    //     $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
-    //     return 'ok';
-    // }
 
     private function onSystemStartInfoSet( object $order, object $order_data ){
         helper('phone_number');
@@ -423,10 +414,10 @@ class OrderStageDeliveryScript{
         //COPYING STORE OWNERS TO ORDER OWNERS
         ///////////////////////////////////////////////////
         $this->OrderModel->itemUpdateOwners($order_id);
-        $update=(object)[
-            'delivery_job'=>null
-        ];
-        $this->OrderModel->itemDataUpdate($order_id,$update);
+        // $update=(object)[
+        //     'delivery_job'=>null
+        // ];
+        //$this->OrderModel->itemDataUpdate($order_id,$update);
 
         $UserModel=model('UserModel');
         $StoreModel=model('StoreModel');

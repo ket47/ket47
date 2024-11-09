@@ -151,7 +151,7 @@ class MailingMessageModel extends SecureModel{
                 ],
                 'message_text'=>$this->render($mailing->text_template,$context),
             ];
-            pl($message);
+            //pl($message);
             $is_sent=$Messenger->itemSend( $message );
             $this->where('mailing_id',$mailing->mailing_id);
             $this->where('reciever_id',$reciever_id);

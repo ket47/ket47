@@ -373,6 +373,9 @@ class Order extends \App\Controllers\BaseController {
         $owner_id=session()->get('user_id');
         $data->location_start=$LocationModel->itemMainGet('store',$order->order_store_id);
         $data->location_finish=$LocationModel->itemMainGet('user',$owner_id);
+        if( empty($data->location_start) || empty($data->location_finish) ){
+            return 'too_far';//user finish location is not set or store start location is not set
+        }
         $start_finish_distance=(int) $LocationModel->distanceGet($data->location_start->location_id,$data->location_finish->location_id);
 
         $data->Store_deliveryOptions=$this->itemDeliveryOptionsGet( $order->order_store_id, $start_finish_distance, $features );
