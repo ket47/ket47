@@ -649,6 +649,7 @@ class ProductModel extends Model{
         $this->nightlyCalculateTopSale();
         $this->nightlyCalculateNew();
         $this->nightlyCalculatePromo();
+        $this->nightlyCalculateReaction();
     }
 
     private function nightlyCalculateNew(){
@@ -695,6 +696,34 @@ class ProductModel extends Model{
                 'perk_holder_id'=>$row->product_id,
                 'perk_type'=>'product_promo',
                 'expired_at'=>$row->product_promo_finish,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
+
+    private function nightlyCalculateReaction(){
+        $this->select('product_id,SUM(reaction_is_like)/COUNT(*) ratio');
+        $this->join('reaction_tag_list','tag_id=product_id');
+        $this->join('reaction_list','member_id=reaction_id');
+        $this->groupBy('product_id');
+        $this->having('ratio>',0.7);
+        $rows=$this->get()->getResult();
+        $expired_at=date("Y-m-d H:i:s",time()+25*60*60);//one day plus hour
+
+        $PerkModel=model('PerkModel');
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_reaction');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_reaction',
+                'perk_value'=>$row->ratio,
+                'expired_at'=>$expired_at,
             ];
             $PerkModel->itemCreate($perk);
         }
