@@ -140,21 +140,9 @@ class SearchModel extends SecureModel{
 
 
     public function storeMatchesGet( array $filter ){
-
-
-
-
         //helper('bench');
-
-
-
         $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
-
-
         //bench('storeNearGet');
-
-
-
         if( empty($near_stores['store_list']) ){
             return 'store_notfound';
         }
@@ -166,13 +154,9 @@ class SearchModel extends SecureModel{
         ->table('tmp_search')
         ->select('store_id')
         ->groupBy('store_id')
-        //->orderBy("SUM(score)","DESC")
+        ->orderBy("SUM(score)","DESC")
         ->get()->getResult();
-
-
-
         //bench('store_rank_list');
-
 
         function storeFind($store_list,$store_id):object{
             foreach($store_list as $store){
@@ -182,18 +166,29 @@ class SearchModel extends SecureModel{
             }
         }
         $grouped=[];
+        $productmatch_list=[];
         foreach( $store_rank_list as $rank ){
             $store=storeFind($near_stores['store_list'],$rank->store_id);
             $store->matches=$bulider->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
             $grouped[]=$store;
+            $productmatch_list[]=$rank->store_id;
         }
 
-
+        if( $filter['query']??null ){
+            $query=$filter['query'];
+            $cleaned_query=str_replace([',','.',';','!','?'],'|',$query);
+            foreach($near_stores['store_list'] as $store){
+                if( in_array($store->store_id,$productmatch_list) ){
+                    continue;
+                }
+                if( !preg_match("|($cleaned_query)|iu", $store->store_name) ){
+                    continue;
+                }
+                $store=storeFind($near_stores['store_list'],$store->store_id);
+                $grouped[]=$store;
+            }
+        }
         //bench('grouped');
-
-
-
-        
         return $grouped;
     }
 }
