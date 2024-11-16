@@ -200,6 +200,26 @@ class OrderStageDeliveryScript{
     }
 
     /**
+     * Remind left cart to customer
+     */
+    private function offCustomerConfirmedRemind($order_id){
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        $notifications=[];
+        $notifications[]=(object)[
+            'message_transport'=>'message',
+            'message_reciever_id'=>$order->owner_id,
+            'template'=>'messages/events/on_user_cart_left_sms.php',
+            'context'=>[],
+        ];
+        $notification_task=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[$notifications]]
+            ],
+            'task_priority'=>'low'
+        ];
+        jobCreate($notification_task);
+    }
+    /**
      * offCustomerConfirmed
      * 
      * before exit customer confirmed stage check if card_payment is done
@@ -213,6 +233,9 @@ class OrderStageDeliveryScript{
              */
             $order_data=$this->OrderModel->itemDataGet($order_id);
             if( empty($order_data->payment_by_card) ){
+                if( session()->get('user_id')==-100 ){//only if auto cart reset
+                    $this->offCustomerConfirmedRemind($order_id);
+                }
                 return 'ok';
             }
             if($order_data->payment_card_acq_rncb??0){
