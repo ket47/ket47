@@ -11,15 +11,71 @@ class SearchModel extends SecureModel{
     protected $allowedFields = [
 
         ];
-
-
     
     public function listGet( string $query=null ){
         return false;
     }
 
+    /**
+     * Function groups all search results by store
+     */
+    public function storeMatchesGet( array $filter ){
+        //helper('bench');
+        $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
+        //bench('storeNearGet');
+        if( empty($near_stores['store_list']) ){
+            return 'store_notfound';
+        }
+        $filter['store_ids']=$near_stores['id_list'];
+        $this->matchTableCreate($filter);
 
-    private function storeNearGet( int $location_id=null, float $location_latitude=null, float $location_longitude=null, string $query=null ){
+        $bulider=db_connect();
+        $store_rank_list=$bulider
+        ->table('tmp_search')
+        ->select('store_id')
+        ->groupBy('store_id')
+        ->orderBy("SUM(score)+MAX(score)","DESC")
+        ->get()->getResult();
+        //bench('store_rank_list');
+
+        function storeFind($store_list,$store_id):object{
+            foreach($store_list as $store){
+                if($store->store_id==$store_id){
+                    return $store;
+                }
+            }
+        }
+        $grouped=[];
+        $productmatch_list=[];
+        foreach( $store_rank_list as $rank ){
+            $store=storeFind($near_stores['store_list'],$rank->store_id);
+            $store->matches=$bulider->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
+            $grouped[]=$store;
+            $productmatch_list[]=$rank->store_id;
+        }
+
+        if( $filter['query']??null ){
+            $query=$filter['query'];
+            $cleaned_query=str_replace([',','.',';','!','?'],'|',$query);
+            foreach($near_stores['store_list'] as $store){
+                if( in_array($store->store_id,$productmatch_list) ){
+                    continue;
+                }
+                if( !preg_match("|($cleaned_query)|iu", $store->store_name) ){
+                    continue;
+                }
+                $store=storeFind($near_stores['store_list'],$store->store_id);
+                array_unshift($grouped,$store);
+            }
+        }
+        //bench('grouped');
+        return $grouped;
+    }
+
+    /**
+     * Gives available stores and caches it
+     */
+    private function storeNearGet( int $location_id=null, float $location_latitude=null, float $location_longitude=null ){
         $cachehash=md5("$location_id,$location_latitude,$location_longitude");
         $storesearchcache=session()->get('storesearchcache')??[];
         if( isset($storesearchcache[$cachehash]['expired_at']) && $storesearchcache[$cachehash]['expired_at']>time() ){
@@ -79,7 +135,9 @@ class SearchModel extends SecureModel{
         return $list;
     }
 
-
+    /**
+     * Creates tmp table with query matches and orders by score
+     */
     private function matchTableCreate( array $filter ){
         $productdescr_weight=0.5;
         $groupdescr_weight=0.2;
@@ -94,7 +152,7 @@ class SearchModel extends SecureModel{
         if( $filter['offset']??0 ){
             $this->offset($filter['offset']);
         }
-        $search_query=$filter['query']??null;
+        $search_query=$this->db->escapeString($filter['query']??null);
         $query_score=1;
         if( $search_query ){
             $against='';
@@ -109,11 +167,22 @@ class SearchModel extends SecureModel{
                 
             }
             $query_score="( (MATCH(product_name) AGAINST ('$against' IN BOOLEAN MODE)) + (MATCH(product_description) AGAINST ('$against' IN BOOLEAN MODE))*$productdescr_weight + (MATCH(group_description) AGAINST ('$against' IN BOOLEAN MODE))*$groupdescr_weight )";
+            $this->where($query_score,null,false);
         }
         $score="$query_score*(1+COUNT(perk_id)*$perk_weight)";
 
         $now=date("Y-m-d H:i:s");
-        $this->select("store_id,product_id,product_name,product_description,perk_type,image_hash,product_list.is_disabled");
+        $this->select("
+            product_id,
+            product_name,
+            product_quantity,
+            product_quantity_reserved,
+            product_quantity_min,
+            product_code,
+            product_list.is_disabled,
+            is_counted
+        ");
+        $this->select("store_id,image_hash");
         $this->select("$score score",false);
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
         $this->join('product_group_member_list pgml','member_id=product_id','left');
@@ -121,14 +190,12 @@ class SearchModel extends SecureModel{
         $this->join('perk_list',"perk_holder='product' AND perk_holder_id=product_id AND expired_at>'$now'",'left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND image_list.is_main=1");
         $this->whereIn('store_id',$filter['store_ids']);
-        $this->where($query_score,null,false);
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $this->where('product_list.is_disabled',0);
         $this->where('product_list.deleted_at IS NULL');
         $this->where('validity>50');
         $this->orderBy('score','DESC');
         $this->groupBy('member_id');
-        $this->having('score>0');
 
         $found_sql=$this->builder->getCompiledSelect(true);
         //bench('matchTableCreate SQL');
@@ -138,57 +205,80 @@ class SearchModel extends SecureModel{
         //bench('matchTableCreate');
     }
 
-
-    public function storeMatchesGet( array $filter ){
-        //helper('bench');
-        $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
-        //bench('storeNearGet');
-        if( empty($near_stores['store_list']) ){
-            return 'store_notfound';
+    private function transliterate($input) {
+        $map=[
+            'cyr' => [
+                ' ', 'ё',  'ж',   'ц',  'ч',   'щ',  'ш',  'ю',  'я',
+                'а', 'б', 'в', 'г', 'д', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'ы', 'е', 'э', 'х',
+            ],
+            'lat' => [
+                ' ', 'yo', 'j', 'ts', 'ch', 'shch', 'sh', 'yu', 'ya',
+                'a', 'b', 'v', 'g', 'd', 'z', 'i', 'y', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'f', 'y', 'e', 'e', 'h',
+            ]
+        ];
+        $from=$map['lat'];
+        $to=$map['cyr'];
+        if( in_array(mb_substr($input,0,1),$map['cyr']) ){
+            $from=$map['cyr'];
+            $to=$map['lat'];
         }
-        $filter['store_ids']=$near_stores['id_list'];
-        $this->matchTableCreate($filter);
+        $result='';
+        do{
+            $continue=false;
+            foreach( $from as $i=>$char ){
+                if( mb_strpos($input, $char)===0 ){
+                    $result.=$to[$i];
+                    $input=mb_substr($input,mb_strlen($char));
+                    $continue=true;
+                }
+            }
+        } while ( $continue );
+        return $result;
+    }
+
+    public function suggestionListGet( array $filter ){
+        $search_query=mb_strtolower( str_replace([',','.',';','!','?','\'','"'],' ',trim($filter['query']??null)) );
+        if( empty($search_query) ){
+            return 'invalid_query';
+        }
+        $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
+        
+        return $this->suggestionListPrepare( $search_query, $near_stores['id_list'] );
+    }
+
+    private function suggestionListPrepare( string $search_query, array $store_ids ){
+        $limit=7;
+        $like=$this->db->escapeLikeString($search_query);
+        $or_like=$this->transliterate($like);
 
         $bulider=db_connect();
-        $store_rank_list=$bulider
-        ->table('tmp_search')
-        ->select('store_id')
-        ->groupBy('store_id')
-        ->orderBy("SUM(score)","DESC")
-        ->get()->getResult();
-        //bench('store_rank_list');
+        $products = $bulider
+        ->table('product_list')
+        ->select("LOWER(REGEXP_REPLACE(product_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->where('is_disabled',0)
+        ->where('deleted_at IS NULL')
+        ->like('product_name',$like,'after')
+        ->orLike('product_name',$or_like,'after')
+        ->whereIn('store_id',$store_ids)
+        ->orderBy('LENGTH(product_name)')
+        ->limit($limit);
 
-        function storeFind($store_list,$store_id):object{
-            foreach($store_list as $store){
-                if($store->store_id==$store_id){
-                    return $store;
-                }
-            }
-        }
-        $grouped=[];
-        $productmatch_list=[];
-        foreach( $store_rank_list as $rank ){
-            $store=storeFind($near_stores['store_list'],$rank->store_id);
-            $store->matches=$bulider->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
-            $grouped[]=$store;
-            $productmatch_list[]=$rank->store_id;
-        }
+        $stores =   $bulider
+        ->table('store_list')
+        ->select("LOWER(REGEXP_REPLACE(store_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->like('store_name',$like,'after')
+        ->orLike('store_name',$or_like,'after')
+        ->whereIn('store_id',$store_ids)
+        ->orderBy('LENGTH(store_name)')
+        ->limit($limit);
 
-        if( $filter['query']??null ){
-            $query=$filter['query'];
-            $cleaned_query=str_replace([',','.',';','!','?'],'|',$query);
-            foreach($near_stores['store_list'] as $store){
-                if( in_array($store->store_id,$productmatch_list) ){
-                    continue;
-                }
-                if( !preg_match("|($cleaned_query)|iu", $store->store_name) ){
-                    continue;
-                }
-                $store=storeFind($near_stores['store_list'],$store->store_id);
-                $grouped[]=$store;
-            }
-        }
-        //bench('grouped');
-        return $grouped;
+        $suggestions=$bulider
+        ->newQuery()
+        ->fromSubquery($products->union($stores), 'q')
+        ->orderBy('LENGTH(suggestion)')
+        ->limit($limit)
+        ->get()
+        ->getResult();
+        return $suggestions;
     }
 }

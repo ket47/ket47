@@ -27,6 +27,26 @@ class Search extends \App\Controllers\BaseController{
         //bench('matchTableCreate Response');
         return $this->respond($response);
     }
+
+    public function suggestionListGet(){
+        $location_id=$this->request->getVar('location_id');
+        $query=trim($this->request->getVar('query'));
+        $limit=$this->request->getVar('limit');
+        $filter=[
+            'query'=>$query,
+            'location_id'=>$location_id,
+            'limit'=>$limit??100
+        ];
+        $SearchModel=model('SearchModel');
+        $result=$SearchModel->suggestionListGet( $filter );
+        $response=[
+            'product_matches'=>$result
+        ];
+        //bench('matchTableCreate Response');
+        return $this->respond($response);
+    }
+
+
     // private function listStoreProductsGet( $query,$store_list ){
     //     $matched_stores=[];
     //     $ProductModel=model('ProductModel');
