@@ -254,7 +254,8 @@ class SearchModel extends SecureModel{
         $bulider=db_connect();
         $products = $bulider
         ->table('product_list')
-        ->select("LOWER(REGEXP_REPLACE(product_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->select('LOWER(product_name) suggestion')
+        //->select("LOWER(REGEXP_REPLACE(product_name,'[^([:alpha:][:space:])]','')) suggestion")
         ->where('is_disabled',0)
         ->where('deleted_at IS NULL')
         ->like('product_name',$like,'after')
@@ -265,7 +266,8 @@ class SearchModel extends SecureModel{
 
         $stores =   $bulider
         ->table('store_list')
-        ->select("LOWER(REGEXP_REPLACE(store_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->select('LOWER(store_name) suggestion')
+        //->select("LOWER(REGEXP_REPLACE(store_name,'[^([:alpha:][:space:])]','')) suggestion")
         ->like('store_name',$like,'after')
         ->orLike('store_name',$or_like,'after')
         ->whereIn('store_id',$store_ids)
@@ -279,6 +281,12 @@ class SearchModel extends SecureModel{
         ->limit($limit)
         ->get()
         ->getResult();
+
+        if( $suggestions ){
+            foreach($suggestions as $row){
+                $row->suggestion=preg_replace('/[^\w\s]/u','',$row->suggestion);
+            }
+        }
         return $suggestions;
     }
 }
