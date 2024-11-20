@@ -46,26 +46,17 @@ class Search extends \App\Controllers\BaseController{
         return $this->respond($response);
     }
 
-
-    // private function listStoreProductsGet( $query,$store_list ){
-    //     $matched_stores=[];
-    //     $ProductModel=model('ProductModel');
-    //     $limit=5;
-    //     foreach($store_list as $store){
-    //         $filter=[
-    //             'search_query'=>$query,
-    //             'limit'=>6,
-    //             'store_id'=>$store->store_id
-    //         ];
-    //         $ProductModel->where('(validity<>0 OR validity IS NULL)');
-    //         $store->matches=$ProductModel->listSearch($filter);
-    //         if($store->matches || mb_stripos($store->store_name,$query)!==false ){
-    //             $matched_stores[]=$store;
-    //             if(--$limit<1){
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     return $matched_stores;
-    // }
+    public function categoryListGet(){
+        $parent_id=(int) $this->request->getVar('parent_id');
+        $ProductGroupModel=model('ProductGroupModel');
+        $ProductGroupModel->where('group_parent_id',$parent_id);
+        $ProductGroupModel->join('image_list',"image_holder='product_group_list' AND image_holder_id=group_id AND is_main=1",'left');
+        $ProductGroupModel->select('group_id,group_name,image_hash');
+        $ProductGroupModel->orderBy('group_name');
+        $result=$ProductGroupModel->findAll();
+        if( !$result ){
+            return $this->failNotFound();
+        }
+        return $this->respond($result);
+    }
 }

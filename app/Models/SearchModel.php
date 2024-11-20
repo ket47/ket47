@@ -179,6 +179,8 @@ class SearchModel extends SecureModel{
             product_quantity_reserved,
             product_quantity_min,
             product_code,
+            product_unit,
+            product_weight,
             product_list.is_disabled,
             is_counted
         ");
@@ -268,6 +270,8 @@ class SearchModel extends SecureModel{
         ->table('store_list')
         ->select('LOWER(store_name) suggestion')
         //->select("LOWER(REGEXP_REPLACE(store_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->where('is_disabled',0)
+        ->where('deleted_at IS NULL')
         ->like('store_name',$like,'after')
         ->orLike('store_name',$or_like,'after')
         ->whereIn('store_id',$store_ids)
