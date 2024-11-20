@@ -86,6 +86,7 @@ class Task extends \App\Controllers\BaseController{
         $trashed_days= getenv('app.trashed_days');
         model("ImageModel")->listPurge($trashed_days);
         model("ProductModel")->listPurge($trashed_days);
+        model("PostModel")->listPurge();
         //model("StoreModel")->listPurge($trashed_days);
         model("OrderModel")->listPurge(-1);
         model("UserModel")->listPurge($trashed_days);
