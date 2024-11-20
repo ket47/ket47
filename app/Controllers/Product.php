@@ -7,17 +7,17 @@ class Product extends \App\Controllers\BaseController{
     use ResponseTrait;
     public function listGet(){
         $filter=[
-            'name_query'=>$this->request->getVar('name_query'),
-            'name_query_fields'=>$this->request->getVar('name_query_fields'),
-            'is_disabled'=>$this->request->getVar('is_disabled'),
-            'is_deleted'=>$this->request->getVar('is_deleted'),
-            'is_active'=>$this->request->getVar('is_active'),
-            'offset'=>$this->request->getVar('offset'),
-            'limit'=>$this->request->getVar('limit'),
-            'store_id'=>$this->request->getVar('store_id'),
-            'group_id'=>$this->request->getVar('group_id'),
-            //'order'=>$this->request->getVar('order'),
-            'reverse'=>$this->request->getVar('reverse'),
+            'name_query'=>$this->request->getPost('name_query'),
+            'name_query_fields'=>$this->request->getPost('name_query_fields'),
+            'is_disabled'=>$this->request->getPost('is_disabled'),
+            'is_deleted'=>$this->request->getPost('is_deleted'),
+            'is_active'=>$this->request->getPost('is_active'),
+            'offset'=>$this->request->getPost('offset'),
+            'limit'=>$this->request->getPost('limit'),
+            'store_id'=>$this->request->getPost('store_id'),
+            'group_id'=>$this->request->getPost('group_id'),
+            //'order'=>$this->request->getPost('order'),
+            'reverse'=>$this->request->getPost('reverse'),
         ];
 
 
@@ -29,7 +29,7 @@ class Product extends \App\Controllers\BaseController{
 
 
 
-        $grouptree_include=$this->request->getVar('grouptree_include');
+        $grouptree_include=$this->request->getPost('grouptree_include');
         $ProductModel=model('ProductModel');
 
         $data['product_list']=$ProductModel->listGet($filter);
@@ -118,13 +118,13 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        $store_id=$this->request->getVar('store_id');
+        $store_id=$this->request->getPost('store_id');
         $product=[
             'store_id'=>$store_id,
-            'product_name'=>$this->request->getVar('product_name'),
-            'product_price'=>$this->request->getVar('product_price'),
-            'product_parent_id'=>$this->request->getVar('product_parent_id'),
-            'product_option'=>$this->request->getVar('product_option'),
+            'product_name'=>$this->request->getPost('product_name'),
+            'product_price'=>$this->request->getPost('product_price'),
+            'product_parent_id'=>$this->request->getPost('product_parent_id'),
+            'product_option'=>$this->request->getPost('product_option'),
         ];
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemCreate($product);
@@ -159,9 +159,9 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemUpdateGroup(){
-        $product_id=$this->request->getVar('product_id');
-        $group_id=$this->request->getVar('group_id');
-        $is_joined=$this->request->getVar('is_joined');
+        $product_id=$this->request->getPost('product_id');
+        $group_id=$this->request->getPost('group_id');
+        $is_joined=$this->request->getPost('is_joined');
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUpdateGroup($product_id,$group_id,$is_joined);
@@ -175,7 +175,7 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemDelete(){
-        $product_id=$this->request->getVar('product_id');
+        $product_id=$this->request->getPost('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemDelete($product_id);
         if( $result==='ok' ){
@@ -188,7 +188,7 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemUnDelete(){
-        $product_id=$this->request->getVar('product_id');
+        $product_id=$this->request->getPost('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemUnDelete($product_id);
         if( $result==='ok' ){
@@ -201,8 +201,8 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function itemDisable(){
-        $product_id=$this->request->getVar('product_id');
-        $is_disabled=$this->request->getVar('is_disabled');
+        $product_id=$this->request->getPost('product_id');
+        $is_disabled=$this->request->getPost('is_disabled');
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemDisable($product_id,$is_disabled);
@@ -213,7 +213,7 @@ class Product extends \App\Controllers\BaseController{
     }
 
     public function itemOptionGet(){
-        $product_parent_id=$this->request->getVar('product_parent_id');
+        $product_parent_id=$this->request->getPost('product_parent_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemOptionGet($product_parent_id);
         if( !$result ){
@@ -223,8 +223,8 @@ class Product extends \App\Controllers\BaseController{
     }
 
     public function itemOptionSave(){
-        $product_id=$this->request->getVar('product_id');
-        $product_parent_id=$this->request->getVar('product_parent_id');
+        $product_id=$this->request->getPost('product_id');
+        $product_parent_id=$this->request->getPost('product_parent_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemOptionSave($product_id,$product_parent_id);
         if( $result==='ok' ){
@@ -234,7 +234,7 @@ class Product extends \App\Controllers\BaseController{
     }
 
     public function itemOptionDelete(){
-        $product_id=$this->request->getVar('product_id');
+        $product_id=$this->request->getPost('product_id');
         $ProductModel=model('ProductModel');
         $result=$ProductModel->itemOptionDelete($product_id);
         if( $result==='ok' ){
@@ -246,7 +246,7 @@ class Product extends \App\Controllers\BaseController{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
-        $image_holder_id=$this->request->getVar('image_holder_id');
+        $image_holder_id=$this->request->getPost('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
@@ -298,8 +298,8 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function imageDisable(){
-        $image_id=$this->request->getVar('image_id');
-        $is_disabled=$this->request->getVar('is_disabled');
+        $image_id=$this->request->getPost('image_id');
+        $is_disabled=$this->request->getPost('is_disabled');
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageDisable( $image_id, $is_disabled );
@@ -310,7 +310,7 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function imageDelete(){
-        $image_id=$this->request->getVar('image_id');
+        $image_id=$this->request->getPost('image_id');
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageDelete( $image_id );
@@ -321,8 +321,8 @@ class Product extends \App\Controllers\BaseController{
     }
     
     public function imageOrder(){
-        $image_id=$this->request->getVar('image_id');
-        $dir=$this->request->getVar('dir');
+        $image_id=$this->request->getPost('image_id');
+        $dir=$this->request->getPost('dir');
         
         $ProductModel=model('ProductModel');
         $result=$ProductModel->imageOrder( $image_id, $dir );
@@ -338,7 +338,7 @@ class Product extends \App\Controllers\BaseController{
     public function groupTreeGet(){
         $filter=[
             'limit'=>'100',
-            'store_id'=>$this->request->getVar('store_id'),
+            'store_id'=>$this->request->getPost('store_id'),
         ];
         $ProductModel=model('ProductModel');
         $group_list=$ProductModel->groupTreeGet($filter);
