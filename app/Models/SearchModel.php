@@ -284,7 +284,7 @@ class SearchModel extends SecureModel{
 
         if( $suggestions ){
             foreach($suggestions as $row){
-                $row->suggestion=preg_replace('/[^\w\s]/u','',$row->suggestion);
+                $row->suggestion=trim(preg_replace('/[^\w\s]/u','',$row->suggestion));
             }
         }
         return $suggestions;
