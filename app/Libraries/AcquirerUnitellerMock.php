@@ -39,9 +39,10 @@ class AcquirerUnitellerMock{
      * Gets status of payment and if payed applies to order
      */
     public function statusCheck( int $order_id ){
-        $status=$this->statusGet($order_id);
-        $OrderModel=model('OrderModel');
-        return $OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $status, false );
+        // $status=$this->statusGet($order_id);
+        // $OrderModel=model('OrderModel');
+        // $OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $status, false );
+        return 'idle';
     }
 
     public function confirm(int $billNumber,$sum){

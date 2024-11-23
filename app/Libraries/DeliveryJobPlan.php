@@ -141,7 +141,7 @@ class DeliveryJobPlan{
     }
     public function scheduleFillTimetable( object $store ){
         $todayweekday=date('N')-1;
-        pl($this->schedule->tableGet());
+        //pl($this->schedule->tableGet());
 
         for($dayIndex=0;$dayIndex<$this->deliveryRangeDays;$dayIndex++){
             $weekday=($todayweekday+$dayIndex)%7;
@@ -156,7 +156,7 @@ class DeliveryJobPlan{
         }
 
 
-        pl($this->schedule->tableGet());
+        //pl($this->schedule->tableGet());
     }
 
     /**
