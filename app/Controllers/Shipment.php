@@ -64,8 +64,8 @@ class Shipment extends \App\Controllers\BaseController{
             }
             $data->order_id=$result;
             $OrderModel->itemStageCreate( $data->order_id, 'customer_cart' );
-            $OrderModel->itemStageCreate( $data->order_id, 'customer_confirmed', $data );
         }
+        $OrderModel->itemStageCreate( $data->order_id, 'customer_confirmed', $data );
         $result = $OrderModel->itemUpdate($data);
         if ($result === 'forbidden') {
             $OrderModel->transRollback();

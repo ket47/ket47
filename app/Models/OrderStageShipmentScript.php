@@ -17,8 +17,9 @@ class OrderStageShipmentScript{
             'system_reckon'=>               []
             ],
         'customer_confirmed'=>[
-            'customer_action_confirm'=>    ['Перейти к оформлению'],
+            'customer_action_confirm'=>     ['Перейти к оформлению'],
             'customer_cart'=>               ['Изменить','light'],
+            'customer_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'system_await'=>                [],
             'system_schedule'=>             [],
             ],
@@ -27,6 +28,7 @@ class OrderStageShipmentScript{
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'customer_action_take_photo'=>  ['Сфотографировать','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
             ],
         

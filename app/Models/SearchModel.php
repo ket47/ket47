@@ -112,10 +112,6 @@ class SearchModel extends SecureModel{
         $StoreModel->select("IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
         $StoreModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
 
-        // if( $query ){
-        //     $like=preg_replace('|\\W+|u', '%',$query);
-        //     $StoreModel->select("store_name LIKE '%$like%' name_match");
-        // }
         $StoreModel->join('image_list',"image_holder='store' AND image_holder_id=store_id AND image_list.is_main=1",'left');
         $StoreModel->where('store_list.is_working',1);
         $StoreModel->where('store_list.is_disabled',0);
@@ -256,24 +252,18 @@ class SearchModel extends SecureModel{
         $bulider=db_connect();
         $products = $bulider
         ->table('product_list')
-        ->select('LOWER(product_name) suggestion')
-        //->select("LOWER(REGEXP_REPLACE(product_name,'[^([:alpha:][:space:])]','')) suggestion")
+        ->select('product_name suggestion')
         ->where('is_disabled',0)
         ->where('deleted_at IS NULL')
-        ->like('product_name',$like,'after')
-        ->orLike('product_name',$or_like,'after')
+        ->where("(product_name LIKE '$like%' OR product_name LIKE '$or_like%')")
         ->whereIn('store_id',$store_ids)
         ->orderBy('LENGTH(product_name)')
         ->limit($limit);
 
         $stores =   $bulider
         ->table('store_list')
-        ->select('LOWER(store_name) suggestion')
-        //->select("LOWER(REGEXP_REPLACE(store_name,'[^([:alpha:][:space:])]','')) suggestion")
-        ->where('is_disabled',0)
-        ->where('deleted_at IS NULL')
-        ->like('store_name',$like,'after')
-        ->orLike('store_name',$or_like,'after')
+        ->select('store_name suggestion')
+        ->where("(store_name LIKE '$like%' OR store_name LIKE '$or_like%')")
         ->whereIn('store_id',$store_ids)
         ->orderBy('LENGTH(store_name)')
         ->limit($limit);
@@ -288,7 +278,7 @@ class SearchModel extends SecureModel{
 
         if( $suggestions ){
             foreach($suggestions as $row){
-                $row->suggestion=trim(preg_replace('/[^\w\s]/u','',$row->suggestion));
+                $row->suggestion=mb_strtolower(trim(preg_replace('/[^\w\s]/u','',$row->suggestion)));
             }
         }
         return $suggestions;

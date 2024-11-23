@@ -141,17 +141,22 @@ class DeliveryJobPlan{
     }
     public function scheduleFillTimetable( object $store ){
         $todayweekday=date('N')-1;
-        for($dayIndex=0;$dayIndex<=$this->deliveryRangeDays;$dayIndex++){
+        pl($this->schedule->tableGet());
+
+        for($dayIndex=0;$dayIndex<$this->deliveryRangeDays;$dayIndex++){
             $weekday=($todayweekday+$dayIndex)%7;
             $openHour=$store->{"store_time_opens_$weekday"};
             $closeHour=$store->{"store_time_closes_$weekday"};
-            if( $openHour!=null ){
-                $this->schedule->beginHour($dayIndex,$openHour);
+            if( $openHour===null || $closeHour===null ){//store is not working on that day so purge it
+                $this->schedule->purgeIndex("d$dayIndex",'same');
+                continue;
             }
-            if( $closeHour!=null ){
-                $this->schedule->endHour($dayIndex,$closeHour);
-            }
+            $this->schedule->beginHour($dayIndex,$openHour);
+            $this->schedule->endHour($dayIndex,$closeHour);
         }
+
+
+        pl($this->schedule->tableGet());
     }
 
     /**

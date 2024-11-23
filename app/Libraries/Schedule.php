@@ -89,10 +89,10 @@ class Schedule{
     }
 
     public $swatchNearest=null;
-    public function swatchGet( int $roundto ){
+    public function swatchGet( int $roundto=900 ){
         $schedule=[];
         foreach($this->timetable as $day){
-            if($day['begin']>=$day['end']){
+            if( empty($day['begin']) || empty($day['end']) || $day['begin']>=$day['end']){
                 continue;
             }
             $begin=$roundto?round($day['begin']/$roundto)*$roundto:$day['begin'];

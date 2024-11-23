@@ -40,7 +40,7 @@ class Search extends \App\Controllers\BaseController{
         $SearchModel=model('SearchModel');
         $result=$SearchModel->suggestionListGet( $filter );
         $response=[
-            'product_matches'=>$result
+            'suggestions'=>$result
         ];
         //bench('matchTableCreate Response');
         return $this->respond($response);

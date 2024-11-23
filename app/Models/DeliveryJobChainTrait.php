@@ -19,6 +19,7 @@ trait DeliveryJobChainTrait{
         $CourierShiftModel->allowRead();//called from cronjob as guest so need to skip permission check
         $openShifts=$CourierShiftModel->orderBy('last_finish_plan')->listGet( (object)['shift_status'=>'open'] );
         if( !$openShifts ){//no open courier shifts
+            $this->unassignAll();
             return false;
         }
 
@@ -63,6 +64,15 @@ trait DeliveryJobChainTrait{
             $this->update($job->job_id,['finish_arrival_time'=>$finish_arrival_time]);
         }
         return $shift;
+    }
+
+    /**
+     * When last courier closes the shift
+     * unassign all delivery jobs and make them awaiting
+     */
+    private function unassignAll(){
+        $this->where('stage','assigned');
+        $this->update(null,['stage'=>'awaited','courier_id'=>null]);
     }
 
     private function chainAssignedJobs( object $shift ){

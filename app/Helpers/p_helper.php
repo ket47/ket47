@@ -7,14 +7,12 @@ function p( $object, $die=true  ){
     if($die)
         die();
 }
-function pl( $object, $die=false ){
-    if(is_array($object) || is_object($object)){
-        log_message('error','PL HELPER '.json_encode($object,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-    } else {
-        log_message('error','PL HELPER '.$object);
+function pl(){
+    $args = func_get_args();
+    if( count($args)==1 && !is_array($args[0]) && !is_object($args[0]) ){
+        log_message('error','PL HELPER '.$args[0]);
     }
-    if($die)
-        die();
+    log_message('error','PL HELPER '.json_encode($args,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 }
 function e( $model ){
     $err=$model->errors();
