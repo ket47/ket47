@@ -380,11 +380,11 @@ class ProductModel extends Model{
             if($product->product_parent_id==$product->product_id){
                 $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
                 $this->select("product_id,product_option");
+                $this->where("product_parent_id",$product->product_id);
                 $this->where("is_disabled","0");
                 $this->where("deleted_at IS NULL");
                 $this->where("product_option IS NOT NULL");
                 $this->where("product_option <>''");
-                $this->where("product_parent_id",$product->product_id);
                 $product->options=$this->get()->getResult();
             }
         }

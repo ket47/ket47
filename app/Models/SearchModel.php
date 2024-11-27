@@ -50,6 +50,18 @@ class SearchModel extends SecureModel{
         foreach( $store_rank_list as $rank ){
             $store=storeFind($near_stores['store_list'],$rank->store_id);
             $store->matches=$bulider->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
+            foreach($store->matches as $product){
+                if($product->product_parent_id==$product->product_id){
+                    $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
+                    $this->select("product_id,product_option");
+                    $this->where("product_parent_id",$product->product_id);
+                    $this->where("is_disabled","0");
+                    $this->where("deleted_at IS NULL");
+                    $this->where("product_option IS NOT NULL");
+                    $this->where("product_option <>''");
+                    $product->options=$this->get()->getResult();
+                }
+            }
             $grouped[]=$store;
             $productmatch_list[]=$rank->store_id;
         }
@@ -169,6 +181,7 @@ class SearchModel extends SecureModel{
 
         $now=date("Y-m-d H:i:s");
         $this->select("
+            product_parent_id,
             product_id,
             product_name,
             product_quantity,
@@ -177,6 +190,7 @@ class SearchModel extends SecureModel{
             product_code,
             product_unit,
             product_weight,
+            product_price,
             product_list.is_disabled,
             is_counted
         ");

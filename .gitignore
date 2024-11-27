@@ -137,3 +137,4 @@ nb-configuration.xml
 
 /app/Controllers/TestController.php
 app/Controllers/TestController.php
+public/etc/*
