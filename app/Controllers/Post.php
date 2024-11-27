@@ -21,7 +21,7 @@ class Post extends \App\Controllers\BaseController{
         if( !sudo() ){
             return $this->failForbidden();
         }
-        $post=[
+        $post=(object)[
             'post_title'=>$this->request->getPost('post_title'),
             'post_description'=>$this->request->getPost('post_description'),
             'post_type'=>$this->request->getPost('post_type'),
@@ -118,6 +118,8 @@ class Post extends \App\Controllers\BaseController{
     /////////////////////////////////////////////////////
     public function fileUpload(){
         $image_holder_id=$this->request->getPost('image_holder_id');
+        $image_height=$this->request->getPost('image_height');
+        $image_width=$this->request->getPost('image_width');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
@@ -132,9 +134,7 @@ class Post extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);
-
-                pl($result);
+                $result=$this->fileSaveImage($image_holder_id,$file,$image_width,$image_height);
                 if( $result!==true ){
                     return $this->fail($result);
                 }
@@ -147,7 +147,7 @@ class Post extends \App\Controllers\BaseController{
     }
 
     
-    private function fileSaveImage( $image_holder_id, $file ){
+    private function fileSaveImage( $image_holder_id, $file, $image_width, $image_height ){
         $image_data=[
             'image_holder'=>'post',
             'image_holder_id'=>$image_holder_id
@@ -155,16 +155,16 @@ class Post extends \App\Controllers\BaseController{
         $PostModel=model('PostModel');
         $image_hash=$PostModel->imageCreate($image_data,1);
         if( !$image_hash ){
-            return $this->failForbidden('forbidden');
+            return 'forbidden';
         }
         if( $image_hash === 'limit_exeeded' ){
-            return $this->fail('limit_exeeded');
+            return 'limit_exeeded';
         }
         $file->move(WRITEPATH.'images/', $image_hash.'.webp');
         
         return \Config\Services::image()
         ->withFile(WRITEPATH.'images/'.$image_hash.'.webp')
-        ->resize(3200, 3200, true, 'height')
+        ->fit($image_width, $image_height,'center')
         ->convert(IMAGETYPE_WEBP)
         ->save();
     }

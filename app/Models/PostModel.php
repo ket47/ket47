@@ -43,8 +43,12 @@ class PostModel extends SecureModel{
         return $post;
     }
     
-    public function itemCreate(){
-        return false;
+    public function itemCreate( object $post ){
+        if( !$post ){
+            return 'empty';
+        }
+        $post->updated_by=session()->get('user_id');
+        return $this->insert($post,true);
     }
     
     public function itemUpdate( $post ){
