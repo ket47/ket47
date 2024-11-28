@@ -29,8 +29,8 @@ class SearchModel extends SecureModel{
         $filter['store_ids']=$near_stores['id_list'];
         $this->matchTableCreate($filter);
 
-        $bulider=db_connect();
-        $store_rank_list=$bulider
+        $builder=db_connect();
+        $store_rank_list=$builder
         ->table('tmp_search')
         ->select('store_id')
         ->groupBy('store_id')
@@ -49,7 +49,7 @@ class SearchModel extends SecureModel{
         $productmatch_list=[];
         foreach( $store_rank_list as $rank ){
             $store=storeFind($near_stores['store_list'],$rank->store_id);
-            $store->matches=$bulider->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
+            $store->matches=$builder->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
             foreach($store->matches as $product){
                 if($product->product_parent_id==$product->product_id){
                     $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
@@ -259,14 +259,14 @@ class SearchModel extends SecureModel{
     }
 
     private function suggestionListPrepare( string $search_query, array $store_ids ){
-        $limit=7;
+        $limit=5;
         $like=$this->db->escapeLikeString($search_query);
         $or_like=$this->transliterate($like);
 
-        $bulider=db_connect();
-        $products = $bulider
+        $builder=db_connect();
+        $products = $builder
         ->table('product_list')
-        ->select('product_name suggestion')
+        ->select('TRIM(product_name) suggestion')
         ->where('is_disabled',0)
         ->where('deleted_at IS NULL')
         ->where("(product_name LIKE '$like%' OR product_name LIKE '$or_like%')")
@@ -274,17 +274,18 @@ class SearchModel extends SecureModel{
         ->orderBy('LENGTH(product_name)')
         ->limit($limit);
 
-        $stores =   $bulider
+        $stores =   $builder
         ->table('store_list')
-        ->select('store_name suggestion')
+        ->select('TRIM(store_name) suggestion')
         ->where("(store_name LIKE '$like%' OR store_name LIKE '$or_like%')")
         ->whereIn('store_id',$store_ids)
         ->orderBy('LENGTH(store_name)')
         ->limit($limit);
 
-        $suggestions=$bulider
+        $suggestions=$builder
         ->newQuery()
         ->fromSubquery($products->union($stores), 'q')
+        ->select("DISTINCT suggestion",false)
         ->orderBy('LENGTH(suggestion)')
         ->limit($limit)
         ->get()
