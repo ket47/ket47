@@ -94,9 +94,11 @@ class CourierModel extends Model{
         if( !$UserModel->permit($user_id,'w') || !$this->permit(null,'w') ){
             return 'forbidden';
         }
+        $user=$UserModel->itemGet($user_id);
         $this->allowedFields[]='owner_id';
         $courier=[
-            'owner_id'=>$user_id
+            'owner_id'=>$user_id,
+            'courier_name'=>$user->user_name,
         ];
         
         $this->transBegin();

@@ -123,13 +123,13 @@ class OrderStageDeliveryScript{
             'admin_sanction_courier'=>      ['Оштрафовать курьера','danger'],
             ],
         'admin_sanction_customer'=>[
-            'system_reckon'=>               [],
+            'system_reckon'=>               ['Завершить','medium','clear'],
             ],
         'admin_sanction_supplier'=>[
-            'system_reckon'=>               [],
+            'system_reckon'=>               ['Завершить','medium','clear'],
             ],
         'admin_sanction_courier'=>[
-            'system_reckon'=>               [],
+            'system_reckon'=>               ['Завершить','medium','clear'],
             ],
         'admin_recalculate'=>[
             'system_reckon'=>               [],
@@ -1332,7 +1332,13 @@ class OrderStageDeliveryScript{
             'order_is_canceled'=>0
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+            ],
+            'task_next_start_time'=>time()+1
+        ]);
+        return 'ok';
     }
     public function onAdminSanctionCourier( $order_id ){
         $order_data_update=(object)[
@@ -1341,7 +1347,13 @@ class OrderStageDeliveryScript{
             'sanction_supplier_fee'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+            ],
+            'task_next_start_time'=>time()+1
+        ]);
+        return 'ok';
     }
     public function onAdminSanctionSupplier( $order_id ){
         $order_data_update=(object)[
@@ -1350,7 +1362,13 @@ class OrderStageDeliveryScript{
             'sanction_supplier_fee'=>1,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
-        return $this->OrderModel->itemStageCreate($order_id, 'system_reckon');
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+            ],
+            'task_next_start_time'=>time()+1
+        ]);
+        return 'ok';
     }
     public function onAdminRecalculate($order_id){
         $order_data_update=(object)[

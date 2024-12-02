@@ -112,7 +112,7 @@ class PostModel extends SecureModel{
         if( $filter['post_type']??null ){
             $this->where('post_type',$filter['post_type']);
         }
-        $this->select('post_id,post_title,post_content,post_type,image_hash,post_list.updated_at');
+        $this->select('post_id,post_title,post_route,post_content,post_type,image_hash,post_list.updated_at');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id');
         return $this->findAll();
