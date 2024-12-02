@@ -191,7 +191,6 @@ class SearchModel extends SecureModel{
             product_unit,
             product_weight,
             product_price,
-            product_list.is_disabled,
             is_counted
         ");
         $this->select("store_id,image_hash");
@@ -204,6 +203,7 @@ class SearchModel extends SecureModel{
         $this->whereIn('store_id',$filter['store_ids']);
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $this->where('product_list.is_disabled',0);
+        $this->where('product_list.is_hidden',0);
         $this->where('product_list.deleted_at IS NULL');
         $this->where('validity>50');
         $this->orderBy('score','DESC');
@@ -268,8 +268,9 @@ class SearchModel extends SecureModel{
         ->table('product_list')
         ->select('TRIM(product_name) suggestion')
         ->where('is_disabled',0)
+        ->where('is_hidden',0)
         ->where('deleted_at IS NULL')
-        ->where("(product_name LIKE '$like%' OR product_name LIKE '$or_like%')")
+        ->where("(product_name LIKE '%$like%' OR product_name LIKE '%$or_like%')")
         ->whereIn('store_id',$store_ids)
         ->orderBy('LENGTH(product_name)')
         ->limit($limit);
@@ -277,7 +278,7 @@ class SearchModel extends SecureModel{
         $stores =   $builder
         ->table('store_list')
         ->select('TRIM(store_name) suggestion')
-        ->where("(store_name LIKE '$like%' OR store_name LIKE '$or_like%')")
+        ->where("(store_name LIKE '%$like%' OR store_name LIKE '%$or_like%')")
         ->whereIn('store_id',$store_ids)
         ->orderBy('LENGTH(store_name)')
         ->limit($limit);
