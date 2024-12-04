@@ -5,7 +5,7 @@ use \CodeIgniter\API\ResponseTrait;
 if(getenv('CI_ENVIRONMENT')!=='development'){
     die('!!!');
 }
-
+use Kreait\Firebase\Messaging\CloudMessage;
 
 class TestController extends \App\Controllers\BaseController{
     use ResponseTrait;
@@ -34,24 +34,27 @@ class TestController extends \App\Controllers\BaseController{
         $FirePush=new \App\Libraries\FirePushKreait;
         $result=$FirePush->sendPush((object)[
             'token'=>[
-                //'ebzdBTFTu-Ob2sByx05HK_:APA91bHbf1fGGk7ogzaxPHOdHr1HVRyHmsD3PbBFvqJkXZZP38deNZe1GodM3ft1XguNIL2Oe3CQ77N1AdccKYxFvuvDUYZIAL8K1MwHusudB03RVZBhb9Z9QQwedVZNSHgP1ecdrgQo',//chrome
+                //'d7uMPXWl6FHEkA6NrvZscb:APA91bF5nOPsNQALCVmtAYisOkHQOXuPjFQK3EgocF6kTQr28Wsrsl4XQAejNhx1RTryCmu-QLQOhWU-MF4s2XP_R0bkoCxIc9G38udNimKPSVnh5df882A',//chrome
+                'fLgIB_jnT9KuSdj7UrDwyS:APA91bHb5hODlr8CKtVVGiEtjPVpHW7asryiGKCL-vzLVm6_yU6mMMoB6INelsN949MYAElWqKxc4RuwHAGDM917X_kezn6yMBClkOXkABtEQA6Nyb_4JvEwHk8gdZtOAxi8wrZUuOwx',//ios
+
+
                 //'fXF3H6KOobooZA-1h_Ttc0:APA91bGeqZyCTWxqV42R5-ez-c5GfSC7WcyXUpmCc6g-WBuAGPrZNtGD8edMNEwXpzGfn-kvwZVn_xfJVEquRJ0iUYMheJ_NJlW9YohUFjpvNmuSYwasOV55xpow4esoMH8aXMCc3qsZ',//ff
                 //'cWA_U33JZ03Gs7k6xR64KD:APA91bH6usj5faG2y6slVaF7JeBR30BhVJoPFOTnKfyo6SWvhHsJc8u1iqafGJzr2jzC5QW0pZqeECnxc1NEx1yAM_xyZZ7StsWCrRa6Sw_xuHWUTMQZ34Q_iH26gacRSjFzR1TYX8nG',//edge
-                'e4rGekudoEx-j0BBgIlW9C:APA91bFjTmjC7Qa_D7DQLjP4v71Nr1j3a9d7PZ7idTjeetnjyNshljwLze1Aj06F5thyBx3CDhdm2_bgegDZm9IEXE-_xlIuUcmAr2YkVE31QreEUcpSGsnzs3LmnU9bZqyc3aMq823_',//ios
                 //'cpExRJbHRxm8iSR6VBWWwq:APA91bFJO85Ss1_AYy80vzCP5ZtMEUAV4fcHlmWE0T8pSq3_maG7Ii2IbqA905Ge-br-JcgVr6aZ6QZ8wDADsoK45pSIQMMq6cxBNoBerrGhGTecXeyZF-VArwWZxaQNgHeu0_H_csK4',//android
             ],
             'title'=>'TeSt PuSh',
             'body'=>'Test body '.date("H:i:s"),
             'data'=>[
-                 'link'=>'/catalog/product-1615',
+                 'link'=>'/catalog/product-15919',
                  'tag'=>'#orderStatus',
                  'image'=>'https://api.tezkel.com/image/get.php/fafa5407eaf897fd8b2d378e6c011f42.600.600.jpg',
                  //'icon'=>'default_notification_icon',
+                 'icon'=>'https://tezkel.com/img/icons/monochrome.png',
                  'sound'=>'long.wav',
 
                 //  'topic'=>'pushStageChanged',
                 //  'order_id'=>2457,
-                  'orderActiveCount'=>55,
+                  'orderActiveCount'=>"55",
                 //  'stage'=>'customer_start',
             ],
         ]);
@@ -60,28 +63,74 @@ class TestController extends \App\Controllers\BaseController{
         echo $result;
     }
     public function push2(){
-        $Messenger=new \App\Libraries\Messenger;
-        $result=$Messenger->itemSend((object)[
-            'message_reciever_id'=>41,
+
+
+
+        $order_id=12874;
+
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_id);
+        ///////////////////////////////////////////////////
+        //COPYING STORE OWNERS TO ORDER OWNERS
+        ///////////////////////////////////////////////////
+        $OrderModel->itemUpdateOwners($order_id);
+        // $update=(object)[
+        //     'delivery_job'=>null
+        // ];
+        //$this->OrderModel->itemDataUpdate($order_id,$update);
+
+        $UserModel=model('UserModel');
+        $StoreModel=model('StoreModel');
+        $StoreModel->itemCacheClear();
+        $order=$OrderModel->itemGet($order_id);
+        $store=$StoreModel->itemGet($order->order_store_id);
+        $customer=$UserModel->itemGet($order->owner_id);
+        $context=[
+            'order'=>$order,
+            'order_data'=>$order_data,
+            'store'=>$store,
+            'customer'=>$customer
+        ];
+
+
+
+
+
+        $store_sms=(object)[
             'message_transport'=>'push',
-            'message_subject'=>'TeSt PuSh',
-            'message_text'=>'Test body '.date("H:i:s"),
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
-                 'link'=>'https://tezkel.com/catalog/product-1615',
-                 'tag'=>'#orderStatus',
-                 'image'=>'https://api.tezkel.com/image/get.php/fafa5407eaf897fd8b2d378e6c011f42.600.600.jpg',
-                 //'icon'=>'default_notification_icon',
-                 'sound'=>'short.wav',
-
-                  'topic'=>'pushStageChanged',
-                //  'order_id'=>2457,
-                  'orderActiveCount'=>55,
-                  'stage'=>'customer_start',
+                'sound'=>'long.wav'
             ],
-        ]);
+            'telegram_options'=>[
+                'buttons'=>[['',"onOrderOpen-{$order_id}",'⚡ Открыть заказ']]
+            ],
+            'template'=>'messages/order/on_customer_start_STORE_sms.php',
+            'context'=>$context
+        ];
 
-        header("Refresh:15");
-        echo $result;
+
+        //pl($store_sms);
+
+        $store_email=(object)[
+            'message_transport'=>'email',
+            'message_reciever_email'=>$store->store_email,
+            'message_subject'=>"Заказ №{$order->order_id} от ".getenv('app.title'),
+            'template'=>'messages/order/on_customer_start_STORE_email.php',
+            'context'=>$context
+        ];
+        $cust_sms=(object)[
+            'message_transport'=>'telegram,push',
+            'message_reciever_id'=>$order->owner_id,
+            'template'=>'messages/order/on_customer_start_CUST_sms.php',
+            'context'=>$context
+        ];
+        $notification_task=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_sms]]]//,$store_email,$cust_sms
+                ],
+        ];
+        jobCreate($notification_task);
     }
 
     public function emailSend(){

@@ -5,7 +5,7 @@
 	"homepage": "https://codeigniter.com",
 	"license": "MIT",
 	"require": {
-		"php": "^7.4 || ^8.0",
+		"php": "^8.0",
         "ext-intl": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
@@ -13,7 +13,7 @@
         "laminas/laminas-escaper": "^2.9",
         "psr/log": "^1.1",
 		"plokko/firebase-php": "^0.2.1",
-		"kreait/firebase-php": "^6.9"
+		"kreait/firebase-php": "7.16"
 	},
 	"require-dev": {
         "codeigniter/coding-standard": "^1.5",
