@@ -199,10 +199,10 @@ class OrderModel extends SecureModel{
         if( !$use_cache ){
             $this->itemCacheClear();
         }
-        if( !$this->order_data ){
+        if( !$this->order_data && !empty($order->order_data) ){
             $this->select('order_data');
             $order=$this->find($order_id);
-            $this->order_data=json_decode($order->order_data??null);
+            $this->order_data=json_decode($order->order_data);
         }
         return $this->order_data;
     }

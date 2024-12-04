@@ -86,7 +86,7 @@ class GroupMemberLayer extends Model{
             $created_by=null;
         }
         $this->where('member_id',$member_id)->where('group_id',$group_id)->delete();
-        $this->insert(['member_id'=>$member_id,'group_id'=>$group_id,'created_by'=>$created_by]);
+        $this->ignore()->insert(['member_id'=>$member_id,'group_id'=>$group_id,'created_by'=>$created_by]);
         return $this->affectedRows()?true:false;
     }
     
