@@ -135,7 +135,5 @@ nb-configuration.xml
 /writable/
 /system/
 
-/app/Controllers/TestController.php
 app/Controllers/TestController.php
 public/etc/*
-app/Controllers/TestController.php
