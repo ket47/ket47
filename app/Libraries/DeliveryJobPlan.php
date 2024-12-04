@@ -6,19 +6,19 @@ class DeliveryJobPlan{
     private $shiftEndHour=23;
     private $shiftEndMarginMinute=5;// min before shiftEnd skip to next day
 
-    private $deliveryRangeDays=2;
+    private $deliveryRangeDays=3;
     private $deliveryDurationDelta=900;//+-15 min
-
     private $avgSpeed=3.05;//11 km/h
-    public  $avgStartArrival=1200;//20 min
-    private $avgFinishArrival=1200;//20 min
-    private $minStartPreparation=900;//15 min
     private $heavyLoadTreshold=2400;//40min if shortest start_plan is later than this then report heavyload
 
 
     public $maxDistance;//should adjust for shipment at runtime
     public $maxReach;
     public $schedule;
+
+    public $minFinishArrival=1200;//20 min
+    public $avgStartArrival=1200;//20 min
+    public $minStartPreparation=900;//15 min
 
     public function __construct(){
         $this->schedule=new \App\Libraries\Schedule();
@@ -43,10 +43,14 @@ class DeliveryJobPlan{
         $start_point=$LocationModel->itemGet($start_location_id,'basic');
         $startPlan=$this->startPlanEstimate($start_point->location_longitude,$start_point->location_latitude,$routeData['deliveryDistance']);
 
+        $finish_arrival=max($this->minFinishArrival,$startPlan['finish_arrival']);
+        $init_finish_offset=$finish_arrival+$this->minStartPreparation;
+
         return (object)[
             'start_plan'=>$startPlan['start_plan'],
             'start_plan_mode'=>$startPlan['mode'],
-            'finish_arrival'=>$startPlan['finish_arrival'],
+            'finish_arrival'=>$finish_arrival,
+            'init_finish_offset'=>$init_finish_offset,
 
             'error'=>null,
             'deliveryDistance'=>$routeData['deliveryDistance'],
@@ -86,9 +90,18 @@ class DeliveryJobPlan{
         ];
     }
 
-    // public function startPreparationSet( int $time ){
-    //     $this->minStartPreparation=$time;
-    // }
+    public function peakHourOffset( int $time ){
+        $h=date('H',$time);
+        $offset=40*60;//40 min
+        if( $h>12 && $h<15 || $h>18 && $h<21 ){
+            return $offset;
+        }
+        return 0;
+    }
+
+    public function startPreparationSet( int $time ){
+        $this->minStartPreparation=max($time,$this->minStartPreparation);
+    }
 
     private function startPlanEstimate( float $start_longitude, float $start_latitude, int $finish_distance=0 ):array{
         //get day where courier service and store are working
@@ -134,29 +147,30 @@ class DeliveryJobPlan{
     }
 
     public function scheduleFillShift(){
-        for($dayIndex=0;$dayIndex<=$this->deliveryRangeDays;$dayIndex++){
-            $this->schedule->beginHour($dayIndex,$this->shiftStartHour);
-            $this->schedule->endHour($dayIndex,$this->shiftEndHour);
+        for($day=0;$day<$this->deliveryRangeDays;$day++){
+            $this->schedule->beginHour($day,$this->shiftStartHour);
+            $this->schedule->endHour($day,$this->shiftEndHour);
         }
     }
     public function scheduleFillTimetable( object $store ){
         $todayweekday=date('N')-1;
-        //pl($this->schedule->tableGet());
-
-        for($dayIndex=0;$dayIndex<$this->deliveryRangeDays;$dayIndex++){
-            $weekday=($todayweekday+$dayIndex)%7;
+        for($day=0;$day<$this->deliveryRangeDays;$day++){
+            $weekday=($todayweekday+$day)%7;
             $openHour=$store->{"store_time_opens_$weekday"};
             $closeHour=$store->{"store_time_closes_$weekday"};
             if( $openHour===null || $closeHour===null ){//store is not working on that day so purge it
-                $this->schedule->purgeIndex("d$dayIndex",'same');
+                $this->schedule->purgeIndex("d$day",'same');
                 continue;
             }
-            $this->schedule->beginHour($dayIndex,$openHour);
-            $this->schedule->endHour($dayIndex,$closeHour);
+            if( $openHour>$closeHour ){
+                /**
+                 * If closes next day, count it as till the midnight 
+                 */
+                $closeHour=24;
+            }
+            $this->schedule->beginHour($day,$openHour);
+            $this->schedule->endHour($day,$closeHour);
         }
-
-
-        //pl($this->schedule->tableGet());
     }
 
     /**

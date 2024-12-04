@@ -17,7 +17,11 @@ class Schedule{
      * Converts day count from the midnight and hour to time 
      */
     public function timeGet( int $day, int $hour ){
-        return $this->midnight+($day*24+$hour)*60*60;
+        $midnight_correction=0;
+        if($hour==24){//make it 23:59:59
+            $midnight_correction=-1;
+        }
+        return $this->midnight+($day*24+$hour)*60*60+$midnight_correction;
     }
     public function begin( int $time, string $purge=null ){
         $index=$this->indexGet($time);
@@ -44,7 +48,7 @@ class Schedule{
     // public function purge( int $time, string $mode='before' ){
     //     $index=$this->indexGet($time);
     // }
-    private function purgeIndex( string $index, string $mode ){
+    public function purgeIndex( string $index, string $mode ){
         foreach($this->timetable as $i=>$day){
             if( $mode=='before' && $i<$index || $mode=='after' && $i>$index || $mode=='same' && $i==$index ){
                 unset($this->timetable[$i]);
@@ -92,7 +96,7 @@ class Schedule{
     public function swatchGet( int $roundto=900 ){
         $schedule=[];
         foreach($this->timetable as $day){
-            if( empty($day['begin']) || empty($day['end']) || $day['begin']>=$day['end']){
+            if( empty($day['begin']) || empty($day['end']) || $day['begin']>=$day['end']){//
                 continue;
             }
             $begin=$roundto?round($day['begin']/$roundto)*$roundto:$day['begin'];

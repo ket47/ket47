@@ -340,7 +340,6 @@ class Order extends \App\Controllers\BaseController {
         return 200;
     }
 
-
     private function routePlanGet( object $order, int $start_location_id, int $finish_location_id ){
         $StoreModel=model('StoreModel');
         $storeTimetable=$StoreModel->itemTimetableGet($order->order_store_id,'basic');
@@ -349,11 +348,13 @@ class Order extends \App\Controllers\BaseController {
         $DeliveryJobPlan->scheduleFillShift();
         $DeliveryJobPlan->scheduleFillTimetable($storeTimetable);
 
+        $DeliveryJobPlan->startPreparationSet($storeTimetable->store_time_preparation*60);
         $routePlan=$DeliveryJobPlan->routePlanGet($start_location_id,$finish_location_id);
+
         if( empty($routePlan->error) ){
-            $routePlan->init_finish_offset=1.5*60*60;//minimum offset between init_plan and finish_plan
+            $peak_hour_offset=$DeliveryJobPlan->peakHourOffset(time());//if now is a peak hour then offset initiation time
             $DeliveryJobPlan->schedule->begin(time(),'before');//offsetting today work window from now
-            $DeliveryJobPlan->schedule->offset( $routePlan->init_finish_offset );//offsetting all day windows
+            $DeliveryJobPlan->schedule->offset( $routePlan->init_finish_offset+$peak_hour_offset );//offsetting all day windows
             $routePlan->finish_plan_timetable=$DeliveryJobPlan->schedule->timetableGet();
         }
         return $routePlan;
@@ -537,11 +538,13 @@ class Order extends \App\Controllers\BaseController {
             $order_data->start_plan=$deliveryOption->routePlan->start_plan;
             $order_data->start_plan_mode='awaited';//$deliveryOption->routePlan->start_plan_mode;//inited | awaited | scheduled 
             if( $checkoutSettings->deliveryFinishScheduled??null ){
+                $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
                 /**
                  * finish_plan_scheduled must be saved in order_data to show in order view
                  */
                 $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
-                $order_data->init_plan_scheduled=$order_data->finish_plan_scheduled-$deliveryOption->routePlan->init_finish_offset;
+                $peak_hour_offset=$DeliveryJobPlan->peakHourOffset($order_data->finish_plan_scheduled);//if scheduled time is a peak hour then offset initiation time
+                $order_data->init_plan_scheduled=$order_data->finish_plan_scheduled-$deliveryOption->routePlan->init_finish_offset-$peak_hour_offset;
                 //if scheduled time is lesser than start_plan use start_plan
                 $order_data->start_plan=max($order_data->finish_plan_scheduled-$deliveryOption->routePlan->finish_arrival,$deliveryOption->routePlan->start_plan);
                 $order_data->start_plan_mode='scheduled';

@@ -165,8 +165,8 @@ class DeliveryJobModel extends SecureModel{
         $this->itemDelete(null,$data->order_id);
 
         $this->chainJobs();
-        $isCourierReadyForNext=$this->itemNextCheck($job->courier_id);
-        if( $isCourierReadyForNext ){//directly change courier group
+
+        if( isset($job->courier_id) && $this->itemNextCheck($job->courier_id) ){//directly change courier group
             $CourierGroupMemberModel=model('CourierGroupMemberModel');
             $CourierGroupMemberModel->joinGroupByType($job->courier_id,'ready',true);
         }
