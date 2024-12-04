@@ -123,7 +123,7 @@ trait DeliveryJobChainTrait{
         return $this->chainAwaitedJobs( $shift, $limit );
     }
 
-    private function chainLinkFind( float $last_longitude=null, float $last_latitude=null, array $stages, int $courier_speed ){
+    private function chainLinkFind( float $last_longitude=null, float $last_latitude=null, array $stages, float $courier_speed ){
         $ready_order_time_offset=15*60;//15min offset if order is shipment or supplier_finish
         $early_order_time_offset=30/15;//every 30 min gives 15 min preference
         $this->select("job_id,finish_latitude,finish_longitude");

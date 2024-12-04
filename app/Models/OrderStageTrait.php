@@ -166,9 +166,12 @@ trait OrderStageTrait{
     }
 
     private function itemStageOffHandle( $order_id, $stage_next, $stage_current, $data ){
+        if( !$stage_current ){
+            return 'ok';
+        }
         $this->itemStageScriptLoad($order_id);
         helper('job');
-        $stageHandlerName = 'off'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage_current)));
+        $stageHandlerName = 'off'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage_current,)));
         if( !method_exists($this->StageScript,$stageHandlerName) ){
             return 'ok';
         }
