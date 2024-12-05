@@ -256,13 +256,13 @@ class OrderTransactionModel extends TransactionModel{
                 }
             }
         }
-        if( ($order_data->payment_by_card??0) && ($order_data->delivery_by_store_cost??0) ){//count for store delivery sum
+        if( ($order_data->payment_by_card??0) && ($order_data->delivery_by_store??0) && ($order_basic->order_sum_delivery??0) ){//count for store delivery sum
             $deliveryDescription=view('transactions/supplier_delivery_sum',$context);
             $deliveryTrans=(object)[
                 'trans_date'=>$order_basic->updated_at,
-                'trans_amount'=>$order_data->delivery_by_store_cost,
+                'trans_amount'=>$order_basic->order_sum_delivery,
                 'trans_role'=>'supplier->site',
-                'tags'=>"order:{$order_basic->order_id}:invoice store:{$order_basic->order_store_id}",
+                'tags'=>"order:{$order_basic->order_id}:store:delivery store:{$order_basic->order_store_id}",
                 'trans_description'=>$deliveryDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>$order_basic->order_store_admins,
