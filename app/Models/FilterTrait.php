@@ -29,7 +29,7 @@ trait FilterTrait{
             $fields= explode(',', $filter['name_query_fields']);
             $clues=  explode(' ', trim($filter['name_query']));
             foreach( $fields as $field ){
-                // if( !in_array($field,$this->allowedFields) ){  WHY HAVE I DONE THIS? IS THERE A GOOD REASON?
+                // if( !in_array($field,$this->allowedFields) ){  CAN FILTERON RESTRICTED FIELDS
                 //     continue;
                 // }
                 $words=[];

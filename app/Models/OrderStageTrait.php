@@ -78,7 +78,7 @@ trait OrderStageTrait{
         if( isset($next_stages[$stage]) && $next_stage_group_id && strpos($stage, 'action')===false ){
             return 'ok';
         }
-        pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages]);//,'order',$order
+        //pl([$this->ScriptLibraryName,"current: $order->stage_current","tried: $stage","user_role $order->user_role",'allowed next stages',$next_stages]);//,'order',$order
         return 'invalid_next_stage';
     }
 

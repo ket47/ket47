@@ -203,7 +203,7 @@ class CashierKitOnline{
                 }
                 return $response;
             }catch(\Throwable $e){
-                log_message('error',"CashierKitOnline on Order #{$CheckNumber} try #{$i} api Error".$e->getMessage());
+                //log_message('error',"CashierKitOnline on Order #{$CheckNumber} try #{$i} api Error".$e->getMessage());
                 sleep(2);
                 continue;
             }

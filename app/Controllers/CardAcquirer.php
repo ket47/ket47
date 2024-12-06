@@ -47,14 +47,14 @@ class Cardacquirer extends \App\Controllers\BaseController{
         }
         return $this->statusApply($result);
     }
-    public function statusHook(){
-        $Acquirer=new \App\Libraries\AcquirerRncb();
-        $result=$Acquirer->statusParse($this->request);
-        if( $result=='unauthorized' ){
-            return $this->failUnauthorized();
-        }
-        return $this->statusApply($result);
-    }
+    // public function statusHook(){
+    //     $Acquirer=new \App\Libraries\AcquirerRncb();
+    //     $result=$Acquirer->statusParse($this->request);
+    //     if( $result=='unauthorized' ){
+    //         return $this->failUnauthorized();
+    //     }
+    //     return $this->statusApply($result);
+    // }
 
     private function statusApply( object $incomingStatus ){
         $order_id=$incomingStatus->order_id;
@@ -83,7 +83,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
                 return $this->failValidationErrors('waiting');
                 break;
             case 'not authorized':
-                $this->log_message('error', " order_id:#$order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
+                //$this->log_message('error', " order_id:#$order_id paymentStatusSet:'$incomingStatus->status'; Not enough money? ".json_encode($incomingStatus));
                 madd('order','pay','error',$order_id,$incomingStatus->status);
                 return $this->failValidationErrors('not_authorized');
                 break;
