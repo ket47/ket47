@@ -105,12 +105,15 @@ class PostModel extends SecureModel{
         if( !sudo() ){
             $filter['is_disabled']=0;
             $filter['is_deleted']=0;
+            $filter['is_actual']=1;
+        }
+        if( $filter['is_actual'] ){
             $this->where("NOW()>started_at");
             $this->where("NOW()<finished_at");
         }
         $this->filterMake($filter);
         if( $filter['post_type']??null ){
-            $this->where('post_type',$filter['post_type']);
+            $this->whereIn('post_type',explode(',',$filter['post_type']));
         }
         $this->select('post_id,post_title,post_route,post_content,post_type,image_hash,post_list.updated_at');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
