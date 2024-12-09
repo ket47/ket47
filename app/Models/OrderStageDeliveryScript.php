@@ -360,6 +360,9 @@ class OrderStageDeliveryScript{
             'message_reciever_id'=>-100,
             'template'=>'messages/order/on_customer_start_ADMIN_sms.php',
             'context'=>$context,
+            'telegram_options'=>[
+                'append_order_id'=>$order_id
+            ]
         ];
         $notification_task=[
             'task_programm'=>[
@@ -743,13 +746,23 @@ class OrderStageDeliveryScript{
         ];
         $store_sms=(object)[
             'message_transport'=>'push,telegram',
-            'message_reciever_id'=>$store->owner_id.',-100,'.$store->owner_ally_ids,
+            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'message_data'=>(object)[
                 'sound'=>'medium.wav'
             ],
             'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
             'context'=>$context
         ];
+        $admin_sms=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>-100,
+            'template'=>'messages/order/on_supplier_rejected_CUST_sms.php',
+            'context'=>$context,
+            'telegram_options'=>[
+                'append_order_id'=>$order_id
+            ]
+        ];
+
         $store_email=(object)[
             'message_reciever_id'=>($store->owner_id??0).',-100,'.($store->owner_ally_ids??0),
             'message_transport'=>'email',
@@ -778,7 +791,7 @@ class OrderStageDeliveryScript{
         $notification_task=[
             'task_name'=>"supplier_rejected Notify #$order_id",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms,$store_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$store_email,$cust_sms,$cour_sms,$store_sms,$admin_sms]]]
                 ],
             'task_priority'=>'low'
         ];
@@ -858,7 +871,7 @@ class OrderStageDeliveryScript{
         ];
         $cust_sms=(object)[
             'message_transport'=>'push,telegram',
-            'message_reciever_id'=>"-100,{$order->owner_id}",
+            'message_reciever_id'=>"{$order->owner_id}",//-100
             'message_data'=>(object)[
                 'sound'=>'short.wav'
             ],
@@ -936,7 +949,8 @@ class OrderStageDeliveryScript{
             'telegram_options'=>[
                 'opts'=>[
                     'disable_notification'=>1,
-                ]
+                ],
+                'append_order_id'=>$order_id
             ],
         ];
         $notification_task=[
@@ -1083,7 +1097,10 @@ class OrderStageDeliveryScript{
             'message_reciever_id'=>'-100',
             'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_found_ADMIN_sms.php',
-            'context'=>$context
+            'context'=>$context,
+            'telegram_options'=>[
+                'append_order_id'=>$order_id
+            ]
         ];
         $notification_task=[
             'task_name'=>"delivery_found Notify #$order_id",
@@ -1157,7 +1174,10 @@ class OrderStageDeliveryScript{
             'message_reciever_id'=>'-100',
             'message_transport'=>'telegram',
             'template'=>'messages/order/on_delivery_rejected_ADMIN_sms.php',
-            'context'=>$context
+            'context'=>$context,
+            'telegram_options'=>[
+                'append_order_id'=>$order_id
+            ]
         ];
         $notification_task=[
             'task_name'=>"delivery_rejected Notify #$order_id",

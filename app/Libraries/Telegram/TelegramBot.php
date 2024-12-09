@@ -217,7 +217,7 @@ class TelegramBot{
         }
         $content['chat_id']=session()->get('chat_id');
 
-        $content['message_id']=null;
+        //$content['message_id']=null;
         if( $permanent_message_name ){
             $content['message_id']=session()->get($permanent_message_name);
         }

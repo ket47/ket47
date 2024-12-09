@@ -250,26 +250,72 @@ class Messenger{
         if( !isset($message->reciever->user_data->telegramChatId) ){
             return false;
         }
-        if(!empty($message->message_data->image)){
-            $message->telegram_options = (object) ['opts' => (object)[
-                'caption' => '<b>'.$message->message_subject.'</b> '.$message->message_text, 
-                'photo' => $message->message_data->image]
-            ];
+        $message->telegram_options??=(object)[];
+        $message->telegram_options->opts??=(object)[];
+        if( !empty($message->message_data->image) ){//for messages with images append is not possible
+            $message->telegram_options->opts->caption='<b>'.$message->message_subject.'</b> '.$message->message_text;
+            $message->telegram_options->opts->photo=$message->message_data->image;
+            $message->message_text=null;
+            // $message->message_text='<b>'.$message->message_subject.'</b> '.$message->message_text;
+            // $message->message_text.="<a href='{$message->message_data->image}'> </a>";
         }
+
+        $append_result=$this->itemAppendRead($message->telegram_options->append_order_id??null,$message->message_text);
+        $message->message_text=$append_result['message_text'];
+        $message->telegram_options->opts->message_id=$append_result['message_id'];
+
         $telegramToken=getenv('telegram.token');
         $TelegramBot = new \App\Libraries\Telegram\TelegramBot();
         $TelegramBot->Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
-        $result=$TelegramBot->sendNotification($message->reciever->user_data->telegramChatId,$message->message_text,$message->telegram_options??null);
-        if( $result && ($result['ok']??null)==1 ){
+        $result=$TelegramBot->sendNotification($message->reciever->user_data->telegramChatId,$message->message_text,$message->telegram_options);
+
+        $this->itemAppendWrite( $message->telegram_options->append_order_id??null, $message->message_text, $result['result']['message_id']??null );
+
+        if( !empty($result['ok']) ){
             return true;
         }
         log_message('error', 'Telegram message failed: '.json_encode([$result,$message]));
         if( 403==($result['error_code']??0) ){
-            pl($message);
             $this->itemUnsubscribeTelegram($message->message_reciever_id);
             log_message('error', "Telegram reciever was UNSUBSCRIBED: {$message->reciever->user_phone} {$message->reciever->user_name}");
         }
         return false;
+    }
+
+    private function itemAppendRead( int $order_id=null, string $append_text=null ){
+        if( !$order_id || !$append_text ){
+            return[
+                'message_id'=>null,
+                'message_text'=>null
+            ];
+        }
+        $text=$append_text;
+        $message_id=null;
+        $OrderModel=model('OrderModel');
+        $OrderModel->allowRead();
+        $order_data=$OrderModel->itemDataGet($order_id);
+        if( $order_data->telegram_message_id??null ){
+            $text=$order_data->telegram_message_text??'';
+            $text="{$text}\n".date('H:i')." {$append_text}";
+            $message_id=$order_data->telegram_message_id;
+        }
+        return [
+            'message_id'=>$message_id,
+            'message_text'=>$text
+        ];
+    }
+
+    private function itemAppendWrite( int $order_id=null, string $message_text=null, int $message_id=null ){
+        if( !$order_id ){
+            return;
+        }
+        $update=(object)[
+            'telegram_message_id'=>$message_id,
+            'telegram_message_text'=>$message_text
+        ];
+        $OrderModel=model('OrderModel');
+        $OrderModel->allowWrite();
+        $OrderModel->itemDataUpdate($order_id, $update);
     }
 
     private function itemUnsubscribeTelegram( int $user_id ){
