@@ -105,7 +105,7 @@ class Post extends \App\Controllers\BaseController{
             'offset'=>$this->request->getPost('offset'),
             'limit'=>$this->request->getPost('limit'),
             'store_id'=>$this->request->getPost('store_id'),
-            'post_type'=>$this->request->getPost('group_id'),
+            'post_type'=>$this->request->getPost('post_type'),
             'reverse'=>$this->request->getPost('reverse'),
         ];
 
