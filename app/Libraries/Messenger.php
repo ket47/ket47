@@ -260,16 +260,16 @@ class Messenger{
             // $message->message_text.="<a href='{$message->message_data->image}'> </a>";
         }
 
-        $append_result=$this->itemAppendRead($message->telegram_options->append_order_id??null,$message->message_text);
-        $message->message_text=$append_result['message_text'];
-        $message->telegram_options->opts->message_id=$append_result['message_id'];
+        // $append_result=$this->itemAppendRead($message->telegram_options->append_order_id??null,$message->message_text);
+        // $message->message_text=$append_result['message_text'];
+        // $message->telegram_options->opts->message_id=$append_result['message_id'];
 
         $telegramToken=getenv('telegram.token');
         $TelegramBot = new \App\Libraries\Telegram\TelegramBot();
         $TelegramBot->Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
         $result=$TelegramBot->sendNotification($message->reciever->user_data->telegramChatId,$message->message_text,$message->telegram_options);
 
-        $this->itemAppendWrite( $message->telegram_options->append_order_id??null, $message->message_text, $result['result']['message_id']??null );
+        // $this->itemAppendWrite( $message->telegram_options->append_order_id??null, $message->message_text, $result['result']['message_id']??null );
 
         if( !empty($result['ok']) ){
             return true;
