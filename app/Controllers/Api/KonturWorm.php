@@ -32,7 +32,6 @@ class KonturWorm extends \App\Controllers\BaseController{
 
         $this->auth($token_hash);
         $productList=$this->filter($rows,$groups,$priceMultiplier);
-        print_r($productList);
         return $this->import($productList);
     }
 
