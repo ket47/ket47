@@ -222,13 +222,13 @@ class MailingModel extends SecureModel{
         $mailing_config['forgot30'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 30)')->groupBy('user_id')->select('user_id')->get()->getResult();
         $mailing_config['forgot90'] = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) = 90)')->groupBy('user_id')->select('user_id')->get()->getResult();
         
-        $mailing_config['every_monday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 7')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_tuesday']    = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 1')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_wednesday']  = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 2')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_thursday']   = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 3')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_friday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 4')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_saturday']   = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 5')->groupBy('user_id')->select('user_id')->get()->getResult();
-        $mailing_config['every_sunday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) == 6')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_monday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 7')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_tuesday']    = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 1')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_wednesday']  = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 2')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_thursday']   = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 3')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_friday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 4')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_saturday']   = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 5')->groupBy('user_id')->select('user_id')->get()->getResult();
+        $mailing_config['every_sunday']     = $UserModel->where('(TIMESTAMPDIFF(DAY,  signed_in_at, NOW()) < 7) AND WEEKDAY(CURDATE()) = 6')->groupBy('user_id')->select('user_id')->get()->getResult();
         
         foreach( $mailing_config as $regular_group => $mailing_receivers ){
             $mailings = $this->where('regular_group', $regular_group)->get()->getResult();
