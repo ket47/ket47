@@ -286,7 +286,7 @@ class Messenger{
         if( !$order_id || !$append_text ){
             return[
                 'message_id'=>null,
-                'message_text'=>null
+                'message_text'=>$append_text
             ];
         }
         $text=$append_text;
