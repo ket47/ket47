@@ -70,14 +70,17 @@ class GroupMemberLayer extends Model{
                 ->get()->getResult();
     }
     
-    public function joinGroupByType($member_id,$member_group_type,$leave_other_groups=false){
+    public function joinGroupByType( int $member_id, string $member_group_type, bool $leave_other_groups=false ){
         $group_id=$this
                 ->query("SELECT group_id FROM {$this->groupTable} WHERE group_type='$member_group_type'")
                 ->getRow('group_id');
         return $this->joinGroup($member_id,$group_id,$leave_other_groups);
     }
     
-    public function joinGroup($member_id,$group_id,$leave_other_groups=false){
+    public function joinGroup( int $member_id, int $group_id, $leave_other_groups=false ){
+        if(!$member_id || !$group_id){
+            return false;
+        }
         if($leave_other_groups){
             $this->where('member_id',$member_id)->delete();
         }
@@ -90,7 +93,7 @@ class GroupMemberLayer extends Model{
         return $this->affectedRows()?true:false;
     }
     
-    public function leaveGroupByType($member_id,$member_group_type){
+    public function leaveGroupByType( int $member_id, string $member_group_type){
         $group_id=$this
                 ->query("SELECT group_id FROM {$this->groupTable} WHERE group_type='$member_group_type'")
                 ->getRow('group_id');

@@ -498,6 +498,9 @@ class ProductModel extends Model{
         $this->where('store_id',$store_id);
         $this->select('GROUP_CONCAT(product_id) product_ids');
         $trashed_product_ids_string=$this->get()->getRow('product_ids');
+        if(!$trashed_product_ids_string){
+            return 'ok';
+        }
         $trashed_product_ids=explode(',',$trashed_product_ids_string);
         
         $ImageModel=model('ImageModel');

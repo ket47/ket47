@@ -249,6 +249,7 @@ class StoreModel extends Model{
             $this->allowedFields[]='owner_id';
             $this->allowedFields[]='is_disabled';
             $this->update($store_id,['owner_id'=>$user_id,'is_disabled'=>1]);
+            $this->ownerGroupUpdate([$user_id]);
             return $store_id;
         }
         return 0;
@@ -502,8 +503,19 @@ class StoreModel extends Model{
     
     public function listPurge( $olderThan=1 ){
         $olderStamp= new \CodeIgniter\I18n\Time((-1*$olderThan)." hours");
+
         $this->where('deleted_at<',$olderStamp);
-        return $this->delete(null,true);
+        $this->select("GROUP_CONCAT(CONCAT(owner_id,',',owner_ally_ids)) owners_all");
+        $owners_all_list=$this->get()->getRow('owners_all');
+
+        $this->where('deleted_at<',$olderStamp);
+        $ok=$this->delete(null,true);
+
+        if($owners_all_list){
+            $owners_all=array_unique(explode(',',$owners_all_list));
+            $this->ownerGroupUpdate($owners_all);
+        }
+        return $ok;
     }
 
     public function listNearGet($filter){
@@ -615,7 +627,7 @@ class StoreModel extends Model{
         }
         $this->where('store_id',$store_id);
         $this->permitWhere('w');//have read access only store administrators
-        $store=$this->get()->getRow();
+        $store=$this->select('owner_id,owner_ally_ids')->get()->getRow();
 
         if( !$store){
             return 'notfound';
@@ -707,7 +719,28 @@ class StoreModel extends Model{
             WHERE
                 sl.store_id='$store_id'";
         $this->query($sql);
+
+        $owners_all=array_unique(array_merge($owners,[$owner_ally_id]));//including deleted owner
+        $this->ownerGroupUpdate($owners_all);
         return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    /**
+     * Updates user. joins or leaves supplier group
+     */
+    private function ownerGroupUpdate( array $check_group_owners ){
+        $UserGroupMemberModel=model('UserGroupMemberModel');
+        foreach($check_group_owners as $owner_id){
+            if(!(int) $owner_id){
+                continue;
+            }
+            $is_supplier=$this->itemOwnedGet( $owner_id );
+            if($is_supplier){
+                $UserGroupMemberModel->joinGroupByType($owner_id,'supplier');
+                continue;
+            }
+            $UserGroupMemberModel->leaveGroupByType($owner_id,'supplier');
+        }
     }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
