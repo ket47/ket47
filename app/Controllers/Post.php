@@ -110,8 +110,23 @@ class Post extends \App\Controllers\BaseController{
         ];
 
         $PostModel=model('PostModel');
-        $data['post_list']=$PostModel->listGet($filter);
-        return $this->respond($data);
+        $posts=$PostModel->listGet($filter);
+        foreach($posts as $post){
+            $post->meta=$this->itemMetaGet($post->post_id,$post->post_holder,$post->post_holder_id);
+        }
+        return $this->respond([
+            'post_list'=>$posts
+        ]);
+    }
+
+    private function itemMetaGet( $post ){
+        if( $post->post_holder=='store' ){
+            $StoreModel=model('StoreModel');
+            $StoreModel->join('image_list il1',"image_holder='store_avatar' AND image_holder_id='{$post->post_holder_id}'");
+            $StoreModel->select('store_name holder_name,il1.image_hash avatar_hash');
+            return $StoreModel->get()->getRow();
+        }
+        return null;
     }
 
     /////////////////////////////////////////////////////

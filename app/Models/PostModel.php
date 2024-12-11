@@ -23,7 +23,10 @@ class PostModel extends SecureModel{
     protected function initialize(){
         $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
     }
-    
+    public function fieldUpdateAllow($field){
+        $this->allowedFields[]=$field;
+    }
+
     public function itemGet( int $post_id ){
         $post=$this->find($post_id);
         if( !$post ){
@@ -54,6 +57,9 @@ class PostModel extends SecureModel{
     public function itemUpdate( $post ){
         if( !$post || !isset($post->post_id) ){
             return 'noid';
+        }
+        if( sudo() ){
+            $this->fieldUpdateAllow('is_promoted');
         }
         $post->updated_by=session()->get('user_id');
         $this->update($post->post_id,$post);
@@ -111,11 +117,24 @@ class PostModel extends SecureModel{
             $this->where("NOW()>started_at");
             $this->where("NOW()<finished_at");
         }
-        $this->filterMake($filter);
+        if( isset($filter['is_promoted']) ){
+            $this->where("is_promoted",$filter['is_promoted']);
+        }
         if( $filter['post_type']??null ){
             $this->whereIn('post_type',explode(',',$filter['post_type']));
         }
-        $this->select('post_id,post_title,post_route,post_content,post_type,image_hash,post_list.updated_at');
+        $this->filterMake($filter);
+        $this->select('
+        post_id,
+        post_title,
+        post_route,
+        post_content,
+        post_type,
+        post_holder,
+        post_holder_id,
+        image_hash,
+        post_list.updated_at
+        ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('post_title');
         return $this->findAll();
