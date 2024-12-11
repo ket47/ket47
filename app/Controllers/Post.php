@@ -112,7 +112,7 @@ class Post extends \App\Controllers\BaseController{
         $PostModel=model('PostModel');
         $posts=$PostModel->listGet($filter);
         foreach($posts as $post){
-            $post->meta=$this->itemMetaGet($post->post_id,$post->post_holder,$post->post_holder_id);
+            $post->meta=$this->itemMetaGet($post);
         }
         return $this->respond([
             'post_list'=>$posts
