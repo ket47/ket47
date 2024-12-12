@@ -43,6 +43,11 @@ class PostModel extends SecureModel{
             'limit'=>5
         ];
         $post->images=$ImageModel->listGet($filter);
+        if( $post->post_holder=='store' ){
+            $StoreModel=model('StoreModel');
+            $StoreModel->where('store_id',$post->post_holder_id);
+            $post->holder=$StoreModel->select('store_id,store_name')->get()->getRow();
+        }
         return $post;
     }
     
@@ -62,9 +67,12 @@ class PostModel extends SecureModel{
         }
         if( sudo() ){
             $this->fieldUpdateAllow('is_promoted');
+            $this->fieldUpdateAllow('post_holder');
+            $this->fieldUpdateAllow('post_holder_id');
         }
         $post->updated_by=session()->get('user_id');
         $this->update($post->post_id,$post);
+        ql($this);
         return $this->db->affectedRows()?'ok':'idle';
     }
 
