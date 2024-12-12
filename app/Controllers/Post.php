@@ -110,8 +110,8 @@ class Post extends \App\Controllers\BaseController{
             'reverse'=>$this->request->getPost('reverse'),
         ];
 
-        if($filter['post_type']=='homeslider'){
-            $filter['post_type']='slider';
+        if($filter['post_type']=='homeslide'){
+            $filter['post_type']='slide';
             $filter['is_promoted']=1;
         }
         $PostModel=model('PostModel');

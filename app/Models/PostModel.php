@@ -50,6 +50,8 @@ class PostModel extends SecureModel{
         if( !$post ){
             return 'empty';
         }
+        $post->started_at=date("Y-m-d H:i:s");
+        $post->finished_at=date("Y-m-d H:i:s",time()+7*24*60*60);//1 week
         $post->updated_by=session()->get('user_id');
         return $this->insert($post,true);
     }
