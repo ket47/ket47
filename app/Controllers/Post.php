@@ -102,6 +102,7 @@ class Post extends \App\Controllers\BaseController{
             'is_deleted'=>$this->request->getPost('is_deleted'),
             'is_active'=>$this->request->getPost('is_active'),
             'is_actual'=>$this->request->getPost('is_actual'),
+            'is_promoted'=>$this->request->getPost('is_promoted'),
             'offset'=>$this->request->getPost('offset'),
             'limit'=>$this->request->getPost('limit'),
             'store_id'=>$this->request->getPost('store_id'),
@@ -109,6 +110,10 @@ class Post extends \App\Controllers\BaseController{
             'reverse'=>$this->request->getPost('reverse'),
         ];
 
+        if($filter['post_type']=='homeslider'){
+            $filter['post_type']='slider';
+            $filter['is_promoted']=1;
+        }
         $PostModel=model('PostModel');
         $posts=$PostModel->listGet($filter);
         foreach($posts as $post){
