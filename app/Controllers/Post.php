@@ -127,12 +127,13 @@ class Post extends \App\Controllers\BaseController{
     private function itemMetaGet( $post ){
         if( $post->post_holder=='store' ){
             $StoreModel=model('StoreModel');
+            $StoreModel->where('store_id',$post->post_holder_id);
             $StoreModel->join('image_list il1',"image_holder='store_avatar' AND image_holder_id='{$post->post_holder_id}'");
             $StoreModel->select('store_name holder_name,il1.image_hash avatar_hash');
             return $StoreModel->get()->getRow();
         }
         return null;
-    }
+    } 
 
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION

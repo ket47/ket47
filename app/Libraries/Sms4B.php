@@ -11,6 +11,9 @@ class Sms4B{
             'phone'=>$phone,
             'text'=>$text
         ];
+        if(!$data['login'] || !$data['password']){
+            return 'nopass';
+        }
         return $this->apiExecute('SendSms',$data);
     }
     private function apiExecute(string $method, array $data){
