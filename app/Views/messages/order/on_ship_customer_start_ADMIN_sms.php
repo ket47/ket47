@@ -1,4 +1,12 @@
-📦📦📦📦📦📦📦📦📦📦
-<?=$reciever->user_name??'admin' ?>, вам поступил заказ на вызов курьера №<?=$order->order_id?> <?=$store->store_name??''?>. 
+📦 Посылка <?=$store->store_name??''?> #<?=$order->order_id?>. 
 
-Заказчик <?=$customer->user_name??'-'?> +<?=$customer->user_phone??'-'?>
+Заказчик <b><?=$customer->user_name??'-'?></b> +<?=$customer->user_phone??'-'?> 
+Нужно отвезти <b><?=$order->order_description?></b> 
+
+📍 Откуда <i><?=$order_data->location_start->location_address??' '?></i><b><?=$order_data->location_start->location_comment??' '?></b> 
+🏁 Куда <i><?=$order_data->location_finish->location_address??' '?></i><b><?=$order_data->location_finish->location_comment??' '?></b> 
+
+<?php if($order_data->payment_by_credit??0):?>
+
+💵 Оплата в кредит
+<?php endif; ?>
