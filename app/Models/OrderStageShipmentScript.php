@@ -667,7 +667,8 @@ class OrderStageShipmentScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+                ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
@@ -676,7 +677,8 @@ class OrderStageShipmentScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+                ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }   
@@ -871,7 +873,8 @@ class OrderStageShipmentScript{
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-            ]
+            ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
