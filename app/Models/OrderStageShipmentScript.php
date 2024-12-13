@@ -365,7 +365,14 @@ class OrderStageShipmentScript{
         ///////////////////////////////////////////////////
         //MARK AS SEARCHING FOR COURIER
         ///////////////////////////////////////////////////
+        if( empty($order_data->delivery_job) ){
+            return 'delivery_is_missing';
+        }
         $this->OrderModel->itemStageAdd($order_id, 'delivery_search');
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'awaited', $order_data->delivery_job]]
+        ]];
+        jobCreate($deliveryJob);
         ////////////////////////////////////////////////
         //LOCATION FIXATION SECTION
         ////////////////////////////////////////////////
@@ -726,8 +733,13 @@ class OrderStageShipmentScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
+        // $deliveryJob=['task_programm'=>[
+        //     ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]]]
+        // ]];
+        // jobCreate($deliveryJob);
+
         $deliveryJob=['task_programm'=>[
-            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]]]
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $order_data->delivery_job]]
         ]];
         jobCreate($deliveryJob);
 
