@@ -338,7 +338,7 @@ class Product extends \App\Controllers\BaseController{
     public function groupTreeGet(){
         $filter=[
             'limit'=>'100',
-            'store_id'=>$this->request->getPost('store_id'),
+            'store_id'=>$this->request->getVar('store_id'),
         ];
         $ProductModel=model('ProductModel');
         $group_list=$ProductModel->groupTreeGet($filter);
