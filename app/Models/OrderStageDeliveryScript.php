@@ -16,7 +16,7 @@ class OrderStageDeliveryScript{
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
             'customer_action_checkout'=>    ['Перейти к оформлению'],
-            'customer_cart'=>               ['Изменить','light'],
+            'customer_cart'=>               ['Корректировать','light'],
             'customer_start'=>              [],
             ],
         'customer_start'=>[
@@ -29,9 +29,9 @@ class OrderStageDeliveryScript{
             'system_reckon'=>               []
             ],
         'customer_disputed'=>[
-            'customer_finish'=>             ['Отказаться от спора','success'],
+            'customer_finish'=>             ['Принять','success'],
             'customer_action_take_photo'=>  ['Сфотографировать заказ','medium','outline'],
-            'supplier_corrected'=>          ['Исправить заказ'],
+            'supplier_corrected'=>          ['Корректировать'],
             'admin_supervise'=>             ['Решить спор','danger'],
             ],
         'customer_finish'=>[
@@ -64,7 +64,7 @@ class OrderStageDeliveryScript{
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
             'supplier_action_take_photo'=>  ['Сфотографировать','light'],
-            'supplier_corrected'=>          ['Изменить','medium','clear'],
+            'supplier_corrected'=>          ['Корректировать','medium','clear'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'delivery_force_start'=>        ['Заказ готов к доставке','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
@@ -80,12 +80,12 @@ class OrderStageDeliveryScript{
             'delivery_no_courier'=>         [],
             'delivery_finish'=>             [],//if dispute is ongoing then fastforward 
             'supplier_action_take_photo'=>  ['Сфотографировать','light'],
-            'supplier_corrected'=>          ['Изменить','medium','clear'],
+            'supplier_corrected'=>          ['Корректировать','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'delivery_force_start'=>            [
             'supplier_finish'=>             ['Завершить подготовку'],
-            'supplier_corrected'=>          ['Изменить','medium','clear'],
+            'supplier_corrected'=>          ['Корректировать','medium','clear'],
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
@@ -860,6 +860,10 @@ class OrderStageDeliveryScript{
 
         $info_for_customer->supplier_name=$order->store->store_name;
         $info_for_customer->supplier_phone='+'.clearPhone($order->store->store_phone);
+
+        if($order_data->payment_card_fixate_sum??0){
+            $info_for_supplier->payment_card_fixate_sum=$order_data->payment_card_fixate_sum;
+        }
 
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),

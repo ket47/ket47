@@ -733,13 +733,8 @@ class OrderStageShipmentScript{
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
 
-        // $deliveryJob=['task_programm'=>[
-        //     ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]]]
-        // ]];
-        // jobCreate($deliveryJob);
-
         $deliveryJob=['task_programm'=>[
-            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $order_data->delivery_job]]
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[ $order_id, 'assigned', (object)['courier_id'=>$order->order_courier_id]]]
         ]];
         jobCreate($deliveryJob);
 
