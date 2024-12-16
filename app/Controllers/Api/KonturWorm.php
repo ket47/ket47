@@ -204,7 +204,7 @@ class KonturWorm extends \App\Controllers\BaseController{
                 $this->normalizeName( $row->name ),
                 $row->barcodes[0]??null,
                 $this->dictUnit[$row->unit]??'',
-                $groupDict[$row->groupId]??null,
+                null,//$groupDict[$row->groupId]??null, skip this field
                 $in_stock,//product_quantity
                 $price_base,
                 $price_promo,

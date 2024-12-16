@@ -72,7 +72,6 @@ class PostModel extends SecureModel{
         }
         $post->updated_by=session()->get('user_id');
         $this->update($post->post_id,$post);
-        ql($this);
         return $this->db->affectedRows()?'ok':'idle';
     }
 
