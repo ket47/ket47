@@ -12,6 +12,7 @@ class Product extends \App\Controllers\BaseController{
             'is_disabled'=>$this->request->getPost('is_disabled'),
             'is_deleted'=>$this->request->getPost('is_deleted'),
             'is_active'=>$this->request->getPost('is_active'),
+            'is_hidden'=>$this->request->getPost('is_hidden'),
             'offset'=>$this->request->getPost('offset'),
             'limit'=>$this->request->getPost('limit'),
             'store_id'=>$this->request->getPost('store_id'),

@@ -111,9 +111,14 @@ class Post extends \App\Controllers\BaseController{
         ];
 
         if($filter['post_type']=='homeslide'){
+            //tmpfix
             $filter['post_type']='slide';
             $filter['is_promoted']=1;
         }
+
+
+
+
         $PostModel=model('PostModel');
         $posts=$PostModel->listGet($filter);
         foreach($posts as $post){
