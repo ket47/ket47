@@ -356,7 +356,7 @@ class OrderStageShipmentScript{
         ///////////////////////////////////////////////////
         //JUMPING TO SCHEDULED
         ///////////////////////////////////////////////////
-        if( $order_data->start_plan_mode=='scheduled' && $order_data->init_plan_scheduled>time() ){
+        if( $order_data->start_plan_mode=='scheduled' && isset($order_data->init_plan_scheduled) && $order_data->init_plan_scheduled>time() ){
             return $this->OrderModel->itemStageCreate($order_id,'system_schedule',$order_data,'as_admin');
         }
         $UserModel=model('UserModel');
