@@ -28,6 +28,9 @@ class Order extends \App\Controllers\BaseController {
         return $this->respond($result);
     }
 
+    /**
+     * Timing plans to inform store and customer
+     */
     private function itemTimePlanGet( $order_id ){
         $time_plan=[];
         $OrderModel = model('OrderModel');

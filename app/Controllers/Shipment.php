@@ -367,13 +367,24 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data->start_plan=$checkoutData->routePlan->start_plan;
         $order_data->start_plan_mode=$checkoutData->routePlan->start_plan_mode;//inited | awaited | scheduled 
         if( $checkoutSettings->deliveryFinishScheduled ){
-            //if scheduled time is lesser than start_plan use start_plan
-            $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+            $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+            $init_finish_offset=60*60;//60min
             /**
              * finish_plan_scheduled must be saved in order_data to show in order view
              */
+            $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+            $peak_hour_offset=$DeliveryJobPlan->peakHourOffset($order_data->finish_plan_scheduled);//if scheduled time is a peak hour then offset initiation time
+            $order_data->init_plan_scheduled=$order_data->finish_plan_scheduled-$init_finish_offset-$peak_hour_offset;
+            //if scheduled time is lesser than start_plan use start_plan
             $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
             $order_data->start_plan_mode='scheduled';
+            // //if scheduled time is lesser than start_plan use start_plan
+            // $order_data->finish_plan_scheduled=strtotime($checkoutSettings->deliveryFinishScheduled);
+            // /**
+            //  * finish_plan_scheduled must be saved in order_data to show in order view
+            //  */
+            // $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
+            // $order_data->start_plan_mode='scheduled';
         }
         $order_data->delivery_job=(object)[
             'job_name'=>'Посылка',
