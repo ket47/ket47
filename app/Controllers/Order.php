@@ -24,11 +24,28 @@ class Order extends \App\Controllers\BaseController {
             return $this->failNotFound($result);
         }
 
+        $result->time_plan=$this->itemTimePlanGet($order_id);
+        return $this->respond($result);
+    }
+
+    private function itemTimePlanGet( $order_id ){
+        $time_plan=[];
+        $OrderModel = model('OrderModel');
         $order_data=$OrderModel->itemDataGet($order_id);
         if( $order_data->finish_plan_scheduled??0 ){
-            $result->finish_plan_scheduled=date("H:i, d.m",$order_data->finish_plan_scheduled);
+            $time_plan['finish_plan_scheduled']=$order_data->finish_plan_scheduled;
         }
-        return $this->respond($result);
+        if( $order_data->delivery_by_courier??0 ){
+            $DeliveryJobModel=model('DeliveryJobModel');
+            $DeliveryJobModel->allowRead();
+            $DeliveryJobModel->select('start_plan,finish_arrival_time');
+            $djob=$DeliveryJobModel->itemGet(null,$order_id);
+            if( $djob ){
+                $time_plan['start_plan']=(int) $djob->start_plan;
+                $time_plan['finish_arrival_time']=(int) $djob->finish_arrival_time;
+            }
+        }
+        return $time_plan;
     }
 
     public function itemDetailsPrepaymentGet(){

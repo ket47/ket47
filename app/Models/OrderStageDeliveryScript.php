@@ -16,7 +16,7 @@ class OrderStageDeliveryScript{
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
             'customer_action_checkout'=>    ['Перейти к оформлению'],
-            'customer_cart'=>               ['Корректировать','light'],
+            'customer_cart'=>               ['Изменить','light'],
             'customer_start'=>              [],
             ],
         'customer_start'=>[
