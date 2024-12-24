@@ -144,8 +144,12 @@ class UserModel extends Model{
     }
 
     private function itemGetGuest(){
+        $guest_location='default_location';
+        if( session()->get('country_status')=='limited' ){
+            $guest_location='default_location_alt';
+        }
         $LocationModel=model('LocationModel');
-        $default_location=$LocationModel->itemMainGet('default_location','-1');
+        $default_location=$LocationModel->itemMainGet($guest_location,'-1');
         $default_location->is_default=1;
         return (object)[
             'user_id'=>-1,

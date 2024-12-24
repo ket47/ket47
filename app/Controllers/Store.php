@@ -41,25 +41,16 @@ class Store extends \App\Controllers\BaseController{
     private $appStoreWhitelist=[63,111,68,130,110,155,147];
 
     private function appStoreFilter( $result ){
-        $platform=$this->request->getPost('platform');
-        $version=$this->request->getPost('version');
-        if( $this->appStoreVersionFilter==$version && in_array('ios',$platform) && in_array('capacitor',$platform)){
-            $filtered=[];
-            foreach($result as $store){
-                if( in_array($store->store_id??0,$this->appStoreWhitelist) ){
-                    $filtered[]=$store;
-                }
-            }
-            return $filtered;
-        } else {
-            $filtered=[];
-            foreach($result as $store){
-                if( !in_array($store->store_id??0,$this->appStoreWhitelist) ){
-                    $filtered[]=$store;
-                }
-            }
-            return $filtered;
+        if( session()->get('country_status')!='limited' ){
+            return $result;
         }
+        $filtered=[];
+        foreach($result['store_list'] as $store){
+            if( in_array($store->store_id??0,$this->appStoreWhitelist) ){
+                $filtered[]=$store;
+            }
+        }
+        $result['store_list']=$filtered;
         return $result;
     }
 
@@ -68,11 +59,11 @@ class Store extends \App\Controllers\BaseController{
         $location_latitude=$this->request->getPost('location_latitude');
         $location_longitude=$this->request->getPost('location_longitude');
         $response=$this->listNearCache($location_id,$location_latitude,$location_longitude);
+        $response=$this->appStoreFilter($response);
         if( !is_array($response['store_list']) ){
             madd('home','get','error');
             return $this->failNotFound('notfound');
         }
-        //$result=$this->appStoreFilter($result);
 
         madd('home','get','ok');
         return $this->respond($response);

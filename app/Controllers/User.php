@@ -31,7 +31,8 @@ class User extends \App\Controllers\BaseController{
                 'mapCenter'=>getenv('location.mapCenter'),
                 'ymapApiKey'=>getenv('location.ymapApiKey'),
                 'ymapSuggestionApiKey'=>getenv('location.ymapSuggestionApiKey'),
-                'addressErase'=>getenv('location.addressErase')
+                'addressErase'=>getenv('location.addressErase'),
+                'countryStatus'=>session()->get('country_status')
             ],
             'delivery'=>[
                 'speed'=>getenv('delivery.speed'),
@@ -50,7 +51,7 @@ class User extends \App\Controllers\BaseController{
                 'vapidKey'=>getenv('firebase.vapidKey'),
             ],
             'other'=>[
-                'recurrentPaymentAllow'=>1//sudo()?1:0,
+                'recurrentPaymentAllow'=>1
             ]
         ];
         return $this->respond($settings);

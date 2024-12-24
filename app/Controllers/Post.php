@@ -95,6 +95,9 @@ class Post extends \App\Controllers\BaseController{
     }
 
     public function listGet(){
+        if( session()->get('country_status')=='limited' ){
+            return $this->failNotfound('notfound');
+        }
         $filter=[
             'name_query'=>$this->request->getPost('name_query'),
             'name_query_fields'=>$this->request->getPost('name_query_fields'),
@@ -115,10 +118,6 @@ class Post extends \App\Controllers\BaseController{
             $filter['post_type']='slide';
             $filter['is_promoted']=1;
         }
-
-
-
-
         $PostModel=model('PostModel');
         $posts=$PostModel->listGet($filter);
         foreach($posts as $post){

@@ -67,6 +67,25 @@ class BaseController extends Controller
             }
             $this->guestUserInit();
         }
+        $this->detectLimitedCountry();
+    }
+
+    private function detectLimitedCountry(){
+        $blackListCountries=getenv('location.countryCodeBlacklist');
+        if( $blackListCountries &&  session()->get('country_status')==null ){
+            $ctx = stream_context_create(['http'=>['timeout' => 1]]);
+            try{
+                $json=file_get_contents("http://ip-api.com/json/{$_SERVER['REMOTE_ADDR']}?fields=countryCode,city,regionName", false, $ctx);
+                $resp=json_decode($json);
+                if( isset($resp->countryCode) && str_contains($blackListCountries,$resp->countryCode) ){
+                    session()->set('country_status','limited');
+                    pl('LIMITED COUNTRY ACCESS',$resp);
+                } else {
+                    session()->set('country_status','allowed');
+                }
+            } catch( \Exception $e){}
+        }
+
     }
 
     private function handleSession($request,$response){
