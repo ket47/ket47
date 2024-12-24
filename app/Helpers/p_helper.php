@@ -11,6 +11,7 @@ function pl(){
     $args = func_get_args();
     if( count($args)==1 && !is_array($args[0]) && !is_object($args[0]) ){
         log_message('error','PL HELPER '.$args[0]);
+        return;
     }
     log_message('error','PL HELPER '.json_encode($args,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 }

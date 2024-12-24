@@ -294,7 +294,7 @@ class SearchModel extends SecureModel{
 
         if( $suggestions ){
             foreach($suggestions as $row){
-                $row->suggestion=mb_strtolower(trim(preg_replace('/[^\w\s]/u','',$row->suggestion)));
+                $row->suggestion=mb_strtolower(trim(preg_replace('/[^\w\s]/u',' ',$row->suggestion)));
             }
         }
         return $suggestions;
