@@ -178,6 +178,17 @@ class KonturWorm extends \App\Controllers\BaseController{
         foreach($groups->items as $group){
             $groupDict[$group->id]=$this->mapCategory[$group->name];
         }
+
+        $promo_window=0.10;//10%
+        $promo_depth=0.90;//-10% net discount
+        $promo_add_min=110;//gross discount min
+        $promo_add_max=130;//gross discount max
+
+        $week=date('W');//week will start at sunday
+        srand($week);
+        $promo_start=date("Y-m-d H:i:s", strtotime('last monday'));
+        $promo_finish=date('Y-m-d H:i:s',strtotime("{$promo_start} + 7 days"));
+
         $filtered=[];
         foreach($rows->items as $row){
             if( empty($row->sellPricePerUnit) ){
@@ -192,11 +203,13 @@ class KonturWorm extends \App\Controllers\BaseController{
             $price_promo=null;
             $price_start=null;
             $price_finish=null;
-            if( rand(1,10)==1 ){//10% chance
-                $price_promo=$price_base;
-                $price_base=round($price_base*rand(110,130)/100);
-                $price_start=date('Y-m-d H:i:s');
-                $price_finish=date('Y-m-d H:i:s',time()+24*60*60);
+
+            $score=hexdec(substr(md5("{$week}-{$row->id}"),0,3))/hexdec('fff');
+            if( $score<$promo_window ){//not in window
+                $price_promo=$price_base*$promo_depth;
+                $price_base=round($price_base*rand($promo_add_min,$promo_add_max)/100);
+                $price_start=$promo_start;
+                $price_finish=$promo_finish;
             }
             $filtered[]=[
                 $row->id,
