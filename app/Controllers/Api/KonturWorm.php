@@ -187,7 +187,7 @@ class KonturWorm extends \App\Controllers\BaseController{
         $week=date('W');//week will start at sunday
         srand($week);
         $promo_start=date("Y-m-d H:i:s", strtotime('last monday'));
-        $promo_finish=date('Y-m-d H:i:s',strtotime("{$promo_start} + 7 days"));
+        $promo_finish=date('Y-m-d H:i:s',strtotime("{$promo_start} + 6 days"));
 
         $filtered=[];
         foreach($rows->items as $row){
