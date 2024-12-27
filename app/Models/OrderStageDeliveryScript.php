@@ -20,9 +20,9 @@ class OrderStageDeliveryScript{
             'customer_start'=>              [],
             ],
         'customer_start'=>[
-            'system_schedule'=>             [],
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
             'system_start'=>                ['Запустить','danger','clear'],
+            'system_schedule'=>             ['Запланировать','danger','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','','clear'],
             ],
         'customer_rejected'=>[
@@ -387,17 +387,20 @@ class OrderStageDeliveryScript{
         $this->OrderModel->itemDataUpdate($order_id,(object)['start_plan_mode'=>'awaited']);
 
         $order_data=$this->OrderModel->itemDataGet($order_id);
+        $order_data->delivery_job->courier_id=null;
         $deliveryJob=['task_programm'=>[
             ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'scheduled', $order_data->delivery_job]]
         ]];
-        $set_on_queue_task=[
-            'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['system_schedule','customer_start',$order_id]]
-                ],
-            'task_next_start_time'=>$order_data->init_plan_scheduled
-        ];
         jobCreate($deliveryJob);
-        jobCreate($set_on_queue_task);
+        if( isset($order_data->init_plan_scheduled) ){
+            $set_on_queue_task=[
+                'task_programm'=>[
+                        ['method'=>'orderResetStage','arguments'=>['system_schedule','customer_start',$order_id]]
+                    ],
+                'task_next_start_time'=>$order_data->init_plan_scheduled
+            ];
+            jobCreate($set_on_queue_task);
+        }
         return 'ok';
     }
 

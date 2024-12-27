@@ -271,6 +271,7 @@ class Shipment extends \App\Controllers\BaseController{
             $DeliveryJobModel=model('DeliveryJobModel');
             $bulkResponse->finishPlanSchedule=$DeliveryJobModel->planScheduleGet($start_plan);
         }
+        madd('order','create','ok',$order_id);
         return $this->respond($bulkResponse);
     }
 
@@ -423,6 +424,7 @@ class Shipment extends \App\Controllers\BaseController{
         if ($result != 'ok') {
             return $this->respondNoContent($result);
         }
+        madd('order','start','ok',$checkoutSettings->order_id);
         return $this->respondUpdated('ok');
     }
 

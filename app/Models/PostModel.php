@@ -134,19 +134,19 @@ class PostModel extends SecureModel{
         }
         $this->filterMake($filter);
         $this->select('
-        post_id,
-        post_title,
-        post_route,
-        post_content,
-        post_type,
-        post_holder,
-        post_holder_id,
-        image_hash,
-        post_list.updated_at
+            post_id,
+            post_title,
+            post_route,
+            post_content,
+            post_type,
+            post_holder,
+            post_holder_id,
+            image_hash,
+            post_list.updated_at
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('post_title');
-        return $this->findAll();
+        return $this->findAll($filter['limit']??null,$filter['offset']??null);
     }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
