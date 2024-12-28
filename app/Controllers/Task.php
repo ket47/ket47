@@ -5,6 +5,7 @@ require_once '../app/ThirdParty/Credis/Client.php';
 class Task extends \App\Controllers\BaseController{
     private $workerLifeTime=2*60;//2min
     private $workerLifeSpread=60;//1min
+    private $workerId=0;
     private $timedJobInterval=1*60*30;//30 min
 
     private function jobTimeoutsSet(){
@@ -14,13 +15,25 @@ class Task extends \App\Controllers\BaseController{
         session_write_close();
     }
 
+    /**
+     * Make movement from delayed queue to normal queue in transaction
+     */
     private function jobDelayedMove( $predis ){
+        if( $predis->get('jobDelayedMoveLock') ){//first line of defence
+            return;
+        }
+        $predis->setEx('jobDelayedMoveLock',10,1);
+
         $time=time();
+        $predis->watch('queue.delayed');//second line of defence
         $job2execute=$predis->zRangeByScore('queue.delayed', 0, $time);
+
+        $predis->multi();
         $predis->zRemRangeByScore('queue.delayed',0,$time);
         foreach($job2execute as $job){
-            $predis->lPush('queue.priority.normal', $job);
+            $predis->rPush('queue.priority.normal', $job);
         }
+        $predis->exec();
     }
 
     public function jobDo(){
@@ -32,9 +45,9 @@ class Task extends \App\Controllers\BaseController{
         $time_limit = $this->workerLifeTime;
         $time_limit += rand(0, $this->workerLifeSpread);
         $start_time = time();
-        $worker_id = rand(100, 999);
+        $this->workerId = rand(100, 999);
         
-        echo "\nWorker #$worker_id Starting.".date('H:i:s');
+        echo "\nWorker #$this->workerId Starting.".date('H:i:s');
         $predis = new \Credis_Client();
         $this->timedJobDo($predis);
 
@@ -58,7 +71,7 @@ class Task extends \App\Controllers\BaseController{
             //echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is a job
         }
-        echo "\nWorker #$worker_id Finished! Goodbye!\n\n\n";
+        echo "\nWorker #$this->workerId Finished! Goodbye!\n\n\n";
         if( getenv('app.logworkers') ){
             log_message('error',ob_get_flush());
         }
