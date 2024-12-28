@@ -146,7 +146,7 @@ class PostModel extends SecureModel{
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('post_title');
-        return $this->findAll($filter['limit']??null,$filter['offset']??null);
+        return $this->findAll($filter['limit']??30,$filter['offset']??0);
     }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
