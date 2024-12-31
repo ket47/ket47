@@ -182,13 +182,13 @@ class MailingModel extends SecureModel{
     }
     public function itemJobCreate($ids, $mailing){
         $result = 0;
-        $id_batches=array_chunk($ids,100);
+        $id_batches=array_chunk($ids,300);
         $start_time = strtotime($mailing->start_at);
         foreach($id_batches as $batch){
             $start_time+=2*60;//5 min
             $mailing_task=[
                 'task_name'=>"send mailing",
-            //    'task_priority'=>'low',
+                'task_priority'=>'low',
                 'task_programm'=>[
                         ['model'=>'UserModel','method'=>'systemUserLogin'],
                         ['model'=>'MailingMessageModel','method'=>'listSend','arguments'=>[$mailing,$batch]],
