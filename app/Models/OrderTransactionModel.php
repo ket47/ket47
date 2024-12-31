@@ -12,9 +12,6 @@ class OrderTransactionModel extends TransactionModel{
             return false;//order not found or permission denied
         }
         $order_data=$OrderModel->itemDataGet($order_id);
-        if($order_data->order_is_canceled??0){
-            madd('order','reject','ok',$order_id);
-        }
 
         $finalized=
                $this->orderFinalizeRefund($order_basic)
@@ -33,7 +30,11 @@ class OrderTransactionModel extends TransactionModel{
         }
         else {
             $entry_count=model('EntryModel')->where('order_id',$order_id)->select('COUNT(*) c')->get()->getRow('c');
-            madd('order','finish','ok',$order_id,null,(object)['act_data'=>['entry_count'=>$entry_count,'store_id'=>$order_basic->order_store_id]]);
+            if($order_data->order_is_canceled??0){
+                madd('order','cancel','ok',$order_id);
+            } else {
+                madd('order','finish','ok',$order_id,null,(object)['act_data'=>['entry_count'=>$entry_count,'store_id'=>$order_basic->order_store_id]]);
+            }
         }
         return $finalized;
     }
