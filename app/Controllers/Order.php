@@ -630,7 +630,7 @@ class Order extends \App\Controllers\BaseController {
         if ($result === 'notfound') {
             return $this->failNotFound($result);
         }
-        if ($result != 'ok') {
+        if ($result != 'ok' && $result != 'idle') {
             return $this->respondNoContent($result);
         }
         madd('order','start','ok',$checkoutSettings->order_id);
