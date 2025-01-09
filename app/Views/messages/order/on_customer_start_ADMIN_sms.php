@@ -2,9 +2,18 @@
 
 Покупатель <b><?=$customer->user_name??'-'?></b> +<?=$customer->user_phone??'-'?> 
 <i><?=$customer->location_main->location_address??'-'?></i>
+<?php if($order_data->finish_plan_scheduled??0):?>
+
+⏰ Запланирован <?=date('d.m.Y',$order_data->finish_plan_scheduled)?>  
+<?php if($order_data->init_plan_scheduled??0):?>
+<?=date('<b>H:i</b>',$order_data->init_plan_scheduled)?> ⏱️ Запуск 
+<?php endif; ?>
+<?=date('<b>H:i</b>',$order_data->finish_plan_scheduled-40*60)?> 📍 <?=$store->store_name?> 
+<?=date('<b>H:i</b>',$order_data->finish_plan_scheduled)?>  🏁 <?=$customer->user_name??'-'?> 
+<?php endif; ?>
 <?php if($order_data->delivery_by_courier??0):?>
 
-🛵Доставка курьером
+🛵 Доставка курьером
 <?php endif; ?>
 <?php if($order_data->delivery_by_store??0):?>
 
