@@ -515,7 +515,7 @@ class OrderStageShipmentScript{
         $init_plan=$order_data->start_plan-$start_offset;
         if( $init_plan<time() ){//should be placed in awaited queue already
             //it will be done automatically
-            return $this->OrderModel->itemStageCreate($order_id, 'system_await');
+            return $this->OrderModel->itemStageCreate($order_id, 'customer_start');
         }
 
         $deliveryJob=['task_programm'=>[
@@ -526,7 +526,7 @@ class OrderStageShipmentScript{
         $set_on_queue_task=[
             'task_name'=>"Delivery job On schedule #$order_id",
             'task_programm'=>[
-                    ['method'=>'orderResetStage','arguments'=>['system_schedule','system_await',$order_id]]
+                    ['method'=>'orderResetStage','arguments'=>['system_schedule','customer_start',$order_id]]
                 ],
             'task_next_start_time'=>$init_plan,
             'task_priority'=>'low'
