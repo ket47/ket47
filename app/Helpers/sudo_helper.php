@@ -19,6 +19,13 @@ function courdo(){
     }
     return true;
 }
+function stodo(){
+    $store=model('StoreModel')->itemOwnedGet(session()->get('user_id'));
+    if( empty($store)){
+        return false;
+    }
+    return true;
+}
 
 function ownersAll(object $item){
     $owner_all=explode(',',"0,".($item->owner_ally_ids??0).",".($item->owner_id??0) );

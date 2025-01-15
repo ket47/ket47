@@ -55,6 +55,8 @@ class PostModel extends SecureModel{
         if( !$post ){
             return 'empty';
         }
+        $post->owner_id=session()->get('user_id');
+        $this->fieldUpdateAllow('owner_id');
         $post->started_at=date("Y-m-d H:i:s");
         $post->finished_at=date("Y-m-d H:i:s",time()+7*24*60*60);//1 week
         $post->updated_by=session()->get('user_id');
@@ -67,11 +69,23 @@ class PostModel extends SecureModel{
         }
         if( sudo() ){
             $this->fieldUpdateAllow('is_promoted');
-            $this->fieldUpdateAllow('post_holder');
-            $this->fieldUpdateAllow('post_holder_id');
         }
+        if(sudo() || stodo()){
+            if(isset($post->post_holder) && $post->post_holder == 'store'){
+                $StoreModel=model('StoreModel');
+                $store=$StoreModel->itemGet($post->post_holder_id,'basic');
+                $post->owner_ally_ids=$store->owner_ally_ids;
+                $this->fieldUpdateAllow('owner_ally_ids');
+                $this->fieldUpdateAllow('post_holder');
+                $this->fieldUpdateAllow('post_holder_id');
+            }
+            $this->fieldUpdateAllow('is_disabled');
+        } 
+        $post->owner_id=session()->get('user_id');
+        $this->fieldUpdateAllow('owner_id');
         $post->updated_by=session()->get('user_id');
         $this->update($post->post_id,$post);
+        
         return $this->db->affectedRows()?'ok':'idle';
     }
 
@@ -132,6 +146,12 @@ class PostModel extends SecureModel{
         if( $filter['post_type']??null ){
             $this->whereIn('post_type',explode(',',$filter['post_type']));
         }
+        if( isset($filter['post_holder']) ){
+            $this->where("post_holder",$filter['post_holder']);
+        }
+        if( isset($filter['post_holder_id']) ){
+            $this->where("post_holder_id",$filter['post_holder_id']);
+        }
         $this->filterMake($filter);
         $this->select('
             post_id,
@@ -146,17 +166,22 @@ class PostModel extends SecureModel{
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('post_title');
-        return $this->findAll($filter['limit']??30,$filter['offset']??0);
+        $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
+      
+        foreach($posts as &$post){
+            $post->is_writable=$this->permit($post->post_id,'w');
+        }
+        return $posts;
     }
     /////////////////////////////////////////////////////
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function imageCreate( $image ){
         $limit=1;
-        $image['is_disabled']=1;
+        $image['is_disabled']=0;
         $image['owner_id']=session()->get('user_id');
-
         $post_id=$image['image_holder_id'];
+
         if( !$this->permit($post_id,'w') ){
             return 'forbidden';
         }

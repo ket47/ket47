@@ -18,9 +18,6 @@ class Post extends \App\Controllers\BaseController{
     }
     
     public function itemCreate(){
-        if( !sudo() ){
-            return $this->failForbidden();
-        }
         $post=(object)[
             'post_title'=>$this->request->getPost('post_title'),
             'post_description'=>$this->request->getPost('post_description'),
@@ -35,9 +32,6 @@ class Post extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        if( !sudo() ){
-            return $this->failForbidden();
-        }
         $data= $this->request->getJSON();
         if( !$data ){
             return $this->fail('empty');
@@ -108,7 +102,8 @@ class Post extends \App\Controllers\BaseController{
             'is_promoted'=>$this->request->getPost('is_promoted'),
             'offset'=>$this->request->getPost('offset'),
             'limit'=>$this->request->getPost('limit'),
-            'store_id'=>$this->request->getPost('store_id'),
+            'post_holder_id'=>$this->request->getPost('post_holder_id'),
+            'post_holder'=>$this->request->getPost('post_holder'),
             'post_type'=>$this->request->getPost('post_type'),
             'reverse'=>$this->request->getPost('reverse'),
         ];
@@ -161,6 +156,7 @@ class Post extends \App\Controllers\BaseController{
             }
             if ($file->isValid() && ! $file->hasMoved()) {
                 $result=$this->fileSaveImage($image_holder_id,$file,$image_width,$image_height);
+                
                 if( $result!==true ){
                     return $this->fail($result);
                 }
