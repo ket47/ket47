@@ -226,7 +226,7 @@ class Order extends \App\Controllers\BaseController {
         if( !$store_readyness->is_ready ){
             return 'not_ready';
         }
-        if( !$store_readyness->is_open && !str_contains($features,'schedule') ){
+        if( !$store_readyness->is_open && !str_contains($features??'-','schedule') ){
             return 'not_ready';
         }
 

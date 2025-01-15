@@ -439,6 +439,7 @@ class OrderStageDeliveryScript{
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_courier'=>json_encode($info_for_courier),
+            'info_for_supplier'=>json_encode($info_for_supplier),
         ];
         $this->OrderModel->itemDataUpdate($order->order_id,$update);
     }

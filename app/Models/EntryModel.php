@@ -277,7 +277,7 @@ class EntryModel extends Model{
         if(!$order_store_id){
             $order_store_id=$OrderModel->select('order_store_id')->where('order_id',$order_id)->get()->getRow('order_store_id');
         }
-        $this->transBegin();
+        //$this->transBegin();
         if($new_stock_status=='free'){// reserved->free
             $OrderModel->permitWhere('w')->update($order_id,['order_stock_status'=>null]);
             $this->listStockReserve($order_store_id);
@@ -295,7 +295,7 @@ class EntryModel extends Model{
             $this->transRollback();
             throw new Exception("Unknown stock status",500);
         }
-        $this->transCommit();
+        //$this->transCommit();
         return $this->transStatus()?'ok':'fail';
     }
 
