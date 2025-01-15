@@ -22,7 +22,7 @@ class Task extends \App\Controllers\BaseController{
         if( $predis->get('jobDelayedMoveLock') ){//first line of defence
             return;
         }
-        $predis->setEx('jobDelayedMoveLock',10,1);
+        $predis->setEx('jobDelayedMoveLock',3,1);
 
         $time=time();
         $predis->watch('queue.delayed');//second line of defence

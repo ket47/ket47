@@ -226,7 +226,7 @@ class Order extends \App\Controllers\BaseController {
         if( !$store_readyness->is_ready ){
             return 'not_ready';
         }
-        if( !$store_readyness->is_open && !str_contains($features,'schedule') ){
+        if( !$store_readyness->is_open && !str_contains($features??'-','schedule') ){
             return 'not_ready';
         }
 
@@ -630,7 +630,7 @@ class Order extends \App\Controllers\BaseController {
         if ($result === 'notfound') {
             return $this->failNotFound($result);
         }
-        if ($result != 'ok') {
+        if ($result != 'ok' && $result != 'idle') {
             return $this->respondNoContent($result);
         }
         madd('order','start','ok',$checkoutSettings->order_id);

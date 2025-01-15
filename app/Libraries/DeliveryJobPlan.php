@@ -106,7 +106,7 @@ class DeliveryJobPlan{
     private function startPlanEstimate( float $start_longitude, float $start_latitude, int $finish_distance=0 ):array{
         //get day where courier service and store are working
         $firstWorkingWindow=$this->schedule->firstGet();
-        if( $firstWorkingWindow['begin']>time() ){//now courier service and store are not working suggest schedule
+        if( $firstWorkingWindow['begin']>time() || $firstWorkingWindow['end']<time() ){//now courier service and store are not working suggest schedule
             return [
                 'mode'=>'scheduled',
                 'start_plan'=>null,
