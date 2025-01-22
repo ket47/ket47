@@ -169,7 +169,7 @@ class ImageModel extends Model{
         }
         //$filter['limit']=5;
         $this->filterMake($filter);
-        if($filter['image_holder'] && $filter['image_holder_id']){
+        if( isset($filter['image_holder']) && isset($filter['image_holder_id']) ){
             $this->where('image_holder',$filter['image_holder']);
             $this->where('image_holder_id',$filter['image_holder_id']);
         }

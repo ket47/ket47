@@ -18,7 +18,7 @@ class PostModel extends SecureModel{
         'updated_by'
         ];
 
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     
     protected function initialize(){
         $this->query("SET character_set_results = utf8mb4, character_set_client = utf8mb4, character_set_connection = utf8mb4, character_set_database = utf8mb4, character_set_server = utf8mb4");
@@ -57,6 +57,22 @@ class PostModel extends SecureModel{
         }
         $post->owner_id=session()->get('user_id');
         $this->fieldUpdateAllow('owner_id');
+
+        if( !sudo() ){
+            $StoreModel=model('StoreModel');
+            $StoreModel->permitWhere('w');
+            $owned_store_id=$StoreModel->select('store_id')->where('is_disabled',0)->where('deleted_at',null)->limit(1)->get()->getRow('store_id');
+            if(!$owned_store_id){
+                return 'forbidden';
+            }
+            $post->post_holder='store';
+            $post->post_holder_id=$owned_store_id;
+            $this->fieldUpdateAllow('post_holder');
+            $this->fieldUpdateAllow('post_holder_id');
+        }
+
+        $this->fieldUpdateAllow('is_disabled');
+        $post->is_disabled=0;
         $post->started_at=date("Y-m-d H:i:s");
         $post->finished_at=date("Y-m-d H:i:s",time()+7*24*60*60);//1 week
         $post->updated_by=session()->get('user_id');
@@ -67,25 +83,30 @@ class PostModel extends SecureModel{
         if( !$post || !isset($post->post_id) ){
             return 'noid';
         }
-        if( sudo() ){
-            $this->fieldUpdateAllow('is_promoted');
+        if( !$this->permit($post->post_id,'w') ){
+            return 'forbidden';
         }
-        if(sudo() || stodo()){
-            if(isset($post->post_holder) && $post->post_holder == 'store'){
-                $StoreModel=model('StoreModel');
+        if( isset($post->post_holder) && $post->post_holder == 'store' ){
+            $StoreModel=model('StoreModel');
+            if( !empty($post->post_holder_id) && $StoreModel->permit($post->post_holder_id,'w') ){
                 $store=$StoreModel->itemGet($post->post_holder_id,'basic');
                 $post->owner_ally_ids=$store->owner_ally_ids;
-                $this->fieldUpdateAllow('owner_ally_ids');
-                $this->fieldUpdateAllow('post_holder');
-                $this->fieldUpdateAllow('post_holder_id');
+            } else {
+                $post->is_published=0;
+                $post->post_holder=null;
+                $post->post_holder_id=null;
+                $post->owner_ally_ids=null;                
             }
+            $this->fieldUpdateAllow('post_holder');
+            $this->fieldUpdateAllow('post_holder_id');
+            $this->fieldUpdateAllow('owner_ally_ids');
+        }
+        if( sudo() ){
+            $this->fieldUpdateAllow('is_promoted');
             $this->fieldUpdateAllow('is_disabled');
-        } 
-        $post->owner_id=session()->get('user_id');
-        $this->fieldUpdateAllow('owner_id');
+        }
         $post->updated_by=session()->get('user_id');
         $this->update($post->post_id,$post);
-        
         return $this->db->affectedRows()?'ok':'idle';
     }
 
@@ -94,7 +115,7 @@ class PostModel extends SecureModel{
             return 'forbidden';
         }
         $this->allowedFields[]='is_disabled';
-        $this->update(['post_id'=>$post_id],['is_disabled'=>$is_disabled?1:0]);
+        $this->update(['post_id'=>$post_id],['is_disabled'=>$is_disabled?1:0,'is_published'=>0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
@@ -111,31 +132,61 @@ class PostModel extends SecureModel{
         return $result;
     }
     
-    public function itemUnDelete( $post_id ){
+    public function itemPublish( $post_id ){
         if( !$post_id ){
             return 'noid';
         }
         $ImageModel=model('ImageModel');
-        $ImageModel->permitWhere('w');
-        $ImageModel->listUnDelete('post',[$post_id]);
-
-        $this->allowedFields[]='deleted_at';
-        $this->update($post_id,['deleted_at'=>NULL]);
+        $has_image=$ImageModel->listGet(['image_holder'=>'post','image_holder_id'=>$post_id]);
+        if( !$has_image ){
+            return 'noimage';
+        }
+        $post=$this->itemGet($post_id);
+        if( !sudo() && (empty($post->post_holder) || empty($post->post_holder_id)) ){
+            return 'noholder';
+        }
+        if( $post->is_disabled==1 ){
+            return 'disabled';
+        }
+        $this->fieldUpdateAllow('is_published');
+        $this->update($post_id,['is_published'=>1]);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    public function itemUnpublish( $post_id ){
+        if( !$post_id ){
+            return 'noid';
+        }
+        $this->fieldUpdateAllow('is_published');
+        $this->update($post_id,['is_published'=>0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-    public function listPurge( $olderThan=1 ){
-        $olderStamp= new \CodeIgniter\I18n\Time("-$olderThan hours");
-        $this->where('deleted_at<',$olderStamp);
-        return $this->delete(null,true);
+    public function listPurge(){
+        $delete_timeout=14;//days
+        $this->where("DATE_ADD(finished_at, INTERVAL $delete_timeout DAY)<NOW()");
+        $old_posts=$this->select('post_id')->get()->getResult();
+        if( !$old_posts ){
+            return true;
+        }
+        $post_ids=[];
+        foreach($old_posts as $i=>$post_id){
+            $post_ids[]=$post_id;
+        }
+        $ImageModel=model('ImageModel');
+        $ImageModel->listDelete('post',$post_ids);
+        $this->delete($post_ids,true);
     }
 
     public function listGet( array $filter ){
-        if( !sudo() ){
+        if( $filter['is_active']==1 && !sudo() ){
             $filter['is_disabled']=0;
             $filter['is_deleted']=0;
             $filter['is_actual']=1;
+            $this->where("is_published",1);
+        } else {
+            $this->permitWhere('w');
         }
+
         if( $filter['is_actual'] ){
             $this->where("NOW()>started_at");
             $this->where("NOW()<finished_at");
@@ -162,12 +213,14 @@ class PostModel extends SecureModel{
             post_holder,
             post_holder_id,
             image_hash,
+            post_list.is_disabled,
+            is_published,
             post_list.updated_at
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
-        $this->groupBy('post_id')->orderBy('post_title');
+        $this->groupBy('post_id')->orderBy('started_at DESC');
         $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
-      
+
         foreach($posts as &$post){
             $post->is_writable=$this->permit($post->post_id,'w');
         }

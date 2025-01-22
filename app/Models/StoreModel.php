@@ -472,20 +472,24 @@ class StoreModel extends Model{
             $filter['is_disabled']=1;
             $filter['is_deleted']=1;
 
-            $owner_id=(int)$filter['owner_id'];
-            $owner_ally_id=(int)$filter['owner_ally_ids'];
-            $this->where("store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids)");
+            $this->permitWhere('w');
+            // $owner_id=(int)$filter['owner_id'];
+            // $owner_ally_id=(int)$filter['owner_ally_ids'];
+            // $this->where("(store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids))");
+        } else {
+            $this->permitWhere('r');
         }
         $this->filterMake( $filter );
         $weekday=date('N')-1;
         $dayhour=date('H');
         $this->select("store_time_opens_{$weekday} store_time_opens,store_time_closes_{$weekday} store_time_closes");
         $this->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
-        $this->permitWhere('r');
+
         $this->orderBy("is_opened",'DESC');
         $this->join('image_list',"image_holder='store' AND image_holder_id=store_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_hash");
         $store_list= $this->get()->getResult();
+        ql($this);
         return $store_list;
     }
     

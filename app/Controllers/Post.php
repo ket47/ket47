@@ -30,6 +30,17 @@ class Post extends \App\Controllers\BaseController{
         }
         return $this->fail($result);
     }
+
+    public function itemCreatedGet(){
+        $PostModel=model('PostModel');
+        $PostModel->where('is_published',0);
+        $PostModel->permitWhere('w');//get only owned post
+        $result=$PostModel->select('post_id')->get()->getRow('post_id');
+        if( is_numeric($result) ){
+            return $this->respond($result);
+        }
+        return $this->itemCreate();
+    }
     
     public function itemUpdate(){
         $data= $this->request->getJSON();
@@ -38,7 +49,7 @@ class Post extends \App\Controllers\BaseController{
         }
         $PostModel=model('PostModel');
         $result=$PostModel->itemUpdate($data);
-        if( $result==='ok' ){
+        if( in_array($result,['ok']) ){
             return $this->respondUpdated('ok');
         }
         if( $PostModel->errors() ){
@@ -82,7 +93,27 @@ class Post extends \App\Controllers\BaseController{
         
         $PostModel=model('PostModel');
         $result=$PostModel->itemDisable($post_id,$is_disabled);
-        if( $result==='ok' ){
+        if( in_array($result,['ok','idle']) ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+    public function itemPublish(){
+        $post_id=$this->request->getPost('post_id');
+        $PostModel=model('PostModel');
+        $result=$PostModel->itemPublish($post_id);
+        if( in_array($result,['ok','idle']) ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
+    }
+
+    public function itemUnpublish(){
+        $post_id=$this->request->getPost('post_id');
+        $PostModel=model('PostModel');
+        $result=$PostModel->itemUnpublish($post_id);
+        if( in_array($result,['ok','idle']) ){
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
@@ -139,11 +170,21 @@ class Post extends \App\Controllers\BaseController{
     /////////////////////////////////////////////////////
     public function fileUpload(){
         $image_holder_id=$this->request->getPost('image_holder_id');
-        $image_height=$this->request->getPost('image_height');
-        $image_width=$this->request->getPost('image_width');
+        $post_type=$this->request->getPost('post_type');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
+        if( $post_type=='slide' ){
+            $image_height=700;
+            $image_width=1920;
+        } else {
+            $image_height=3200;
+            $image_width=1500;
+            $post_type='story';
+        }
+        $PostModel=model('PostModel');
+        $PostModel->itemUpdate((object)['post_id'=>$image_holder_id,'post_type'=>$post_type]);
+
         $items = $this->request->getFiles();
         if(!$items){
             return $this->failResourceGone('no_files_uploaded');

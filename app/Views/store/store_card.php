@@ -241,7 +241,7 @@
                     <?php foreach ($store_group_list as $group): ?>
                     <div style="white-space: nowrap">
                         <label for="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>"><?= $group->group_name ?></label>
-                        <input type="checkbox" value="<?= $group->group_id ?>" id="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids)) ? 'checked' : '' ?>/>
+                        <input type="checkbox" value="<?= $group->group_id ?>" id="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" name="group_id.<?= $store->store_id ?>.<?= $group->group_id ?>" <?= in_array($group->group_id, explode(',', $store->member_of_groups->group_ids??'')) ? 'checked' : '' ?>/>
                     </div>
                     <?php endforeach; ?>
                 </div>

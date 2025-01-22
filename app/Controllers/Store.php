@@ -37,11 +37,16 @@ class Store extends \App\Controllers\BaseController{
     }
 
 
-    private $appStoreVersionFilter='2.0.8';
+    private $appStoreVersionFilter='3.3.3';
     private $appStoreWhitelist=[63,111,68,130,110,155,147];
 
     private function appStoreFilter( $result ){
         if( session()->get('country_status')!='limited' ){
+            return $result;
+        }
+
+        $headers=getallheaders();
+        if( empty($headers['x-ver']) || $headers['x-ver']!=$this->appStoreVersionFilter ){
             return $result;
         }
         $filtered=[];

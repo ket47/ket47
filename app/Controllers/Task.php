@@ -81,6 +81,7 @@ class Task extends \App\Controllers\BaseController{
         model('ProductModel')->nightlyCalculate();
         model('StoreModel')->nightlyCalculate();
         model('MailingModel')->nightlyCalculate();
+        model('PostModel')->listPurge();
     }
 
     private function timedJobDo($predis){
