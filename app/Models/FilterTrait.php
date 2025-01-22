@@ -29,7 +29,7 @@ trait FilterTrait{
             $fields= explode(',', $filter['name_query_fields']);
             $clues=  explode(' ', trim($filter['name_query']));
             foreach( $fields as $field ){
-                if( !in_array($field,$this->allowedFields) ){ //FILTER ONLY EXISTING FIELDS
+                if( !in_array($field,$this->selectableFields??$this->allowedFields) ){ //FILTER ONLY EXISTING FIELDS
                     continue;
                 }
                 $words=[];
