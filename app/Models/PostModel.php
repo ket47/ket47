@@ -214,8 +214,9 @@ class PostModel extends SecureModel{
             post_holder_id,
             image_hash,
             post_list.is_disabled,
-            is_published,
-            post_list.updated_at
+            post_list.is_published,
+            post_list.updated_at,
+            post_list.finished_at
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('started_at DESC');
