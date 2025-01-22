@@ -221,7 +221,6 @@ class PostModel extends SecureModel{
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('started_at DESC');
         $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
-
         foreach($posts as &$post){
             $post->is_writable=$this->permit($post->post_id,'w');
         }
