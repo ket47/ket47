@@ -22,6 +22,7 @@ class ImporterModel extends Model{
         'updated_at'
     ];
 
+    public $itemCreateAsDisabled=true;
     protected $useSoftDeletes = false;
     protected $user_id=-1;
     protected $olderItemsDeleteTreshold;
@@ -135,7 +136,6 @@ class ImporterModel extends Model{
         }
     }
 
-    public $itemCreateAsDisabled=true;
     public function listImport( string $holder, int $holder_id, string $target, object $colconfig){
         $rowcount=0;
         $this->listAnalyse( $holder_id, $target, $colconfig );
@@ -173,7 +173,7 @@ class ImporterModel extends Model{
             $ProductModel->itemImageCreateAsDisabled=$this->itemCreateAsDisabled;
             foreach($listToCreate as $product){
                 $product->store_id=$holder_id;
-                $product_id=$ProductModel->itemCreate($product);
+                $product_id=$ProductModel->ignore()->itemCreate($product);
                 if($product_id){
                     $this->update($product->id,['action'=>'done','target_id'=>$product_id]);
                     $rowcount++;
@@ -274,6 +274,7 @@ class ImporterModel extends Model{
     
     private function productListAnalyse( $store_id, $colconfig ){
         if( $this->productColValidate($colconfig) ){
+            pl("Import failed: no_required_fields");
             return 'no_required_fields';
         }
         $join_cases=[];

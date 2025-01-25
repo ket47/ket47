@@ -280,7 +280,9 @@ class ProductModel extends Model{
             return 'forbidden';
         }
         $this->allowedFields[]='is_disabled';
-        $this->update(['product_id'=>$product_id],['is_disabled'=>$is_disabled?1:0]);
+        $this->where('product_id',$product_id);
+        $this->orWhere('product_parent_id',$product_id);
+        $this->update(null,['is_disabled'=>$is_disabled?1:0]);
         return $this->db->affectedRows()?'ok':'idle';
     }
     
