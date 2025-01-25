@@ -32,9 +32,11 @@ class Post extends \App\Controllers\BaseController{
     }
 
     public function itemCreatedGet(){
+        $user_id=session()->get('user_id');
         $PostModel=model('PostModel');
         $PostModel->where('is_published',0);
         $PostModel->permitWhere('w');//get only owned post
+        $PostModel->where('owner_id',$user_id);
         $result=$PostModel->select('post_id')->get()->getRow('post_id');
         if( is_numeric($result) ){
             return $this->respond($result);

@@ -472,10 +472,10 @@ class StoreModel extends Model{
             $filter['is_disabled']=1;
             $filter['is_deleted']=1;
 
-            $this->permitWhere('w');
-            // $owner_id=(int)$filter['owner_id'];
-            // $owner_ally_id=(int)$filter['owner_ally_ids'];
-            // $this->where("(store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids))");
+            //$this->permitWhere('w');
+            $owner_id=(int)$filter['owner_id'];
+            $owner_ally_id=(int)$filter['owner_ally_ids'];
+            $this->where("(store_list.owner_id='$owner_id' OR FIND_IN_SET($owner_ally_id,store_list.owner_ally_ids))");
         } else {
             $this->permitWhere('r');
         }
