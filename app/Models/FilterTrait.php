@@ -77,8 +77,10 @@ trait FilterTrait{
         }
         if( $filter['is_deleted'] && $user_id>0 ){//admin filters
             $permitWhere=$this->permitWhereGet('r','disabled');
-            $olderStamp= new \CodeIgniter\I18n\Time("-1 days");
-            $status_where[]="{$this->table}.deleted_at>'$olderStamp' AND $permitWhere";
+            //$olderStamp= new \CodeIgniter\I18n\Time("-1 days");
+            $status_where[]="{$this->table}.deleted_at IS NOT NULL AND $permitWhere";
+        } else {
+            $this->where("{$this->table}.deleted_at IS NULL");
         }
         if( $filter['is_active'] ){
             $status_where[]="({$this->table}.is_disabled=0 AND {$this->table}.deleted_at IS NULL)";
