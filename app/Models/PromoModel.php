@@ -184,13 +184,13 @@ class PromoModel extends Model{
         $UserModel=model('UserModel');
         $new_user_name=$UserModel->select('user_name')->where('user_id',$user_id)->get()->getRow('user_name');
 
-        $parent_value=200;
+        $parent_value=333;
         $parent_name="Новому клиенту";
 
-        $child_value=100;
+        $child_value=222;
         $child_name="За приглашённого друга: {$new_user_name}";
 
-        $promo_voucher_count=5;
+        $promo_voucher_count=3;
         $this->transBegin();
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);

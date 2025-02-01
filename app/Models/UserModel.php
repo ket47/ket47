@@ -17,7 +17,8 @@ class UserModel extends Model{
         'user_email',
         'user_avatar_name',
         'user_data',
-        'deleted_at'
+        'user_birthday',
+        'deleted_at',
         ];
     protected $returnType     = 'array';
     protected $useSoftDeletes = true;
@@ -196,6 +197,9 @@ class UserModel extends Model{
         }
         if( isset($data->user_name) ){
             $data->user_name=trim($data->user_name);
+        }
+        if( isset($data->user_birthday) ){
+            $this->where('user_birthday',null);//can change only once  && !sudo()
         }
         if( isset($data->user_pass) ){
             $this->where('user_id',$data->user_id);
