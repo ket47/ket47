@@ -23,6 +23,7 @@ class ImporterModel extends Model{
     ];
 
     public $itemCreateAsDisabled=true;
+    public $itemImageCreateAsDisabled=true;
     protected $useSoftDeletes = false;
     protected $user_id=-1;
     protected $olderItemsDeleteTreshold;
@@ -170,7 +171,7 @@ class ImporterModel extends Model{
             $product_option_children=[];
             $ProductModel=model('ProductModel');
             $ProductModel->itemCreateAsDisabled=$this->itemCreateAsDisabled;
-            $ProductModel->itemImageCreateAsDisabled=$this->itemCreateAsDisabled;
+            $ProductModel->itemImageCreateAsDisabled=$this->itemImageCreateAsDisabled;
             foreach($listToCreate as $product){
                 $product->store_id=$holder_id;
                 $product_id=$ProductModel->ignore()->itemCreate($product);

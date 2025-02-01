@@ -489,7 +489,7 @@ class StoreModel extends Model{
         $this->join('image_list',"image_holder='store' AND image_holder_id=store_id AND is_main=1",'left');
         $this->select("{$this->table}.*,image_hash");
         $store_list= $this->get()->getResult();
-        ql($this);
+        //ql($this);
         return $store_list;
     }
     
