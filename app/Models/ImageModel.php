@@ -143,7 +143,7 @@ class ImageModel extends Model{
     
     public function itemPurge( $image_id ){
         /**
-         * Dont check ownership. checked it et deletion time
+         * Dont check ownership. checked it at deletion time
          */
         $image=$this->itemGet($image_id);
         if( !$image ){
