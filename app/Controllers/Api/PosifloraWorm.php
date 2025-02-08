@@ -153,6 +153,7 @@ class PosifloraWorm extends \App\Controllers\BaseController{
 
         $ImporterModel=model('ImporterModel');
         $ImporterModel->itemCreateAsDisabled=false;
+        $ImporterModel->itemImageCreateAsDisabled=false;
         $ImporterModel->listCreate( $productList, $holder, $holder_id, $target, $external_id_index=0 );
         $result=$ImporterModel->listImport( $holder, $holder_id, $target, $colconfig );
         return $this->respond($result);
