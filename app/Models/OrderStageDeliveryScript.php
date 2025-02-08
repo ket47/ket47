@@ -406,6 +406,9 @@ class OrderStageDeliveryScript{
 
 
     private function onSystemStartInfoSet( object $order, object $order_data ){
+        if( $order_data->info_system_start_is_set??0 ){
+            return true;
+        }
         helper('phone_number');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
         $info_for_courier=(object)json_decode($order_data->info_for_courier??'[]');
@@ -428,18 +431,19 @@ class OrderStageDeliveryScript{
         $info_for_courier->supplier_email=$order->store->store_email??'';
 
         if( $order_data->payment_by_cash??null ){
-            $info_for_customer->tariff_info=view('order/customer_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
-            $info_for_courier->tariff_info=view('order/delivery_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
+            $info_for_customer->tariff_info =view('order/customer_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
+            $info_for_courier->tariff_info  =view('order/delivery_cashpayment_info.php',['order'=>$order,'order_data'=>$order_data]);
         }
         if( $order_data->finish_plan_scheduled??null ){
-            $info_for_customer->tariff_info=view('order/customer_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_customer->tariff_info??'');
-            $info_for_courier->tariff_info=view('order/delivery_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_courier->tariff_info??'');
-            $info_for_supplier->tariff_info=view('order/supplier_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_supplier->tariff_info??'');
+            $info_for_customer->tariff_info =view('order/customer_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_customer->tariff_info??'');
+            $info_for_courier->tariff_info  =view('order/delivery_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_courier->tariff_info??'');
+            $info_for_supplier->tariff_info =view('order/supplier_scheduled_info.php',['order'=>$order,'order_data'=>$order_data]).($info_for_supplier->tariff_info??'');
         }
         $update=(object)[
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_courier'=>json_encode($info_for_courier),
             'info_for_supplier'=>json_encode($info_for_supplier),
+            'info_system_start_is_set'=>1,
         ];
         $this->OrderModel->itemDataUpdate($order->order_id,$update);
     }

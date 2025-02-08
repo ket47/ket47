@@ -93,7 +93,7 @@ class DeliveryJobPlan{
     public function peakHourOffset( int $time ){
         $h=date('H',$time);
         $offset=40*60;//40 min
-        if( $h>12 && $h<15 || $h>18 && $h<21 ){
+        if( $h>=12 && $h<=15 || $h>=18 && $h<=20 ){
             return $offset;
         }
         return 0;

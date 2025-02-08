@@ -373,8 +373,9 @@ class Order extends \App\Controllers\BaseController {
 
         if( empty($routePlan->error) ){
             $peak_hour_offset=$DeliveryJobPlan->peakHourOffset(time());//if now is a peak hour then offset initiation time
+            $init_finish_offset=max($routePlan->init_finish_offset,60*60);//init to finish time is not less than 60min
             $DeliveryJobPlan->schedule->begin(time(),'before');//offsetting today work window from now
-            $DeliveryJobPlan->schedule->offset( $routePlan->init_finish_offset+$peak_hour_offset );//offsetting all day windows
+            $DeliveryJobPlan->schedule->offset( $init_finish_offset+$peak_hour_offset );//offsetting all day windows
             $routePlan->finish_plan_timetable=$DeliveryJobPlan->schedule->timetableGet();
         }
         return $routePlan;
