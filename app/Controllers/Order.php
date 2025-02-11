@@ -502,11 +502,20 @@ class Order extends \App\Controllers\BaseController {
         }
         /**
          * Here we are controlling if user selected options are valid
+         * need to move to separate function
          */
         $deliveryOption=null;
         foreach($checkoutData->Store_deliveryOptions as $opt){
             $option=(object) $opt;
-            if( $checkoutSettings?->tariff_id==$option->tariff_id ){
+            $option_is_matched=true;
+            $flags=["tariff_id","deliveryByCourier","deliveryByStore","pickupByCustomer","paymentByCard","paymentByCash"];
+            foreach($flags as $flag){
+                if( $checkoutSettings?->{$flag}==1 && $option->{$flag}!=1 ){//user selected but option not allowed
+                    $option_is_matched=false;
+                    break;
+                }
+            }
+            if( $option_is_matched ){
                 $deliveryOption=$option;
                 break;
             }

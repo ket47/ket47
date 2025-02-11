@@ -3,7 +3,7 @@ namespace App\Libraries;
 class DeliveryJobPlan{
 
     private $shiftStartHour=9;
-    private $shiftEndHour=15;
+    private $shiftEndHour=23;
     private $shiftEndMarginMinute=5;// min before shiftEnd skip to next day
 
     private $deliveryRangeDays=3;
