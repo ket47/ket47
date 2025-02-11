@@ -180,8 +180,8 @@ class Post extends \App\Controllers\BaseController{
             $image_height=700;
             $image_width=1920;
         } else {
-            $image_height=3200;
-            $image_width=1500;
+            $image_height=1920;
+            $image_width=1080;
             $post_type='story';
         }
         $PostModel=model('PostModel');

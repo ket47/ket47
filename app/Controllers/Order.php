@@ -285,6 +285,7 @@ class Order extends \App\Controllers\BaseController {
                 ];
                 if($tariff->card_allow==1){
                     $rule['paymentByCard']=1;
+                    $rule['paymentByCardRecurrent']=1;
                 }
                 if($tariff->cash_allow==1){
                     $rule['paymentByCash']=1;
@@ -522,20 +523,20 @@ class Order extends \App\Controllers\BaseController {
         $order_data->order_fee= $deliveryOption->reckonParameters->order_fee;
 
         //PAYMENT OPTIONS CHECK
-        if( $checkoutSettings->paymentByCardRecurrent??0 && $deliveryOption->paymentByCardRecurrent??0 ){
+        if( ($checkoutSettings->paymentByCardRecurrent??0) && ($deliveryOption->paymentByCardRecurrent??0) ){
             $order_data->payment_by_card_recurrent=1;
             $order_data->payment_by_card=1;
             $order_data->payment_fee=$deliveryOption->reckonParameters->card_fee;
         } else
-        if( $checkoutSettings->paymentByCard??0 && $deliveryOption->paymentByCard??0 ){
+        if( ($checkoutSettings->paymentByCard??0) && ($deliveryOption->paymentByCard??0) ){
             $order_data->payment_by_card=1;
             $order_data->payment_fee=$deliveryOption->reckonParameters->card_fee;
         } else
-        if( $checkoutSettings->paymentByCash??0 && $deliveryOption->paymentByCash??0 ){
+        if( ($checkoutSettings->paymentByCash??0) && ($deliveryOption->paymentByCash??0) ){
             $order_data->payment_by_cash=1;
             $order_data->payment_fee=$deliveryOption->reckonParameters->cash_fee;
         } else 
-        if( $checkoutSettings->paymentByCashStore??0 && $deliveryOption->paymentByCashStore??0 ){
+        if( ($checkoutSettings->paymentByCashStore??0) && ($deliveryOption->paymentByCashStore??0) ){
             $order_data->payment_by_cash_store=1;
         } else {
             return $this->fail('no_payment');
@@ -544,7 +545,7 @@ class Order extends \App\Controllers\BaseController {
         $order_data->location_start=$checkoutData->location_start;
         $order_data->location_finish=$checkoutData->location_finish;
         //DELIVERY OPTIONS CHECK
-        if( $checkoutSettings->deliveryByCourier??0 && $deliveryOption->deliveryByCourier??0 ){
+        if( ($checkoutSettings->deliveryByCourier??0) && ($deliveryOption->deliveryByCourier??0) ){
             $order_update->order_script='order_delivery';
             $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
@@ -592,7 +593,7 @@ class Order extends \App\Controllers\BaseController {
                 'finish_address'=>$order_data->location_finish->location_address,
             ];
         } else
-        if( $checkoutSettings->deliveryByStore??0 && $deliveryOption->deliveryByStore??0 ){
+        if( ($checkoutSettings->deliveryByStore??0) && ($deliveryOption->deliveryByStore??0) ){
             $order_update->order_script='order_supplier';
             $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
@@ -601,7 +602,7 @@ class Order extends \App\Controllers\BaseController {
             $order_data->start_plan_mode='inited';
             $order_data->delivery_by_store=1;
         } else
-        if( $checkoutSettings->pickupByCustomer??0 && $deliveryOption->pickupByCustomer??0 ){
+        if( ($checkoutSettings->pickupByCustomer??0) && ($deliveryOption->pickupByCustomer??0) ){
             $order_update->order_script='order_supplier';
             $order_update->order_sum_delivery=0;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
@@ -625,6 +626,26 @@ class Order extends \App\Controllers\BaseController {
         //FIXING LOCATION IDS
         $order_update->order_start_location_id=$checkoutData->location_start->location_id;
         $order_update->order_finish_location_id=$checkoutData->location_finish->location_id;
+
+
+
+
+
+        /**
+         * Loyalty engine
+         */
+        if( $order_data->payment_by_card==1 && $order_data->delivery_by_courier==1 ){
+            //allow promotions if any
+        } else {
+            //clear all promotions
+            $PromoModel=model('PromoModel');
+            $PromoModel->itemUnlink( $order->order_id );
+        }
+
+
+
+
+
         //SAVING CHECKOUT DATA
         $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
         $result = $OrderModel->itemUpdate($order_update);

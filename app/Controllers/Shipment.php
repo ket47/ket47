@@ -198,6 +198,7 @@ class Shipment extends \App\Controllers\BaseController{
                 'deliveryHeavyCost'=>$deliveryHeavyModifier->cost,
                 'deliveryHeavyBonus'=>$deliveryHeavyModifier->bonus,
                 'paymentByCard'=>$tariff->card_allow,
+                'paymentByCardRecurrent'=>$tariff->card_allow,
                 'paymentByCash'=>$tariff->cash_allow,
                 'paymentByCreditStore'=>0
             ];
@@ -331,17 +332,17 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data=(object)[];
 
         //PAYMENT OPTIONS CHECK
-        if( $checkoutSettings->paymentByCardRecurrent??0 && $deliveryOption->paymentByCardRecurrent??0 && getenv('uniteller.recurrentAllow') ){
+        if( ($checkoutSettings->paymentByCardRecurrent??0) && ($deliveryOption->paymentByCardRecurrent??0) ){
             $order_data->payment_by_card_recurrent=1;
             $order_data->payment_by_card=1;
         } else
-        if( $checkoutSettings->paymentByCard??0 && $deliveryOption->paymentByCard??0 ){
+        if( ($checkoutSettings->paymentByCard??0) && ($deliveryOption->paymentByCard??0) ){
             $order_data->payment_by_card=1;
         } else
-        if( $checkoutSettings->paymentByCash??0 && $deliveryOption->paymentByCash??0 ){
+        if( ($checkoutSettings->paymentByCash??0) && ($deliveryOption->paymentByCash??0) ){
             $order_data->payment_by_cash=1;
         } else 
-        if( $checkoutSettings->paymentByCreditStore??0 && $deliveryOption->paymentByCreditStore??0 ){
+        if( ($checkoutSettings->paymentByCreditStore??0) && ($deliveryOption->paymentByCreditStore??0) ){
             if( $deliveryOption->deliverySum > $deliveryOption->storeCreditBalance ){
                 return $this->fail('credit_balance_low');
             }
