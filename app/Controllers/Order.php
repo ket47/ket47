@@ -634,7 +634,7 @@ class Order extends \App\Controllers\BaseController {
         /**
          * Loyalty engine
          */
-        if( $order_data->payment_by_card==1 && $order_data->delivery_by_courier==1 ){
+        if( ($order_data->payment_by_card??0) && ($order_data->delivery_by_courier??0) ){
             //allow promotions if any
         } else {
             //clear all promotions
