@@ -305,6 +305,17 @@ class OrderStageSupplierScript{
             'task_priority'=>'low'
         ];
         jobCreate($notification_task);
+
+        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
+        helper('phone_number');
+        $info_for_customer->supplier_name=$order->store->store_name;
+        $info_for_customer->supplier_phone='+'.clearPhone($order->store->store_phone);
+        $info_for_customer->tariff_info=view('order/customer_tariff_info.php',['order_data'=>$order_data,'order'=>$order]);
+
+        $update=(object)[
+            'info_for_customer'=>json_encode($info_for_customer),
+        ];
+        $this->OrderModel->itemDataUpdate($order_id,$update);
         ///////////////////////////////////////////////////
         //JUMPING TO SCHEDULED
         ///////////////////////////////////////////////////
@@ -604,7 +615,6 @@ class OrderStageSupplierScript{
     public function onSupplierStart($order_id){
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
-        $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
 
 
         $order=$this->OrderModel->itemGet($order_id);
@@ -620,10 +630,6 @@ class OrderStageSupplierScript{
         $info_for_supplier->customer_phone='+'.clearPhone($order->customer->user_phone);
         $info_for_supplier->customer_name=$order->customer->user_name;
         $info_for_supplier->customer_email=$order->customer->user_email;
-
-        $info_for_customer->supplier_name=$order->store->store_name;
-        $info_for_customer->supplier_phone='+'.clearPhone($order->store->store_phone);
-
         $info_for_supplier->tariff_info=view('order/supplier_tariff_info.php',['order_data'=>$order_data]);
 
         if($order_data->pickup_by_customer??0){
@@ -633,7 +639,6 @@ class OrderStageSupplierScript{
             $info_for_supplier->payment_card_fixate_sum=$order_data->payment_card_fixate_sum;
         }
         $update=(object)[
-            'info_for_customer'=>json_encode($info_for_customer),
             'info_for_supplier'=>json_encode($info_for_supplier)
         ];
         $this->OrderModel->itemDataUpdate($order_id,$update);
