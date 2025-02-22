@@ -88,8 +88,9 @@ class StoreModel extends Model{
         if( !$this->permit($store_id,'r') ){
             return 'forbidden';
         }
+        $beforeCloseMargin=getenv('store.beforeCloseMargin');
         $weekday=date('N')-1;
-        $dayhour=date('H');
+        $dayhour=date('H',time()+$beforeCloseMargin);
 
         $is_writable=$this->permit($store_id,'w');
         if( $is_writable ){
@@ -199,7 +200,7 @@ class StoreModel extends Model{
     }
 
     public function itemIsReady( int $store_id ){
-        $beforeCloseMargin=30*60;//30 min before closing
+        $beforeCloseMargin=getenv('store.beforeCloseMargin');//40 min before closing
         $weekday=date('N')-1;
         $dayhour=date('H',time()+$beforeCloseMargin);
         $this->select("(is_working AND is_disabled=0 AND deleted_at IS NULL AND LENGTH(store_tax_num)>=10) AS is_ready");

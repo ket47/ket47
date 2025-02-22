@@ -104,9 +104,11 @@ class DeliveryJobPlan{
     }
 
     private function startPlanEstimate( float $start_longitude, float $start_latitude, int $finish_distance=0 ):array{
+        $finish_arrival=round($finish_distance/$this->avgSpeed);
         //get day where courier service and store are working
         $firstWorkingWindow=$this->schedule->firstGet();
-        if( $firstWorkingWindow['begin']>time() || $firstWorkingWindow['end']<time() ){//now courier service and store are not working suggest schedule
+        $beforeCloseMargin=getenv('store.beforeCloseMargin');
+        if( $firstWorkingWindow['begin']>time() || $firstWorkingWindow['end']<time()+$beforeCloseMargin ){//now courier service and store are not working suggest schedule
             return [
                 'mode'=>'scheduled',
                 'start_plan'=>null,
@@ -164,7 +166,7 @@ class DeliveryJobPlan{
             }
             if( $openHour>$closeHour ){
                 /**
-                 * If closes next day, count it as till the midnight 
+                 * If closes next day, count it as till the midnight
                  */
                 $closeHour=24;
             }
@@ -244,5 +246,5 @@ class DeliveryJobPlan{
     //         'range'=>$range,
     //     ];
     // }
- 
+
 }
