@@ -47,6 +47,13 @@ class PostModel extends SecureModel{
             $StoreModel=model('StoreModel');
             $StoreModel->where('store_id',$post->post_holder_id);
             $post->holder=$StoreModel->select('store_id,store_name')->get()->getRow();
+            $filter=[
+                'image_holder'=>'store_avatar',
+                'image_holder_id'=>$post->post_holder_id,
+                'is_active'=>1
+            ];
+            $avatar=$ImageModel->listGet($filter);
+            $post->holder->avatar_hash=$avatar[0]->image_hash??null;
         }
         return $post;
     }
@@ -169,8 +176,8 @@ class PostModel extends SecureModel{
             return true;
         }
         $post_ids=[];
-        foreach($old_posts as $i=>$post_id){
-            $post_ids[]=$post_id;
+        foreach($old_posts as $post){
+            $post_ids[]=$post->post_id;
         }
         $ImageModel=model('ImageModel');
         $ImageModel->listDelete('post',$post_ids);
