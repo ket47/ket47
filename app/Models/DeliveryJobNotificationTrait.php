@@ -98,20 +98,20 @@ trait DeliveryJobNotificationTrait{
         ];
 
         //tmp copy to admin
-        $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
-        $copy=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'telegram',
-            'message_text'=>"{$courier_name} уведомлен о {$awaitedNext->job_name} #{$awaitedNext->order_id}",
-            'telegram_options'=>[
-                'opts'=>[
-                    'disable_notification'=>1,
-                ]
-            ],
-        ];
+        // $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
+        // $copy=(object)[
+        //     'message_reciever_id'=>'-100',
+        //     'message_transport'=>'telegram',
+        //     'message_text'=>"{$courier_name} уведомлен о {$awaitedNext->job_name} #{$awaitedNext->order_id}",
+        //     'telegram_options'=>[
+        //         'opts'=>[
+        //             'disable_notification'=>1,
+        //         ]
+        //     ],
+        // ];
         jobCreate([
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]//,$copy
                 ]
         ]);
         return true;

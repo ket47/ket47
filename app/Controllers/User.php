@@ -224,7 +224,7 @@ class User extends \App\Controllers\BaseController{
         $this->signOut();
         $result=$UserModel->signUp($user_phone_cleared,$user_name,$user_pass,$user_pass_confirm,$user_email);
         if( $UserModel->errors() ){
-            madd('auth','up','error');
+            madd('auth','up','error',json_encode($UserModel->errors()) );
             return $this->failValidationErrors(json_encode($UserModel->errors()));
         }
         if( !is_numeric($result) ){

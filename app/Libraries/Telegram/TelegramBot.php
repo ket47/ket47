@@ -339,6 +339,7 @@ class TelegramBot{
     }
     private $user;
     private function userSignOut(){
+        session_unset();
         $chat_id=$this->Telegram->ChatID();
         $this->sessionSetup($chat_id);
     }

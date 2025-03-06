@@ -361,6 +361,12 @@ class UserModel extends Model{
             $errs=$this->errors();
             if( ($errs['user_phone']??null) == 'notunique'){
                 $text.=" Уже зарегистрирован";
+                if( !session()->get('usesite_sent') ){
+                    $text="{$user_name}, приложение устарело. Воспользуйтесь сайтом https://tezkel.com";
+                    $sms=\Config\Services::sms();
+                    $sms->send($user_phone_cleared,$text);
+                }
+                session()->set('usesite_sent',1);
             }
             $admin_sms=(object)[
                 'message_reciever_id'=>-100,
@@ -374,21 +380,6 @@ class UserModel extends Model{
                     ]
             ];
             jobCreate($notification_task);
-
-
-
-            if( !session()->get('usesite_sent') ){
-                $text="{$user_name}, приложение устарело. Воспользуйтесь сайтом https://tezkel.com";
-                $sms=\Config\Services::sms();
-                $sms->send($user_phone_cleared,$text);
-            }
-            session()->set('usesite_sent',1);
-
-
-
-
-
-
             return $user_id;
         }
 

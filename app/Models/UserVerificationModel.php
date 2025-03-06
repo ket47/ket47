@@ -46,10 +46,10 @@ class UserVerificationModel extends Model{
     }
 
     public function itemGet( string $verification_target, string $verification_type='phone' ){
-        $verification=$this->itemFind( $verification_target, $verification_type, null, $this->expiration_timeout/2 );//look for not older than half time
-        if( !$verification ){
+        //$verification=$this->itemFind( $verification_target, $verification_type, null, $this->expiration_timeout/2 );//look for not older than half time
+        //if( !$verification ){
             $verification=$this->itemCreate( $verification_target, $verification_type );
-        }
+        //}
         return $verification;
     }
 
