@@ -320,6 +320,7 @@ class Order extends \App\Controllers\BaseController {
                     ];
                     if($tariff->card_allow==1){
                         $rule['paymentByCard']=1;
+                        $rule['paymentByCardRecurrent']=1;
                     }
                     if($tariff->cash_allow==1){
                         $rule['paymentByCashStore']=1;
@@ -344,6 +345,7 @@ class Order extends \App\Controllers\BaseController {
                     ];
                     if($tariff->card_allow==1){
                         $rule['paymentByCard']=1;
+                        $rule['paymentByCardRecurrent']=1;
                     }
                     $deliveryOptions[]=$rule;
                 }

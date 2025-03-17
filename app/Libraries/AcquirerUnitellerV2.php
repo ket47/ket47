@@ -1,45 +1,49 @@
 <?php
 namespace App\Libraries;
-class AcquirerUniteller{
+class AcquirerUnitellerV2{
     public function linkGet($order_all,$params=null){
         $p=(object)[
+            'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
+            'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
+            'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
+            'Phone' => $order_all->customer?->user_phone,
+            'Preauth'=>1,
+            'IsRecurrentStart'=>1,
+            'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
+            //'FirstName'=>$order_all->customer->user_name,
+            //'OrderLifetime' => 5*60,// 5 min
+            //'MeanType' => '',
+            //'EMoneyType' => '',
+            //'Card_IDP' => '',
+            //'IData' => '',
+            //'PT_Code' => '',
+
             'Shop_IDP' => getenv('uniteller.Shop_IDP'),
             'Order_IDP' => getenv('uniteller.orderPreffix').$order_all->order_id,
             'Subtotal_P' => $order_all->order_sum_total,
+            'Lifetime' => 10*60,// 10 min
             'Customer_IDP' => $order_all->customer->user_id,
-            'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
-            'Phone' => $order_all->customer?->user_phone,
             'PhoneVerified' => $order_all->customer->user_phone,
-            //'FirstName'=>$order_all->customer->user_name,
-            'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
-            'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
-            'Preauth'=>1,
-            'IsRecurrentStart'=>1,
-            'Lifetime' => 5*60,// 5 min
-            //'OrderLifetime' => 5*60,// 5 min
-            'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
-            //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
         ];
-        if( $params['PaymentTypeLimits'] ){
+        $sign_body=
+                     md5($p->Shop_IDP)
+                ."&".md5($p->Order_IDP)
+                ."&".md5($p->Subtotal_P)
+                ."&".md5($p->MeanType??'')
+                ."&".md5($p->EMoneyType??'')
+                ."&".md5($p->Lifetime??'')
+                ."&".md5($p->Customer_IDP)
+                ."&".md5($p->Card_IDP??'')
+                ."&".md5($p->IData??'')
+                ."&".md5($p->PT_Code??'')
+                ."&".md5($p->PhoneVerified??'');
+        if($params['PaymentTypeLimits']??0){
             $p->PaymentTypeLimits=$params['PaymentTypeLimits'];
+            $sign_body.="&".md5($p->PaymentTypeLimits??'');
         }
-        $p->Signature = strtoupper(
-            md5(
-                md5($p->Shop_IDP) . "&" .
-                md5($p->Order_IDP) . "&" .
-                md5($p->Subtotal_P) . "&" .
-                md5($p->MeanType??'') . "&" .
-                md5($p->EMoneyType??'') . "&" .
-                md5($p->Lifetime??'') . "&" .
-                md5($p->Customer_IDP) . "&" .
-                md5($p->Card_IDP??'') . "&" .
-                md5($p->IData??'') . "&" .
-                md5($p->PT_Code??'') . "&" .
-                md5($p->PhoneVerified??'') . "&" .
-                md5($p->PaymentTypeLimits??'') . "&" .
-                md5( getenv('uniteller.password') )
-            )
-        );
+        $p->Signature = strtoupper(md5(
+            $sign_body."&".md5( getenv('uniteller.password') )
+        ));
         $queryString = http_build_query($p);
         return getenv('uniteller.gateway').'pay?'.$queryString;
     }
@@ -214,46 +218,182 @@ class AcquirerUniteller{
     //     ];
     // }
 
-    public function pay( object $order_all, int $card_id=null){
+
+    public function pay( object $order_all, ?int $paying_user_id=null ){
         return false;
-//         $request=(object)[
-//             'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
-//             'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
-//             'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
-//             'Parent_Order_IDP'=>getenv('uniteller.orderPreffix').'REG'.$card_id,
-// //            'Parent_Order_IDP'=>'loc_1077',
-//         ];
-//         $request->Signature = strtoupper(
-//             md5(
-//                 md5($request->Shop_IDP) . "&" .
-//                 md5($request->Order_IDP) . "&" .
-//                 md5($request->Subtotal_P) . "&" .
-//                 md5($request->Parent_Order_IDP) . "&" .
-//                 md5( getenv('uniteller.password') )
-//             )
-//         );
-//         $context  = stream_context_create([
-//             'http' => [
-//                 'header'  => "Content-type: application/x-www-form-urlencoded",
-//                 'method'  => 'POST',
-//                 'content' => http_build_query($request)
-//                 ]
-//         ]);
-//         $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
-//         $rows=str_getcsv($result,"\n");
-//         $response=str_getcsv($rows[1],";");
-//         //error_log("\n\n#{$order_all->order_id}".date(" H:i:s")."\n".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
-//         if(!$result || str_contains($result,'Error_Code') || !$response){
-//             log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
-//             return null;
-//         }
-//         return (object)[
-//             'order_id'=>$response[0],
-//             'status'=>$response[1],
-//             'total'=>$response[2],
-//             'approvalCode'=>$response[3],
-//             'billNumber'=>$response[4]
-//         ];
+    }
+
+
+    public function recurrentPay( string $card_remote_id, object $order_all, ?int $paying_user_id=null ){
+        $OrderModel=model('OrderModel');
+        $orderData=$OrderModel->itemDataGet($order_all->order_id);
+
+        $is_allowed=$orderData->payment_by_card??0;
+        if( !$is_allowed && in_array($order_all->user_role,['delivery','admin']) ){
+            $is_allowed=1;//payment_by_cash (courier paying in place of customer)
+        }
+        if( !$is_allowed ){
+            return 'forbidden';
+        }
+        $orderDataUpdate=(object)[];
+
+        if( !$paying_user_id ){
+            $paying_user_id=$order_all->customer->user_id;
+        }
+
+        $request=(object)[
+            'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
+            'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
+            'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
+            'Parent_Order_IDP'=>$card_remote_id,
+            'Preauth'=>1,
+        ];
+        $request->Signature = strtoupper(
+            md5(
+                md5($request->Shop_IDP) . "&" .
+                md5($request->Order_IDP) . "&" .
+                md5($request->Subtotal_P) . "&" .
+                md5($request->Parent_Order_IDP) . "&" .
+                md5( getenv('uniteller.password') )
+            )
+        );
+        $queryString=http_build_query($request);
+        pl($request,0);
+        
+        
+        $response=$this->apiExecute('recurrent',$queryString);
+
+
+
+        pl($response);
+
+        //error_log("\n\n#{$order_all->order_id}".date(" H:i:s")."\n".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
+        // if(!$response || str_contains($response,'Error_Code') || !$response){
+        //     log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
+        //     return null;
+        // }
+        return (object)[
+            'order_id'=>$response[0],
+            'status'=>$response[1],
+            'total'=>$response[2],
+            'approvalCode'=>$response[3],
+            'billNumber'=>$response[4]
+        ];
+
+
+        if($response->errorCode??null){
+            pl(['Acquirer:pay Auth',$function,$request,$response]);
+            if( $response->errorCode=='PmoDecline' ){
+                //return $this->getSlugByDescription( $response->errorDescription );
+            }
+            return 'error';
+        }
+        // $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
+        // $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
+        $orderDataUpdate->payment_by_card=1;
+        
+        $OrderModel->itemDataUpdate($order_all->order_id,$orderDataUpdate);
+        $payment_data=(object)[
+            'status'=>'authorized',
+            'total'=>$order_all->order_sum_total,
+            'billNumber'=>$orderDataUpdate->payment_card_acq_order_id,
+        ];
+        return $OrderModel->itemStageAdd( $order_all->order_id, 'customer_payed_card', $payment_data, false );
+    }
+
+    private function apiSend( string $function, object $request, ?array $params ){
+        $queryString=$this->apiQueryGet($request,$params);
+        return $this->apiExecute($function,$queryString);
+    }
+
+    private function apiQueryGet(object $request, ?array $params){
+        $sign_body=
+                     md5($request->Shop_IDP)
+                ."&".md5($request->Order_IDP)
+                ."&".md5($request->Subtotal_P)
+                ."&".md5($request->MeanType??'')
+                ."&".md5($request->EMoneyType??'')
+                ."&".md5($request->Lifetime??'')
+                ."&".md5($request->Customer_IDP??'')
+                ."&".md5($request->Card_IDP??'')
+                ."&".md5($request->IData??'')
+                ."&".md5($request->PT_Code??'')
+                ."&".md5($request->PhoneVerified??'');
+        if($params['PaymentTypeLimits']??0){
+            $request->PaymentTypeLimits=$params['PaymentTypeLimits'];
+            $sign_body.="&".md5($p->PaymentTypeLimits??'');
+        }
+        $request->Signature = strtoupper(md5(
+            $sign_body."&".md5( getenv('uniteller.password') )
+        ));
+        return http_build_query($request);
+    }
+
+    private function apiExecute( string $function, string $queryString ){
+        if(getenv('test.acquirerMock')){
+            $url = getenv('uniteller.gateway')."$function/";
+        } else {
+            $url = getenv('unitellerMock.gateway')."$function/";         
+        }
+        $context  = stream_context_create([
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded",
+                'method'  => 'POST',
+                'content' => $queryString
+                ]
+        ]);
+        $result = file_get_contents($url, false, $context);
+        $rows=str_getcsv($result,"\n");
+        return str_getcsv($rows[1],";");
+    }
+
+
+
+
+
+
+
+
+    public function payold( object $order_all, ?int $card_id=null){
+        return false;
+        $request=(object)[
+            'Shop_IDP'=>getenv('uniteller.Shop_IDP'),
+            'Order_IDP'=>getenv('uniteller.orderPreffix').$order_all->order_id,
+            'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
+            'Parent_Order_IDP'=>getenv('uniteller.orderPreffix').'REG'.$card_id,
+//            'Parent_Order_IDP'=>'loc_1077',
+        ];
+        $request->Signature = strtoupper(
+            md5(
+                md5($request->Shop_IDP) . "&" .
+                md5($request->Order_IDP) . "&" .
+                md5($request->Subtotal_P) . "&" .
+                md5($request->Parent_Order_IDP) . "&" .
+                md5( getenv('uniteller.password') )
+            )
+        );
+        $context  = stream_context_create([
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded",
+                'method'  => 'POST',
+                'content' => http_build_query($request)
+                ]
+        ]);
+        $result = file_get_contents(getenv('uniteller.gateway').'recurrent/', false, $context);
+        $rows=str_getcsv($result,"\n");
+        $response=str_getcsv($rows[1],";");
+        //error_log("\n\n#{$order_all->order_id}".date(" H:i:s")."\n".json_encode([getenv('uniteller.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
+        if(!$result || str_contains($result,'Error_Code') || !$response){
+            log_message('error','RESPONSE pay UNITELLER REQUEST:'.json_encode($request).' RESPONSE:'.$result);
+            return null;
+        }
+        return (object)[
+            'order_id'=>$response[0],
+            'status'=>$response[1],
+            'total'=>$response[2],
+            'approvalCode'=>$response[3],
+            'billNumber'=>$response[4]
+        ];
     }
 
 
