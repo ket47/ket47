@@ -274,6 +274,9 @@ class AcquirerRncb{
     }
 
     public function pay( object $order_all, ?int $paying_user_id=null ){
+        if( !$paying_user_id ){
+            $paying_user_id=$order_all->customer->user_id;
+        }
         $UserCardModel=model('UserCardModel');
         $CoF=$UserCardModel->where('card_acquirer','rncbCard')->itemMainGet($paying_user_id);
         if( !($CoF->card_remote_id??null) ){
@@ -298,9 +301,6 @@ class AcquirerRncb{
 
         $orderTitle="Заказ #{$order_all->order_id}";
         $orderDescription=($order_all->store->store_name??null);
-        if( !$paying_user_id ){
-            $paying_user_id=$order_all->customer->user_id;
-        }
 
         if( empty($orderData->payment_card_acq_order_id) ){
             //Creating new cof order

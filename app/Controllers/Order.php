@@ -220,7 +220,7 @@ class Order extends \App\Controllers\BaseController {
     /**
      * Looking for available tariffs of store
      */
-    private function itemDeliveryOptionsGet( $store_id, int $delivery_distance=null, $features=null ){
+    private function itemDeliveryOptionsGet( $store_id, ?int $delivery_distance=null, $features=null ){
         $StoreModel=model('StoreModel');
         $store_readyness=$StoreModel->itemIsReady($store_id);
         if( !$store_readyness->is_ready ){
@@ -293,18 +293,14 @@ class Order extends \App\Controllers\BaseController {
                 }
                 $deliveryOptions[]=$rule;
             } else {
-                if($store->store_delivery_allow==1){
-                    if( !$store_readyness->is_open ){
-                        $default_error_code='not_ready';
-                        continue;
-                    }
-                    if( $delivery_distance>$store_delivery_radius ){
-                        /**
-                         * Delivery distance is bigger than maximum store courier reach
-                         */
-                        $default_error_code='too_far';
-                        continue;
-                    }
+                if( !$store_readyness->is_open ){
+                    $default_error_code='not_ready';
+                    continue;
+                }
+                if( $delivery_distance>$store_delivery_radius ){
+                    $default_error_code='too_far';
+                }
+                if($store->store_delivery_allow==1 && $delivery_distance<=$store_delivery_radius){
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
                         'reckonParameters'=>$tariff,
@@ -328,10 +324,6 @@ class Order extends \App\Controllers\BaseController {
                     $deliveryOptions[]=$rule;
                 }
                 if($store->store_pickup_allow==1){
-                    if( !$store_readyness->is_open ){
-                        $default_error_code='not_ready';
-                        continue;
-                    }
                     $rule=[
                         'tariff_id'=>$tariff->tariff_id,
                         'reckonParameters'=>$tariff,
@@ -445,6 +437,9 @@ class Order extends \App\Controllers\BaseController {
         }
         if ($order === 'notfound') {
             return $this->failNotFound('notfound');
+        }
+        if ($order->stage_current != 'customer_confirmed') {
+            return $this->failNotFound('not_confirmed');
         }
 
         $bulkResponse=$this->checkoutDataGet($order,$features);
