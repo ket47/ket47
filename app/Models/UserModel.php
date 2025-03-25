@@ -476,7 +476,7 @@ class UserModel extends Model{
         return $this->signInInit( $user->user_id );
     }
 
-    public function signInByToken(string $token_hash, string $holder=null){
+    public function signInByToken(string $token_hash, ?string $holder=null){
         $TokenModel=model('TokenModel');
         $token_data=$TokenModel->itemAuth($token_hash, $holder);
         if( !$token_data || !$token_data->owner_id ){
@@ -494,7 +494,7 @@ class UserModel extends Model{
         return $this->signInInit( $user_id );
     }
 
-    private function signInInit( int $user_id=null ){
+    private function signInInit( ?int $user_id=null ){
         if( !$user_id ){
             return 'user_not_found';
         }

@@ -586,7 +586,7 @@ class User extends \App\Controllers\BaseController{
     public function phoneVerificationSendFallback( $user_verification_id ){
         $UserVerificationModel=model('UserVerificationModel');
         $verification=$UserVerificationModel->itemGet($user_verification_id);
-        if( !$verification ){
+        if( $verification->is_verified??0 ){
             //this verification is used already
             return false;
         }
@@ -634,10 +634,10 @@ class User extends \App\Controllers\BaseController{
         if( !$verification ){
             return $this->failNotFound('verification_not_found');
         }
+        $UserVerificationModel->itemMarkVerified($verification->user_verification_id);
         if( $verification_type=='phone' && $verification->user_id ){
             $UserModel=model('UserModel');
             $UserModel->verifyUser($verification->user_id);
-            $UserVerificationModel->itemDelete($verification->user_verification_id);
         }
         return $this->respond('ok');
     }

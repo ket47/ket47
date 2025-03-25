@@ -13,7 +13,8 @@ class UserVerificationModel extends Model{
         'verification_target',
         'verification_value',
         'verification_session',
-        'expired_at'
+        'expired_at',
+        'is_verified',
         ];
     
     private function clearVerifications(){
@@ -93,10 +94,10 @@ class UserVerificationModel extends Model{
         return (object) $verification;
     }
 
-    public function itemDelete( int $user_verification_id ){
+    public function itemMarkVerified( int $user_verification_id ){
         //no permission check
-        $this->where('user_verification_id',$user_verification_id);
-        $this->delete();
+        $this->update($user_verification_id,['is_verified'=>1]);
+
     }
 
     // /**
