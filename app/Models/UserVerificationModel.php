@@ -45,19 +45,16 @@ class UserVerificationModel extends Model{
         return $result;
     }
 
-    public function itemGet( string $verification_target, string $verification_type='phone' ){
-        //$verification=$this->itemFind( $verification_target, $verification_type, null, $this->expiration_timeout/2 );//look for not older than half time
-        //if( !$verification ){
-            $verification=$this->itemCreate( $verification_target, $verification_type );
-        //}
-        return $verification;
+    public function itemGet( int $user_verification_id ){
+        $this->where('user_verification_id',$user_verification_id);
+        return $this->get()->getRow();
     }
 
     /**
      * Searches for existing verification that not expired yet
      */
     private $expiration_timeout=30*60;
-    public function itemFind( string $verification_target, string $verification_type, string $verification_value=null, int $expiration_offset=null ){
+    public function itemFind( string $verification_target, string $verification_type, ?string $verification_value=null, ?int $expiration_offset=null ){
         if( !$expiration_offset ){
             $expiration_offset=$this->expiration_timeout;
         }
@@ -94,6 +91,12 @@ class UserVerificationModel extends Model{
         ];
         $verification['user_verification_id']=$this->insert($verification,true);
         return (object) $verification;
+    }
+
+    public function itemDelete( int $user_verification_id ){
+        //no permission check
+        $this->where('user_verification_id',$user_verification_id);
+        $this->delete();
     }
 
     // /**

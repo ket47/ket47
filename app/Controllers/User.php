@@ -551,14 +551,23 @@ class User extends \App\Controllers\BaseController{
         session()->set("verificationDebounce$user_phone_cleared",time()+$debounce_timeout);
 
         $UserVerificationModel=model('UserVerificationModel');
-        $verification=$UserVerificationModel->itemGet($user_phone_cleared,'phone');
+        $verification=$UserVerificationModel->itemCreate($user_phone_cleared,'phone');
         if( !$verification || $verification=='verification_target_invalid' ){
             return $this->fail('verification_target_invalid');
         }
+
+        $timeout=30;//send voice after 30 sec if not verified
+        $voice_fallback_task=[
+            'task_programm'=>[
+                    ['controller'=>'\App\Controllers\User','method'=>'phoneVerificationSendFallback','arguments'=>[$verification->user_verification_id]]
+            ],
+            'task_next_start_time'=>time()+$timeout,
+        ];
+        jobCreate($voice_fallback_task);
+
         $msg_data=[
             'verification_code'=>$verification->verification_value
         ];
-
         $sms_text=view('messages/phone_verification_sms.php',$msg_data);
         $sms=\Config\Services::sms();
         $response=$sms->send($user_phone_cleared,$sms_text);
@@ -572,6 +581,21 @@ class User extends \App\Controllers\BaseController{
             return $this->respond('ok');
         }
         return $this->fail('verification_send_failed');
+    }
+
+    public function phoneVerificationSendFallback( $user_verification_id ){
+        $UserVerificationModel=model('UserVerificationModel');
+        $verification=$UserVerificationModel->itemGet($user_verification_id);
+        if( !$verification ){
+            //this verification is used already
+            return false;
+        }
+        $msg_data=[
+            'verification_code'=>$verification->verification_value
+        ];
+        $sms_text=view('messages/phone_verification_sms_fallback.php',$msg_data);
+        $sms=\Config\Services::voice();
+        return $sms->send($verification->verification_target,$sms_text);
     }
 
     /**
@@ -601,6 +625,9 @@ class User extends \App\Controllers\BaseController{
         $verification_target=$this->request->getPost('verification_target');
         $verification_value= $this->request->getPost('verification_value');
 
+        helper('phone_number');
+        $verification_target= clearPhone($verification_target);//removing + if any
+
         $UserVerificationModel=model('UserVerificationModel');
         $verification=$UserVerificationModel->itemFind($verification_target,$verification_type,$verification_value);
 
@@ -610,6 +637,7 @@ class User extends \App\Controllers\BaseController{
         if( $verification_type=='phone' && $verification->user_id ){
             $UserModel=model('UserModel');
             $UserModel->verifyUser($verification->user_id);
+            $UserVerificationModel->itemDelete($verification->user_verification_id);
         }
         return $this->respond('ok');
     }
@@ -620,7 +648,7 @@ class User extends \App\Controllers\BaseController{
     //     $user_phone_cleared= clearPhone($user_phone);
 
     //     $UserVerificationModel=model('UserVerificationModel');
-    //     $verification=$UserVerificationModel->itemGet($user_phone_cleared,'phone',session_id());
+    //     $verification=$UserVerificationModel->itemCreate($user_phone_cleared,'phone',session_id());
     //     if( !$verification || $verification=='verification_target_invalid' ){
     //         return $this->fail('verification_target_invalid');
     //     }
@@ -640,7 +668,7 @@ class User extends \App\Controllers\BaseController{
         $user_phone_cleared= clearPhone($user_phone);
 
         $UserVerificationModel=model('UserVerificationModel');
-        $result=$UserVerificationModel->itemGet($user_phone_cleared);
+        $result=$UserVerificationModel->itemCreate($user_phone_cleared);
         if( $result=='unverified_phone_not_found' ){
             return $this->failNotFound('unverified_phone_not_found');
         }
