@@ -1,4 +1,4 @@
-🛍️ Заказ из <?=$store->store_name?> №<?=$order->order_id?>. 
+🛍️ <?=$store->store_name?> Заказ №<?=$order->order_id?>. 
 
 Покупатель <b><?=$customer->user_name??'-'?></b> +<?=$customer->user_phone??'-'?> 
 <i><?=$customer->location_main->location_address??'-'?></i>
