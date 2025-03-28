@@ -470,6 +470,7 @@ class UserModel extends Model{
         if( !$verification ){
             return 'user_code_wrong';//ota code wrong
         }
+        $UserVerificationModel->itemMarkVerified($verification->user_verification_id);
         if( !$user->user_phone_verified ){
             $this->verifyUser( $user->user_id, 'phone' );
         }
