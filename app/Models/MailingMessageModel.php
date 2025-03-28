@@ -141,7 +141,6 @@ class MailingMessageModel extends SecureModel{
         foreach($reciever_ids as $reciever_id){
             $context=$UserModel->find($reciever_id);
             $message=(object)[
-                'message_subject'=>$mailing->subject_template,
                 'message_transport'=>$mailing->transport,
                 'message_reciever_id'=>$reciever_id,
                 'message_data'=>(object)[
@@ -150,8 +149,8 @@ class MailingMessageModel extends SecureModel{
                     'sound'=>$mailing->sound??''
                 ],
                 'message_text'=>$this->render($mailing->text_template,$context),
+                'message_subject'=>$mailing->subject_template,
             ];
-            //pl($message);
             $is_sent=$Messenger->itemSend( $message );
             $this->where('mailing_id',$mailing->mailing_id);
             $this->where('reciever_id',$reciever_id);

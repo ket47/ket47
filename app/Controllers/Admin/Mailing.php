@@ -76,8 +76,9 @@ class Mailing extends \App\Controllers\BaseController{
 
     public function itemStart(){
         $mailing_id=$this->request->getPost('mailing_id');
-        $MailingModel=model('MailingModel');
+        $mode=$this->request->getPost('mode');
 
+        $MailingModel=model('MailingModel');
         $mailing=$MailingModel->itemGet($mailing_id);
         if( !$mailing || $mailing=='forbidden' ){
             return $this->failNotFound('notfound');
@@ -86,12 +87,14 @@ class Mailing extends \App\Controllers\BaseController{
         $MailingMessageModel=model('MailingMessageModel');
 
         $MailingMessageModel->where('mailing_id',$mailing_id);
-        $MailingMessageModel->where('is_sent',0);
-        $MailingMessageModel->where('is_failed',0);
+        if( $mode!='restart' ){
+            $MailingMessageModel->where('is_sent',0);
+            $MailingMessageModel->where('is_failed',0);            
+        }
         //$MailingMessageModel->select('reciever_id');
         $ids=$MailingMessageModel->findColumn('reciever_id');
         if(!$ids){
-            return $this->fail('empty');
+            return $this->fail('empty_recievers');
         }
         //$ids=explode(',',$row[0]->reciever_ids);
         $result = $MailingModel->itemJobCreate($ids, $mailing);

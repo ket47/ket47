@@ -107,8 +107,6 @@ class FirePushKreait{
                 'notification' => [
                     'title' => $push->title,
                     'body' => $push->body,
-                    'image'=>$push->data['image']??null,
-                    'icon'=>$push->data['icon']??null,
                     'click_action'=>'NOTIF_ACTIVATE',
                 ],
             ],
@@ -122,8 +120,14 @@ class FirePushKreait{
                     ],
                 ],
             ],
-            'webpush'=>[]
+            //'webpush'=>[] if empty cause trouble
         ];
+        if($push->data['icon']??null){
+            $msg['android']['notification']['icon']=$push->data['icon'];//backward compability
+        }
+        if($push->data['image']??null){
+            $msg['android']['notification']['image']=$push->data['image'];//backward compability
+        }
         if( $msg['data']['sound']??'' ){
             $msg['apns']['payload']['aps']['sound']=$msg['data']['sound'];
             $msg['apns']['headers']['apns-priority']='10';
