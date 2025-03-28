@@ -184,10 +184,19 @@ class Courier extends \App\Controllers\BaseController{
         return $this->fail($result);
     }
     
-    
-    
-    
-    
+    public function itemShiftClose(){
+        $courier_id=$this->request->getVar('courier_id');
+
+        $CourierModel=model("CourierModel");
+        $CourierModel->itemShiftClose($courier_id);
+    }
+
+    public function itemShiftReportSend(){
+        $shift_id=$this->request->getVar('shift_id');
+
+        $CourierShiftModel=model("CourierShiftModel");
+        $CourierShiftModel->itemReportSend($shift_id);
+    }
     
     public function listJobGet(){
         $courier_id=$this->request->getVar('courier_id');
