@@ -175,10 +175,10 @@ class KonturWorm extends \App\Controllers\BaseController{
 
     private function filter( $rows, $groups, float $priceMultiplier=1.33 ){
         $whitelistCodes=explode("\n",file_get_contents(WRITEPATH."/minimarketWhitelist.txt"));
-        $groupDict=[];
-        foreach($groups->items as $group){
-            $groupDict[$group->id]=$this->mapCategory[$group->name];
-        }
+        // $groupDict=[];
+        // foreach($groups->items as $group){
+        //     $groupDict[$group->id]=$this->mapCategory[$group->name];
+        // }
 
         $promo_window=0.10;//10%
         $promo_depth=0.90;//-10% net discount
