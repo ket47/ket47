@@ -4,9 +4,7 @@ class DeliveryJobPlan{
 
     private $shiftStartHour=9;
     private $shiftEndHour=23;
-    private $shiftEndMarginMinute=5;// min before shiftEnd skip to next day
-
-    private $deliveryRangeDays=3;
+    private $deliveryRangeDays=4;
     private $deliveryDurationDelta=900;//+-15 min
     private $avgSpeed=3.05;//11 km/h
     private $heavyLoadTreshold=2400;//40min if shortest start_plan is later than this then report heavyload
@@ -92,7 +90,7 @@ class DeliveryJobPlan{
 
     public function peakHourOffset( int $time ){
         $h=date('H',$time);
-        $offset=40*60;//40 min
+        $offset=20*60;//40 min
         if( $h>=12 && $h<=15 || $h>=18 && $h<=20 ){
             return $offset;
         }
@@ -107,8 +105,7 @@ class DeliveryJobPlan{
         $finish_arrival=round($finish_distance/$this->avgSpeed);
         //get day where courier service and store are working
         $firstWorkingWindow=$this->schedule->firstGet();
-        $beforeCloseMargin=getenv('store.beforeCloseMargin');
-        if( $firstWorkingWindow['begin']>time() || $firstWorkingWindow['end']<time()+$beforeCloseMargin ){//now courier service and store are not working suggest schedule
+        if( $firstWorkingWindow['begin']>time() || $firstWorkingWindow['end']<time() ){//now courier service and store are not working suggest schedule
             return [
                 'mode'=>'scheduled',
                 'start_plan'=>null,
@@ -149,12 +146,16 @@ class DeliveryJobPlan{
     }
 
     public function scheduleFillShift(){
+        $beforeEndMargin=getenv('schedule.shiftBeforeEndMargin')??0;
         for($day=0;$day<$this->deliveryRangeDays;$day++){
-            $this->schedule->beginHour($day,$this->shiftStartHour);
-            $this->schedule->endHour($day,$this->shiftEndHour);
+            $startingTime=$this->schedule->timeGet( $day, $this->shiftStartHour );
+            $endingTime=$this->schedule->timeGet( $day, $this->shiftEndHour );
+            $this->schedule->begin($startingTime);
+            $this->schedule->end($endingTime-$beforeEndMargin);
         }
     }
     public function scheduleFillTimetable( object $store ){
+        $beforeCloseMargin=getenv('schedule.storeBeforeCloseMargin');
         $todayweekday=date('N')-1;
         for($day=0;$day<$this->deliveryRangeDays;$day++){
             $weekday=($todayweekday+$day)%7;
@@ -170,8 +171,10 @@ class DeliveryJobPlan{
                  */
                 $closeHour=24;
             }
-            $this->schedule->beginHour($day,$openHour);
-            $this->schedule->endHour($day,$closeHour);
+            $openingTime=$this->schedule->timeGet( $day, $openHour );
+            $closingTime=$this->schedule->timeGet( $day, $closeHour );
+            $this->schedule->begin($openingTime);
+            $this->schedule->end($closingTime-$beforeCloseMargin);
         }
     }
 
