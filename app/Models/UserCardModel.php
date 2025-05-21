@@ -66,7 +66,7 @@ class UserCardModel extends Model{
 
     public function itemMainGet( int $user_id ){
         $this->permitWhere('r');
-        $this->select("card_id,card_remote_id,card_type,card_mask");
+        $this->select("card_id,card_remote_id,card_type,card_mask,card_acquirer");
         $this->limit(1);
         $this->orderBy('is_main','DESC');
         $this->where('is_disabled',0);

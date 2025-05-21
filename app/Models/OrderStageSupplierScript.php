@@ -26,16 +26,6 @@ class OrderStageSupplierScript{
         'customer_rejected'=>[
             'system_reckon'=>               []
             ],
-        'customer_disputed'=>[
-            'customer_finish'=>             ['Отказаться от спора','success'],
-            'customer_action_take_photo'=>  ['Сфотографировать заказ','medium','outline'],
-            'supplier_corrected'=>          ['Исправить заказ'],
-            'admin_supervise'=>             ['Решить спор','danger'],
-            ],
-        'customer_finish'=>[
-            'system_reckon'=>               [],
-            'admin_supervise'=>             ['Решить спор','danger'],
-            ],
 
 
         'system_schedule'=>[
@@ -51,7 +41,7 @@ class OrderStageSupplierScript{
             
         
         'supplier_rejected'=>[
-            'system_reckon'=>               [],
+            'system_reckon'=>               ['Завершить (авто)','medium','clear'],
             ],
         'supplier_reclaimed'=>[
             'admin_supervise'=>             ['Решить спор','danger'],
@@ -72,7 +62,7 @@ class OrderStageSupplierScript{
 
 
         'admin_supervise'=>[
-            'customer_finish'=>             ['Принять заказ','success'],
+            'system_reckon'=>               ['Завершить','success'],
             'supplier_corrected'=>          ['Исправить заказ'],
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_supplier'=>     ['Оштрафовать продавца','danger'],
@@ -98,7 +88,7 @@ class OrderStageSupplierScript{
             
 
         'system_reckon'=>[
-            'system_finish'=>               [],
+            'system_finish'=>               ['Завершить','success'],
             'admin_supervise'=>             ['Установить статус','danger','outline'],
             ],
         'system_finish'=>[
@@ -570,16 +560,6 @@ class OrderStageSupplierScript{
         ];
 
 
-        $courier_freeing_n_store_blocking_task=[
-            'task_name'=>"free the courier",
-            'task_programm'=>[
-                ['model'=>'UserModel','method'=>'systemUserLogin'],
-                ['model'=>'OrderGroupMemberModel','method'=>'leaveGroupByType','arguments'=>[$order_id,'delivery_search']],
-                ['model'=>'CourierModel','method'=>'itemUpdateStatus','arguments'=>[$order->order_courier_id,'ready']],
-                ['model'=>'StoreModel','method'=>'itemDisable','arguments'=>[$order->order_store_id,1]],
-                ['model'=>'UserModel','method'=>'systemUserLogout'],
-                ]
-        ];
 
         $store_unblocking_sms=(object)[
             'message_transport'=>'push,telegram',
@@ -601,13 +581,13 @@ class OrderStageSupplierScript{
             'task_next_start_time'=>$store_block_finish_at
         ];
 
-        jobCreate($courier_freeing_n_store_blocking_task);
         jobCreate($store_unblocking_task);
         jobCreate($notification_task);
         jobCreate([
             'task_programm'=>[
                     ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-                ]
+            ],
+            'task_next_start_time'=>time()+1
         ]);
         return 'ok';
     }
@@ -812,13 +792,13 @@ class OrderStageSupplierScript{
         $EntryModel->listStockMove($order_id,'commited');
 
         $this->onSupplierFinishPrepTimeUpdate( $order_id, $order->order_store_id );
-        jobCreate([
-            'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
-            ],
-            'task_next_start_time'=>time()+1
-        ]);
-        return 'ok';
+        // jobCreate([
+        //     'task_programm'=>[
+        //             ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+        //     ],
+        //     'task_next_start_time'=>time()+1
+        // ]);
+        return $this->OrderModel->itemStageCreate($order_id,'system_reckon',null,'as_admin');
     }
     
     
@@ -865,6 +845,7 @@ class OrderStageSupplierScript{
             'finalize_settle_supplier_done'=>0,
             'finalize_settle_courier_done'=>0,
             'finalize_settle_system_done'=>0,            
+            'finalize_refund_done'=>0,
         ];
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
 
@@ -931,26 +912,39 @@ class OrderStageSupplierScript{
         if( $data['delay_sec']??0 ){
             sleep($data['delay_sec']);//DO AFTER DELAY
         }
-        $result=$this->OrderModel->itemStageCreate($order_id,'system_finish',null,'as_admin');
-        if( $result!='ok' ){
-            $retry_delay_min=7;
-            jobCreate([
-                'task_programm'=>[
-                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
-                ],
-                'task_next_start_time'=>time()+$retry_delay_min*60
-            ]);
-        }
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+            ],
+            'task_next_start_time'=>time()+1
+        ]);
+        $retry_delay_min=7;
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+            ],
+            'task_next_start_time'=>time()+$retry_delay_min*60
+        ]);
+        // $result=$this->OrderModel->itemStageCreate($order_id,'system_finish',null,'as_admin');
+        // if( $result!='ok' ){
+        //     $retry_delay_min=7;
+        //     jobCreate([
+        //         'task_programm'=>[
+        //                 ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+        //         ],
+        //         'task_next_start_time'=>time()+$retry_delay_min*60
+        //     ]);
+        // }
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
         /**
          * we should pause db transaction so API cals can be atomized
          */
-        $this->OrderModel->transComplete();
+        //$this->OrderModel->transComplete();
         $OrderTransactionModel=model('OrderTransactionModel');
         $result=$OrderTransactionModel->orderFinalize($order_id)?'ok':'fail';
-        $this->OrderModel->transBegin();
+        //$this->OrderModel->transBegin();
         return $result;
     }
 }

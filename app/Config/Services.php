@@ -38,8 +38,11 @@ class Services extends BaseService
 		if( getenv('test.acquirerMock')==1 ){
 			return new \App\Libraries\AcquirerUnitellerMock();
 		}
-		if( $type=='Uniteller' ){
+		if( $type=='AcquirerUniteller' ){
 			return new \App\Libraries\AcquirerUniteller();
+		}
+		if( $type=='AcquirerUnitellerSBP' ){
+			return new \App\Libraries\AcquirerUnitellerSBP();
 		}
 		return new \App\Libraries\AcquirerRncb();
 	}

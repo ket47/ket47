@@ -1,44 +1,94 @@
 <?php
 namespace App\Libraries;
 class AcquirerUniteller{
-    public function linkGet($order_all){
+    public function linkGet($order_all,$params=null){
+        $params=[
+            'PaymentTypeLimits'=>"{\"1\":[{$order_all->order_sum_total},{$order_all->order_sum_total}]}"
+        ];
         $p=(object)[
-            'Shop_IDP' => getenv('uniteller.Shop_IDP'),
-            'Order_IDP' => getenv('uniteller.orderPreffix').$order_all->order_id,
-            'Subtotal_P' => $order_all->order_sum_total,
-            'Customer_IDP' => $order_all->customer->user_id,
-            'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
-            'Phone' => $order_all->customer?->user_phone,
-            'PhoneVerified' => $order_all->customer->user_phone,
-            //'FirstName'=>$order_all->customer->user_name,
             'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
-            'Preauth'=>1,
+            'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
+            'Phone' => $order_all->customer?->user_phone,
             'IsRecurrentStart'=>1,
-            'Lifetime' => 5*60,// 5 min
-            //'OrderLifetime' => 5*60,// 5 min
+            'Preauth'=>1,
             'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
-            //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
+            'FirstName'=>$order_all->customer->user_name,
+            //'OrderLifetime' => 5*60,// 5 min
+            //'MeanType' => '',
+            //'EMoneyType' => '',
+            //'Card_IDP' => '',
+            //'IData' => '',
+            //'PT_Code' => '',
+
+            'Shop_IDP' => getenv('unitellerSBP.Shop_IDP'),
+            'Order_IDP' => getenv('unitellerSBP.orderPreffix').$order_all->order_id,
+            'Subtotal_P' => $order_all->order_sum_total,
+            'Lifetime' => 10*60,// 10 min
+            'Customer_IDP' => $order_all->customer->user_id,
+            'PhoneVerified' => $order_all->customer->user_phone,
         ];
-        $p->Signature = strtoupper(
-            md5(
-                md5($p->Shop_IDP) . "&" .
-                md5($p->Order_IDP) . "&" .
-                md5($p->Subtotal_P) . "&" .
-                md5($p->MeanType??'') . "&" .
-                md5($p->EMoneyType??'') . "&" .
-                md5($p->Lifetime??'') . "&" .
-                md5($p->Customer_IDP) . "&" .
-                md5($p->Card_IDP??'') . "&" .
-                md5($p->IData??'') . "&" .
-                md5($p->PT_Code??'') . "&" .
-                md5($p->PhoneVerified??'') . "&" .
-                md5( getenv('uniteller.password') )
-            )
-        );
+        $sign_body=
+                     md5($p->Shop_IDP)
+                ."&".md5($p->Order_IDP)
+                ."&".md5($p->Subtotal_P)
+                ."&".md5($p->MeanType??'')
+                ."&".md5($p->EMoneyType??'')
+                ."&".md5($p->Lifetime??'')
+                ."&".md5($p->Customer_IDP)
+                ."&".md5($p->Card_IDP??'')
+                ."&".md5($p->IData??'')
+                ."&".md5($p->PT_Code??'')
+                ."&".md5($p->PhoneVerified??'');
+        if($params['PaymentTypeLimits']??0){
+            $p->PaymentTypeLimits=$params['PaymentTypeLimits'];
+            $sign_body.="&".md5($p->PaymentTypeLimits??'');
+        }
+        $p->Signature = strtoupper(md5(
+            $sign_body."&".md5( getenv('unitellerSBP.password') )
+        ));
+        //pl($p);
         $queryString = http_build_query($p);
-        return getenv('uniteller.gateway').'pay?'.$queryString;
+        return getenv('unitellerSBP.gateway').'pay?'.$queryString;
     }
+    // public function linkGet($order_all){
+    //     $p=(object)[
+    //         'Shop_IDP' => getenv('uniteller.Shop_IDP'),
+    //         'Order_IDP' => getenv('uniteller.orderPreffix').$order_all->order_id,
+    //         'Subtotal_P' => $order_all->order_sum_total,
+    //         'Customer_IDP' => $order_all->customer->user_id,
+    //         'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
+    //         'Phone' => $order_all->customer?->user_phone,
+    //         'PhoneVerified' => $order_all->customer->user_phone,
+    //         //'FirstName'=>$order_all->customer->user_name,
+    //         'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
+    //         'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
+    //         'Preauth'=>1,
+    //         'IsRecurrentStart'=>1,
+    //         'Lifetime' => 5*60,// 5 min
+    //         //'OrderLifetime' => 5*60,// 5 min
+    //         'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
+    //         //'MeanType' => '','EMoneyType' => '','Card_IDP' => '','IData' => '','PT_Code' => '',
+    //     ];
+    //     $p->Signature = strtoupper(
+    //         md5(
+    //             md5($p->Shop_IDP) . "&" .
+    //             md5($p->Order_IDP) . "&" .
+    //             md5($p->Subtotal_P) . "&" .
+    //             md5($p->MeanType??'') . "&" .
+    //             md5($p->EMoneyType??'') . "&" .
+    //             md5($p->Lifetime??'') . "&" .
+    //             md5($p->Customer_IDP) . "&" .
+    //             md5($p->Card_IDP??'') . "&" .
+    //             md5($p->IData??'') . "&" .
+    //             md5($p->PT_Code??'') . "&" .
+    //             md5($p->PhoneVerified??'') . "&" .
+    //             md5( getenv('uniteller.password') )
+    //         )
+    //     );
+    //     $queryString = http_build_query($p);
+    //     return getenv('uniteller.gateway').'pay?'.$queryString;
+    // }
 
     public function cardRegisterLinkGet($user_id){
         $UserCardModel=model('UserCardModel');
@@ -271,7 +321,7 @@ class AcquirerUniteller{
                 ]
         ]);
         $result = file_get_contents(getenv('uniteller.gateway').'confirm/', false, $context);
-        //pl([getenv('uniteller.gateway').'confirm/'.http_build_query($request),$request,$result],false);
+        //pl([getenv('uniteller.gateway').'confirm/',$request,$result]);
         $rows=str_getcsv($result,"\n");
         $response=str_getcsv($rows[1],";");
 

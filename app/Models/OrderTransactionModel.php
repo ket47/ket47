@@ -48,6 +48,20 @@ class OrderTransactionModel extends TransactionModel{
     //     return $this->acquirerStatusCache[$order_id];
     // }
 
+
+    // private function acquirerLoad($orderData){
+    //     $payment_card_acquirer=$orderData->payment_card_acquirer??'AcquirerRncb';
+    //     if( $payment_card_acquirer=='AcquirerUniteller' ){
+    //         $Acquirer=new \App\Libraries\AcquirerUniteller();
+    //     } else
+    //     if( $payment_card_acquirer=='AcquirerUnitellerSBP' ){
+    //         $Acquirer=new \App\Libraries\AcquirerUnitellerSBP();
+    //     } else {
+    //         $Acquirer=new \App\Libraries\AcquirerRncb();
+    //     }
+
+    // }
+
     private function orderFinalizeRefund($order_basic){//Made refund of excess money
         $OrderModel=model('OrderModel');
         $order_data=$OrderModel->itemDataGet($order_basic->order_id);
@@ -59,15 +73,33 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
+        $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
+        $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
+
         $fixationId=($order_data->payment_card_fixate_id??0);
-        if($order_data->payment_card_acq_rncb??0){
-            $Acquirer=\Config\Services::acquirer(true,'Rncb');
-            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
-        } else {
-            $Acquirer=\Config\Services::acquirer(true,'Uniteller');
+        if( $payment_card_acquirer=='AcquirerUnitellerSBP' ){
+            $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+            $fixationBalance=(float)($paymentStatus->total??0);
+            $fixationId=$order_basic->order_id;
+        } else
+        if( $payment_card_acquirer=='AcquirerUniteller' ){
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
+        if( $payment_card_acquirer=='AcquirerRncb' || ($order_data->payment_card_acq_rncb??0) ){
+            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        }
+        //pl( $payment_card_acquirer,$fixationBalance);
+
+
+        // if($order_data->payment_card_acq_rncb??0){
+        //     $Acquirer=\Config\Services::acquirer(true,'Rncb');
+        //     $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        // } else {
+        //     $Acquirer=\Config\Services::acquirer(true,'Uniteller');
+        //     $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+        //     $fixationBalance=(float)($paymentStatus->total??0);
+        // }
 
         $refundIsFull=false;
         $refundSum=round($fixationBalance-$order_basic->order_sum_total,2);
@@ -89,7 +121,7 @@ class OrderTransactionModel extends TransactionModel{
                 return false;
             }
             $order_data_update->payment_card_refund_id=$acquirer_data->billNumber;
-            $order_data_update->payment_card_refund_sum=$refundSum;
+            $order_data_update->payment_card_refund_sum=$refundSum;//unfortunately records only last refund sum
             $order_data_update->payment_card_refund_date=date('Y.m.d H:i:s');
         }
 
@@ -111,15 +143,32 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
+        $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
+        $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
+
         $fixationId=($order_data->payment_card_fixate_id??0);
-        if($order_data->payment_card_acq_rncb??0){
-            $Acquirer=\Config\Services::acquirer(true,'Rncb');
-            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
-        } else {
-            $Acquirer=\Config\Services::acquirer(true,'Uniteller');
+        if( $payment_card_acquirer=='AcquirerUnitellerSBP' ){
+            return true;
+        } else
+        if( $payment_card_acquirer=='AcquirerUniteller' ){
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
+        if( $payment_card_acquirer=='AcquirerRncb' || ($order_data->payment_card_acq_rncb??0) ){
+            $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        }
+
+
+
+
+        // if($order_data->payment_card_acq_rncb??0){
+        //     $Acquirer=\Config\Services::acquirer(true,'Rncb');
+        //     $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
+        // } else {
+        //     $Acquirer=\Config\Services::acquirer(true,'Uniteller');
+        //     $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
+        //     $fixationBalance=(float)($paymentStatus->total??0);
+        // }
 
         $confirmIsFull=($order_basic->order_sum_total==$fixationBalance)?true:false;
         $confirmSum=round($order_basic->order_sum_total,2);

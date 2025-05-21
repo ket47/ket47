@@ -9,26 +9,13 @@ class Cardacquirer extends \App\Controllers\BaseController{
     public function statusGet(){
         $order_id=$this->request->getVar('order_id');
         $OrderModel=model('OrderModel');
-        $order_data=$OrderModel->itemDataGet($order_id);
-        if($order_data->payment_card_acq_rncb??0){
-            $Acquirer=new \App\Libraries\AcquirerRncb();
-        } else {
-
-
-
-
-            $ua=$this->request->getUserAgent();
-            $platform=$ua->getPlatform();
-            $browser=$ua->getBrowser();
-    
-    
-            $is_ios_webview= ($platform=='iOS' && $browser=='Mozilla');
-            if($platform=='iOS'){
-                //pl(['paymentLinkGet IOS',$order_id,$browser]);
-            }
-            $Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
-        }
+        $orderData=$OrderModel->itemDataGet($order_id);
+        
+        $payment_card_acquirer=$orderData->payment_card_acquirer??'AcquirerRncb';
+        $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
         $result=$Acquirer->statusGet($order_id);
+        //pl($payment_card_acquirer,$result);
+
         if($result && isset($result->order_id)){
             return $this->statusApply($result);
         }
@@ -132,34 +119,34 @@ class Cardacquirer extends \App\Controllers\BaseController{
     public function paymentLinkGet(){
         $order_id=$this->request->getPost('order_id');
         $enable_auto_cof=$this->request->getPost('enable_auto_cof');
+        $payment_type=$this->request->getPost('payment_type');
 
-        $ua=$this->request->getUserAgent();
-        $platform=$ua->getPlatform();
-        $browser=$ua->getBrowser();
+        $OrderModel=model('OrderModel');
+        $order_all=$OrderModel->itemGet($order_id,'all');
+        $orderData=$OrderModel->itemDataGet($order_id);
 
-
-        $is_ios_webview= ($platform=='iOS' && $browser=='Mozilla');
-        if($platform=='iOS'){
-            //pl(['paymentLinkGet IOS',$order_id,$browser]);
+        $result=$this->orderValidate($order_id);
+        if( $result!='ok' ){
+            return $this->fail($result);
         }
-        $Acquirer=\Config\Services::acquirer(false,$is_ios_webview);
 
-
-
-
-
+        $orderDataUpdate=(object)[];
+        if( $payment_type=='use_card' ){// || isset($orderData->payment_card_acquirer) && $orderData->payment_card_acquirer=='AcquirerUniteller'
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerUniteller');
+            $orderDataUpdate->payment_card_acquirer='AcquirerUniteller';
+        } else
+        if( $payment_type=='use_card_sbp' ){// || isset($orderData->payment_card_acquirer) && $orderData->payment_card_acquirer=='AcquirerUnitellerSBP'
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerUnitellerSBP');
+            $orderDataUpdate->payment_card_acquirer='AcquirerUnitellerSBP';
+        } else {
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerRncb');
+            $orderDataUpdate->payment_card_acquirer='AcquirerRncb';
+        }
 
         $isAlreadyPayed=$Acquirer->statusCheck( $order_id );
         if( 'ok'==$isAlreadyPayed ){//order is already payed and started
             return $this->fail('already_payed');
         }
-        $result=$this->orderValidate($order_id);
-        if( $result!='ok' ){
-            return $this->fail($result);
-        }
-        $OrderModel=model('OrderModel');
-        $order_all=$OrderModel->itemGet($order_id,'all');
-        $orderData=$OrderModel->itemDataGet($order_id);
         /**
          * If link was created within timeout then reuse it.
          * Otherwise create new order on acq
@@ -168,8 +155,8 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return $orderData->payment_card_acq_url;
         }
         $paymentLink=$Acquirer->linkGet($order_all,$enable_auto_cof);
-        $await_payment_timeout=time()+10*60;//10min
-        $OrderModel->itemDataUpdate($order_id,(object)['await_payment_until'=>$await_payment_timeout]);
+        $orderDataUpdate->await_payment_timeout=time()+10*60;//10min
+        $OrderModel->itemDataUpdate($order_id,$orderDataUpdate);
         return $paymentLink;
     }
 
@@ -179,10 +166,21 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( $result!='ok' ){
             return $this->fail($result);
         }
-        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
         $OrderModel=model('OrderModel');
+        $UserCardModel=model('UserCardModel');
+
         $order_all=$OrderModel->itemGet($order_id,'all');
-        $result=$Acquirer->pay($order_all);
+        $CoF=$UserCardModel->itemMainGet($order_all->owner_id);
+        if( $CoF=='notfound' ){
+            return $this->fail('error_nocof');
+        }
+        if( $CoF->card_acquirer=='rncbCard' ){
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerRncb');
+        } else 
+        if( $CoF->card_acquirer=='AcquirerUnitellerSBP' ){
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerUnitellerSBP');
+        }
+        $result=$Acquirer->recurrentPay($CoF->card_remote_id,$order_all,$order_all->owner_id);
         if( $result=='ok' ){
             return $this->respond('ok');
         }
@@ -235,7 +233,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( !($user_id>0) ){
             return $this->failForbidden('forbidden');
         }
-        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
+        $Acquirer=\Config\Services::acquirer(true,'AcquirerRncb');
         $result=$Acquirer->cardRegisteredLinkGet($user_id);
         if( !$result || $result=='nocardid' ){
             return $this->fail($result);
@@ -248,8 +246,11 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( !($user_id>0) ){
             return $this->failForbidden('forbidden');
         }
-        $Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
-        $result=$Acquirer->cardRegisteredSync($user_id);
+        //$Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
+        //$result=$Acquirer->cardRegisteredSync($user_id);
+        
+        $AcquirerUnitellerSBP=\Config\Services::acquirer(true,'AcquirerRncb');
+        $result=$AcquirerUnitellerSBP->cardRegisteredSync($user_id);
         if( $result=='ok' ){
             return $this->respond($result);
         }
