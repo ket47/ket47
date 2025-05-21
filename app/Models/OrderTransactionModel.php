@@ -75,6 +75,9 @@ class OrderTransactionModel extends TransactionModel{
 
         $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
         $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
+        if($order_data->payment_card_acq_rncb??0){
+            $payment_card_acquirer='AcquirerRncb';//backward compatibility
+        }
 
         $fixationId=($order_data->payment_card_fixate_id??0);
         if( $payment_card_acquirer=='AcquirerUnitellerSBP' ){
@@ -86,7 +89,7 @@ class OrderTransactionModel extends TransactionModel{
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
-        if( $payment_card_acquirer=='AcquirerRncb' || ($order_data->payment_card_acq_rncb??0) ){
+        if( $payment_card_acquirer=='AcquirerRncb' ){
             $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
         }
         //pl( $payment_card_acquirer,$fixationBalance);
@@ -144,6 +147,9 @@ class OrderTransactionModel extends TransactionModel{
         }
 
         $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
+        if($order_data->payment_card_acq_rncb??0){
+            $payment_card_acquirer='AcquirerRncb';//backward compatibility
+        }
         $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
 
         $fixationId=($order_data->payment_card_fixate_id??0);
@@ -154,7 +160,7 @@ class OrderTransactionModel extends TransactionModel{
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
         }
-        if( $payment_card_acquirer=='AcquirerRncb' || ($order_data->payment_card_acq_rncb??0) ){
+        if( $payment_card_acquirer=='AcquirerRncb' ){
             $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
         }
 

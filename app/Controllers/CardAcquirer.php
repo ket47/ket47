@@ -27,7 +27,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
     //ACQUIRER INCOMING REQUESTS SECTION
     ///////////////////////////////////////////////////////////////////////
     public function statusSet(){
-        $Acquirer=new \App\Libraries\AcquirerUniteller();
+        $payment_card_acquirer=$this->request->getVar('payment_card_acquirer');
+        if( !in_array($payment_card_acquirer,['AcquirerUniteller','AcquirerUnitellerSBP']) ){
+            return $this->fail('unknown_acquirer');
+        }
+        pl($_REQUEST);
+        $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
         $result=$Acquirer->statusParse($this->request);
         if( $result=='unauthorized' ){
             return $this->failUnauthorized();

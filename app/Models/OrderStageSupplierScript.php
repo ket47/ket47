@@ -654,6 +654,19 @@ class OrderStageSupplierScript{
         return 'ok';
     }
     
+    public function offSupplierCorrected($order_id){
+        $order=$this->OrderModel->itemGet($order_id,'basic');
+        if( $order->order_sum_total<1 ){
+            return 'order_sum_zero';
+        }
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( $order->order_sum_total>($order_data->payment_card_fixate_sum??0) ){
+            return 'order_sum_exceeded';
+        }
+        return 'ok';
+    }
+    
+    
     public function onSupplierReclaimed($order_id){
         return 'ok';
     }

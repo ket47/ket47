@@ -11,7 +11,7 @@ class AcquirerUnitellerSBP{
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
             'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
             'Phone' => $order_all->customer?->user_phone,
-            'IsRecurrentStart'=>1,
+            //'IsRecurrentStart'=>1,
             //'Registration'=>1,
             'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
             'FirstName'=>$order_all->customer->user_name,
@@ -116,13 +116,16 @@ class AcquirerUnitellerSBP{
             log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check  $order_id.$status.$total.$balance.$approvalCode.$billNumber");
             return 'unauthorized';
         }
+        /**
+         * In webhook there is no billnumber. Should be removed
+         */
         return (object)[
             'order_id'=>$order_id,
             'status'=>$status,
             'total'=>$total,
             'balance'=>$balance,
             'approvalCode'=>$approvalCode,
-            'billNumber'=>$billNumber
+            'billNumber'=>$billNumber??'unset'
         ];
     }
 

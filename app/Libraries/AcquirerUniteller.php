@@ -230,18 +230,21 @@ class AcquirerUniteller{
         $approvalCode=$request->getVar('ApprovalCode');
         $billNumber=$request->getVar('BillNumber');
         //Total Balance ApprovalCode BillNumber
-        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('uniteller.password')));
+        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('unitellerSBP.password')));
         if($signature!=$signature_check){
             log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check  $order_id.$status.$total.$balance.$approvalCode.$billNumber");
             return 'unauthorized';
         }
+        /**
+         * In webhook there is no billnumber. Should be removed
+         */
         return (object)[
             'order_id'=>$order_id,
             'status'=>$status,
             'total'=>$total,
             'balance'=>$balance,
             'approvalCode'=>$approvalCode,
-            'billNumber'=>$billNumber
+            'billNumber'=>$billNumber??'unset'
         ];
     }
 
