@@ -292,11 +292,11 @@ class EntryModel extends Model{
             $this->listStockCommit($order_id);
             $this->listStockReserve($order_store_id);
         } else {
-            $this->transRollback();
+            //$this->transRollback();
             throw new Exception("Unknown stock status",500);
         }
         //$this->transCommit();
-        return $this->transStatus()?'ok':'fail';
+        return 'ok';
     }
 
     private function listStockTrim(int $order_id){

@@ -11,7 +11,7 @@ class AcquirerUnitellerSBP{
             'URL_RETURN_NO'=>getenv('app.baseURL').'CardAcquirer/pageNo',
             'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
             'Phone' => $order_all->customer?->user_phone,
-            //'IsRecurrentStart'=>1,
+            'IsRecurrentStart'=>1,
             //'Registration'=>1,
             'CallbackFields'=>'Total Balance ApprovalCode BillNumber',
             'FirstName'=>$order_all->customer->user_name,
@@ -48,7 +48,7 @@ class AcquirerUnitellerSBP{
         $p->Signature = strtoupper(md5(
             $sign_body."&".md5( getenv('unitellerSBP.password') )
         ));
-        //pl($p);
+        pl($p);
         $queryString = http_build_query($p);
         return getenv('unitellerSBP.gateway').'pay?'.$queryString;
     }
@@ -130,7 +130,9 @@ class AcquirerUnitellerSBP{
     }
 
     public function confirm($billNumber,$sum){
-        return true;
+        return (object)[
+            'billNumber'=>'unset'
+        ];
     }
 
     public function refund($order_id,$sum){
@@ -289,7 +291,7 @@ class AcquirerUnitellerSBP{
 
 
 
-        pl($queryString,$result);
+        pl($url,$queryString,$result);
         $rows=str_getcsv($result,"\n");
         $header_row=array_shift($rows);
         $header=str_getcsv($header_row,";");
@@ -314,10 +316,10 @@ class AcquirerUnitellerSBP{
             'CustomerID' => $order_all->customer->user_id,
             'Subtotal' => $order_all->order_sum_total,
 
-            'OrderLifetime' => 100*60,// 10 min
-            'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
+            //'OrderLifetime' => 100*60,// 10 min
+            //'Email' => $order_all->customer?->user_email??"user{$order_all->customer->user_id}@tezkel.com",
             'IsRecurrentStart'=>1,
-            'DeepLink' =>  getenv('app.frontendUrl')."order/order-".$order_all->order_id,
+            //'DeepLink' =>  getenv('app.frontendUrl')."order/order-".$order_all->order_id,
             //'BackUrl'=>getenv('app.baseURL').'CardAcquirer/pageOk',
             //"CallbackFormat"=>"json"
         ];
@@ -334,8 +336,11 @@ class AcquirerUnitellerSBP{
                 'expired_at'=>$response->ResultSBP->StaleTime,
                 'qr'=>"data:image/png;base64,$b64"
             ];
+        } else {
+            p([$request,$response]);
         }
-        pl($request,$response);
+
+        
         return null;
     }
 
@@ -368,8 +373,8 @@ class AcquirerUnitellerSBP{
 
         $result = curl_exec($curl);
 
-        p($request,0);
-        p($result,0);
+        //p($request,0);
+        //p($result,0);
 
         //pl(curl_getinfo($curl));
         if( curl_error($curl) ){
@@ -574,9 +579,13 @@ class AcquirerUnitellerSBP{
             'Login'=>getenv('unitellerSBP.login'),
             'Password'=>getenv('unitellerSBP.password'),
             'Customer_IDP'=>$user_id,
+            'Type'=>'SBP',
         ];
         $queryString=http_build_query($request);
         $response=$this->gatewayExecute('tokens', $queryString, true);
+
+        p([$request,$response]);
+
 
         if($response->ErrorCode??null){
             pl(['Acquirer:cardRegisteredSync',$response]);

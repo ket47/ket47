@@ -310,6 +310,22 @@ class OrderStageDeliveryScript{
             'payment_card_fixate_date'=>date('Y-m-d H:i:s'),
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
+
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        if( $order_data->payment_by_cash??null ){
+            /**
+             * Paynig deposit compensate
+             */
+            $order_data_update->payment_by_card=1;
+            jobCreate([
+                'task_programm'=>[
+                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                ],
+                'task_next_start_time'=>time()+1
+            ]);
+            $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
+            return 'ok';
+        }
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         $this->OrderModel->itemStageCreate($order_id, 'customer_start');
         return 'ok';
@@ -914,7 +930,7 @@ class OrderStageDeliveryScript{
             return 'order_sum_zero';
         }
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( $order->order_sum_total>($order_data->payment_card_fixate_sum??0) ){
+        if( isset($order_data->payment_card_fixate_sum) && $order->order_sum_total>$order_data->payment_card_fixate_sum ){
             return 'order_sum_exceeded';
         }
         return 'ok';

@@ -30,11 +30,11 @@ class Services extends BaseService
 	// }
 
 	public static function acquirer($getShared = true,$type=null){
-	    if ($getShared)
-	    {
-			$getShared=0;
-	        return static::getSharedInstance('acquirer',$getShared,$type);
-	    }
+	    // if ($getShared)
+	    // {
+		// 	$getShared=0;
+	    //     return static::getSharedInstance('acquirer',$getShared,$type);
+	    // }
 		if( getenv('test.acquirerMock')==1 ){
 			return new \App\Libraries\AcquirerUnitellerMock();
 		}

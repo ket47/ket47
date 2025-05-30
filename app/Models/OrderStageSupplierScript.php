@@ -660,7 +660,7 @@ class OrderStageSupplierScript{
             return 'order_sum_zero';
         }
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( $order->order_sum_total>($order_data->payment_card_fixate_sum??0) ){
+        if( isset($order_data->payment_card_fixate_sum) && $order->order_sum_total>$order_data->payment_card_fixate_sum ){
             return 'order_sum_exceeded';
         }
         return 'ok';

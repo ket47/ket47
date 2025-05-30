@@ -200,7 +200,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return 'order_notfound';
         }
         $order_data=$OrderModel->itemDataGet($order_id);
-        if( !($order_all->order_sum_total>0) || !in_array($order_all->stage_current,['customer_confirmed']) ){
+        if( !($order_all->order_sum_total>0) || !in_array($order_all->stage_current,['customer_confirmed','customer_finish']) ){
             return 'order_notvalid';
         }
         // if we will use customer_await then store can be not ready
@@ -211,6 +211,12 @@ class Cardacquirer extends \App\Controllers\BaseController{
         // }
         if( !($order_all->customer??null) ){
             return 'user_notfound';
+        }
+        /**
+         * Deposit accept for cash orders
+         */
+        if( $order_all->stage_current=='customer_finish' && ($order_data->payment_by_cash??0)==1 && ($order_data->payment_by_card??0)!=1 ){
+            return 'ok';
         }
         if( ($order_data->payment_by_card??0)!=1 ){
             return 'card_payment_notallowed';
@@ -251,10 +257,10 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( !($user_id>0) ){
             return $this->failForbidden('forbidden');
         }
-        //$Acquirer=new \App\Libraries\AcquirerRncb();//\Config\Services::acquirer();
+        //$Acquirer=new \App\Libraries\AcquirerUnitellerSBP();//\Config\Services::acquirer();
         //$result=$Acquirer->cardRegisteredSync($user_id);
         
-        $AcquirerUnitellerSBP=\Config\Services::acquirer(true,'AcquirerRncb');
+        $AcquirerUnitellerSBP=new \App\Libraries\AcquirerUnitellerSBP();
         $result=$AcquirerUnitellerSBP->cardRegisteredSync($user_id);
         if( $result=='ok' ){
             return $this->respond($result);

@@ -52,7 +52,7 @@ class User extends \App\Controllers\BaseController{
             ],
             'other'=>[
                 'recurrentPaymentAllow'=>1,
-                'sbpPaymentAllow'=>sudo()
+                'sbpPaymentAllow'=>1
             ]
         ];
         return $this->respond($settings);
