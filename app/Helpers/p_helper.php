@@ -1,11 +1,13 @@
 <?php
 
-function p( $object, $die=true  ){
+function p( $object ){
     header("Content-Type:text/plain");
-    print '<pre>';
-    print_r($object);
-    if($die)
-        die();
+    $args = func_get_args();
+    if( count($args)==1 && !is_array($args[0]) && !is_object($args[0]) ){
+        echo 'P HELPER '.$args[0];
+        return;
+    }
+    echo json_encode($args,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 }
 function pl(){
     $args = func_get_args();

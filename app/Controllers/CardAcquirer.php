@@ -144,8 +144,8 @@ class Cardacquirer extends \App\Controllers\BaseController{
             $Acquirer=\Config\Services::acquirer(true,'AcquirerUnitellerSBP');
             $orderDataUpdate->payment_card_acquirer='AcquirerUnitellerSBP';
         } else {
-            $Acquirer=\Config\Services::acquirer(true,'AcquirerRncb');
-            $orderDataUpdate->payment_card_acquirer='AcquirerRncb';
+            $Acquirer=\Config\Services::acquirer(true,'AcquirerUniteller');
+            $orderDataUpdate->payment_card_acquirer='AcquirerUniteller';
         }
 
         $isAlreadyPayed=$Acquirer->statusCheck( $order_id );

@@ -357,8 +357,8 @@ class UserModel extends Model{
 
 
         if( !$user_id ){
-            $text="❌❌❌ Неудачная попытка регистрации: $user_name +$user_phone_cleared. ";
             $errs=$this->errors();
+            $text="❌❌❌ Неудачная попытка регистрации: $user_name +$user_phone_cleared. ".json_encode($errs);
             if( ($errs['user_phone']??null) == 'notunique'){
                 $text.=" Уже зарегистрирован";
                 if( !session()->get('usesite_sent') ){

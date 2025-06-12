@@ -149,7 +149,7 @@ class AcquirerUnitellerSBP{
         ."&".hash('sha256',$request->S_FIELDS)
         ."&".hash('sha256', getenv('unitellerSBP.password') );
         $request->Signature = strtoupper(hash('sha256',$sign_body));
-                $context  = stream_context_create([
+        $context  = stream_context_create([
             'http' => [
                 'header'  => "Content-type: application/x-www-form-urlencoded",
                 'method'  => 'POST',
@@ -347,13 +347,16 @@ class AcquirerUnitellerSBP{
 
     private function apiExecute( string $function, object $request, string $method='POST' ){
         $url = "https://api.uniteller.ru/sbp/1/$function/";
-        $sign_body='';
-        foreach($request as $field=>$val){
-            $sign_body.=md5($val);
+        if( empty($request->Signature) ){
+            $sign_body='';
+            foreach($request as $field=>$val){
+                $sign_body.=md5($val);
+                echo "+md5($val)";
+            }
+            $request->Signature = strtoupper(md5(
+                $sign_body.md5( getenv('unitellerSBP.password') )
+            ));
         }
-        $request->Signature = strtoupper(md5(
-            $sign_body.md5( getenv('unitellerSBP.password') )
-        ));
         $curl = curl_init(); 
         switch( $method ){
             case 'POST':
@@ -419,6 +422,16 @@ class AcquirerUnitellerSBP{
         // if( !$is_allowed ){
         //     return 'forbidden';
         // }
+
+
+
+
+
+
+
+
+
+
         $orderDataUpdate=(object)[];
 
         if( !$paying_user_id ){
@@ -426,65 +439,69 @@ class AcquirerUnitellerSBP{
         }
 
         $request=(object)[
-            'Shop_IDP'=>getenv('unitellerSBP.Shop_IDP'),
-            'Order_IDP'=>getenv('unitellerSBP.orderPreffix').$order_all->order_id,
-            'Subtotal_P'=>number_format($order_all->order_sum_total,2,'.',''),
-            'Parent_Order_IDP'=>$card_remote_id,
+            'ShopID'=>getenv('unitellerSBP.Shop_IDP'),
+            'OrderID'=>getenv('unitellerSBP.orderPreffix').$order_all->order_id,
+            'CustomerID'=>"$paying_user_id",
+            'TokenID'=>$card_remote_id,
+            'Subtotal'=>number_format($order_all->order_sum_total,2,'.',''),
         ];
 
 
+        // $sign_body=md5($request->ShopID).md5($request->OrderID).md5($request->CustomerID).md5($request->TokenID).md5($request->Subtotal);
+        // $request->Signature = strtoupper(md5(
+        //     $sign_body.md5( getenv('unitellerSBP.password') )
+        // ));
+        $response=$this->apiExecute( 'petition', $request );
 
-
-        $request->Subtotal_P='1.00';
-        $request->Parent_Order_IDP='loc_order14';
-
-
-        $sign_body=
-                md5($request->Shop_IDP)
-        ."&".md5($request->Order_IDP)
-        ."&".md5($request->Subtotal_P)
-        ."&".md5($request->Parent_Order_IDP)
-        ."&".md5( getenv('unitellerSBP.password') );
-        $request->Signature = strtoupper(md5($sign_body));
-        $queryString=http_build_query($request);
-        $response=$this->apiExecute('recurrent', $queryString);
-
-        if( !$response || isset($response['ErrorCode']) ){
-            pl('UNITELLER SBP: PAY',$request,$response);
-            return null;
-        }
+        $tokens=$this->cardRegisteredSync( $paying_user_id );
 
 
 
 
-        pl($request,$response);
-        return (object)[
-            'order_id'=>$response['body'][0],
-            'status'=>$response['body'][1],
-            'total'=>$response['body'][2],
-            'approvalCode'=>$response['body'][3],
-            'billNumber'=>$response['body'][4]
-        ];
+        p($tokens,$request,$response);
 
 
-        if($response->errorCode??null){
-            pl(['Acquirer:pay Auth',$function,$request,$response]);
-            if( $response->errorCode=='PmoDecline' ){
-                //return $this->getSlugByDescription( $response->errorDescription );
-            }
-            return 'error';
-        }
-        // $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
-        // $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
-        $orderDataUpdate->payment_by_card=1;
+
+
+
+
+
+        // if( !$response || isset($response['ErrorCode']) ){
+        //     pl('UNITELLER SBP: PAY',$request,$response);
+        //     return null;
+        // }
+
+
+
+
+        // pl($request,$response);
+        // return (object)[
+        //     'order_id'=>$response['body'][0],
+        //     'status'=>$response['body'][1],
+        //     'total'=>$response['body'][2],
+        //     'approvalCode'=>$response['body'][3],
+        //     'billNumber'=>$response['body'][4]
+        // ];
+
+
+        // if($response->errorCode??null){
+        //     pl(['Acquirer:pay Auth',$function,$request,$response]);
+        //     if( $response->errorCode=='PmoDecline' ){
+        //         //return $this->getSlugByDescription( $response->errorDescription );
+        //     }
+        //     return 'error';
+        // }
+        // // $orderDataUpdate->payment_card_fixate_id=$orderDataUpdate->payment_card_acq_order_id;
+        // // $orderDataUpdate->payment_card_fixate_sum=$order_all->order_sum_total;
+        // $orderDataUpdate->payment_by_card=1;
         
-        $OrderModel->itemDataUpdate($order_all->order_id,$orderDataUpdate);
-        $payment_data=(object)[
-            'status'=>'authorized',
-            'total'=>$order_all->order_sum_total,
-            'billNumber'=>$orderDataUpdate->payment_card_acq_order_id,
-        ];
-        return $OrderModel->itemStageAdd( $order_all->order_id, 'customer_payed_card', $payment_data, false );
+        // $OrderModel->itemDataUpdate($order_all->order_id,$orderDataUpdate);
+        // $payment_data=(object)[
+        //     'status'=>'authorized',
+        //     'total'=>$order_all->order_sum_total,
+        //     'billNumber'=>$orderDataUpdate->payment_card_acq_order_id,
+        // ];
+        // return $OrderModel->itemStageAdd( $order_all->order_id, 'customer_payed_card', $payment_data, false );
     }
 
 

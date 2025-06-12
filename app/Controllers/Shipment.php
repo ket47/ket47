@@ -291,11 +291,11 @@ class Shipment extends \App\Controllers\BaseController{
             /**
              * Checking if payment is done. Add stage customer_payed_card
              */
+            $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
             if($order_data->payment_card_acq_rncb??0){
-                $Acquirer=new \App\Libraries\AcquirerRncb();
-            } else {
-                $Acquirer=\Config\Services::acquirer();
+                $payment_card_acquirer='AcquirerRncb';//backward compatibility
             }
+            $Acquirer=\Config\Services::acquirer(false,$payment_card_acquirer);
             $result=$Acquirer->statusCheck( $checkoutSettings->order_id );
             if( $result!='order_not_payed' ){
                 return 'already_payed';
