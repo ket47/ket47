@@ -3,7 +3,7 @@ namespace App\Libraries;
 class AcquirerUniteller{
     public function linkGet($order_all,$params=null){
         $params=[
-            'PaymentTypeLimits'=>"{\"1\":[{$order_all->order_sum_total},{$order_all->order_sum_total}]}"
+            //'PaymentTypeLimits'=>"{\"1\":[{$order_all->order_sum_total},{$order_all->order_sum_total}]}"
         ];
         $p=(object)[
             'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
@@ -21,8 +21,8 @@ class AcquirerUniteller{
             //'IData' => '',
             //'PT_Code' => '',
 
-            'Shop_IDP' => getenv('unitellerSBP.Shop_IDP'),
-            'Order_IDP' => getenv('unitellerSBP.orderPreffix').$order_all->order_id,
+            'Shop_IDP' => getenv('uniteller.Shop_IDP'),
+            'Order_IDP' => getenv('uniteller.orderPreffix').$order_all->order_id,
             'Subtotal_P' => $order_all->order_sum_total,
             'Lifetime' => 10*60,// 10 min
             'Customer_IDP' => $order_all->customer->user_id,
@@ -45,11 +45,11 @@ class AcquirerUniteller{
             $sign_body.="&".md5($p->PaymentTypeLimits??'');
         }
         $p->Signature = strtoupper(md5(
-            $sign_body."&".md5( getenv('unitellerSBP.password') )
+            $sign_body."&".md5( getenv('uniteller.password') )
         ));
         //pl($p);
         $queryString = http_build_query($p);
-        return getenv('unitellerSBP.gateway').'pay?'.$queryString;
+        return getenv('uniteller.gateway').'pay?'.$queryString;
     }
     // public function linkGet($order_all){
     //     $p=(object)[
@@ -230,7 +230,7 @@ class AcquirerUniteller{
         $approvalCode=$request->getVar('ApprovalCode');
         $billNumber=$request->getVar('BillNumber');
         //Total Balance ApprovalCode BillNumber
-        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('unitellerSBP.password')));
+        $signature_check = strtoupper(md5($order_id.$status.$total.$balance.$approvalCode.$billNumber.getenv('uniteller.password')));
         if($signature!=$signature_check){
             log_message('error', "paymentStatusSet $status; order_id:$order_id SIGNATURES NOT MATCH $signature!=$signature_check  $order_id.$status.$total.$balance.$approvalCode.$billNumber");
             return 'unauthorized';
