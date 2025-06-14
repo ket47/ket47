@@ -193,9 +193,12 @@ class Courier extends \App\Controllers\BaseController{
 
     public function itemShiftReportSend(){
         $shift_id=$this->request->getVar('shift_id');
+        if( sudo() ){
+            $closed_at=$this->request->getVar('closed_at');
+        }
 
         $CourierShiftModel=model("CourierShiftModel");
-        $CourierShiftModel->itemReportSend($shift_id);
+        $CourierShiftModel->itemReportSend($shift_id,$closed_at??null);
     }
     
     public function listJobGet(){

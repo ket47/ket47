@@ -124,10 +124,14 @@ class CourierShiftModel extends SecureModel{
         return 'ok';
     }
 
-    public function itemReportSend( $shift_id ){
+    public function itemReportSend( $shift_id, $closed_at=null ){
         $shift=$this->itemGet($shift_id);
         if( !$shift ){
             return 'notfound';
+        }
+        if( $closed_at && sudo() ){//tmp fix to resend buggy shift reports
+            $this->update($shift->shift_id,['closed_at'=>$closed_at]);
+            $shift->closed_at=$closed_at;
         }
         $total_duration=strtotime($shift->closed_at)-strtotime($shift->created_at);
         $statistics=$this->itemWorkStatisticsGet($shift->courier_id,$shift->created_at,$shift->closed_at);
