@@ -233,6 +233,10 @@ class OrderStageSupplierScript{
             'payment_card_fixate_date'=>date('Y-m-d H:i:s'),
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
+        if( $acquirer_data->payment_card_acquirer??null ){
+            //updating aquirer handler to last used
+            $order_data_update->payment_card_acquirer=$acquirer_data->payment_card_acquirer;
+        }
         $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         $this->OrderModel->itemStageCreate($order_id, 'customer_start');
         return 'ok';

@@ -310,6 +310,10 @@ class OrderStageDeliveryScript{
             'payment_card_fixate_date'=>date('Y-m-d H:i:s'),
             'payment_card_fixate_sum'=>$acquirer_data->total
         ];
+        if( $acquirer_data->payment_card_acquirer??null ){
+            //updating aquirer handler to last used
+            $order_data_update->payment_card_acquirer=$acquirer_data->payment_card_acquirer;
+        }
 
         $order_data=$this->OrderModel->itemDataGet($order_id);
         if( $order_data->payment_by_cash??null ){

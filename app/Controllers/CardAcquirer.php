@@ -17,6 +17,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         //pl($payment_card_acquirer,$result);
 
         if($result && isset($result->order_id)){
+            $result->payment_card_acquirer=$payment_card_acquirer;
             return $this->statusApply($result);
         }
         return $this->respond('notpayed');
@@ -37,6 +38,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( $result=='unauthorized' ){
             return $this->failUnauthorized();
         }
+        $result->payment_card_acquirer=$payment_card_acquirer;
         return $this->statusApply($result);
     }
     // public function statusHook(){

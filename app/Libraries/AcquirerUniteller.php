@@ -3,7 +3,7 @@ namespace App\Libraries;
 class AcquirerUniteller{
     public function linkGet($order_all,$params=null){
         $params=[
-            //'PaymentTypeLimits'=>"{\"1\":[{$order_all->order_sum_total},{$order_all->order_sum_total}]}"
+            'PaymentTypeLimits'=>"{\"1\":[{$order_all->order_sum_total},{$order_all->order_sum_total}]}"
         ];
         $p=(object)[
             'URL_RETURN_OK'=>getenv('app.baseURL').'CardAcquirer/pageOk',
@@ -217,6 +217,7 @@ class AcquirerUniteller{
         $payment_data=$this->statusGet( $order_id );
         if( 'authorized'==$payment_data?->status ){
             $OrderModel=model('OrderModel');
+            $payment_data->payment_card_acquirer='AcquirerUniteller';
             return $OrderModel->itemStageAdd( $order_id, 'customer_payed_card', $payment_data, false );
         }
         return 'order_not_payed';
