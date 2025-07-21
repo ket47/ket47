@@ -87,5 +87,31 @@ class MetricActModel extends Model{
     public function listDelete(){
         return false;
     }
-    
+    public function getHourlyUserActivity($filter)
+    {
+        $this->join('metric_list ml', 'ml.metric_id = metric_act_list.metric_id')->join('user_list ul', 'ml.user_id = ul.user_id', 'left');
+        $this->select("
+            metric_act_list.metric_id,
+            metric_act_list.act_group,
+            metric_act_list.act_type,
+            metric_act_list.act_result,
+            metric_act_list.act_description,
+            metric_act_list.created_at,
+            ml.come_referrer,
+            ml.device_platform,
+            ml.created_at AS session_start,
+            ul.user_name,
+            ul.user_phone,
+            DATE_FORMAT(metric_act_list.created_at, '%Y-%m-%d %H:00:00') as hour_slot
+        ");
+        $this->select("(SELECT COUNT(*) FROM order_list ol WHERE ul.user_id = ol.owner_id AND ol.order_status = 'finished') AS user_orders");
+        $this->select("COALESCE((SELECT ugl.group_type FROM user_group_list ugl JOIN user_group_member_list ugml USING(group_id) WHERE ul.user_id = ugml.member_id ORDER BY group_type = 'customer' LIMIT 1), 'guest') AS group_type");
+        $this->where('metric_act_list.created_at >= "'.date('Y-m-d H:i:s', strtotime($filter->start_at)).'" AND metric_act_list.created_at <= "'.date('Y-m-d H:i:s', strtotime($filter->finish_at)).'" ')
+        ->having('group_type IN ("'.implode('","', $filter->user_group).'")')->orderBy('hour_slot ASC, metric_act_list.created_at ASC');
+        if($filter->order_only){
+            $this->having('user_orders > 0');
+        }
+        
+        return $this->get()->getResultArray();
+    }
 }
