@@ -56,11 +56,29 @@ class Promo extends \App\Controllers\BaseController{
 
     
     public function listGet(){
-        $user_id=$this->request->getVar('user_id');
-        $type=$this->request->getVar('type');
-        $mode=$this->request->getVar('mode');
+        $user_id=$this->request->getPost('user_id');
+        $type=$this->request->getPost('type');
+        $mode=$this->request->getPost('mode');
         $PromoModel=model('PromoModel');
         $result=$PromoModel->listGet($user_id,$type,$mode);
+        if($result=='notfound'){
+            return $this->failNotFound('notfound');
+        }
+        return $this->respond($result);
+    }
+
+    public function listFilteredGet(){
+        $filter=(object)[];
+        $filter->order_id=$this->request->getPost('order_id');
+        $filter->user_id=$this->request->getPost('user_id');
+        $filter->type=$this->request->getPost('type');
+
+        $PromoModel=model('PromoModel');
+        $result=$PromoModel->listFilteredGet($filter);
+
+
+        ql($PromoModel);
+
         if($result=='notfound'){
             return $this->failNotFound('notfound');
         }

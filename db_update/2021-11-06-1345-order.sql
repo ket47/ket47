@@ -19,6 +19,11 @@ CREATE TABLE `order_list` (
   PRIMARY KEY (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 
+
+ALTER TABLE `order_list` 
+ADD INDEX `ownerUser` (`owner_id` ASC);
+
+
 CREATE TABLE `order_entry_list` (
   `entry_id` int NOT NULL AUTO_INCREMENT,
   `order_id` int DEFAULT NULL,

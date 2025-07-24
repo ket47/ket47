@@ -89,7 +89,9 @@ class MetricActModel extends Model{
     }
     public function getHourlyUserActivity($filter)
     {
-        $this->join('metric_list ml', 'ml.metric_id = metric_act_list.metric_id')->join('user_list ul', 'ml.user_id = ul.user_id', 'left');
+        if( !sudo() ){
+            return [];
+        }
         $this->select("
             metric_act_list.metric_id,
             metric_act_list.act_group,
@@ -104,14 +106,22 @@ class MetricActModel extends Model{
             ul.user_phone,
             DATE_FORMAT(metric_act_list.created_at, '%Y-%m-%d %H:00:00') as hour_slot
         ");
-        $this->select("(SELECT COUNT(*) FROM order_list ol WHERE ul.user_id = ol.owner_id AND ol.order_status = 'finished') AS user_orders");
+        $this->select("COUNT(ol.order_id) AS user_orders");
         $this->select("COALESCE((SELECT ugl.group_type FROM user_group_list ugl JOIN user_group_member_list ugml USING(group_id) WHERE ul.user_id = ugml.member_id ORDER BY group_type = 'customer' LIMIT 1), 'guest') AS group_type");
-        $this->where('metric_act_list.created_at >= "'.date('Y-m-d H:i:s', strtotime($filter->start_at)).'" AND metric_act_list.created_at <= "'.date('Y-m-d H:i:s', strtotime($filter->finish_at)).'" ')
-        ->having('group_type IN ("'.implode('","', $filter->user_group).'")')->orderBy('hour_slot ASC, metric_act_list.created_at ASC');
+
+        $this->join('metric_list ml', 'ml.metric_id = metric_act_list.metric_id');
+        $this->join('user_list ul', 'ml.user_id = ul.user_id', 'left');
+        $this->join('order_list ol',"ul.user_id = ol.owner_id AND order_status='finished'",'left');
+
+        $this->where("metric_act_list.created_at >=",date('Y-m-d H:i:s', strtotime($filter->start_at)));
+        $this->where("metric_act_list.created_at <=",date('Y-m-d H:i:s', strtotime($filter->finish_at)));
+        $this->havingIn('group_type',$filter->user_group);
+        $this->groupBy('metric_id,act_id');
+
+        $this->orderBy('hour_slot ASC, metric_act_list.created_at ASC');
         if($filter->order_only){
             $this->having('user_orders > 0');
         }
-        
         return $this->get()->getResultArray();
     }
 }

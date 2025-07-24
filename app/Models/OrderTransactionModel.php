@@ -146,35 +146,26 @@ class OrderTransactionModel extends TransactionModel{
             return true;
         }
 
+        $confirmation_call_is_needed=1;
+
         $payment_card_acquirer=$order_data->payment_card_acquirer??'AcquirerUniteller';
-        if($order_data->payment_card_acq_rncb??0){
-            $payment_card_acquirer='AcquirerRncb';//backward compatibility
-        }
         $Acquirer=\Config\Services::acquirer(false,$payment_card_acquirer);
 
         $fixationId=($order_data->payment_card_fixate_id??0);
         if( $payment_card_acquirer=='AcquirerUnitellerSBP' ){
             $fixationBalance=round($order_basic->order_sum_total,2);
+            $confirmation_call_is_needed=0;
         } else
         if( $payment_card_acquirer=='AcquirerUniteller' ){
             $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
             $fixationBalance=(float)($paymentStatus->total??0);
+            if( $paymentStatus->needConfirm==0 || $paymentStatus->status=='Paid' ){
+                $confirmation_call_is_needed=0;
+            }
         }
         if( $payment_card_acquirer=='AcquirerRncb' ){
             $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
         }
-
-
-
-
-        // if($order_data->payment_card_acq_rncb??0){
-        //     $Acquirer=\Config\Services::acquirer(true,'Rncb');
-        //     $fixationBalance=(float)($order_data->payment_card_fixate_sum??0);
-        // } else {
-        //     $Acquirer=\Config\Services::acquirer(true,'Uniteller');
-        //     $paymentStatus=$Acquirer->statusGet($order_basic->order_id);
-        //     $fixationBalance=(float)($paymentStatus->total??0);
-        // }
 
         $confirmIsFull=($order_basic->order_sum_total==$fixationBalance)?true:false;
         $confirmSum=round($order_basic->order_sum_total,2);
@@ -187,7 +178,7 @@ class OrderTransactionModel extends TransactionModel{
         $order_data_update=(object)[
             'finalize_confirm_done'=>1
         ];
-        if($confirmSum!=0){
+        if( $confirmSum!=0 && $confirmation_call_is_needed==1 ){
             $acquirer_data=$Acquirer->confirm($fixationId,$confirmSum,$confirmIsFull);
             if( !$acquirer_data ){//connection error need to repeat
                 return false;

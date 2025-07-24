@@ -39,7 +39,9 @@ class Reaction extends \App\Controllers\BaseController{
         if($result=='notfound'){
             return $this->failNotFound($result);
         }
-        $this->onCommentSupplierNotify($tagQuery);
+        if( str_contains($tagQuery,'entry') || str_contains($tagQuery,'product') ){
+            $this->onCommentSupplierNotify($tagQuery);
+        }
         return $this->respondCreated($result);
     }
 

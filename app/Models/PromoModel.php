@@ -172,6 +172,44 @@ class PromoModel extends Model{
         $this->orderBy('expired_at');
         return $this->get()->getResult();
     }
+
+    public function listFilteredGet( object $filter ){
+        $this->join('promo_code_list','promo_code_id','left');
+
+        if( $filter->user_id??0 ){
+            $this->where("promo_list.owner_id={$filter->user_id}");
+        }
+        if( $filter->order_id??0 ){
+            $filter->type='active';
+
+            $OrderModel=model('OrderModel');
+            $order=$OrderModel->itemGet($filter->order_id,'basic');
+            if(!is_object($order)){
+                return $order;
+            }
+            
+            $EntryModel=model('EntryModel');
+            $entries=$EntryModel->where('order_id',$filter->order_id)->select('GROUP_CONCAT(product_id) pids')->get()->getRow();
+            if(!$entries){
+                return 'noentries';
+            }
+
+            $this->where("(case_product_id IS NULL  OR case_product_id IN({$entries->pids}) )");
+            $this->where("(case_store_id IS NULL    OR case_store_id={$order->order_store_id})");
+            $this->where("(case_user_id IS NULL     OR case_user_id={$order->owner_id})");
+            $this->where("(case_min_sum IS NULL     OR case_min_sum<={$order->order_sum_product})");
+        }
+
+        if( $filter->type=='active' ){
+            $this->where('expired_at>NOW()');
+            $this->where('promo_list.is_disabled',0);
+            $this->where('is_used',0);
+            $this->orderBy('expired_at');
+        }
+        $this->permitWhere('r');
+        return $this->get()->getResult();
+
+    }
     
     public function listCreate($user_id,$inviter_user_id=null){
         $cnt=$this->select('COUNT(*) cnt')->where('owner_id',$user_id)->get()->getRow('cnt');
