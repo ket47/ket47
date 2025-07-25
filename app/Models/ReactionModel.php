@@ -45,17 +45,23 @@ class ReactionModel extends Model{
         $tag_list=$ReactionTagModel->listParse( $tagQuery );
         foreach( $tag_list as $tag ){
             $parsed_tag=$ReactionTagModel->tagParse($tag);
-            // if($parsed_tag->tag_name=='store'){
-            //     $expandedTagQuery.=$this->expandTagFromProduct(null,null,$parsed_tag->tag_id);
-            // }
             if($parsed_tag->tag_name=='product'){
                 $expandedTagQuery.=$this->expandTagFromProduct($parsed_tag->tag_id);
             }
             if($parsed_tag->tag_name=='entry'){
                 $expandedTagQuery.=$this->expandTagFromProduct(null, $parsed_tag->tag_id);
             }
+            if($parsed_tag->tag_name=='order' && $parsed_tag->tag_type=='courier'){
+                $expandedTagQuery.=$this->expandTagFromOrderCourier($parsed_tag->tag_id,$parsed_tag->tag_option);
+            }
         }
         return $expandedTagQuery;
+    }
+
+    private function expandTagFromOrderCourier($order_id,$tag_option){
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($order_id,'basic');
+        return " order:$order_id:courier:$tag_option courier:{$order_basic->order_courier_id}:order:$tag_option";
     }
 
     private function expandTagFromProduct( $product_id=null, $entry_id=null, $store_id=null ){
@@ -191,7 +197,7 @@ class ReactionModel extends Model{
                     ON image_holder = 'product' AND tag_name='product' AND image_holder_id = tag_id AND is_main=1
             WHERE
                 member_id=reaction_id) image_hash");
-        $this->select('reaction_comment,reaction_is_like,reaction_is_dislike,user_name,tag_id');
+        $this->select('reaction_comment,reaction_is_like,reaction_is_dislike,user_name,tag_name,tag_id,tag_type,tag_option');
 
         $result=$this->get()->getResult();
         return $result;

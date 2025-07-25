@@ -254,6 +254,20 @@ class Courier extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
     
+    public function itemStatisticsGet(){
+        $courier_id=$this->request->getPost('courier_id');
+
+        $CourierModel=model('CourierModel');
+        $statistics['rating']=$CourierModel->itemRatingGet($courier_id);
+
+        $ReactionModel=model('ReactionModel');
+        $filter['commentsOnly']=1;
+        $filter['tagQuery']="courier:$courier_id";
+        $ReactionModel->limit(5);
+        $statistics['comments']=$ReactionModel->listGet($filter);
+        return $this->respond($statistics);
+    }
+
     public function listGet(){
         $filter=[
             'name_query'=>$this->request->getVar('name_query'),

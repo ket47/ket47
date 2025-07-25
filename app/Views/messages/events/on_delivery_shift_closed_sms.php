@@ -25,7 +25,7 @@
 
 <pre>Начало  <?=$shift->created_at?> </pre>
 <pre>Конец   <?=$shift->closed_at?> </pre>
-<pre>Время   ⏱️<?=sprintf('%02d:%02d:%02d', round(($total_duration??0)/3600),round(($total_duration??0)/60)%60, round(($total_duration??0))%60);?> 
+<pre>Время   ⏱️<?=sprintf('%02d:%02d:%02d', floor(($total_duration??0)/3600),round(($total_duration??0)/60)%60, round(($total_duration??0))%60);?> 
 Заказы  📃<?=$order_count_all?>шт </pre>
 
 🏍️Мопед личный <b><?=$total_moped_own?>₽</b>

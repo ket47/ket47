@@ -509,36 +509,32 @@ class CourierModel extends Model{
         return $job;
     }
 
-    /**
-     * Notifies courier that it has undone jobs
-     */
-    public function itemJobAvailableNotify( int $courier_id ){
-        $courier=$this->select('owner_id')->where('courier_id',$courier_id)->get()->getRow();
-        if( !$courier ){
-            return false;
-        }
-        $message_text="👋 У вас есть невыполненное задание";
-        $message=(object)[
-                    'message_reciever_id'=>$courier->owner_id,
-                    'message_transport'=>'push,telegram',
-                    'message_text'=>$message_text,
-                    'message_data'=>[
-                        'type'=>'flash',
-                        'title'=>'🚀 Новое задание',
-                        'body'=>$message_text,
-                        'link'=>getenv('app.frontendUrl').'order/order-list',
-                        'sound'=>'long.wav'
-                    ],
-                ];
-        $sms_job=[
-            'task_name'=>"Courier Notify Order",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
-                ]
-        ];
-        jobCreate($sms_job);
-        return true;
+    public function itemRatingGet( $courier_id ){
+        /**
+         * should we check ownership?
+         */
+        /**
+         * Rating
+         */
+        $ReactionModel=model('ReactionModel');
+        $ReactionModel->where('tag_id',$courier_id);
+        $ReactionModel->where('tag_name','courier');
+        $ReactionModel->join('reaction_tag_list','reaction_id=member_id');
+        $ReactionModel->select("tag_option,SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) rating,SUM(reaction_is_like+reaction_is_dislike) total_reactions");
+        $ReactionModel->groupBy('tag_option');
+        return $ReactionModel->get()->getResult();
     }
+
+
+
+
+
+
+
+
+
+
+
     
     /////////////////////////////////////////////////////
     //LIST HANDLING SECTION
@@ -559,130 +555,6 @@ class CourierModel extends Model{
         $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1",'left');
         $courier_list= $this->get()->getResult();
         return $courier_list;  
-    }
-
-    /**
-     * Notifies particular courier of available jobs
-     * @param object $courier the object of courier that is ready to send list of jobs
-     */
-    public function itemNotify( $courier ){
-        return;
-
-
-
-
-
-
-
-        if(!$courier){
-            return;
-        }
-        $job_list=$this->limit(1)->listJobGet( $courier->courier_id );
-        if( !is_array($job_list) ){
-            pl(['itemNotify',$courier,$job_list]);
-            return true;
-        }
-
-        foreach($job_list as $job){
-            $context=[
-                'store'=>(object)[
-                    'store_id'=>$job->store_id,
-                    'store_name'=>$job->store_name,
-                ],
-                'order'=>$job,
-                'courier'=>$courier
-            ];
-
-            $reciever_id=$context['courier']->owner_id;
-            $message_text=view('messages/order/on_delivery_search_COUR_sms',$context);
-            $message=(object)[
-                'message_reciever_id'=>$reciever_id,
-                'message_transport'=>"telegram",
-                'message_text'=>$message_text,
-                'message_data'=>[
-                    'type'=>'flash',
-                    'title'=>'🚀 Новое задание',
-                    'body'=>$message_text,
-                    'link'=>getenv('app.frontendUrl').'order/order-list',
-                    'sound'=>'long.wav'
-                ],
-                'telegram_options'=>[
-                    'buttons'=>[['',"onCourierJobStart-{$context['order']->order_id}",'🚀 Взять задание']],
-                    'disable_web_page_preview'=>1,
-                ],
-            ];
-            $copy=(object)[
-                'message_reciever_id'=>'-100',
-                'message_transport'=>'telegram',
-                'template'=>'messages/order/on_delivery_search_ADMIN_sms',
-                'context'=>$context,
-                'telegram_options'=>[
-                    'disable_notification'=>1,
-                ],
-            ];
-
-            $sms_job=[
-                'task_name'=>"Courier Notify Order",
-                'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
-                    ],
-            ];
-            jobCreate($sms_job);
-        }
-    }
-    /**
-     * Notifies ready couriers of particular job
-     * @param array $new_job array with data about job to send to couriers
-     * @todo We should in future check the distance between store and courier!!!
-     */
-    public function listNotify( $new_job ){
-        return;
-
-
-        $ready_courier_list=$this->listGet(['status'=>'ready','limit'=>5]);
-        if( !$ready_courier_list ){
-            return false;
-        }
-        foreach($ready_courier_list as $courier){
-            $new_job['courier']=$courier;
-
-            $reciever_id=$new_job['courier']->owner_id??$new_job['courier']->user_id;
-            $message_text=view('messages/order/on_delivery_search_COUR_sms',$new_job);
-            $message=(object)[
-                'message_reciever_id'=>$reciever_id,
-                'message_transport'=>'telegram,push',
-                'message_text'=>$message_text,
-                'message_data'=>[
-                    'type'=>'flash',
-                    'title'=>'🚀 Новое задание',
-                    'body'=>$message_text,
-                    'link'=>getenv('app.frontendUrl').'order/order-list',
-                    'sound'=>'long.wav'
-                ],
-                'telegram_options'=>[
-                    'buttons'=>[['',"onCourierJobStart-{$new_job['order']->order_id}",'🚀 Взять задание']],
-                    'disable_web_page_preview'=>1,
-                ],
-            ];
-            $copy=(object)[
-                'message_reciever_id'=>'-100',
-                'message_transport'=>'telegram',
-                'template'=>'messages/order/on_delivery_search_ADMIN_sms',
-                'context'=>$new_job,
-                'telegram_options'=>[
-                    'disable_notification'=>1,
-                ],
-            ];
-
-            $sms_job=[
-                'task_name'=>"Courier Notify Order",
-                'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]
-                    ],
-            ];
-            jobCreate($sms_job);
-        }
-        return true;
     }
 
     public function listCreate(){
