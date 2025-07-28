@@ -375,7 +375,7 @@ class TransactionModel extends Model{
             FROM (
                 SELECT
                     IF(`tag_option`='debit',`trans_amount`,-`trans_amount`) `amount`,
-                    COUNT(`link_id`) `matched_tag_count`,
+                    COUNT(`link_id`) `matched_tag_count`
                 FROM
                     `transaction_list`
                         JOIN

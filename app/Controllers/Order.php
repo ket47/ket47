@@ -353,7 +353,7 @@ class Order extends \App\Controllers\BaseController {
     }
 
     private function itemSumMinimalGet(){
-        return 200;
+        return 300;
     }
 
     private function routePlanGet( object $order, int $start_location_id, int $finish_location_id ){
@@ -725,6 +725,8 @@ class Order extends \App\Controllers\BaseController {
         ];
         $OrderModel=model('OrderModel');
         $order_list=$OrderModel->listGet($filter);
+
+        madd('order_list','get','ok');
         return $this->respond($order_list);
     }
 

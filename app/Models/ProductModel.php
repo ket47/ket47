@@ -221,6 +221,9 @@ class ProductModel extends Model{
         if($product->product_category_name??null){
             $this->itemCreateCategory($product->product_id,$product->product_category_name);
         }
+        if($product->product_promo_finish??null){
+            $product->product_promo_finish=substr($product->product_promo_finish,0,10).' 23:59:59';
+        }
         $product->updated_by=session()->get('user_id');
         $this->update($product->product_id,$product);
         return $this->db->affectedRows()?'ok':'idle';
