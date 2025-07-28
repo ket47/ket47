@@ -96,6 +96,35 @@ class Transaction extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
     
+    public function listServiceActGet(){
+        $filter=(object)[
+            'start_at'          =>'2023-07-01',//$this->request->getVar('start_at'),
+            'finish_at'         =>'2025-07-01',//$this->request->getVar('finish_at'),
+            'tagQuery'          =>'acc::supplier store:142',// acc::profit
+        ];
+
+        $TransactionModel=model('TransactionModel');
+        $result=$TransactionModel->balanceGet222($filter);
+
+
+
+
+
+        // $start_case= $filter->start_at?"trans_date>'{$filter->start_at} 00:00:00'":"1";
+        // $finish_case=$filter->finish_at?"trans_date<'{$filter->finish_at} 23:59:59'":"1";
+        // $sql_ledger_get="
+        //     SELECT
+        //         *
+        //     FROM
+        //         tmp_ledger_inner
+        //     WHERE
+        //         $start_case
+        //     AND $finish_case
+        // ";
+        // $result=$TransactionModel->query($sql_ledger_get)->getResult();
+        return $this->respond($result);
+    }
+    
 
 
 }

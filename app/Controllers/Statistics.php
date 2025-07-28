@@ -56,6 +56,7 @@ class Statistics extends \App\Controllers\BaseController{
         $db->query($tmp_drop_sql);
         $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num,'store_id'=>$store_id]);
 
+        madd('store_analytics','get','ok',$store_id,'sell_parameters');
         $response=[
             'head'=>[
                 'avg'=>$db->query($avg_sql)->getRow()
@@ -336,6 +337,7 @@ class Statistics extends \App\Controllers\BaseController{
             'total_topay'=>number_format($total_sum-$total_commission,2,'.',''),
         ];
 
+        madd('store_analytics','get','ok',$store_id,'sell_report');
         $report=['head'=>$head,'body'=>$body];
         if( $output=='xlsx' ){
             return $this->statSellReportExport( $report );

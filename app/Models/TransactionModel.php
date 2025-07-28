@@ -375,7 +375,7 @@ class TransactionModel extends Model{
             FROM (
                 SELECT
                     IF(`tag_option`='debit',`trans_amount`,-`trans_amount`) `amount`,
-                    COUNT(`link_id`) `matched_tag_count`
+                    COUNT(`link_id`) `matched_tag_count`,
                 FROM
                     `transaction_list`
                         JOIN
@@ -388,5 +388,40 @@ class TransactionModel extends Model{
                 GROUP BY `trans_id`
                 HAVING `matched_tag_count`='$tagCount') t";
         return $this->query($balance_sql)->getRow('balance');
+    }
+    public function serviceActGet( object $filter, $mode='check_permission' ){
+        $permission_where='1=1';
+        if( $mode=='check_permission' ){
+            $permission_where=$this->permitWhereGet('r','item');
+        }
+        if( !($filter->tagQuery??null) ){
+            return null;
+        } 
+        $TransactionTagModel=model('TransactionTagModel');
+        $tagWhere=$TransactionTagModel->tagWhereGet($filter->tagQuery);
+        $tagCount=$TransactionTagModel->queriedTagCountGet();
+        $balance_sql="
+            SELECT
+                trans_role,
+                SUM(`amount`) `balance`
+            FROM (
+                SELECT
+                    trans_role,
+                    IF(`tag_option`='debit',`trans_amount`,-`trans_amount`) `amount`,
+                    COUNT(`link_id`) `matched_tag_count`
+                FROM
+                    `transaction_list`
+                        JOIN
+                    `transaction_tag_list` USING(`trans_id`)
+                WHERE
+                    ($tagWhere)
+                    AND `transaction_list`.`is_disabled`=0
+                    AND `transaction_list`.`deleted_at` IS NULL
+                    AND $permission_where
+                GROUP BY `trans_id`
+                HAVING `matched_tag_count`='$tagCount') t
+            GROUP BY trans_role
+                ";
+        return $this->query($balance_sql)->getResult();
     }
 }
