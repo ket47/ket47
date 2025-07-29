@@ -58,7 +58,7 @@ class Metric extends \App\Controllers\BaseController{
         'homeget' => '🏠 Главная',
         'storeget' => '🏪',
         'productget' => '🍔',
-        'order_listget'=>'Заказы',
+        'orderlistget'=>'Заказы',
         'authin' => '🚶➡️ Вход',
         'authup' => '➕👨 Регистрация',
         'authout' => '⬅️🚶 Выход',
