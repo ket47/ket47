@@ -118,7 +118,7 @@ class MetricActModel extends Model{
         $this->havingIn('group_type',$filter->user_group);
         $this->groupBy('metric_id,act_id');
 
-        $this->orderBy('hour_slot ASC, metric_act_list.created_at ASC');
+        $this->orderBy('hour_slot ASC, metric_act_list.created_at DESC');
         if($filter->order_only){
             $this->having('user_orders > 0');
         }
