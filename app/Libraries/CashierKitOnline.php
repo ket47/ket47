@@ -34,7 +34,7 @@ class CashierKitOnline{
             if($entry->entry_quantity==0){
                 continue;
             }
-            if( $entry->entry_discount>0 && $entry->entry_discount<$entry->entry_price ){
+            if( $entry->entry_discount>0 && $entry->entry_discount<($entry->entry_price*$entry->entry_quantity) ){
                 $entry->entry_price-=round($entry->entry_discount/$entry->entry_quantity,2);
             }
             $product_row=[
