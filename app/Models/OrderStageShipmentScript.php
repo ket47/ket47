@@ -9,7 +9,7 @@ class OrderStageShipmentScript{
             ],
         'customer_deleted'=>                [],
         'customer_cart'=>[
-            'customer_action_confirm'=>    ['Перейти к оформлению'],
+            'customer_action_confirm'=>     ['Перейти к оформлению'],
             'customer_deleted'=>            ['Удалить','danger','clear'],
             'customer_confirmed'=>          [],
             ],
@@ -697,16 +697,16 @@ class OrderStageShipmentScript{
     //DELIVERY HANDLERS
     //////////////////////////////////////////////////////////////////////////
     public function onDeliverySearch( $order_id ){
-        $order=$this->OrderModel->itemGet($order_id);
-        $StoreModel=model('StoreModel');
-        $CourierModel=model('CourierModel');
-        $StoreModel->itemCacheClear();
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $context=[
-            'store'=>$store,
-            'order'=>$order
-        ];
-        $CourierModel->listNotify($context);
+        // $order=$this->OrderModel->itemGet($order_id);
+        // $StoreModel=model('StoreModel');
+        // $CourierModel=model('CourierModel');
+        // $StoreModel->itemCacheClear();
+        // $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        // $context=[
+        //     'store'=>$store,
+        //     'order'=>$order
+        // ];
+        // $CourierModel->listNotify($context);
         return 'ok';
     }
 
