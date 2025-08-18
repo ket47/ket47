@@ -31,7 +31,7 @@
             <?php endif; ?>
 
 
-            <div style="display: flex;min-width:150px">
+            <div style="display: flex;min-width:140px">
               <ul style="padding-left: 5px; font-size: 13px; margin-top: 5px; list-style: disclosure-closed;">
                 <?php foreach ($data['actions'] as $action): ?>
                   <li>
