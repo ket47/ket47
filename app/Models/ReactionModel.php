@@ -54,6 +54,9 @@ class ReactionModel extends Model{
             if($parsed_tag->tag_name=='order' && $parsed_tag->tag_type=='courier'){
                 $expandedTagQuery.=$this->expandTagFromOrderCourier($parsed_tag->tag_id,$parsed_tag->tag_option);
             }
+            if($parsed_tag->tag_name=='order' && $parsed_tag->tag_type=='customer'){
+                $expandedTagQuery.=$this->expandTagFromOrderCustomer($parsed_tag->tag_id,$parsed_tag->tag_option);
+            }
         }
         return $expandedTagQuery;
     }
@@ -62,6 +65,11 @@ class ReactionModel extends Model{
         $OrderModel=model('OrderModel');
         $order_basic=$OrderModel->itemGet($order_id,'basic');
         return " order:$order_id:courier:$tag_option courier:{$order_basic->order_courier_id}:order:$tag_option";
+    }
+    private function expandTagFromOrderCustomer($order_id,$tag_option){
+        $OrderModel=model('OrderModel');
+        $order_basic=$OrderModel->itemGet($order_id,'basic');
+        return " order:$order_id:customer:$tag_option customer:{$order_basic->owner_id}:order:$tag_option";
     }
 
     private function expandTagFromProduct( $product_id=null, $entry_id=null, $store_id=null ){
