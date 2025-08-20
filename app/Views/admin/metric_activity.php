@@ -10,7 +10,13 @@
           <p style="color: gray; font-size: 12px; margin: 0px; float: right;"><?= date('H:i:s', strtotime($data['session_start'])) ?></p>
             <h6 style="margin: 0px; font-size: 15px;">
               <?= esc($data['user_avatar']) ?> 
-              <?= esc($data['user']) ?> 
+              
+
+              <?php if(!empty($data['user_id'])) : ?>
+                <a href="/user/user-management?user_id=<?=$data['user_id']?>" style="margin: 5px 0; font-size: 13px; color: gray"><?= esc($data['user']) ?> </a>
+              <?php else: ?>
+                Гость
+              <?php endif; ?>
               
               <?php if($data['user_orders'] > 0) : ?>
               <b style="color: gray">(<?= esc($data['user_orders']) ?>)</b>
@@ -21,9 +27,6 @@
             <span style="margin: 5px 0; font-size: 13px; color: gray"> <?= esc($data['device_platform']) ?> </span>
             <?php endif; ?>
 
-            <?php if(!empty($data['user_phone'])) : ?>
-            <span style="margin: 5px 0; font-size: 13px; color: gray"> 📞 <?= esc($data['user_phone']) ?> </span>
-            <?php endif; ?>
             
             
             <?php if(!empty($data['come_referrer'])) : ?>

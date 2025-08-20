@@ -6,7 +6,7 @@
     }
 
     $order_cost     =70;
-    $hour_cost_rent =160;
+    $hour_cost_rent =180;
     $hour_cost_own  =190;
 
     $heavy_bonus_moped  =$statistics->heavy_bonus??0;

@@ -102,12 +102,13 @@ class MetricActModel extends Model{
             ml.come_referrer,
             ml.device_platform,
             ml.created_at AS session_start,
+            ul.user_id,
             ul.user_name,
             ul.user_phone,
             DATE_FORMAT(metric_act_list.created_at, '%Y-%m-%d %H:00:00') as hour_slot
         ");
         $this->select("COUNT(ol.order_id) AS user_orders");
-        $this->select("COALESCE((SELECT ugl.group_type FROM user_group_list ugl JOIN user_group_member_list ugml USING(group_id) WHERE ul.user_id = ugml.member_id ORDER BY group_type = 'customer' LIMIT 1), 'guest') AS group_type");
+        $this->select("COALESCE((SELECT ugl.group_type FROM user_group_list ugl JOIN user_group_member_list ugml USING(group_id) WHERE ul.user_id = ugml.member_id ORDER BY group_type = 'customer',group_type = 'courier' LIMIT 1), 'guest') AS group_type");
 
         $this->join('metric_list ml', 'ml.metric_id = metric_act_list.metric_id');
         $this->join('user_list ul', 'ml.user_id = ul.user_id', 'left');
@@ -118,7 +119,7 @@ class MetricActModel extends Model{
         $this->havingIn('group_type',$filter->user_group);
         $this->groupBy('metric_id,act_id');
 
-        $this->orderBy('hour_slot ASC, metric_act_list.created_at DESC');
+        $this->orderBy('session_start DESC, metric_act_list.created_at ASC');
         if($filter->order_only){
             $this->having('user_orders > 0');
         }

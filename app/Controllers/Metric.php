@@ -75,13 +75,13 @@ class Metric extends \App\Controllers\BaseController{
         'guest' => '👤'
     ];
     private $device_platform = [
-        'iOS' => '🍏 iOS',
-        'Windows 10' => '🖥️ Windows 10',
-        'Windows 7' => '🖥️ Windows 7',
-        'Windows 8.1' => '🖥️  Windows 8.1',
-        'Android' => '🤖 Android',
-        'Linux' => '🐧 Linux',
-        'Mac OS X' => '🍏 MacOS'
+        'iOS' => '🍏',
+        'Windows 10' => '🪟',
+        'Windows 7' => '🪟',
+        'Windows 8.1' => '🪟',
+        'Android' => '🤖',
+        'Linux' => '🐧',
+        'Mac OS X' => '🍏MacOS'
     ];
     
     public function buildView()
@@ -103,12 +103,12 @@ class Metric extends \App\Controllers\BaseController{
             $hour     = $row['hour_slot'];
             $session  = $row['metric_id'];
             $user     = ($row['user_name'] ?? 'Гость') ;
-            $user_phone = $row['user_phone'];
+            $user_id = $row['user_id'];
             $come_referrer  = $this->parseComeReferrer($row['come_referrer']);
             $timeline[$hour]['hour_slot'] = $this->humanizeDateTime($row['hour_slot']);
             $timeline[$hour]['list'][$session] = $timeline[$hour]['list'][$session] ?? [
                 'user' => $user,
-                'user_phone' => $user_phone,
+                'user_id' => $user_id,
                 'user_avatar' => $this->user_group_emoji[$row['group_type']] ?? '', 
                 'user_orders' => $row['user_orders'],
                 'come_referrer' => $come_referrer,
