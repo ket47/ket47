@@ -180,7 +180,7 @@ class ReactionModel extends Model{
     }
     
     public function listGet( array $filter ){
-        if(!$filter['tagQuery']){
+        if(!isset($filter['tagQuery'])){
             return 'notags';
         }
         $this->filterMake($filter);
@@ -195,6 +195,7 @@ class ReactionModel extends Model{
         $this->where($where);
         if($filter['commentsOnly']??0){
             $this->where("reaction_comment IS NOT NULL");
+            $this->where("reaction_comment <>''");
         }
         $this->select("(SELECT 
                 image_hash

@@ -263,7 +263,7 @@ class Courier extends \App\Controllers\BaseController{
         $ReactionModel=model('ReactionModel');
         $filter['commentsOnly']=1;
         $filter['tagQuery']="courier:$courier_id";
-        $ReactionModel->limit(5);
+        $ReactionModel->limit(10);
         $statistics['comments']=$ReactionModel->listGet($filter);
         return $this->respond($statistics);
     }

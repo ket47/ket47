@@ -42,7 +42,58 @@ class Reaction extends \App\Controllers\BaseController{
         if( str_contains($tagQuery,'entry') || str_contains($tagQuery,'product') ){
             $this->onCommentSupplierNotify($tagQuery);
         }
+        if($result=='ok'){
+            return $this->respondUpdated($result);
+        }
+        if( is_numeric($result) && str_contains($tagQuery,'order:') && str_contains($tagQuery,'courier:appearence') ){
+            //only on reaction create
+            $this->onCustomerCourierReaction($tagQuery);
+        }
         return $this->respondCreated($result);
+    }
+
+    private function onCustomerCourierReaction($tagQuery){
+        //tagQuery order:###:courier:appearence
+        $tag_parts=explode(':',$tagQuery);
+        $order_id=$tag_parts[1];
+
+        $ReactionModel=model('ReactionModel');
+        $reaction_list=$ReactionModel->listGet(["tagQuery"=>"order:$order_id"]);
+
+        $OrderModel=model('OrderModel');
+        $OrderModel->where('order_id',$order_id);
+        $OrderModel->join('courier_list','courier_id=order_courier_id');
+
+        $context['user']=session()->get('user_data');
+        $context['reaction_list']=$reaction_list;
+        $context['order_extended']=$OrderModel->select('order_id,order_sum_product,order_sum_promo,order_list.owner_id,courier_name')->get()->getRow();
+
+        $reaction_sms=(object)[
+            'message_transport'=>'telegram',
+            'message_reciever_id'=>"-100",//
+            'template'=>'messages/events/on_customer_courier_reaction_sms.php',
+            'context'=>$context
+        ];
+        $owner_id=$context['order_extended']->owner_id;
+
+        $promo_value_fraction=0.05;
+        $promo_value=round( ($context['order_extended']->order_sum_product-$context['order_extended']->order_sum_promo)*$promo_value_fraction/10 )*10;
+        $promo_name="Бонус за оценку курьера";
+
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemCreate($owner_id,$promo_value,$promo_name);
+
+        $cust_sms=(object)[
+            'message_reciever_id'=>$owner_id,
+            'message_transport'=>'push,email,telegram',
+            'message_text'=>"Вам начислен бонус {$promo_value}₽"
+        ];
+        $notification_task=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms,$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
     }
 
     private function onCommentSupplierNotify( $tagQuery ){
