@@ -137,6 +137,7 @@ class CourierShiftModel extends SecureModel{
         $statistics=$this->itemWorkStatisticsGet($shift->courier_id,$shift->created_at,$shift->closed_at);
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($shift->courier_id);
+        $rating=$CourierModel->itemRatingGet($shift->courier_id);
 
         $message=(object)[
             'message_reciever_id'=>"-100,{$courier->owner_id}",//copy to courier group
@@ -147,6 +148,7 @@ class CourierShiftModel extends SecureModel{
                 'courier'=>$courier,
                 'shift'=>$shift,
                 'statistics'=>$statistics,
+                'rating'=>$rating,
             ],
             'template'=>'messages/events/on_delivery_shift_closed_sms',
             'telegram_options'=>[
