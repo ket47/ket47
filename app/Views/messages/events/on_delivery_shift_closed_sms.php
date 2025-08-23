@@ -49,8 +49,7 @@
 
 <pre>Начало  <?=$shift->created_at?> 
 Конец   <?=$shift->closed_at?> </pre>
-<pre>
-⏱️ Время     <?=sprintf('%02d:%02d:%02d', floor(($total_duration??0)/3600),round(($total_duration??0)/60)%60, round(($total_duration??0))%60);?> 
+<pre>⏱️ Время     <?=sprintf('%02d:%02d:%02d', floor(($total_duration??0)/3600),round(($total_duration??0)/60)%60, round(($total_duration??0))%60);?> 
 📃 Заказы    <?=$order_count_all?>шт 
 ❤️ Униформа  +<?=$look_bonus?>₽ 
 🚀 Быстрота  +<?=$speed_bonus?>₽ 
