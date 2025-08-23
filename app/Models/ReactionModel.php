@@ -66,10 +66,10 @@ class ReactionModel extends Model{
         $order_basic=$OrderModel->itemGet($order_id,'basic');
         return " order:$order_id:courier:$tag_option courier:{$order_basic->order_courier_id}:order:$tag_option";
     }
-    private function expandTagFromOrderCustomer($order_id,$tag_option){
+    private function expandTagFromOrderCustomer($order_id){
         $OrderModel=model('OrderModel');
         $order_basic=$OrderModel->itemGet($order_id,'basic');
-        return " order:$order_id:customer:$tag_option customer:{$order_basic->owner_id}:order:$tag_option";
+        return " order:$order_id:customer:rating customer:{$order_basic->owner_id}:order:rating";
     }
 
     private function expandTagFromProduct( $product_id=null, $entry_id=null, $store_id=null ){

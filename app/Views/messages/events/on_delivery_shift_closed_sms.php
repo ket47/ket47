@@ -5,12 +5,13 @@
         }  
     }
 
-    $order_cost     =70;
+    $order_cost     =90;
     $hour_cost_rent =180;
     $hour_cost_own  =190;
 
     $heavy_bonus_moped  =$statistics->heavy_bonus??0;
-    $heavy_bonus_car    =0;
+    $heavy_bonus_car    =$heavy_bonus_moped/2;
+
     $order_count_all    =$statistics->order_count??0;
     $order_sum_all      =round($order_cost*$order_count_all);
     $hour_sum_rent      =round($total_duration*($hour_cost_rent/3600));

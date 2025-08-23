@@ -126,6 +126,8 @@ class DeliveryJob extends \App\Controllers\BaseController{
         if( !courdo() && !sudo() ){
             return $this->failForbidden('forbidden');
         }
+        $user_id=session()->get('user_id');
+
         $CourierShiftModel=model('CourierShiftModel');
         $DeliveryJobModel=model('DeliveryJobModel');
 
@@ -134,8 +136,22 @@ class DeliveryJob extends \App\Controllers\BaseController{
         $CourierShiftModel->allowRead();//??? allowing see couriers each other???
         $CourierShiftModel->join('courier_list','courier_id','left');
         $CourierShiftModel->join('image_list','courier_list.courier_id=image_holder_id AND image_holder="courier"','left');
-        $CourierShiftModel->select('courier_name,image_hash');
+        $CourierShiftModel->select("courier_name,image_hash,IF({$user_id}=courier_shift_list.owner_id,1,0) users_shift");
         $open_shifts=$CourierShiftModel->listGet((object)['shift_status'=>'open']);
+
+        $user_has_opened_shift=false;
+        foreach($open_shifts as $shift){
+            if( $shift->users_shift==1 ){
+                $user_has_opened_shift=true;
+                break;
+            }
+        }
+        /**
+         * Courier has to open shift to see routes
+         */
+        if( $user_has_opened_shift==false && !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
         $routeList=[
             'delivery_jobs'=>$delivery_jobs,
             'open_shifts'=>$open_shifts

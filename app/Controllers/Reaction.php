@@ -42,6 +42,9 @@ class Reaction extends \App\Controllers\BaseController{
         if( str_contains($tagQuery,'entry') || str_contains($tagQuery,'product') ){
             $this->onCommentSupplierNotify($tagQuery);
         }
+        if( str_contains($tagQuery,'order:') && str_contains($tagQuery,'customer:rating') && $is_like==1 ){
+            $this->onCustomerRating($tagQuery);
+        }
         if($result=='ok'){
             return $this->respondUpdated($result);
         }
@@ -52,6 +55,30 @@ class Reaction extends \App\Controllers\BaseController{
         return $this->respondCreated($result);
     }
 
+    private function onCustomerRating($tagQuery){
+        //tagQuery order:###:customer:rating
+        $tag_parts=explode(':',$tagQuery);
+        $order_id=$tag_parts[1];
+
+        $OrderModel=model('OrderModel');
+        $OrderModel->where('order_id',$order_id);
+        $OrderModel->join('courier_list','courier_id=order_courier_id');
+
+        $context['order_extended']=$OrderModel->select('order_list.owner_id,courier_name')->get()->getRow();
+
+        $cust_sms=(object)[
+            'message_reciever_id'=>$context['order_extended']->owner_id,
+            'message_transport'=>'push,email,telegram',
+            'message_text'=>"Курьер {$context['order_extended']->courier_name}, благодарит вас"
+        ];
+        $notification_task=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
+                ]
+        ];
+        jobCreate($notification_task);
+    }
+    
     private function onCustomerCourierReaction($tagQuery){
         //tagQuery order:###:courier:appearence
         $tag_parts=explode(':',$tagQuery);

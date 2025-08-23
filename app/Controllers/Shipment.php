@@ -388,9 +388,19 @@ class Shipment extends \App\Controllers\BaseController{
             // $order_data->start_plan=max($order_data->finish_plan_scheduled-$checkoutData->routePlan->finish_arrival,$checkoutData->routePlan->start_plan);
             // $order_data->start_plan_mode='scheduled';
         }
+
+        $ReactionTagModel=model('ReactionTagModel');
+        $customer_heart_count=$ReactionTagModel->customerRatingGet($order->owner_id);
+
         $order_data->delivery_job=(object)[
             'job_name'=>'Посылка',
-            'job_data'=>json_encode(['is_shipment'=>1,'order_script'=>$order->order_script,'distance'=>$checkoutData->routePlan->deliveryDistance,'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0]),
+            'job_data'=>json_encode([
+                'is_shipment'=>1,
+                'order_script'=>$order->order_script,
+                'distance'=>$checkoutData->routePlan->deliveryDistance,
+                'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
+                'customer_heart_count'=>$customer_heart_count
+            ]),
             'start_plan'=>$order_data->start_plan,
             'start_prep_time'=>null,
             'finish_arrival_time'=>$checkoutData->routePlan->finish_arrival,

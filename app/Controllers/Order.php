@@ -549,6 +549,9 @@ class Order extends \App\Controllers\BaseController {
             return $this->fail('no_payment');
         }
 
+        /**
+         * THERE IS TROUBLE WITH INCONSTINTENT LOCATION
+         */
         $order_data->location_start=$checkoutData->location_start;
         $order_data->location_finish=$checkoutData->location_finish;
         //DELIVERY OPTIONS CHECK
@@ -564,6 +567,9 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_heavy_bonus=$deliveryOption->reckonParameters->delivery_heavy_bonus;
 
             //DELIVERY JOB SETUP
+            /**
+             * todo routePlan error handling. if startplan is not set. the is an error
+             */
             $order_data->start_plan=$deliveryOption->routePlan->start_plan;
             $order_data->start_plan_mode='awaited';//$deliveryOption->routePlan->start_plan_mode;//inited | awaited | scheduled 
             if( $checkoutSettings->deliveryFinishScheduled??null ){
@@ -579,6 +585,9 @@ class Order extends \App\Controllers\BaseController {
                 $order_data->start_plan_mode='scheduled';
             }
 
+            $ReactionTagModel=model('ReactionTagModel');
+            $customer_heart_count=$ReactionTagModel->customerRatingGet($order->owner_id);
+
             $StoreModel=model('StoreModel');
             $store=$StoreModel->itemGet($order->order_store_id,'basic');
             $order_data->delivery_job=(object)[
@@ -586,7 +595,8 @@ class Order extends \App\Controllers\BaseController {
                 'job_data'=>json_encode([
                     'payment_by_cash'=>$order_data->payment_by_cash??0,
                     'distance'=>$deliveryOption->routePlan->deliveryDistance,
-                    'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0
+                    'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
+                    'customer_heart_count'=>$customer_heart_count
                 ]),
                 'start_plan'=>$order_data->start_plan,
                 'start_prep_time'=>null,
