@@ -1,8 +1,12 @@
 <html>
     <head>
         <script>
-            const parent=window.parent;
-            parent.postMessage('paymentOk','*');
+            const parent=window.parent
+            parent.postMessage('paymentOk','*')
+            setTimeout(()=>{
+                window.open("", "_self");
+                window.close()
+            },500)
         </script>
     </head>
     <body>

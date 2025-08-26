@@ -2,7 +2,11 @@
     <head>
         <script>
             const parent=window.parent;
-            parent.postMessage('paymentNo','*');
+            parent.postMessage('paymentNo','*')
+            setTimeout(()=>{
+                window.open("", "_self");
+                window.close()
+            },500)
         </script>
     </head>
     <body>
