@@ -48,7 +48,6 @@ class AcquirerUnitellerSBP{
         $p->Signature = strtoupper(md5(
             $sign_body."&".md5( getenv('unitellerSBP.password') )
         ));
-        pl($p);
         $queryString = http_build_query($p);
         return getenv('unitellerSBP.gateway').'pay?'.$queryString;
     }

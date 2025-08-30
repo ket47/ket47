@@ -373,13 +373,14 @@ class OrderModel extends SecureModel{
             }
         }
 
-        $this->join('image_list',"image_holder='order' AND image_holder_id=order_id AND is_main=1",'left');
+        $this->join('image_list',"image_list.image_holder='order' AND image_list.image_holder_id=order_id AND image_list.is_main=1",'left');
+        $this->join('image_list avatar_list',"avatar_list.image_holder='store_avatar' AND avatar_list.image_holder_id=order_store_id AND avatar_list.is_disabled=0",'left');
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->join('user_list ul',"user_id=order_list.owner_id");
         $this->join('store_list sl',"store_id=order_store_id",'left');
 
         $this->select("{$this->table}.order_id,{$this->table}.created_at,{$this->table}.order_sum_total,{$this->table}.is_shipment,{$this->table}.order_data->>'$.order_is_canceled' is_canceled");
-        $this->select("group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,image_hash,store_name");
+        $this->select("group_id,group_name stage_current_name,group_type stage_current,user_phone,user_name,COALESCE(image_list.image_hash,avatar_list.image_hash) image_hash,store_name");
         $this->itemUserRoleCalc();
         if( $filter['user_role']??0 ){
             $this->havingIn('user_role',$filter['user_role']);

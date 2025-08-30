@@ -99,7 +99,13 @@ class Reaction extends \App\Controllers\BaseController{
             'message_transport'=>'telegram',
             'message_reciever_id'=>"-100",//
             'template'=>'messages/events/on_customer_courier_reaction_sms.php',
-            'context'=>$context
+            'context'=>$context,
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1,
+                ]
+            ],
+
         ];
         $owner_id=$context['order_extended']->owner_id;
 

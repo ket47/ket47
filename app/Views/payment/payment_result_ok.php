@@ -4,9 +4,9 @@
             const parent=window.parent
             parent.postMessage('paymentOk','*')
             setTimeout(()=>{
-                window.open("", "_self");
-                window.close()
-            },500)
+                window?.mobileApp?.postMessage({ detail: { message: "paymentOk" } })
+                window?.mobileApp?.close();
+            },200)
         </script>
     </head>
     <body>
