@@ -67,25 +67,35 @@ class BaseController extends Controller
             }
             $this->guestUserInit();
         }
-        $this->detectLimitedCountry();
+        $this->detectChameleonMode();
     }
 
-    private function detectLimitedCountry(){
-        $blackListCountries=getenv('location.countryCodeBlacklist');
-        if( $blackListCountries &&  session()->get('country_status')==null ){
+    private function detectChameleonMode(){
+        if( session()->get('chameleonMode')=='on' ){
+            header('x-chameleon: on');
+            return;
+        }
+        $blackListCountries=getenv('chameleon.countryCodeBlacklist');
+        if( $blackListCountries &&  session()->get('chameleonMode')==null ){
             $ctx = stream_context_create(['http'=>['timeout' => 1]]);
             try{
                 $json=file_get_contents("http://ip-api.com/json/{$_SERVER['REMOTE_ADDR']}?fields=countryCode,city,regionName", false, $ctx);
                 $resp=json_decode($json);
                 if( isset($resp->countryCode) && str_contains($blackListCountries,$resp->countryCode) ){
-                    session()->set('country_status','limited');
+                    session()->set('chameleonMode','on');
+                    header('x-chameleon: on');
                     pl('LIMITED COUNTRY ACCESS',$resp);
+                    return;
                 } else {
-                    session()->set('country_status','allowed');
+                    session()->set('chameleonMode','off');
                 }
             } catch( \Exception $e){}
         }
-
+        $blackListAppVersion=getenv('chameleon.appVersion');
+        if( isset($_SERVER['HTTP_X_VER']) && $_SERVER['HTTP_X_VER']==$blackListAppVersion ){
+            session()->set('chameleonMode','on');
+            header('x-chameleon: on');
+        }
     }
 
     private function handleSession($request,$response){

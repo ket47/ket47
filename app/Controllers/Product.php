@@ -58,6 +58,7 @@ class Product extends \App\Controllers\BaseController{
         $limit=$this->request->getPost('limit');
         $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
         if( !is_array($storeCache['store_list_ids']??null) ){
+            madd('product','get','error',null,'listNearGet notfound');
             return $this->failNotFound('notfound');
         }
 
@@ -77,7 +78,7 @@ class Product extends \App\Controllers\BaseController{
         return $this->respond($product_list);
     }
 
-    private function listNearCache( int $location_id=null, float $location_latitude=null, float $location_longitude=null ){
+    private function listNearCache( ?int $location_id=null, ?float $location_latitude=null, ?float $location_longitude=null ){
         $cachehash=md5("$location_id,$location_latitude,$location_longitude");
         $storenearcache=session()->get('storenearcache')??[];
 
@@ -86,6 +87,50 @@ class Product extends \App\Controllers\BaseController{
         }
         return null;
     }
+
+    
+
+
+    public function analogListGet(){
+        $group_ids=$this->request->getPost('group_ids');
+        $location_id=$this->request->getPost('location_id');
+        $location_latitude=$this->request->getPost('location_latitude');
+        $location_longitude=$this->request->getPost('location_longitude');
+        $offset=$this->request->getPost('offset');
+        $limit=$this->request->getPost('limit');
+
+
+        $group_id=intval($group_ids);//get first group id
+        $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
+        if( !is_array($storeCache['store_list_ids']??null) || !$group_id ){
+            return $this->failNotFound('notfound');
+        }
+
+        
+        $ProductModel=model('ProductModel');
+
+
+
+        $ProductModel->where('group_id',$group_id);
+        $ProductModel->whereIn('store_id',$storeCache['store_list_ids']);
+        $ProductModel->where('(is_counted=0 OR is_counted=1 AND product_quantity>0)');
+        $ProductModel->where('image_hash IS NOT NULL');
+
+        $ProductModel->orderBy('COUNT(perk_value)','DESC');
+        
+        $product_list=$ProductModel->listGet([
+            'offset'=>$offset,
+            'limit'=>$limit,
+            'is_active'=>1,
+            'is_hidden'=>0,
+            'group_id'=>$group_id
+        ]);
+
+
+        ql($ProductModel);
+        return $this->respond($product_list);
+    }
+
 
     public function listCreate(){
         return false;

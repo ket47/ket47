@@ -12,7 +12,7 @@ function handleCors(){
     header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x-sid, x-ver");
     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
     header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Expose-Headers: x-sid");
+    header("Access-Control-Expose-Headers: x-sid,x-chameleon");
     $method = isset($_SERVER['REQUEST_METHOD'])?$_SERVER['REQUEST_METHOD']:'';
     if( $method == "OPTIONS" ) {
         die();

@@ -37,40 +37,18 @@ class Store extends \App\Controllers\BaseController{
     }
 
 
-    private $appStoreVersionFilter='3.3.3';
-    private $appStoreWhitelist=[63,111,68,130,110,155,147];
-
-    private function appStoreFilter( $result ){
-        if( session()->get('country_status')!='limited' ){
-            return $result;
-        }
-
-        $headers=getallheaders();
-        if( empty($headers['x-ver']) || $headers['x-ver']!=$this->appStoreVersionFilter ){
-            return $result;
-        }
-        $filtered=[];
-        foreach($result['store_list'] as $store){
-            if( in_array($store->store_id??0,$this->appStoreWhitelist) ){
-                $filtered[]=$store;
-            }
-        }
-        $result['store_list']=$filtered;
-        return $result;
-    }
 
     public function listNearGet(){
         $location_id=$this->request->getPost('location_id');
         $location_latitude=$this->request->getPost('location_latitude');
         $location_longitude=$this->request->getPost('location_longitude');
         $response=$this->listNearCache($location_id,$location_latitude,$location_longitude);
-        $response=$this->appStoreFilter($response);
-        if( !is_array($response['store_list']) ){
+        if( !is_array($response['store_list']) || !count($response['store_list']) ){
             madd('home','get','error');
             return $this->failNotFound('notfound');
         }
 
-        madd('home','get','ok');
+        madd('home','get','ok',count($response['store_list']));
         return $this->respond($response);
     }
 
@@ -85,7 +63,14 @@ class Store extends \App\Controllers\BaseController{
         $expired_at=time()+min($cache_live_time,$till_end_of_hour);
 
         $StoreModel=model('StoreModel');
-        $store_list=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude]); 
+        $whitelistedStores=null;
+        /**
+         * Applying chameleon mode
+         */
+        if( session()->get('chameleonMode')=='on' ){
+            $whitelistedStores=explode(',',getenv('chameleon.whiteStores'));
+        }
+        $store_list=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude,'whitelistedStores'=>$whitelistedStores]); 
         /**
          * @todo rewrite notfound handling
          */

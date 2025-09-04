@@ -538,6 +538,9 @@ class StoreModel extends Model{
         if( $filter['offset']??0 ){
             $LocationModel->offset($filter['offset']);
         }
+        if( $filter['whitelistedStores']??0 ){
+            $LocationModel->whereIn('store_id',$filter['whitelistedStores']);
+        }
 
 
         $weekday=date('N')-1;
