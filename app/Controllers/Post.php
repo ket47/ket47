@@ -122,7 +122,7 @@ class Post extends \App\Controllers\BaseController{
     }
 
     public function listGet(){
-        if( session()->get('country_status')=='limited' ){
+        if( session()->get('chameleonMode')=='on' ){
             return $this->failNotfound('notfound');
         }
         $filter=[

@@ -52,7 +52,8 @@ class User extends \App\Controllers\BaseController{
             ],
             'other'=>[
                 'recurrentPaymentAllow'=>1,
-                'sbpPaymentAllow'=>1
+                'sbpPaymentAllow'=>1,
+                'chameleonMode'=>session()->get('chameleonMode')
             ]
         ];
         return $this->respond($settings);

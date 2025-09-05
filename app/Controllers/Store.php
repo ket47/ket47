@@ -48,7 +48,7 @@ class Store extends \App\Controllers\BaseController{
             return $this->failNotFound('notfound');
         }
 
-        madd('home','get','ok',count($response['store_list']));
+        madd('home','get','ok',null,"Σ:(".count($response['store_list']).")");
         return $this->respond($response);
     }
 
@@ -118,16 +118,16 @@ class Store extends \App\Controllers\BaseController{
         return $list;
     }
 
-    public function primaryNearGet(){
-        $location_id=$this->request->getVar('location_id');
-        $StoreModel=model('StoreModel');
-        $result=$StoreModel->primaryNearGet(['location_id'=>$location_id]);
-        $result=$this->appStoreFilter([$result])[0]??null;
-        if( $result=='not_found' ){
-            return $this->failNotFound($result);
-        }
-        return $this->respond($result);
-    }
+    // public function primaryNearGet(){
+    //     $location_id=$this->request->getVar('location_id');
+    //     $StoreModel=model('StoreModel');
+    //     $result=$StoreModel->primaryNearGet(['location_id'=>$location_id]);
+    //     $result=$this->appStoreFilter([$result])[0]??null;
+    //     if( $result=='not_found' ){
+    //         return $this->failNotFound($result);
+    //     }
+    //     return $this->respond($result);
+    // }
     /////////////////////////////////////////////////////
     //ITEM HANDLING SECTION
     /////////////////////////////////////////////////////
