@@ -368,11 +368,13 @@ class OrderStageDeliveryScript{
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
+
         $context=[
             'order'=>$order,
             'order_data'=>$order_data,
             'store'=>$store,
-            'customer'=>$customer
+            'customer'=>$customer,
+            'user_agent'=>session()->get('user_agent')
         ];
         $notifications=[];
         $notifications[]=(object)[

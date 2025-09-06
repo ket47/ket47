@@ -2,6 +2,10 @@
 
 Покупатель <b><?=$customer->user_name??'-'?></b> +<?=$customer->user_phone??'-'?> 
 <i><?=$customer->location_main->location_address??'-'?></i>
+<?php if($user_agent): ?>
+
+<?=$user_agent['os']?> <b><?=$user_agent['ver']?></b> <?=$user_agent['ref']?>
+<?php endif; ?>
 <?php if($order_data->finish_plan_scheduled??0):?>
 
 ⏰ Запланирован <?=date('d.m.Y',$order_data->finish_plan_scheduled)?>  

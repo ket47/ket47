@@ -415,6 +415,12 @@ class User extends \App\Controllers\BaseController{
 
     private function signInTokenSave( $owner_id ){
         $agent = $this->request->getUserAgent();
+        $userAgent=[
+            'os'=>$agent->getPlatform(),
+            'ver'=>$_SERVER['HTTP_X_VER']??'notset',
+            'ref'=>$agent->getReferrer()
+        ];
+        session()->set('user_agent',$userAgent);
 
         $TokenModel=model('TokenModel');
 
