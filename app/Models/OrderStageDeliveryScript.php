@@ -369,17 +369,12 @@ class OrderStageDeliveryScript{
         $store=$StoreModel->itemGet($order->order_store_id);
         $customer=$UserModel->itemGet($order->owner_id);
 
-        $userAgent=[
-            'os'=>(session()->get('token_data')->token_device??'-'),
-            'ver'=>$_SERVER['HTTP_X_VER']??'notset'
-        ];
-
         $context=[
             'order'=>$order,
             'order_data'=>$order_data,
             'store'=>$store,
             'customer'=>$customer,
-            'user_agent'=>$userAgent
+            'user_agent'=>session()->get('user_agent')
         ];
         $notifications=[];
         $notifications[]=(object)[

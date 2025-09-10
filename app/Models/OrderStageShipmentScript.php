@@ -431,7 +431,8 @@ class OrderStageShipmentScript{
             'order'=>$order,
             'order_data'=>$order_data,
             'store'=>$store,
-            'customer'=>$customer
+            'customer'=>$customer,
+            'user_agent'=>session()->get('user_agent')
         ];
         $notifications=[];
         $notifications[]=(object)[
