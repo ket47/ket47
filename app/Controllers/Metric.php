@@ -29,6 +29,16 @@ class Metric extends \App\Controllers\BaseController{
         return $this->fail(0);
     }
     
+    public function itemActCreate(){
+        $group='UI';
+        $type=$this->request->getPost('type');
+        $result=$this->request->getPost('result');
+        $target_id=$this->request->getPost('target_id');
+        $description=$this->request->getPost('description');
+
+        madd( $group, $type, $result, $target_id, $description );
+    }
+
     public function itemUpdate(){
         return false;
     }
@@ -62,8 +72,10 @@ class Metric extends \App\Controllers\BaseController{
         'authin' => '🚶➡️ Вход',
         'authup' => '➕👨 Регистрация',
         'authout' => '⬅️🚶 Выход',
-        'ordercreate' => '🛒 (Оформление)',
-        'orderstart' => '🛒 (В обработке)',
+        'UIcartCreate' => '🛒 Корзина',
+        'UIcartEntry' => '➕🛒 ',
+        'ordercreate' => '💳 Оформление',
+        'orderstart' => '🛍️ Заказ',
         'searchget' => '🔎',
         'locationswitch' => '🔄 Адрес' 
     ];
