@@ -370,7 +370,7 @@ class OrderStageDeliveryScript{
         $customer=$UserModel->itemGet($order->owner_id);
 
         $userAgent=[
-            'os'=>session()->get('token_data')->token_device??'?',
+            'os'=>(session()->get('token_data')->token_device??'-'),
             'ver'=>$_SERVER['HTTP_X_VER']??'notset'
         ];
 
