@@ -32,7 +32,7 @@ class Cardacquirer extends \App\Controllers\BaseController{
         if( !in_array($payment_card_acquirer,['AcquirerUniteller','AcquirerUnitellerSBP']) ){
             return $this->fail('unknown_acquirer');
         }
-        pl($_REQUEST);
+        //pl($_REQUEST);
         $Acquirer=\Config\Services::acquirer(true,$payment_card_acquirer);
         $result=$Acquirer->statusParse($this->request);
         if( $result=='unauthorized' ){

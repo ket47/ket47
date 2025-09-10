@@ -27,6 +27,14 @@ class CashierKitOnline{
         }
         $order_sum_calculated=0;
         $discount_modifier=1;
+        /**
+         * If discount is bigger than sum_product then substract from delivery sum
+         */
+        if($order_all->order_sum_promo>$order_all->order_sum_product){
+            $new_order_sum_promo=$order_all->order_sum_product-1;//products costs at least 1rub
+            $order_all->order_sum_delivery=$order_all->order_sum_delivery-($order_all->order_sum_promo-$new_order_sum_promo);
+            $order_all->order_sum_promo=$new_order_sum_promo;
+        }
         if($order_all->order_sum_promo>0){
             $discount_modifier=(1-$order_all->order_sum_promo/$order_all->order_sum_product);
         }
