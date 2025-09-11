@@ -473,7 +473,7 @@ class StoreModel extends Model{
         $delivery_sweet_start_hour=$PrefModel->itemGet('delivery_sweet_start_hour','pref_value');
         $delivery_sweet_finish_hour=$PrefModel->itemGet('delivery_sweet_finish_hour','pref_value');
         $now_hour=date("H");
-        if( $now_hour < $delivery_sweet_start_hour && $now_hour >= $delivery_sweet_finish_hour ){
+        if( $now_hour > $delivery_sweet_start_hour && $now_hour >= $delivery_sweet_finish_hour ){
             return 1;
         }
         $delivery_sweet_ratio=$PrefModel->itemGet('delivery_sweet_ratio','pref_value');
