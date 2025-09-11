@@ -102,6 +102,12 @@
         'customer_start_timeout_min'=>          ['Автосброс Статусов (минут)','На обработке-Отказ поставщика'],
         'delivery_no_courier_timeout_min'=>     ['Автосброс Статусов (минут)','Собран-Курьер не найден'],
         'delivery_finish_timeout_min'=>         ['Автосброс Статусов (минут)','Доставлен-Завершен'],
+
+
+
+        'delivery_sweet_start_hour'=>                 ['Сладкие часы доставка','Начало'],
+        'delivery_sweet_finish_hour'=>                ['Сладкие часы доставка','Конец'],
+        'delivery_sweet_ratio'=>                      ['Сладкие часы доставка','Скидка %'],
     ];
     foreach( $pref_map as $pref_name=>$pref){
         $pref_map[$pref_name][2]='';

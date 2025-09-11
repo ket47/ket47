@@ -447,7 +447,37 @@ class StoreModel extends Model{
             $this->orderBy("delivery_allow ASC");
         }
         $this->orderBy("card_allow DESC");
-        return $this->get()->getResult();
+        $tariffs=$this->get()->getResult();
+        return $this->tarffSweetModificator($tariffs);
+    }
+
+    private function tarffSweetModificator($tariffs){
+        $sweet_ratio=$this->tarffSweetRatioGet();
+        if( $sweet_ratio==1 ){
+            return $tariffs;
+        }
+        foreach($tariffs as $tariff){
+            if( empty($tariff->delivery_allow) ){
+                continue;
+            }
+            $tariff->delivery_cost=round($tariff->delivery_cost*$sweet_ratio);
+        }
+        return $tariffs;
+    }
+
+    private function tarffSweetRatioGet(){
+        /**
+         * TMP patch
+         */
+        $PrefModel=model('PrefModel');
+        $delivery_sweet_start_hour=$PrefModel->itemGet('delivery_sweet_start_hour','pref_value');
+        $delivery_sweet_finish_hour=$PrefModel->itemGet('delivery_sweet_finish_hour','pref_value');
+        $now_hour=date("H");
+        if( $now_hour < $delivery_sweet_start_hour && $now_hour >= $delivery_sweet_finish_hour ){
+            return 1;
+        }
+        $delivery_sweet_ratio=$PrefModel->itemGet('delivery_sweet_ratio','pref_value');
+        return (100-$delivery_sweet_ratio)/100;
     }
 
     public function tariffRuleDeliveryCostGet( $store_id ){//this function is messy OMG
@@ -456,7 +486,8 @@ class StoreModel extends Model{
         $this->where('delivery_allow',1);
         $delivery_option=$this->tariffRuleListGet($store_id,'delivery_by_courier_first');
         if( isset($delivery_option[0]) ){
-            return $delivery_option[0]->order_sum_delivery;
+            $sweet_ratio=$this->tarffSweetRatioGet();
+            return $delivery_option[0]->order_sum_delivery*$sweet_ratio;
         }
         return 0;
     }
