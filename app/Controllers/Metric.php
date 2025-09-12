@@ -21,6 +21,13 @@ class Metric extends \App\Controllers\BaseController{
         $metricsHeader->device_is_mobile= $ua->isMobile();
         $metricsHeader->device_platform=  $ua->getPlatform();
 
+        $userAgent=[
+            'os'=>$ua->getPlatform(),
+            'ver'=>$_SERVER['HTTP_X_VER']??'notset',
+            'ref'=>$ua->getReferrer()
+        ];
+        session()->set('user_agent',$userAgent);
+
         $MetricModel=model('MetricModel');
         $metricsHeaderId=$MetricModel->itemSave($metricsHeader);
         if($metricsHeaderId??0){

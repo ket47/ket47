@@ -17,13 +17,6 @@ class User extends \App\Controllers\BaseController{
         $UserModel=model('UserModel');
         $user=$UserModel->itemGet($user_id,$mode);
 
-        $agent = $this->request->getUserAgent();
-        $userAgent=[
-            'os'=>$agent->getPlatform(),
-            'ver'=>$_SERVER['HTTP_X_VER']??'notset',
-            'ref'=>$agent->getReferrer()
-        ];
-        session()->set('user_agent',$userAgent);
         
         return $this->respond($user);
     }

@@ -58,7 +58,7 @@ class Product extends \App\Controllers\BaseController{
         $limit=$this->request->getPost('limit');
         $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
         if( !is_array($storeCache['store_list_ids']??null) ){
-            madd('product','get','error',null,'listNearGet notfound');
+            madd('product','get','error',null,'randomProducts notfound');
             return $this->failNotFound('notfound');
         }
 
