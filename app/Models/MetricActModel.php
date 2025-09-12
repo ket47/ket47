@@ -100,6 +100,7 @@ class MetricActModel extends Model{
             metric_act_list.act_description,
             metric_act_list.created_at,
             ml.come_referrer,
+            ml.come_media_id,
             ml.device_platform,
             ml.created_at AS session_start,
             ul.user_id,

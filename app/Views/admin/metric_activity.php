@@ -27,7 +27,9 @@
             <span style="margin: 5px 0; font-size: 13px; color: gray"> <?= esc($data['device_platform']) ?> </span>
             <?php endif; ?>
 
-            
+            <?php if(!empty($data['come_media_id'])) : ?>
+            <span style="margin: 5px 0; font-size: 13px; color: gray"> ⬜<?= esc($data['come_media_id']) ?> </span>
+            <?php endif; ?>
             
             <?php if(!empty($data['come_referrer'])) : ?>
             <span style="margin: 5px 0; font-size: 12px; color: gray; "> 🌐<?= esc($data['come_referrer']) ?> </span>

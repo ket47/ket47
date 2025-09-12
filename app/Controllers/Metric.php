@@ -124,6 +124,7 @@ class Metric extends \App\Controllers\BaseController{
                 'user_avatar' => $this->user_group_emoji[$row['group_type']] ?? '', 
                 'user_orders' => $row['user_orders'],
                 'come_referrer' => $come_referrer,
+                'come_media_id'=> $row['come_media_id'],
                 'session_start' => $row['created_at'],
                 'device_platform' => $this->device_platform[$row['device_platform']] ?? $row['device_platform'],
                 'actions' => []
