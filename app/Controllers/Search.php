@@ -49,10 +49,14 @@ class Search extends \App\Controllers\BaseController{
     public function categoryListGet(){
         $parent_id=(int) $this->request->getVar('parent_id');
         $ProductGroupModel=model('ProductGroupModel');
-        $ProductGroupModel->where('group_parent_id',$parent_id);
-        $ProductGroupModel->join('image_list',"image_holder='product_group_list' AND image_holder_id=group_id AND is_main=1",'left');
-        $ProductGroupModel->select('group_id,group_name,image_hash');
-        $ProductGroupModel->orderBy('group_name');
+        $ProductGroupModel->where('product_group_list.group_parent_id',$parent_id);
+        $ProductGroupModel->join('image_list',"image_holder='product_group_list' AND image_holder_id=product_group_list.group_id AND is_main=1",'left');
+        $ProductGroupModel->join('product_group_list pgl2',"pgl2.group_parent_id=product_group_list.group_id");
+        $ProductGroupModel->join('product_group_member_list pgml',"pgl2.group_id=pgml.group_id");
+        
+        $ProductGroupModel->select('product_group_list.group_id,product_group_list.group_name,image_hash,COUNT(*) product_count');
+        $ProductGroupModel->orderBy('product_count','DESC');
+        $ProductGroupModel->groupBy('product_group_list.group_id');
         $result=$ProductGroupModel->findAll();
         if( !$result ){
             return $this->failNotFound();
