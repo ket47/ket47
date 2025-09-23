@@ -16,6 +16,7 @@ class TariffModel extends SecureModel{
         'card_fee',
         'cash_allow',
         'cash_fee',
+        'cash_back',
 
         'delivery_allow',
         'delivery_fee',

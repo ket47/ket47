@@ -52,7 +52,7 @@ class Store extends \App\Controllers\BaseController{
         return $this->respond($response);
     }
 
-    private function listNearCache( int $location_id=null, float $location_latitude=null, float $location_longitude=null ){
+    private function listNearCache( ?int $location_id=null, ?float $location_latitude=null, ?float $location_longitude=null ){
         $cachehash=md5("$location_id,$location_latitude,$location_longitude");
         $storenearcache=session()->get('storenearcache')??[];
         if( isset($storenearcache[$cachehash]['expired_at']) && $storenearcache[$cachehash]['expired_at']>time() ){

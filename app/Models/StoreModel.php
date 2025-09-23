@@ -50,7 +50,7 @@ class StoreModel extends Model{
         'store_description',
         'store_phone',
         'store_email',
-        'store_tax_num',
+        //'store_tax_num',
         'store_company_name',
         'store_time_preparation',
         'store_minimal_order',
@@ -440,7 +440,7 @@ class StoreModel extends Model{
         $this->where('tariff_list.is_disabled',0);
         $this->where('order_allow',1);
         $this->where('is_shipment',0);
-        $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost,delivery_fee,order_cost,order_fee,card_fee,cash_fee,credit_fee");
+        $this->select("tariff_id,card_allow,cash_allow,delivery_allow,delivery_cost,delivery_fee,order_cost,order_fee,card_fee,cash_fee,credit_fee,cash_back");
         if( $tariff_order_mode=='delivery_by_courier_first' ){
             $this->orderBy("delivery_allow DESC");
         } else {
@@ -908,8 +908,24 @@ class StoreModel extends Model{
         $ReactionModel->having("total_reactions>$minimum_reaction_count",null,false);
         $reacts=$ReactionModel->get()->getResult();
 
+        /**
+         * Cashback
+         */
+        $TariffModel=model('TariffModel');
+        if($store_id){
+            $TariffModel->where('store_id',$store_id);
+        }
+        $TariffModel->join('tariff_member_list','tariff_id');
+
+        $TariffModel->select("store_id,'cashback' perk_type,cash_back perk_value");
+        $TariffModel->where('cash_back>',0);
+        $tariff=$TariffModel->get()->getResult();
+
+        /**
+         * Composite
+         */
         $def_expired_at=date('Y-m-d H:i:s',time()+24*60*60);
-        $perks=array_merge($prods,$halals,$reacts);
+        $perks=array_merge($prods,$halals,$reacts,$tariff);
         $PerkModel->transStart();
         foreach( $perks as $row ){
             $perk=[

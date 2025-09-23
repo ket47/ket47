@@ -646,6 +646,11 @@ class CourierModel extends Model{
             'message_transport'=>'telegram',
             'message_subject'=>"Нет доступного курьера",
             'template'=>'messages/events/on_delivery_not_found_email.php',
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1
+                ]
+            ],
             'context'=>$context
         ];
         $notification_task=[

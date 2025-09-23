@@ -105,9 +105,12 @@
 
 
 
-        'delivery_sweet_start_hour'=>                 ['Сладкие часы доставка','Начало'],
-        'delivery_sweet_finish_hour'=>                ['Сладкие часы доставка','Конец'],
-        'delivery_sweet_ratio'=>                      ['Сладкие часы доставка','Скидка %'],
+        'delivery_sweet_start_hour'=>           ['Сладкие часы доставка','Начало'],
+        'delivery_sweet_finish_hour'=>          ['Сладкие часы доставка','Конец'],
+        'delivery_sweet_ratio'=>                ['Сладкие часы доставка','Скидка %'],
+
+
+        'delivery_turn_off'=>                   ['Отключить доставку','Отключить'],
     ];
     foreach( $pref_map as $pref_name=>$pref){
         $pref_map[$pref_name][2]='';

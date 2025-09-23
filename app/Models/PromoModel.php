@@ -206,6 +206,8 @@ class PromoModel extends Model{
             $this->where('is_used',0);
             $this->orderBy('expired_at');
         }
+
+        $this->where('is_summable',0);
         $this->permitWhere('r');
         return $this->get()->getResult();
 
