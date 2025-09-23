@@ -117,6 +117,9 @@ class ProductModel extends Model{
             $product->updated_user=$UserModel->select('user_name,user_phone')->where('user_id',$product->updated_by)->get()->getRow();
         }
         $product->store=$this->itemStoreMetaGet($product->store_id);
+
+        $PerkModel=model('PerkModel');
+        $product->perks=$PerkModel->listGet('product',$product_id);
         return $product;
     }
     
@@ -226,7 +229,12 @@ class ProductModel extends Model{
         }
         $product->updated_by=session()->get('user_id');
         $this->update($product->product_id,$product);
-        return $this->db->affectedRows()?'ok':'idle';
+        $result=$this->db->affectedRows()?'ok':'idle';
+
+        if($product->product_promo_finish??$product->product_promo_start??$product->product_promo_price??$product->product_price??null){
+            $this->nightlyCalculateBonusGain( $product->product_id );
+        }
+        return $result;
     }
     
     public function itemUpdateGroup($product_id,$group_id,$is_joined){
@@ -664,6 +672,8 @@ class ProductModel extends Model{
         $this->nightlyCalculateNew();
         $this->nightlyCalculatePromo();
         $this->nightlyCalculateReaction();
+        $this->nightlyCalculateBonusGain();
+        $this->nightlyCalculateComment();
     }
 
     private function nightlyCalculateNew(){
@@ -744,6 +754,34 @@ class ProductModel extends Model{
         $PerkModel->transComplete();
     }
 
+    private function nightlyCalculateComment(){
+        $this->select('product_id,COUNT(*) comment_count');
+        $this->join('reaction_tag_list','tag_id=product_id');
+        $this->join('reaction_list','member_id=reaction_id');
+        $this->where('reaction_comment IS NOT NULL');
+        $this->groupBy('product_id');
+        $rows=$this->get()->getResult();
+        $expired_at=date("Y-m-d H:i:s",time()+25*60*60);//one day plus hour
+
+        $PerkModel=model('PerkModel');
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_comment');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_comment',
+                'perk_value'=>$row->comment_count,
+                'expired_at'=>$expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
+
     private function nightlyCalculateTopSale(){
         $top_percentage=10/100;//top 10%
         $started_span=7;
@@ -773,6 +811,42 @@ class ProductModel extends Model{
                 'perk_holder'=>'product',
                 'perk_holder_id'=>$row->product_id,
                 'perk_type'=>'product_top',
+                'expired_at'=>$expired_at,
+            ];
+            $PerkModel->itemCreate($perk);
+        }
+        $PerkModel->transComplete();
+    }
+
+    private function nightlyCalculateBonusGain( ?int $product_id=null ){
+        $expired_at=date("Y-m-d H:i:s",time()+25*60*60);//one day plus hour
+        $TariffModel=model('TariffModel');
+        $PerkModel=model('PerkModel');
+        
+        if($product_id){
+            $TariffModel->where('product_id',$product_id);
+            $PerkModel->where('perk_holder_id',$product_id);
+        }
+
+        $TariffModel->join('tariff_member_list','tariff_id');
+        // ROUND(/100% /10rub)*10rub
+        $TariffModel->select("product_id,ROUND(cash_back*product_price/1000)*10 perk_value");
+        $TariffModel->join('product_list','store_id');
+        $TariffModel->where('cash_back>',0);
+        $TariffModel->where("NOT (IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW()) ");
+        $rows_gain=$TariffModel->get()->getResult();
+
+        $PerkModel->where('perk_holder','product');
+        $PerkModel->where('perk_type','product_bonusgain');
+        $PerkModel->delete();
+
+        $PerkModel->transStart();
+        foreach( $rows_gain as $row ){
+            $perk=[
+                'perk_holder'=>'product',
+                'perk_holder_id'=>$row->product_id,
+                'perk_type'=>'product_bonusgain',
+                'perk_value'=>$row->perk_value,
                 'expired_at'=>$expired_at,
             ];
             $PerkModel->itemCreate($perk);
