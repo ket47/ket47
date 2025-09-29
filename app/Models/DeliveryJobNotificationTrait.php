@@ -45,6 +45,16 @@ trait DeliveryJobNotificationTrait{
      * should be called from cronjob
      */
     public function itemNextRemind(){ 
+
+
+
+        $this->offlineShiftSmsBackup();
+
+
+
+
+
+
         $freeCouriers=$this->itemCourierSummaryGet(['is_free'=>1,'is_expected'=>1]);
         if(!$freeCouriers){
             return false;
@@ -57,6 +67,69 @@ trait DeliveryJobNotificationTrait{
             $this->itemNextNotify($awaitedNext,$free->awaited_count);
         }
         return true;
+    }
+
+    public function offlineShiftSmsBackup(){
+        $CourierShiftModel=model('CourierShiftModel');
+        $filter=(object)[
+            'shift_status'=>'open',
+            'updated_before'=>date('Y-m-d H:i:s',time()-10*60)//10 min
+        ];
+        $CourierShiftModel->allowRead();
+        $shifts=$CourierShiftModel->listGet($filter);
+        if( !$shifts ){
+            return false;
+        }
+        //only stalled shifts
+        foreach($shifts as $shift){
+            $this->offlineShiftSmsBackupSend( $shift );
+        }
+    }
+    private function offlineShiftSmsBackupSend( $shift ){
+        $this->where('courier_id',$shift->courier_id);
+        $this->join('order_list','order_id');
+        $this->select("job_name,order_data->>'$.info_for_courier' info");
+        $this->orderBy('start_plan');
+        $jobs=$this->get()->getResult();
+
+
+
+        $route_text='';
+        $i=1;
+        foreach($jobs as $job){
+            $info=json_decode($job->info);
+            $route_text.="\n{$i})".substr($job->job_name,0,4);
+            $route_text.="\n{$info->supplier_phone} {$info->supplier_location_address} ";
+            $route_text.="\n{$info->customer_phone} {$info->customer_location_address} ";
+            $i++;
+        }
+
+
+
+        $file_message_path='../writable/cache/job_route_hash_'.$shift->owner_id.'.txt';
+        $route_hash=md5($route_text);
+        $old_route_hash=@file_get_contents($file_message_path);
+        if($route_hash==$old_route_hash){
+            $route_text.="\n\nSAME";
+            return;
+        }
+        file_put_contents($file_message_path,$route_hash);
+
+        $message=(object)[
+            'message_reciever_id'=>41,
+            'message_transport'=>'telegram',//
+            'message_text'=>$route_text,
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1,
+                ]
+            ]
+        ];
+        jobCreate([
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                ]
+        ]);
     }
 
     /**

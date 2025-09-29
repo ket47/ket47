@@ -23,7 +23,7 @@ class PromoModel extends Model{
 
     protected $useSoftDeletes = false;
     protected $promo_lifetime=14*24*60*60;
-    protected $promo_share=50;
+    protected $promo_share=20;
 
     public function setLifetime( int $lifetime_day ){
         if( $lifetime_day>100 || $lifetime_day<1 ){
@@ -230,7 +230,7 @@ class PromoModel extends Model{
         $child_value=222;
         $child_name="За приглашённого друга: {$new_user_name}";
 
-        $promo_voucher_count=3;
+        $promo_voucher_count=1;
         $this->transBegin();
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
@@ -278,5 +278,24 @@ class PromoModel extends Model{
                 ]
         ];
         jobCreate($notification_task);
+    }
+
+    public function bonusOrderCalculate( int $order_id ){
+        $EntryModel=model('EntryModel');
+        $EntryModel->permitWhere('r');
+        $EntryModel->where('order_id',$order_id);
+        $EntryModel->join('perk_list',"perk_holder='product' AND perk_holder_id=product_id AND perk_type='product_bonusgain'");
+        $EntryModel->select("SUM(entry_quantity*perk_value) bonus_gain");
+        $EntryModel->select("SUM((entry_price-1)*entry_quantity) bonus_spend");
+        return $EntryModel->get()->getRow();
+    }
+
+    public function bonusTotalGet( $user_id ){
+        $this->permitWhere('r');
+        $this->where('owner_id',$user_id);
+        $this->where('is_summable',1);
+        $this->where('expired_at<NOW()');
+        $this->select('SUM(promo_value) bonus_total');
+        return $this->get()->getRow('bonus_total');
     }
 }

@@ -413,6 +413,12 @@ class Order extends \App\Controllers\BaseController {
             'active',
             'count'
         );
+
+        $data->Promo_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
+        if( $data->Promo_bonus->bonus_spend??null ){
+            $data->Promo_bonus->bonus_total=$PromoModel->bonusTotalGet( $order->owner_id )??0;
+            $data->Promo_bonus->bonus_usable=min($data->Promo_bonus->bonus_spend,$data->Promo_bonus->bonus_total);
+        }
         /**
          * ROUTE PLANNING AND SCHEDULING ONLY FOR DELIVERY BY COURIER (FOR NOW)
          */

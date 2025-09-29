@@ -206,7 +206,7 @@ class OrderStageDeliveryScript{
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $notifications=[];
         $notifications[]=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/events/on_user_cart_left_sms.php',
             'context'=>[],
@@ -723,7 +723,7 @@ class OrderStageDeliveryScript{
         $order=$this->OrderModel->itemGet($order_id,'basic');
         $cust_sms=(object)[
             'message_reciever_id'=>$order->owner_id,
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram,email',
             'template'=>'messages/order/leave_comment.php',
             'context'=>[]
         ];
@@ -1289,7 +1289,7 @@ class OrderStageDeliveryScript{
             'context'=>$context
         ];
         $store_sms=(object)[
-            'message_transport'=>'message',
+            'message_transport'=>'push,telegram',
             'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
             'template'=>'messages/order/on_customer_start_STORE_sms.php',
             'context'=>$context

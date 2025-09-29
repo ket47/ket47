@@ -112,16 +112,13 @@ class Promo extends \App\Controllers\BaseController{
 
 
 
-    public function infoGet(){
+    public function orderBonusCalculate(){
         $order_id=$this->request->getPost('order_id');
-
-
         $userStats=[];
-
         $PromoModel=model('PromoModel');
         if( $order_id ){
-            $userStats['orderGainSpend']=$PromoModel->orderGainSpend($order_id);
+            $userStats['orderBonusGain']=$PromoModel->bonusOrderCalculate($order_id);
         }
-        
+        return $this->respond($userStats);
     }
 }

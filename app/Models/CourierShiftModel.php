@@ -189,6 +189,9 @@ class CourierShiftModel extends SecureModel{
         if( $filter->shift_status??null ){
             $this->where('shift_status',$filter->shift_status);
         }
+        if( $filter->updated_before??null ){//filterout stale shifts
+            $this->where("updated_at<'{$filter->updated_before}'");
+        }
         $this->select("
             shift_id,
             courier_id,

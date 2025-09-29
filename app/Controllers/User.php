@@ -255,7 +255,7 @@ class User extends \App\Controllers\BaseController{
     private function signUpPromoCreate($new_user_id){
         $inviter_user_id=$this->request->getPost('inviter_user_id');
         $PromoModel=model('PromoModel');
-        //$PromoModel->listCreate($new_user_id,$inviter_user_id??0);        
+        $PromoModel->listCreate($new_user_id,$inviter_user_id??0);        
     }
 
     private function signUpExtradata($new_user_id){
@@ -565,8 +565,37 @@ class User extends \App\Controllers\BaseController{
         if( !$verification || $verification=='verification_target_invalid' ){
             return $this->fail('verification_target_invalid');
         }
+
+        if( !isset($_SERVER["HTTP_X_SID"]) || !isset($_SERVER["HTTP_X_VER"]) ){
+            $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
+            foreach($fields as $field){
+                $info[$field]=$_SERVER[$field]??'--';
+            }
+            pl($info);
+            return $this->respond('ok');
+        }
         if( !$verification || $verification=='verification_abuse' ){
-            return $this->fail('verification_abuse');
+            $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
+            foreach($fields as $field){
+                $info[$field]=$_SERVER[$field]??'--';
+            }
+            $abuse_text="VERIFICATION ABUSE $user_phone_cleared\n<pre>".json_encode($info).'</pre>';
+            $message=(object)[
+                'message_reciever_id'=>41,
+                'message_transport'=>'telegram',//
+                'message_text'=>$abuse_text,
+                'telegram_options'=>[
+                    'opts'=>[
+                        'disable_notification'=>1,
+                    ]
+                ]
+            ];
+            jobCreate([
+                'task_programm'=>[
+                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                    ]
+            ]);
+            return $this->fail('verification_already_sent');
         }
 
         $timeout=30;//send voice after 30 sec if not verified
@@ -585,12 +614,6 @@ class User extends \App\Controllers\BaseController{
         $sms=\Config\Services::sms();
         $response=$sms->send($user_phone_cleared,$sms_text);
         if($response=='ok'){
-            return $this->respond('ok');
-        }
-
-        $sms=new \App\Libraries\SmsP1();
-        $ok=$sms->send($user_phone_cleared,$sms_text);
-        if( $ok ){
             return $this->respond('ok');
         }
         return $this->fail('verification_send_failed');
