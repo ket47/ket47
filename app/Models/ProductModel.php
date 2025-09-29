@@ -384,7 +384,7 @@ class ProductModel extends Model{
         }
         $this->select("product_id,product_parent_id,store_id,product_name,product_code,product_unit,product_weight,product_quantity,product_quantity_reserved,product_quantity_min,product_price,is_counted,product_list.is_disabled,is_hidden,validity,product_list.updated_at");
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price,product_net_price");
-        $this->select("image_hash,group_id,GROUP_CONCAT(perk_type) perk_types,GROUP_CONCAT(perk_value) perk_values");
+        $this->select("image_hash,group_id,GROUP_CONCAT(perk_type) perk_types,GROUP_CONCAT(IFNULL(perk_value,'')) perk_values");
         
         $this->permitWhere('r');
         $this->join('product_group_member_list','member_id=product_id','left');

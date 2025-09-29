@@ -193,7 +193,7 @@ class SearchModel extends SecureModel{
             product_price,
             is_counted
         ");
-        $this->select("store_id,image_hash");
+        $this->select("store_id,image_hash,GROUP_CONCAT(perk_type) perk_types,GROUP_CONCAT(IFNULL(perk_value,'')) perk_values");
         $this->select("$score score",false);
         $this->select("ROUND(IF(IFNULL(product_promo_price,0)>0 AND `product_price`>`product_promo_price` AND product_promo_start<NOW() AND product_promo_finish>NOW(),product_promo_price,product_price)) product_final_price");
         $this->join('product_group_member_list pgml','member_id=product_id','left');
