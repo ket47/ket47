@@ -255,7 +255,7 @@ class User extends \App\Controllers\BaseController{
     private function signUpPromoCreate($new_user_id){
         $inviter_user_id=$this->request->getPost('inviter_user_id');
         $PromoModel=model('PromoModel');
-        $PromoModel->listCreate($new_user_id,$inviter_user_id??0);        
+        //$PromoModel->listCreate($new_user_id,$inviter_user_id??0);        
     }
 
     private function signUpExtradata($new_user_id){
@@ -564,6 +564,9 @@ class User extends \App\Controllers\BaseController{
         $verification=$UserVerificationModel->itemCreate($user_phone_cleared,'phone');
         if( !$verification || $verification=='verification_target_invalid' ){
             return $this->fail('verification_target_invalid');
+        }
+        if( !$verification || $verification=='verification_abuse' ){
+            return $this->fail('verification_abuse');
         }
 
         $timeout=30;//send voice after 30 sec if not verified

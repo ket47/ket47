@@ -89,7 +89,7 @@ class Promo extends \App\Controllers\BaseController{
         $result=$PromoModel->listFilteredGet($filter);
 
 
-        ql($PromoModel);
+
 
         if($result=='notfound'){
             return $this->failNotFound('notfound');
@@ -107,5 +107,21 @@ class Promo extends \App\Controllers\BaseController{
     
     public function listDelete(){
         return false;
+    }
+
+
+
+
+    public function infoGet(){
+        $order_id=$this->request->getPost('order_id');
+
+
+        $userStats=[];
+
+        $PromoModel=model('PromoModel');
+        if( $order_id ){
+            $userStats['orderGainSpend']=$PromoModel->orderGainSpend($order_id);
+        }
+        
     }
 }

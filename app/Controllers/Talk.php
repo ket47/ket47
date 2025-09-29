@@ -183,5 +183,17 @@ class Talk extends \App\Controllers\BaseController{
     public function listDelete(){
         return false;
     }
+
+
+
+
+    public function listRoomEntriesGet(){
+        $room_id=$this->request->getPost('room_id');
+        $after_entry_id=$this->request->getPost('after_entry_id');
+        $limit=$this->request->getPost('limit');
+
+
+        
+    }
  
 }

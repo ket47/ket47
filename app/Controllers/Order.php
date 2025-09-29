@@ -419,6 +419,9 @@ class Order extends \App\Controllers\BaseController {
         foreach( $data->Store_deliveryOptions as $i=>$option){
             if( $option['deliveryByCourier'] ){
                 $data->Store_deliveryOptions[$i]['routePlan']=$this->routePlanGet($order,$data->location_start->location_id,$data->location_finish->location_id);
+                // if( $data->Store_deliveryOptions[$i]['tariff']->cash_back>0 ){
+                //     $bonusTotal=$PromoModel->bonusGainGet($order->order_id,$data->Store_deliveryOptions[$i]['tariff']->cash_back);
+                // }
             }
         }
         return $data;
