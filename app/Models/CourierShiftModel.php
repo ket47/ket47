@@ -18,6 +18,7 @@ class CourierShiftModel extends SecureModel{
         'last_longitude',
         'last_latitude',
         'closed_at',
+        'updated_at',
         ];
 
     protected $useSoftDeletes = true;

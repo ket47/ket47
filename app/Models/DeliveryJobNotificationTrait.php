@@ -98,7 +98,7 @@ trait DeliveryJobNotificationTrait{
         $i=1;
         foreach($jobs as $job){
             $info=json_decode($job->info);
-            $route_text.="\n{$i})".substr($job->job_name,0,4);
+            $route_text.="\n{$i})".substr($job->job_name,0,5);
             $route_text.="\n{$info->supplier_phone} {$info->supplier_location_address} ";
             $route_text.="\n{$info->customer_phone} {$info->customer_location_address} ";
             $i++;
@@ -115,9 +115,15 @@ trait DeliveryJobNotificationTrait{
         }
         file_put_contents($file_message_path,$route_hash);
 
-        $message=(object)[
-            'message_reciever_id'=>41,
-            'message_transport'=>'telegram',//
+
+        $transport="telegram";
+        $updated_before=date('Y-m-d H:i:s',time()-15*60);
+        if($shift->updated_at<$updated_before){
+            $transport.=",sms";
+        }
+        $messages[]=(object)[
+            'message_reciever_id'=>"41,$shift->owner_id",
+            'message_transport'=>$transport,//
             'message_text'=>$route_text,
             'telegram_options'=>[
                 'opts'=>[
@@ -127,7 +133,7 @@ trait DeliveryJobNotificationTrait{
         ];
         jobCreate([
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ $messages ] ]
                 ]
         ]);
     }
