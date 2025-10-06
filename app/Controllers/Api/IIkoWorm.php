@@ -32,7 +32,7 @@ class IIkoWorm extends \App\Controllers\BaseController{
         }
         $menu=$this->apiMenuGet($organizationId);
         //p($menu);
-        $productList=$this->filter($menu->products,1);
+        $productList=$this->filter($menu->products??[],1);
         return $this->import($productList);
     }
 
