@@ -56,9 +56,9 @@ class Store extends \App\Controllers\BaseController{
         $cachehash=md5("$location_id,$location_latitude,$location_longitude");
         $storenearcache=session()->get('storenearcache')??[];
         if( isset($storenearcache[$cachehash]['expired_at']) && $storenearcache[$cachehash]['expired_at']>time() ){
-            return $storenearcache[$cachehash];
+            //return $storenearcache[$cachehash];
         }
-        $cache_live_time=15*60;//minutes
+        $cache_live_time=10*60;//minutes
         $till_end_of_hour=(60-date('i'))*60-1;//till the hh:59:59 when store can close
         $expired_at=time()+min($cache_live_time,$till_end_of_hour);
 

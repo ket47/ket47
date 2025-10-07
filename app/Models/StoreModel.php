@@ -585,10 +585,25 @@ class StoreModel extends Model{
         $LocationModel->select("store_data->>'$.cache_groups' cache_groups");
         $LocationModel->select("store_id,store_name,store_time_preparation,image_hash,is_working");
         $LocationModel->select("store_time_opens_{$weekday} store_time_opens,store_time_opens_{$nextweekday} store_next_time_opens,store_time_closes_{$weekday} store_time_closes,store_time_closes_{$nextweekday} store_next_time_closes");
-        $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
-
-
-
+        /**
+         * Opossum mode
+         */
+        $CourierShiftModel=model('CourierShiftModel');
+        $deliveryIsReady=$CourierShiftModel->where('shift_status','open')->select('shift_id')->get()->getRow('shift_id');
+        if( !$deliveryIsReady ){
+            // $TariffMemberModel=model("TariffMemberModel");
+            // $TariffMemberModel->join('tariff_list','tariff_id');
+            // $TariffMemberModel->where('delivery_allow',0);
+            // $TariffMemberModel->select('store_id');
+            // $stores=$TariffMemberModel->get()->getResult();
+            // foreach( $stores as $store ){
+            //     $opossum_stores[]=$store->store_id;
+            // }
+            $LocationModel->select("is_working AND IFNULL(store_delivery_allow,0)=1 AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
+            $LocationModel->orderBy("store_delivery_allow=1",'DESC',0);
+        } else {
+            $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
+        }
         /**
          * @deprecated
          */
