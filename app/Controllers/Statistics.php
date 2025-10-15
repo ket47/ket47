@@ -128,6 +128,49 @@ class Statistics extends \App\Controllers\BaseController{
         return $this->respond($response);
     }
 
+    public function bonusParametersGet(){
+        $user_id=   (int) $this->request->getPost('user_id');
+        $point_span=(int) $this->request->getPost('point_span');
+        $point_num= (int) $this->request->getPost('point_num');
+
+        $logged_user_id=session()->get('user_id');
+        if($logged_user_id<1 || $logged_user_id!=$user_id && !sudo()){
+            return $this->failForbidden();
+        }
+
+        $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_bonus_parameters";
+        $tmp_create_sql="
+            CREATE TEMPORARY TABLE tmp_bonus_parameters AS (
+            SELECT
+                MAX(created_at) point_finish,
+                FLOOR(DATEDIFF(NOW(),created_at)/(:point_span:+0.001)) point_index,
+                SUM(IF(promo_value>0,promo_value,0)) bonus_gained,
+                SUM(IF(promo_value<0,promo_value,0)) bonus_spent
+            FROM
+                promo_list
+            WHERE
+                owner_id=:user_id:
+                AND is_summable=1
+                AND created_at>DATE_SUB(NOW(), INTERVAL :overall_span: DAY)
+            GROUP BY point_index
+            )";
+        $points_sql="SELECT * FROM tmp_bonus_parameters";
+        
+        $db = db_connect();
+        $db->query($tmp_drop_sql);
+        $db->query($tmp_create_sql, ['point_span'=> $point_span,'overall_span' => $point_span*$point_num,'user_id'=>$user_id]);
+
+        $PromoModel=model('PromoModel');
+        $bonus_total=$PromoModel->bonusTotalGet( $user_id );
+        $response=[
+            'head'=>[
+                'bonus_total'=>$bonus_total
+            ],
+            'body'=>$db->query($points_sql)->getResult()
+        ];
+        return $this->respond($response);
+    }
+
     public function totalOrderAnalysisGet(){
         $point_span=(int) $this->request->getPost('point_span');
         $point_num= (int) $this->request->getPost('point_num');
