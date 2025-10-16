@@ -110,7 +110,8 @@
         'delivery_sweet_ratio'=>                ['Сладкие часы доставка','Скидка %'],
 
 
-        'delivery_turn_off'=>                   ['Отключить доставку','Отключить'],
+        'shiftStartHour'=>                      ['Смена','Начало'],
+        'shiftEndHour'=>                        ['Смена','Конец'],
     ];
     foreach( $pref_map as $pref_name=>$pref){
         $pref_map[$pref_name][2]='';

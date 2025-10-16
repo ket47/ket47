@@ -24,6 +24,10 @@ class DeliveryJobPlan{
 
         $this->maxDistance=getenv('delivery.radius');
         $this->maxReach=$this->maxDistance*1.5;
+
+        $PrefModel=model('PrefModel');
+        $this->shiftStartHour=$PrefModel->itemGet('shiftStartHour','pref_value');
+        $this->shiftEndHour=$PrefModel->itemGet('shiftEndHour','pref_value');
     }
 
     public function routePlanGet( int $start_location_id, int $finish_location_id ):object{
