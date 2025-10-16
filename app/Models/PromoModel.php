@@ -17,6 +17,7 @@ class PromoModel extends Model{
         'promo_activator_id',
         'is_disabled',
         'is_used',
+        'is_summable',
         'expired_at',
         'owner_id'
         ];
@@ -230,7 +231,7 @@ class PromoModel extends Model{
         $child_value=222;
         $child_name="За приглашённого друга: {$new_user_name}";
 
-        $promo_voucher_count=1;
+        $promo_voucher_count=3;
         $this->transBegin();
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
@@ -294,7 +295,7 @@ class PromoModel extends Model{
         $this->permitWhere('r');
         $this->where('owner_id',$user_id);
         $this->where('is_summable',1);
-        $this->where('expired_at<NOW()');
+        $this->where('expired_at>NOW()');
         $this->select('SUM(promo_value) bonus_total');
         return $this->get()->getRow('bonus_total');
     }

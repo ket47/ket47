@@ -16,6 +16,7 @@ class OrderTransactionModel extends TransactionModel{
         $finalized=
                $this->orderFinalizeRefund($order_basic)
             && $this->orderFinalizeConfirm($order_basic)
+            && $this->orderFinalizeBonus($order_basic)
             && $this->orderFinalizeInvoice($order_basic)
             && $this->orderFinalizeSettle($order_basic,$order_data);
 
@@ -23,9 +24,10 @@ class OrderTransactionModel extends TransactionModel{
             $orderIsCanceled=$order_data->order_is_canceled??0;
             $refund=$this->orderFinalizeRefund( $order_basic);
             $confirm=$this->orderFinalizeConfirm($order_basic);
+            $bonus= $this->orderFinalizeBonus($order_basic);
             $invoice=$this->orderFinalizeInvoice($order_basic);
             $settle=$this->orderFinalizeSettle($order_basic,$order_data);
-            pl("order #$order_id Finalization FAILED orderIsCanceled:$orderIsCanceled || refund:$refund && confirm:$confirm && invoice:$invoice && settle:$settle",false);
+            pl("order #$order_id Finalization FAILED orderIsCanceled:$orderIsCanceled || refund:$refund && confirm:$confirm && bonus:$bonus && invoice:$invoice && settle:$settle",false);
             madd('order','finish','error',$order_id);
         }
         else {
@@ -193,6 +195,71 @@ class OrderTransactionModel extends TransactionModel{
         return true;
     }
 
+    private function orderFinalizeBonus($order_basic){//Handle bonus
+        $OrderModel=model('OrderModel');
+        $order_data=$OrderModel->itemDataGet($order_basic->order_id);
+        $skip=
+                ($order_data->finalize_bonus_done??0)
+            ||  !($order_data->bonus_mode??0);
+        if( $skip ){
+            return true;
+        }
+
+        $PromoModel=model('PromoModel');
+        $order_bonus=$PromoModel->bonusOrderCalculate( $order_basic->order_id );
+        /**
+         * Deleting all tmp lock promos
+         */
+        $PromoModel->where('promo_order_id',$order_basic->order_id)->delete();
+
+        if( $order_data->bonus_mode=='gain' && $order_bonus->bonus_gain>0 && !($order_data->order_is_canceled??0) ){
+            $promo=[
+                'owner_id'=>$order_basic->owner_id,
+                'promo_order_id'=>$order_basic->order_id,
+                'promo_value'=>$order_bonus->bonus_gain,
+                'promo_name'=>'Бонус за заказ №'.$order_basic->order_id,
+                'promo_share'=>100,
+                'is_summable'=>1,
+                'is_disabled'=>0,
+                'is_used'=>0,
+                'expired_at'=>date('Y-m-d H:i:s',strtotime("+6 months"))//6month
+            ];
+            $PromoModel->insert($promo);
+        } else 
+        if( $order_data->bonus_mode=='spend' && !($order_data->order_is_canceled??0) ){
+            $bonus_total=$PromoModel->bonusTotalGet( $order_basic->owner_id );
+            $bonus_usable=min($order_basic->order_sum_promo,$order_bonus->bonus_spend,$bonus_total);
+            $promo=[
+                'owner_id'=>$order_basic->owner_id,
+                'promo_order_id'=>$order_basic->order_id,
+                'promo_value'=>-$bonus_usable,
+                'is_summable'=>1,
+                'is_disabled'=>0,
+                'expired_at'=>'2038-01-01 00:00:00'
+            ];
+            $PromoModel->insert($promo);
+
+            $order_update=(object)[
+                'order_id'=>$order_basic->order_id,
+                'order_sum_promo'=>$bonus_usable
+            ];
+            $OrderModel->itemUpdate($order_update);
+        }
+        else {
+            /**
+             * Promo used as discount
+             */
+            $PromoModel->itemOrderUse($order_basic->order_id);
+        }
+        $order_data_update=(object)[
+            'finalize_bonus_done'=>1
+        ];
+
+        $OrderModel=model('OrderModel');
+        $OrderModel->itemDataUpdate($order_basic->order_id,$order_data_update);
+        return true;
+    }
+
     private function orderFinalizeInvoice($order_basic){//Create tax invoice
         $OrderModel=model('OrderModel');
         $order_data=$OrderModel->itemDataGet($order_basic->order_id);
@@ -262,8 +329,6 @@ class OrderTransactionModel extends TransactionModel{
     }
 
     private function orderFinalizeSettleCustomer($order_basic){
-        $PromoModel=model('PromoModel');
-        $PromoModel->itemOrderUse($order_basic->order_id);
         return true;
     }
     

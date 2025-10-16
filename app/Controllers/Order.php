@@ -414,20 +414,25 @@ class Order extends \App\Controllers\BaseController {
             'count'
         );
 
-        $data->Promo_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
-        if( $data->Promo_bonus->bonus_spend??null ){
-            $data->Promo_bonus->bonus_total=$PromoModel->bonusTotalGet( $order->owner_id )??0;
-            $data->Promo_bonus->bonus_usable=min($data->Promo_bonus->bonus_spend,$data->Promo_bonus->bonus_total);
-        }
+        // $data->Promo_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
+        // if( $data->Promo_bonus->bonus_spend??null ){
+        //     $data->Promo_bonus->bonus_total=$PromoModel->bonusTotalGet( $order->owner_id )??0;
+        //     $data->Promo_bonus->bonus_usable=min($data->Promo_bonus->bonus_spend,$data->Promo_bonus->bonus_total);
+        // }
         /**
          * ROUTE PLANNING AND SCHEDULING ONLY FOR DELIVERY BY COURIER (FOR NOW)
          */
         foreach( $data->Store_deliveryOptions as $i=>$option){
             if( $option['deliveryByCourier'] ){
                 $data->Store_deliveryOptions[$i]['routePlan']=$this->routePlanGet($order,$data->location_start->location_id,$data->location_finish->location_id);
-                // if( $data->Store_deliveryOptions[$i]['tariff']->cash_back>0 ){
-                //     $bonusTotal=$PromoModel->bonusGainGet($order->order_id,$data->Store_deliveryOptions[$i]['tariff']->cash_back);
-                // }
+            }
+            if( $data->Store_deliveryOptions[$i]['reckonParameters']->cash_back>0 ){
+                $order_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
+                if($order_bonus->bonus_gain??null){
+                    $order_bonus->bonus_total=$PromoModel->bonusTotalGet( $order->owner_id )??0;
+                    $order_bonus->bonus_usable=min($order_bonus->bonus_spend,$order_bonus->bonus_total);
+                    $data->Store_deliveryOptions[$i]['bonus']=$order_bonus;
+                }
             }
         }
         return $data;
@@ -669,8 +674,23 @@ class Order extends \App\Controllers\BaseController {
         }
 
 
-
-
+        /**
+         * If bonus_usable is present in tariff
+         */
+        $order_data->bonus_mode='skip';//bonus skip, maybe using promo
+        if( isset($deliveryOption->bonus) && isset($checkoutSettings->bonusMode) ){
+            if( $checkoutSettings->bonusMode=='spend' ){
+                $PromoModel=model('PromoModel');
+                $PromoModel->itemUnlink( $order->order_id );
+                $order_data->bonus_mode='spend';
+                $order_update->order_sum_promo=$deliveryOption->bonus->bonus_usable;
+            } else 
+            if( $checkoutSettings->bonusMode=='gain' ){
+                $PromoModel=model('PromoModel');
+                $PromoModel->itemUnlink( $order->order_id );
+                $order_data->bonus_mode='gain';
+            }
+        }
 
         //SAVING CHECKOUT DATA
         $OrderModel->itemDataCreate($checkoutSettings->order_id,$order_data);
@@ -718,7 +738,18 @@ class Order extends \App\Controllers\BaseController {
                 'payment_card_fixate_sum'=>$order_data->payment_card_fixate_sum??0,
                 'payment_card_confirm_sum'=>$order_data->payment_card_confirm_sum??0,
                 'payment_card_refund_sum'=>$order_data->payment_card_refund_sum??0,
+                'bonus_mode'=>$order_data->bonus_mode
             ];
+        }
+        if( isset($order_data->bonus_mode) ){
+            $PromoModel=model('PromoModel');
+            $promo_value=$PromoModel->where('promo_order_id',$order_id)->select('promo_value')->get()->getRow('promo_value');
+            if( $order_data->bonus_mode=='gain' ){
+                $meta->bonus_gain=$promo_value;
+            } else
+            if( $order_data->bonus_mode=='spend' ){
+                $meta->bonus_spend=$promo_value;
+            }
         }
         $filter=(object)[
             'tagQuery'=>"order:{$order_id}"

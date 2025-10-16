@@ -798,7 +798,7 @@ class ProductModel extends Model{
 
         $rows=$EntryModel->get()->getResult();
         $rows_total=count($rows);
-        $rows_top=array_slice($rows,0,(int) $rows_total*$top_percentage);
+        $rows_top=array_slice($rows,0,ceil($rows_total*$top_percentage));
         
         $PerkModel=model('PerkModel');
         $PerkModel->where('perk_holder','product');

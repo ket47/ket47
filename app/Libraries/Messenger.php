@@ -176,6 +176,9 @@ class Messenger{
     }
     
     private function itemSendSms( $message ){
+        if(getenv('test.smsMock')==1){
+            return true;
+        }
         $phone_to=$message->message_reciever_phone??$message->reciever->user_phone??'';
         if(!$phone_to){
             pl(['Sms cant be send: no phone number',$message]);

@@ -335,22 +335,39 @@ class OrderStageDeliveryScript{
         return 'ok';
     }
 
+    private function onCustomerStartBonusLock($order_basic){
+        $PromoModel=model('PromoModel');
+        $promo=[
+            'owner_id'=>$order_basic->owner_id,
+            'promo_order_id'=>$order_basic->order_id,
+            'promo_value'=>-$order_basic->order_sum_promo,
+            'promo_name'=>'lock',
+            'is_summable'=>1,
+            'is_disabled'=>0,
+            'expired_at'=>'2038-01-01 00:00:00'
+        ];
+        $PromoModel->insert($promo);
+    }
+
     public function onCustomerStart( $order_id, $data ){
         $order_data=$this->OrderModel->itemDataGet($order_id);
         if( empty($order_data->payment_card_fixate_sum) && empty($order_data->payment_by_cash) ){
             return 'payment_is_missing';
         }
         ///////////////////////////////////////////////////
-        //LOCKING PROMOTION
-        ///////////////////////////////////////////////////
-        $PromoModel=model('PromoModel');
-        $PromoModel->itemOrderDisable($order_id,1);
-        ///////////////////////////////////////////////////
         //COPYING INFO INTO ORDER
         ///////////////////////////////////////////////////
         $order=$this->OrderModel->itemGet($order_id);
         $this->onSystemStartInfoSet( $order, $order_data );
-
+        ///////////////////////////////////////////////////
+        //LOCKING PROMOTION
+        ///////////////////////////////////////////////////
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemOrderDisable($order_id,1);
+        if( $order_data->bonus_mode=='spend' ){//should lock bonus balance untill order finish
+            $this->onCustomerStartBonusLock($order);
+            pl("PROMO LOCK {$order_data->bonus_mode}");
+        }
         ///////////////////////////////////////////////////
         //JUMPING TO SCHEDULED
         ///////////////////////////////////////////////////
@@ -931,12 +948,22 @@ class OrderStageDeliveryScript{
     }
 
     public function offSupplierCorrected($order_id){
-        $order=$this->OrderModel->itemGet($order_id,'basic');
-        if( $order->order_sum_total<1 ){
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $order_basic=$this->OrderModel->itemGet($order_id,'basic');
+        if( $order_basic->order_sum_total<1 && $order_basic->order_sum_promo>=abs($order_basic->order_sum_total)+1 ){
+            //if order_sum_total == -100 but order_sum_promo == 150 then make order_sum_promo = 49 so order_sum_total == order_sum_delivery + 1
+            $order_update=(object)[
+                'order_id'=>$order_id,
+                'order_sum_promo'=>$order_basic->order_sum_product-1
+            ];
+            $this->OrderModel->fieldUpdateAllow('order_sum_promo');
+            $this->OrderModel->itemUpdate($order_update);
+            $order_basic->order_sum_total=$order_basic->order_sum_delivery+1;
+        }
+        if( $order_basic->order_sum_total<1 ){
             return 'order_sum_zero';
         }
-        $order_data=$this->OrderModel->itemDataGet($order_id);
-        if( isset($order_data->payment_card_fixate_sum) && $order->order_sum_total>$order_data->payment_card_fixate_sum ){
+        if( isset($order_data->payment_card_fixate_sum) && $order_basic->order_sum_total>$order_data->payment_card_fixate_sum ){
             return 'order_sum_exceeded';
         }
         return 'ok';

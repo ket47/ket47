@@ -870,11 +870,11 @@ class StoreModel extends Model{
         /**
      * Nightly calculations
      */
-    public function nightlyCalculate( int $store_id=null ){
+    public function nightlyCalculate( ?int $store_id=null ){
         $this->nightlyCalculatePerks($store_id);
     }
 
-    private function nightlyCalculatePerks( int $store_id=null ){
+    private function nightlyCalculatePerks( ?int $store_id=null ){
         $PerkModel=model('PerkModel');
 
         if($store_id){

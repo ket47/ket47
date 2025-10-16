@@ -202,6 +202,7 @@ class CourierShiftModel extends SecureModel{
             last_longitude,
             last_latitude,
             last_finish_plan,
+            courier_shift_list.updated_at,
             courier_shift_list.owner_id
         ");
         return $this->findAll();
