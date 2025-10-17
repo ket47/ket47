@@ -571,7 +571,7 @@ class User extends \App\Controllers\BaseController{
             foreach($fields as $field){
                 $info[$field]=$_SERVER[$field]??'--';
             }
-            pl($info);
+            //pl($info);
             return $this->respond('ok');
         }
         if( !$verification || $verification=='verification_abuse' ){

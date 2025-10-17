@@ -48,7 +48,7 @@ class DeliveryJobModel extends SecureModel{
     public function fieldUpdateAllow($field){
         $this->allowedFields[]=$field;
     }
-    public function __construct(){
+    public function initialize(){
         $PrefModel=model('PrefModel');
         $this->shiftStartHour=$PrefModel->itemGet('shiftStartHour','pref_value');
         $this->shiftEndHour=$PrefModel->itemGet('shiftEndHour','pref_value');

@@ -129,13 +129,18 @@ class Statistics extends \App\Controllers\BaseController{
     }
 
     public function bonusParametersGet(){
-        $user_id=   (int) $this->request->getPost('user_id');
         $point_span=(int) $this->request->getPost('point_span');
         $point_num= (int) $this->request->getPost('point_num');
 
-        $logged_user_id=session()->get('user_id');
-        if($logged_user_id<1 || $logged_user_id!=$user_id && !sudo()){
-            return $this->failForbidden();
+        $user_id=session()->get('user_id');
+        if($user_id<1){
+            $response=[
+                'head'=>[
+                    'bonus_total'=>0
+                ],
+                'body'=>[]
+            ];
+            return $this->respond($response);
         }
 
         $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_bonus_parameters";
@@ -555,3 +560,4 @@ class Statistics extends \App\Controllers\BaseController{
     }
  
 }
+   

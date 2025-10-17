@@ -70,7 +70,7 @@ class AcquirerUnitellerSBP{
                 ]
         ]);
         $result = file_get_contents(getenv('unitellerSBP.gateway').'results/', true, $context);
-        pl([getenv('unitellerSBP.gateway').'results/'.http_build_query($request),$request,$result],false);
+        //pl([getenv('unitellerSBP.gateway').'results/'.http_build_query($request),$request,$result],false);
         //error_log("\n\n#$order_id ".date(" H:i:s")."\n".json_encode([getenv('unitellerSBP.gateway').'results/'.http_build_query($request),$request,$result],JSON_PRETTY_PRINT), 3,  WRITEPATH."uniteller-".date('Y-m-d').".log");
         if(!$result){
             return null;
