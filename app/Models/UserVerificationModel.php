@@ -85,10 +85,10 @@ class UserVerificationModel extends Model{
 
 
 
-        $already_exist=$this->itemFind($verification_target,$verification_type);
-        if($already_exist){
-            return 'verification_abuse';
-        }
+        // $already_exist=$this->itemFind($verification_target,$verification_type);
+        // if($already_exist){
+        //     return 'verification_abuse';
+        // }
 
         helper('hash_generate');
         $verification_code=generate_hash(4,'numeric');

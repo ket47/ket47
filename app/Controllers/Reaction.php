@@ -114,7 +114,7 @@ class Reaction extends \App\Controllers\BaseController{
         $promo_name="Бонус за оценку курьера";
 
         $PromoModel=model('PromoModel');
-        $PromoModel->itemCreate($owner_id,$promo_value,$promo_name);
+        $PromoModel->itemCreate($owner_id,$promo_value,$promo_name,null,1);
 
         $cust_sms=(object)[
             'message_reciever_id'=>$owner_id,

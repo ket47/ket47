@@ -23,7 +23,7 @@ class PromoModel extends Model{
         ];
 
     protected $useSoftDeletes = false;
-    protected $promo_lifetime=14*24*60*60;
+    protected $promo_lifetime=180*24*60*60;
     protected $promo_share=20;
 
     public function setLifetime( int $lifetime_day ){
@@ -50,7 +50,7 @@ class PromoModel extends Model{
         return $this->get()->getRow();
     }
     
-    public function itemCreate(int $owner_id,int $promo_value,string $promo_name, $promo_activator_id=null){
+    public function itemCreate(int $owner_id,int $promo_value,string $promo_name, $promo_activator_id=null, $is_summable=0){
         $promo=[
             'owner_id'=>$owner_id,
             'promo_name'=>$promo_name,
@@ -58,6 +58,7 @@ class PromoModel extends Model{
             'promo_share'=>$this->promo_share,
             'promo_activator_id'=>$promo_activator_id,
             'is_disabled'=>$promo_activator_id?1:0,
+            'is_summable'=>$is_summable,
             'expired_at'=>date('Y-m-d H:i:s',time()+$this->promo_lifetime)
         ];
         return $this->insert($promo,true);
@@ -225,10 +226,10 @@ class PromoModel extends Model{
         $UserModel=model('UserModel');
         $new_user_name=$UserModel->select('user_name')->where('user_id',$user_id)->get()->getRow('user_name');
 
-        $parent_value=333;
+        $parent_value=200;
         $parent_name="Новому клиенту";
 
-        $child_value=222;
+        $child_value=100;
         $child_name="За приглашённого друга: {$new_user_name}";
 
         $promo_voucher_count=3;
@@ -236,7 +237,7 @@ class PromoModel extends Model{
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
                 if($inviter_user_id>0){
-                    $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id);
+                    $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id,1);
                 }
             }
         $this->transCommit();
