@@ -143,6 +143,10 @@ class Statistics extends \App\Controllers\BaseController{
             return $this->respond($response);
         }
 
+        if( sudo() ){
+            $user_id=(int) $this->request->getPost('user_id');
+        }
+
         $tmp_drop_sql="DROP TEMPORARY TABLE IF EXISTS tmp_bonus_parameters";
         $tmp_create_sql="
             CREATE TEMPORARY TABLE tmp_bonus_parameters AS (

@@ -109,8 +109,10 @@ class Reaction extends \App\Controllers\BaseController{
         ];
         $owner_id=$context['order_extended']->owner_id;
 
-        $promo_value_fraction=0.05;
-        $promo_value=round( ($context['order_extended']->order_sum_product-$context['order_extended']->order_sum_promo)*$promo_value_fraction/10 )*10;
+        // $promo_value_fraction=0.05;
+        // $promo_value=round( ($context['order_extended']->order_sum_product-$context['order_extended']->order_sum_promo)*$promo_value_fraction/10 )*10;
+
+        $promo_value=20;
         $promo_name="Бонус за оценку курьера";
 
         $PromoModel=model('PromoModel');

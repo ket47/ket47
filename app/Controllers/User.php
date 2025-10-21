@@ -793,4 +793,17 @@ class User extends \App\Controllers\BaseController{
         }
         return $this->fail('idle');
     }
+
+    public function itemInvitationQR(){
+        $user_id=$this->request->getGet('user_id');
+        if($user_id<1){
+            return $this->failNotFound();
+        }
+        $url=getenv('app.frontendUrl')."invitation.html?inviter_user_id={$user_id}";
+
+        header("Content-type: image/png");
+        $qr=new \App\Libraries\QRCode($url,['w'=>500,'h'=>500]);
+        $qr->output_image();
+        exit;
+    }
 }
