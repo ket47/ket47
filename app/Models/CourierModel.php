@@ -516,7 +516,9 @@ class CourierModel extends Model{
         /**
          * Rating
          */
+        $count_rating_since=date("Y-m-d H:i:s",time()-30*24*60*60);//last 30 days
         $ReactionModel=model('ReactionModel');
+        $ReactionModel->where("created_at>'$count_rating_since'");
         $ReactionModel->where('tag_id',$courier_id);
         $ReactionModel->where('tag_name','courier');
         $ReactionModel->join('reaction_tag_list','reaction_id=member_id');

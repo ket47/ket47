@@ -90,25 +90,26 @@
 <?php 
     $pref_map=[
         'admin_email'=>                         ['Админ','email'],
-        'delivery_heavy_level'=>                ['Повышенная доставка','Уровень 0 | 1 | 2 | 3'],
-        'delivery_heavy_cost_1'=>                ['Повышенная доставка','Повышение 1'],
-        'delivery_heavy_bonus_1'=>               ['Повышенная доставка','Бонус 1'],
-        'delivery_heavy_cost_2'=>                ['Повышенная доставка','Повышение 2'],
-        'delivery_heavy_bonus_2'=>               ['Повышенная доставка','Бонус 2'],
-        'delivery_heavy_cost_3'=>                ['Повышенная доставка','Повышение 3'],
-        'delivery_heavy_bonus_3'=>               ['Повышенная доставка','Бонус 3'],
         
         'customer_confirmed_timeout_min'=>      ['Автосброс Статусов (минут)','Подтвержден-Корзина'],
         'customer_start_timeout_min'=>          ['Автосброс Статусов (минут)','На обработке-Отказ поставщика'],
         'delivery_no_courier_timeout_min'=>     ['Автосброс Статусов (минут)','Собран-Курьер не найден'],
         'delivery_finish_timeout_min'=>         ['Автосброс Статусов (минут)','Доставлен-Завершен'],
 
+        'delivery_cost'=>                       ['Доставка','Подача'],
+        'delivery_fee_distance'=>               ['Доставка','За километр'],
 
+        'delivery_heavy_level'=>                ['Повышенная доставка','Уровень 0 | 1 | 2 | 3'],
+        'delivery_heavy_cost_1'=>               ['Повышенная доставка','Повышение 1'],
+        'delivery_heavy_bonus_1'=>              ['Повышенная доставка','Бонус 1'],
+        'delivery_heavy_cost_2'=>               ['Повышенная доставка','Повышение 2'],
+        'delivery_heavy_bonus_2'=>              ['Повышенная доставка','Бонус 2'],
+        'delivery_heavy_cost_3'=>               ['Повышенная доставка','Повышение 3'],
+        'delivery_heavy_bonus_3'=>              ['Повышенная доставка','Бонус 3'],
 
         'delivery_sweet_start_hour'=>           ['Сладкие часы доставка','Начало'],
         'delivery_sweet_finish_hour'=>          ['Сладкие часы доставка','Конец'],
         'delivery_sweet_ratio'=>                ['Сладкие часы доставка','Скидка %'],
-
 
         'shiftStartHour'=>                      ['Смена','Начало'],
         'shiftEndHour'=>                        ['Смена','Конец'],

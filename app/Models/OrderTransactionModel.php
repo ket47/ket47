@@ -225,6 +225,7 @@ class OrderTransactionModel extends TransactionModel{
                 'expired_at'=>date('Y-m-d H:i:s',strtotime("+6 months"))//6month
             ];
             $PromoModel->insert($promo);
+            tl($promo);
         } else 
         if( $order_data->bonus_mode=='spend' && !($order_data->order_is_canceled??0) ){
             $bonus_total=$PromoModel->bonusTotalGet( $order_basic->owner_id );
@@ -244,6 +245,7 @@ class OrderTransactionModel extends TransactionModel{
                 'order_sum_promo'=>$bonus_usable
             ];
             $OrderModel->itemUpdate($order_update);
+            tl($promo);
         }
         else {
             /**

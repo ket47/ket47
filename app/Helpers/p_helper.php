@@ -26,3 +26,29 @@ function e( $model ){
     print '<pre>';
     print_r($err);die;
 }
+
+
+
+function tl(){
+    $args = func_get_args();
+    if( count($args)==1 && !is_array($args[0]) && !is_object($args[0]) ){
+        $text='TL HELPER '.$args[0];
+    } else {
+        $text='TL HELPER '.json_encode($args,JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+    $message=(object)[
+        'message_reciever_id'=>41,
+        'message_transport'=>'telegram',//
+        'message_text'=>$text,
+        'telegram_options'=>[
+            'opts'=>[
+                'disable_notification'=>1,
+            ]
+        ]
+    ];
+    jobCreate([
+        'task_programm'=>[
+                ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
+            ]
+    ]);
+}
