@@ -171,6 +171,7 @@ class PromoModel extends Model{
             $this->select('COUNT(*) count');
             return $this->get()->getRow('count');
         }
+        $this->where('is_summable',0);
         $this->orderBy('expired_at');
         return $this->get()->getResult();
     }

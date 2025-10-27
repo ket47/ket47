@@ -152,6 +152,18 @@ class Reaction extends \App\Controllers\BaseController{
         $context['store']=$StoreModel->select('store_name,owner_ally_ids')->get()->getRow();
         $context['product']=$ProductModel->select('product_name,product_id')->get()->getRow();
 
+        $promo_value=20;
+        $promo_name="Бонус за комментарий";
+
+        $user_id=session()->get('user_id');
+        $PromoModel=model('PromoModel');
+        $PromoModel->itemCreate($user_id,$promo_value,$promo_name,null,1);
+
+        $cust_sms=(object)[
+            'message_reciever_id'=>$user_id,
+            'message_transport'=>'push,email,telegram',
+            'message_text'=>"Вам начислен бонус {$promo_value}₽"
+        ];
         $reaction_sms=(object)[
             'message_transport'=>'telegram',
             'message_reciever_id'=>"-100,{$context['store']->owner_ally_ids}",//
@@ -161,7 +173,7 @@ class Reaction extends \App\Controllers\BaseController{
         $notification_task=[
             'task_name'=>"Comment event",
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms]]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms,$cust_sms]]]
                 ]
         ];
         jobCreate($notification_task);
