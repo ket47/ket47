@@ -527,10 +527,20 @@ class CourierModel extends Model{
         return $ReactionModel->get()->getResult();
     }
 
+    public function itemNotpayedNotify( $user_ids ){
+        $message=(object)[
+            'message_reciever_id'=>"$user_ids,41",
+            'message_transport'=>'push,telegram',
+            'message_text'=>"💳 Есть неоплаченные заказы",
+        ];
 
-
-
-
+        $sms_job=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                ],
+        ];
+        jobCreate($sms_job);
+    }
 
 
 
