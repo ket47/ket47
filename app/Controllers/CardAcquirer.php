@@ -137,6 +137,10 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return $this->fail($result);
         }
 
+        if( session()->get('user_id')==9468 ){//exception for derya
+            $payment_type='use_card';
+        }
+
         $orderDataUpdate=(object)[];
         if( $payment_type=='use_card' ){// || isset($orderData->payment_card_acquirer) && $orderData->payment_card_acquirer=='AcquirerUniteller'
             $Acquirer=\Config\Services::acquirer(true,'AcquirerUniteller');
