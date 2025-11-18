@@ -233,7 +233,7 @@ class PromoModel extends Model{
         $child_value=100;
         $child_name="За приглашённого друга: {$new_user_name}";
 
-        $promo_voucher_count=3;
+        $promo_voucher_count=1;
         $this->transBegin();
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
