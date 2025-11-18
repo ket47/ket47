@@ -68,6 +68,16 @@ class BaseController extends Controller
             $this->guestUserInit();
         }
         $this->detectChameleonMode();
+        $this->detectCrazyRaja();
+    }
+
+    private function detectCrazyRaja(){
+        if( session()->get('chameleonMode')!='on' ){
+            return;
+        }
+        if( session()->get('user_id')==-1 ){
+            http_response_code(401);
+        }
     }
 
     private function detectChameleonMode(){
@@ -93,6 +103,11 @@ class BaseController extends Controller
         }
         $blackListAppVersion=getenv('chameleon.appVersion');
         if( isset($_SERVER['HTTP_X_VER']) && $_SERVER['HTTP_X_VER']==$blackListAppVersion ){
+            session()->set('chameleonMode','on');
+            header('x-chameleon: on');
+        }
+        $raja_user_id=986;
+        if( session()->get('user_id')==$raja_user_id ){
             session()->set('chameleonMode','on');
             header('x-chameleon: on');
         }
