@@ -121,7 +121,7 @@ class Reaction extends \App\Controllers\BaseController{
         $cust_sms=(object)[
             'message_reciever_id'=>$owner_id,
             'message_transport'=>'push,email,telegram',
-            'message_text'=>"Вам начислен бонус {$promo_value}₽"
+            'message_text'=>"Вам начислен бонус {$promo_value}💎"
         ];
         $notification_task=[
             'task_programm'=>[
@@ -162,7 +162,7 @@ class Reaction extends \App\Controllers\BaseController{
         $cust_sms=(object)[
             'message_reciever_id'=>$user_id,
             'message_transport'=>'push,email,telegram',
-            'message_text'=>"Вам начислен бонус {$promo_value}₽"
+            'message_text'=>"Вам начислен бонус {$promo_value}💎"
         ];
         $reaction_sms=(object)[
             'message_transport'=>'telegram',
