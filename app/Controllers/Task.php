@@ -137,12 +137,13 @@ class Task extends \App\Controllers\BaseController{
         if( $timerNotExpired ){
             return false;
         }
-        $predis->setEx('courierunpayednotifytimer',60*60,1);//1 hour
+        $predis->setEx('courierunpayednotifytimer',2*60*60,1);
         $customer_finish_group_id=41;
         $OrderModel=model("OrderModel");
         $OrderModel->where('order_group_id',$customer_finish_group_id);
-        $OrderModel->where("order_data->>'$.payment_by_cash'",1);
+        $OrderModel->where("order_data->>'$.payment_by_cash'=1",null,false);
         $OrderModel->groupBy('order_courier_admins');
+        $OrderModel->allowRead();
         $courier_user_ids=$OrderModel->select('GROUP_CONCAT(order_courier_admins) courier_user_ids')->get()->getRow('courier_user_ids');
 
 
