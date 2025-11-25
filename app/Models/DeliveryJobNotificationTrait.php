@@ -99,8 +99,8 @@ trait DeliveryJobNotificationTrait{
         foreach($jobs as $job){
             $info=json_decode($job->info);
             $route_text.="\n{$i})".substr($job->job_name,0,5);
-            $route_text.="\n{$info->supplier_phone} {$info->supplier_location_address} ";
-            $route_text.="\n{$info->customer_phone} {$info->customer_location_address} ";
+            $route_text.="\n".($info->supplier_phone??'')." ".($info->supplier_location_address??'');
+            $route_text.="\n".($info->customer_phone??'')." ".($info->customer_location_address??'');
             $i++;
         }
 
