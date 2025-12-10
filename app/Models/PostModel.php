@@ -27,10 +27,13 @@ class PostModel extends SecureModel{
         $this->allowedFields[]=$field;
     }
 
-    public function itemGet( int $post_id ){
+    public function itemGet( int $post_id, string $mode='all' ){
         $post=$this->find($post_id);
         if( !$post ){
             return 'notfound';
+        }
+        if( $mode=='basic' ){
+            return $post;
         }
         $ImageModel=model('ImageModel');
         $post->is_writable=$this->permit($post_id,'w');
@@ -226,6 +229,7 @@ class PostModel extends SecureModel{
             post_list.finished_at
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
+        $this->groupBy('image_id');
         $this->groupBy('post_id')->orderBy('started_at DESC');
         $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
         foreach($posts as &$post){
