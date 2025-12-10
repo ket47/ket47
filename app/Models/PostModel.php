@@ -12,6 +12,7 @@ class PostModel extends SecureModel{
         'post_title',
         'post_content',
         'post_type',
+        'reaction_tags',
         'post_route',
         'started_at',
         'finished_at',
@@ -220,6 +221,7 @@ class PostModel extends SecureModel{
             post_holder,
             post_holder_id,
             image_hash,
+            reaction_tags,
             post_list.is_disabled,
             post_list.is_published,
             post_list.updated_at,
@@ -228,7 +230,12 @@ class PostModel extends SecureModel{
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
         $this->groupBy('post_id')->orderBy('started_at DESC');
         $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
+        $ReactionTagModel=model('ReactionTagModel');
         foreach($posts as &$post){
+            if(!empty($post->reaction_tags)){
+                $post->reacted_tags = $ReactionTagModel->select('GROUP_CONCAT(DISTINCT tag_option) as reacted_tags')->join('reaction_list', 'reaction_tag_list.member_id = reaction_list.reaction_id')
+                ->where('tag_name = "post" AND owner_id = '.session()->get('user_id'))->get()->getRow('reacted_tags');
+            }
             $post->is_writable=$this->permit($post->post_id,'w');
         }
         return $posts;
