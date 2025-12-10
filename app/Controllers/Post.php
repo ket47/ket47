@@ -52,6 +52,7 @@ class Post extends \App\Controllers\BaseController{
         $PostModel=model('PostModel');
         $result=$PostModel->itemUpdate($data);
         if( in_array($result,['ok']) ){
+            $this->itemHolderNightlyCalculate($data->post_id);
             return $this->respondUpdated('ok');
         }
         if( $PostModel->errors() ){
@@ -106,6 +107,7 @@ class Post extends \App\Controllers\BaseController{
         $PostModel=model('PostModel');
         $result=$PostModel->itemPublish($post_id);
         if( in_array($result,['ok','idle']) ){
+            $this->itemHolderNightlyCalculate($post_id);
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
@@ -116,9 +118,19 @@ class Post extends \App\Controllers\BaseController{
         $PostModel=model('PostModel');
         $result=$PostModel->itemUnpublish($post_id);
         if( in_array($result,['ok','idle']) ){
+            $this->itemHolderNightlyCalculate($post_id);
             return $this->respondUpdated($result);
         }
         return $this->fail($result);
+    }
+
+    private function itemHolderNightlyCalculate($post_id){
+        $PostModel=model('PostModel');
+        $post=$PostModel->itemGet($post_id,'basic');
+        if( $post->post_holder_id??null ){
+            $StoreModel=model('StoreModel');
+            $StoreModel->nightlyCalculate( $post->post_holder_id );
+        }
     }
 
     public function listGet(){

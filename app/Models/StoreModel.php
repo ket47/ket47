@@ -937,10 +937,26 @@ class StoreModel extends Model{
         $tariff=$TariffModel->get()->getResult();
 
         /**
+         * Has challenge
+         */
+        $PostModel=model('PostModel');
+        if($store_id){
+            $PostModel->where('store_id',$store_id);
+        }
+        $PostModel->where('post_holder','store');
+        $PostModel->where('reaction_tags','challenge');
+        $PostModel->where("NOW()>started_at");
+        $PostModel->where("NOW()<finished_at");
+        $PostModel->where('is_published', '1');
+        $PostModel->groupBy('post_holder_id');
+        $PostModel->select("post_holder_id store_id,'store_challenge' perk_type, 1 perk_value");
+        $challenges=$PostModel->get()->getResult();
+
+        /**
          * Composite
          */
         $def_expired_at=date('Y-m-d H:i:s',time()+24*60*60);
-        $perks=array_merge($prods,$halals,$reacts,$tariff);
+        $perks=array_merge($prods,$halals,$reacts,$tariff,$challenges);
         $PerkModel->transStart();
         foreach( $perks as $row ){
             $perk=[
