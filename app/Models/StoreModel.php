@@ -903,6 +903,9 @@ class StoreModel extends Model{
          * Halal perk
          */
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
+        if($store_id){
+            $StoreGroupMemberModel->where('member_id',$store_id);
+        }
         $StoreGroupMemberModel->join('store_group_list','group_id');
         $StoreGroupMemberModel->where('group_type','halal');
         $halals=$StoreGroupMemberModel->select("member_id store_id,'store_halal' perk_type")->get()->getResult();
@@ -941,7 +944,7 @@ class StoreModel extends Model{
          */
         $PostModel=model('PostModel');
         if($store_id){
-            $PostModel->where('store_id',$store_id);
+            $PostModel->where('post_holder_id',$store_id);
         }
         $PostModel->where('post_holder','store');
         $PostModel->where('reaction_tags','challenge');
