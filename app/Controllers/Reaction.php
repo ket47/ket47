@@ -216,6 +216,7 @@ class Reaction extends \App\Controllers\BaseController{
     }
 
     public function itemListGet(){
+        session_write_close();
         $offset=$this->request->getPost('offset');
         $limit=$this->request->getPost('limit');
         $name_query=$this->request->getPost('name_query');

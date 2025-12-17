@@ -161,6 +161,11 @@ class FirePushKreait{
         try{
             $deviceTokens=is_array($push->token)?$push->token:[$push->token];
             $report = $this->messaging->sendMulticast($message, $deviceTokens);
+            if ($report->hasFailures()) {
+                foreach ($report->failures()->getItems() as $failure) {
+                    pl("Send FirePushKreait".$failure->error()->getMessage());
+                }
+            }
             $invalidTargets=array_merge($report->unknownTokens(),$report->invalidTokens());
             if( $invalidTargets ){
                 pl($invalidTargets);
@@ -169,6 +174,7 @@ class FirePushKreait{
             }
             return $report->successes()->count()?1:0;
         }catch( \Throwable $e  ){
+            pl($e->getMessage());
             return 0;
         }
     }

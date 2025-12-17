@@ -120,7 +120,7 @@ class CourierShiftModel extends SecureModel{
         $this->itemReportSend($openedShift->shift_id);
 
         $DeliveryJobModel=model('DeliveryJobModel');
-        $DeliveryJobModel->chainJobs();
+        $DeliveryJobModel->unassignJobs($courier_id);
         
         return 'ok';
     }

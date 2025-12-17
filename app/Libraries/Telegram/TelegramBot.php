@@ -302,8 +302,9 @@ class TelegramBot{
             $filter=$button[0];
             $action=$button[1];
             $name=$button[2];
+            $url=$button[3]??'';
             if( $this->buttonFilter($filter) ){
-                $row[]=$this->Telegram->buildInlineKeyboardButton($name,'',"{$action}-");
+                $row[]=$this->Telegram->buildInlineKeyboardButton($name,$url,"{$action}-");
             }
         }
         return $row;

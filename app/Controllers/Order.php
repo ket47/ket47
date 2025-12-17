@@ -425,6 +425,31 @@ class Order extends \App\Controllers\BaseController {
         foreach( $data->Store_deliveryOptions as $i=>$option){
             if( $option['deliveryByCourier'] ){
                 $data->Store_deliveryOptions[$i]['routePlan']=$this->routePlanGet($order,$data->location_start->location_id,$data->location_finish->location_id);
+
+                $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+                $routeReckon=$DeliveryJobPlan->routeReckonGet(
+                    $data->location_start->location_id,
+                    $data->location_finish->location_id,
+                    $order->order_sum_product,
+                    $data->Store_deliveryOptions[$i]['reckonParameters']->order_fee
+                );
+                //$data->Store_deliveryOptions[$i]['reckonParameters']->customer_cost_total=$routeReckon->customer_cost_total;
+                $data->Store_deliveryOptions[$i]['reckonParameters']->delivery_gain_base=$routeReckon->delivery_gain_base;
+                $data->Store_deliveryOptions[$i]['reckonParameters']->delivery_rating_pool=$routeReckon->delivery_rating_pool;
+
+
+
+
+
+
+
+
+                /**
+                 * Disabled for now
+                 */
+                //should we apply new  cost to customer at first stage?
+                //$data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
+                //$data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
             }
             if( $data->Store_deliveryOptions[$i]['reckonParameters']->cash_back>0 ){
                 $order_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
@@ -580,6 +605,10 @@ class Order extends \App\Controllers\BaseController {
             $order_data->delivery_cost=$deliveryOption->reckonParameters->delivery_cost;
             $order_data->delivery_heavy_bonus=$deliveryOption->reckonParameters->delivery_heavy_bonus;
 
+            $order_data->delivery_gain_mode='unset';
+            $order_data->delivery_gain_base=$deliveryOption->reckonParameters->delivery_gain_base;
+            $order_data->delivery_rating_pool=$deliveryOption->reckonParameters->delivery_rating_pool;
+
             //DELIVERY JOB SETUP
             /**
              * todo routePlan error handling. if startplan is not set. the is an error
@@ -610,7 +639,10 @@ class Order extends \App\Controllers\BaseController {
                     'payment_by_cash'=>$order_data->payment_by_cash??0,
                     'distance'=>$deliveryOption->routePlan->deliveryDistance,
                     'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
-                    'customer_heart_count'=>$customer_heart_count
+                    'customer_heart_count'=>$customer_heart_count,
+
+                    'delivery_gain_base'=>$deliveryOption->reckonParameters->delivery_gain_base??0,
+                    'delivery_rating_pool'=>$deliveryOption->reckonParameters->delivery_rating_pool??0,
                 ]),
                 'start_plan'=>$order_data->start_plan,
                 'start_prep_time'=>null,

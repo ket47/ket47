@@ -225,7 +225,6 @@ class OrderTransactionModel extends TransactionModel{
                 'expired_at'=>date('Y-m-d H:i:s',strtotime("+6 months"))//6month
             ];
             $PromoModel->insert($promo);
-            tl($promo);
         } else 
         if( $order_data->bonus_mode=='spend' && !($order_data->order_is_canceled??0) ){
             $bonus_total=$PromoModel->bonusTotalGet( $order_basic->owner_id );
@@ -245,7 +244,7 @@ class OrderTransactionModel extends TransactionModel{
                 'order_sum_promo'=>$bonus_usable
             ];
             $OrderModel->itemUpdate($order_update);
-            tl($promo);
+            tl('bonus used',-$bonus_usable);
         }
         else {
             /**
@@ -492,43 +491,27 @@ class OrderTransactionModel extends TransactionModel{
                     return false;
                 }
             }
-        } else {
-            $LocationModel=model('LocationModel');
-            $courierCost        =(int) getenv('delivery.courier.cost')??0;
-            $courierFee         =(int) getenv('delivery.courier.fee')??0;
-            $distanceTreshold   =(int) getenv('delivery.courier.distanceTreshold')??0;
-            $distanceFee        =(int) getenv('delivery.courier.distanceFee')??0;
-            $productSum=$order_basic->order_sum_product;
-            $distanceM=$LocationModel->distanceGet($order_basic->order_start_location_id, $order_basic->order_finish_location_id);
-            $distanceKM=round($distanceM/1000*1.2-$distanceTreshold);//+20%
-    
-            $compensationSum=0;
-            if( $distanceKM>0 ){
-                $compensationSum=$distanceFee*$distanceKM;
-            }
-            $bonusSum=$courierCost+$compensationSum+$productSum*$courierFee/100;
+        } else 
+        if( isset($order_data->delivery_gain_mode) && $order_data->delivery_gain_mode=='taxi' ){
+            $gainSum = round($order_data->delivery_gain_base+$order_data->delivery_rating_pool*$order_data->delivery_rating_score);
             $context=[
                 'order_basic'=>$order_basic,
-                'order_data'=>$order_data,
-                'costSum'=>$courierCost,
-                'feeSum'=>$productSum*$courierFee/100,
-                'compensationSum'=>$compensationSum,
-                'distance_km'=>$distanceKM,
+                'rating_bonus'=>round($order_data->delivery_rating_pool*$order_data->delivery_rating_score)
             ];
-            $bonusDescription=view('transactions/courier_bonus',$context);
+            $gainDescription=view('transactions/courier_bonus',$context);
     
-            $bonusTrans=(object)[
+            $gainTrans=(object)[
                 'trans_date'=>$order_basic->updated_at,
-                'trans_amount'=>$bonusSum,
+                'trans_amount'=>$gainSum,
                 'trans_role'=>'courier->profit',
                 'tags'=>"order:{$order_basic->order_id}:bonus:courier courier:{$order_basic->order_courier_id}",
-                'trans_description'=>$bonusDescription,
+                'trans_description'=>$gainDescription,
                 'owner_id'=>0,//customer should not see
                 'owner_ally_ids'=>($order_basic->order_courier_admins??0),
                 'is_disabled'=>0
             ];
-            if($bonusTrans->trans_amount!=0){
-                $result=$this->itemCreate($bonusTrans);
+            if($gainTrans->trans_amount!=0){
+                $result=$this->itemCreate($gainTrans);
                 if( !$result ){
                     log_message('error',"Making #courierBonus transaction failed. Order #{$order_basic->order_id} ".json_encode($this->errors()));
                     return false;

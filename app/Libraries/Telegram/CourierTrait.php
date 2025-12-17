@@ -4,6 +4,8 @@ trait CourierTrait{
     private $courierButtons=[
         ['isCourierReady',  'onCourierJobsGet',   "🔍 Список заданий"],
         ['isCourierReady',  'onCourierSetIdle',   "🏁 Завершить смену"],
+        ['',  'onCourierTaxiNotif-off',   "🚫 Отключить такси"],
+        ['',  'onCourierTaxiNotif-push',   "🔊 Включить такси"],
     ];
 
     public function courierStatusGet(){
@@ -135,7 +137,7 @@ trait CourierTrait{
             return true;
         }
         foreach($jobs as $job){
-            $html="<b>Задание <u>#{$job->order_id}</u></b>\nЗабрать из: {$job->store_name}\nАдрес:<a href='https://yandex.ru/maps/?pt={$job->location_longitude},{$job->location_latitude}&z=19&l=map,trf'>{$job->location_address}</a>";
+            $html="<b>Задание {$job->job_name}</b>\nЗабрать из: {$job->store_name}\nАдрес:<a href='https://yandex.ru/maps/?pt={$job->location_longitude},{$job->location_latitude}&z=19&l=map,trf'>{$job->location_address}</a>";
             $opts=[
                 'disable_web_page_preview'=>1
             ];
@@ -145,6 +147,40 @@ trait CourierTrait{
                 ]]);
             }
             $this->sendHTML($html,$opts);
+        }
+    }
+
+    public function onCourierTaxiNotif($notification_level){
+        $CourierModel=model("CourierModel");
+        $courier=$this->courierGet();
+
+        $CourierModel->itemUpdate((object)[
+            'courier_id'=>$courier->courier_id,
+            'courier_parttime_notify'=>$notification_level
+        ]);
+
+        $telegram_options=[];
+        $telegram_options['reply_markup']=$this->Telegram->buildInlineKeyBoard([
+            [
+            $this->Telegram->buildInlineKeyboardButton("🚫 Не получать",'',"onCourierTaxiNotif-off"),
+            $this->Telegram->buildInlineKeyboardButton("🔇 Без звука",'',"onCourierTaxiNotif-silent"),
+            ],[
+            $this->Telegram->buildInlineKeyboardButton("🔊 Со звуком",'',"onCourierTaxiNotif-push"),
+            $this->Telegram->buildInlineKeyboardButton("🔔 Рингтон",'',"onCourierTaxiNotif-ringtone"),
+            ]
+        ]);
+
+        if($notification_level=='off'){
+            $this->sendText("🚫 Свободные заказы не будут приходить вам.",$telegram_options);
+        } else
+        if($notification_level=='silent'){
+            $this->sendText("🔇 Свободные заказы будут приходить без звука в телеграм.",$telegram_options);//,'courier_message'
+        } else 
+        if($notification_level=='push'){
+            $this->sendText("🔊 Свободные заказы будут приходить в приложение и телеграм.",$telegram_options);
+        } else 
+        if($notification_level=='ringtone'){
+            $this->sendText("🔔 Свободные заказы будут приходить в телеграм и приложение с рингтоном.",$telegram_options);
         }
     }
 

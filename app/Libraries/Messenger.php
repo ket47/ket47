@@ -274,6 +274,10 @@ class Messenger{
 
         // $this->itemAppendWrite( $message->telegram_options->append_order_id??null, $message->message_text, $result['result']['message_id']??null );
 
+
+        if( ($message->telegram_options->autodelete_timeout??null) && ($result['result']['message_id']??null) ){
+            $this->itemTelegramAutodelete( $message->reciever->user_data->telegramChatId, $result['result']['message_id'], $message->telegram_options->autodelete_timeout );
+        }
         if( !empty($result['ok']) ){
             return true;
         }
@@ -283,6 +287,23 @@ class Messenger{
             log_message('error', "Telegram reciever was UNSUBSCRIBED: {$message->reciever->user_phone} {$message->reciever->user_name}");
         }
         return false;
+    }
+
+    private function itemTelegramAutodelete( $chat_id, $message_id, $timeout ){
+        $deletion_task=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemTelegramDelete','arguments'=>[$chat_id, $message_id]]
+            ],
+            'task_priority'=>'low',
+            'task_next_start_time'=>time()+$timeout
+        ];
+        jobCreate($deletion_task);
+    }
+
+    public function itemTelegramDelete($chat_id, $message_id){
+        $telegramToken=getenv('telegram.token');
+        $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
+        $Telegram->deleteMessage(['chat_id'=>$chat_id,'message_id'=>$message_id]);
     }
 
     private function itemAppendRead( int $order_id=null, string $append_text=null ){

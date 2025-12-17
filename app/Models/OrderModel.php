@@ -361,7 +361,7 @@ class OrderModel extends SecureModel{
                 //$user_id=session()->get('user_id');
                 $this->where('ogl.group_type<>','system_finish');
                 //$this->where("`ogl`.`group_type`='customer_cart' AND order_list.owner_id='$user_id' OR `ogl`.`group_type`<>'customer_cart'");
-                $this->where('TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4');//only 3 days
+                $this->where("(TIMESTAMPDIFF(DAY,order_list.created_at,NOW())<4 OR ogl.group_type<>'customer_cart')");//only 3 days
                 $this->orderBy("ogl.group_type='customer_cart'");
             } else {
                 $firstChar=substr($filter['order_group_type'],0,1);
@@ -398,6 +398,7 @@ class OrderModel extends SecureModel{
         $this->itemUserRoleCalc();
         $this->join('order_group_list ogl',"order_group_id=group_id",'left');
         $this->select('COUNT(*) count,group_type');
+        $this->groupBy('order_id');
         return $this->get()->getRow('count')??0;
     }
     

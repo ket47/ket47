@@ -567,34 +567,14 @@ class User extends \App\Controllers\BaseController{
         }
 
         if( !isset($_SERVER["HTTP_X_SID"]) || !isset($_SERVER["HTTP_X_VER"]) ){
-            $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
-            foreach($fields as $field){
-                $info[$field]=$_SERVER[$field]??'--';
-            }
+            // $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
+            // foreach($fields as $field){
+            //     $info[$field]=$_SERVER[$field]??'--';
+            // }
             //pl($info);
             return $this->respond('ok');
         }
         if( !$verification || $verification=='verification_abuse' ){
-            $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
-            foreach($fields as $field){
-                $info[$field]=$_SERVER[$field]??'--';
-            }
-            $abuse_text="VERIFICATION ABUSE $user_phone_cleared\n<pre>".json_encode($info).'</pre>';
-            $message=(object)[
-                'message_reciever_id'=>41,
-                'message_transport'=>'telegram',//
-                'message_text'=>$abuse_text,
-                'telegram_options'=>[
-                    'opts'=>[
-                        'disable_notification'=>1,
-                    ]
-                ]
-            ];
-            jobCreate([
-                'task_programm'=>[
-                        ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]
-                    ]
-            ]);
             return $this->fail('verification_already_sent');
         }
 

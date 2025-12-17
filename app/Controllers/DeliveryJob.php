@@ -32,7 +32,19 @@ class DeliveryJob extends \App\Controllers\BaseController{
     }
     
     public function itemUpdate(){
-        return false;
+        if( !sudo() ){
+            return $this->failForbidden('forbidden');
+        }
+        $data= $this->request->getJSON();
+        if( !isset($data->job_id) ){
+            return $this->fail('noid');
+        }
+        $DeliveryJobModel=model('DeliveryJobModel');
+        $result=$DeliveryJobModel->itemUpdate($data);
+        if( $result=='ok' ){
+            return $this->respondUpdated($result);
+        }
+        return $this->fail($result);
     }
     
     public function itemDelete(){
@@ -63,6 +75,9 @@ class DeliveryJob extends \App\Controllers\BaseController{
         // if( !$isCourierReady ){
         //     return $this->fail('notready');
         // }
+        if( $courier->is_disabled==1 || $courier->deleted_at ){
+            return $this->fail('courier_is_disabled');
+        }
         $isSearching4Courier=$OrderGroupMemberModel->isMemberOf($order_id,'delivery_search');
         if( !$isSearching4Courier ){
             return $this->fail('notsearching');
@@ -131,8 +146,6 @@ class DeliveryJob extends \App\Controllers\BaseController{
         $CourierShiftModel=model('CourierShiftModel');
         $DeliveryJobModel=model('DeliveryJobModel');
 
-        $delivery_jobs=$DeliveryJobModel->listGet();
-
         $CourierShiftModel->allowRead();//??? allowing see couriers each other???
         $CourierShiftModel->join('courier_list','courier_id','left');
         $CourierShiftModel->join('image_list','courier_list.courier_id=image_holder_id AND image_holder="courier"','left');
@@ -146,12 +159,14 @@ class DeliveryJob extends \App\Controllers\BaseController{
                 break;
             }
         }
-        /**
-         * Courier has to open shift to see routes
-         */
-        if( $user_has_opened_shift==false && !sudo() ){
-            return $this->failForbidden('forbidden');
-        }
+        // /**
+        //  * Courier has to open shift to see routes
+        //  */
+        // if( $user_has_opened_shift==false && !sudo() ){
+        //     return $this->failForbidden('forbidden');
+        // }
+
+        $delivery_jobs=$DeliveryJobModel->listGet($user_has_opened_shift);
         $routeList=[
             'delivery_jobs'=>$delivery_jobs,
             'open_shifts'=>$open_shifts

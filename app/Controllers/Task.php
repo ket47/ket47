@@ -125,7 +125,39 @@ class Task extends \App\Controllers\BaseController{
     private function taskCourierNotify($predis){
         $timerNotExpired=$predis->get('couriernotifytimer');
         if( $timerNotExpired ){
-            return false;
+            //
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+            
+            
+            
+            
+            
+            //return false;
         }
         $predis->setEx('couriernotifytimer',3*60,1);//3 min
         $DeliveryJobModel=model("DeliveryJobModel");
@@ -142,10 +174,8 @@ class Task extends \App\Controllers\BaseController{
         $OrderModel=model("OrderModel");
         $OrderModel->where('order_group_id',$customer_finish_group_id);
         $OrderModel->where("order_data->>'$.payment_by_cash'=1",null,false);
-        $OrderModel->groupBy('order_courier_admins');
         $OrderModel->allowRead();
-        $courier_user_ids=$OrderModel->select('GROUP_CONCAT(order_courier_admins) courier_user_ids')->get()->getRow('courier_user_ids');
-
+        $courier_user_ids=$OrderModel->select('GROUP_CONCAT(DISTINCT order_courier_admins) courier_user_ids')->get()->getRow('courier_user_ids');
 
         $CourierModel=model('CourierModel');
         $CourierModel->itemNotpayedNotify($courier_user_ids);

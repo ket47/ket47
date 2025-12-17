@@ -14,6 +14,7 @@ class CourierModel extends Model{
         'courier_tax_num',
         'current_order_id',
         'courier_comment',
+        'courier_parttime_notify',
         'deleted_at'
     ];
     protected $validationRules    = [
@@ -42,22 +43,23 @@ class CourierModel extends Model{
     /////////////////////////////////////////////////////
     public function itemGet( $courier_id=null, $mode='all' ){
         if( $courier_id ){
-            $this->where('courier_id',$courier_id);
+            $this->where('courier_list.courier_id',$courier_id);
         } else {
             $this->where('courier_list.owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
 
         $this->select("{$this->table}.*,group_name status_name,group_type status_type");
-        $this->join('courier_group_member_list','courier_id=member_id','left');
+        $this->join('courier_group_member_list','courier_list.courier_id=member_id','left');
         $this->join('courier_group_list','group_id','left');
         if($mode=='basic'){
             return $this->get()->getRow();
         }
-        $this->select('courier_list.*,location_address,location_latitude,location_longitude');
+        $this->select('courier_list.*,location_address,location_latitude,location_longitude,IF(shift_id,1,0) is_shift_open');
         $this->select('user_id,user_name,user_phone');
         $this->join('user_list','user_id=courier_list.owner_id');
-        $this->join('location_list','location_holder_id=courier_id AND is_main=1','left');
+        $this->join('location_list','location_holder_id=courier_list.courier_id AND is_main=1','left');
+        $this->join('courier_shift_list',"courier_shift_list.courier_id=courier_list.courier_id AND shift_status='open'",'left');
         $courier = $this->get()->getRow();
         
         if( !$courier ){
@@ -77,6 +79,7 @@ class CourierModel extends Model{
         ];
         $ImageModel=model('ImageModel');
         $courier->images=$ImageModel->listGet($filter);
+        $courier->rating_score=$this->itemRatingScoreGet( $courier_id );
         return $courier;  
     }
 
@@ -133,6 +136,15 @@ class CourierModel extends Model{
         }
         $this->permitWhere('w');
         $this->update($courier->courier_id,$courier);
+        if($courier->courier_parttime_notify??null){
+            $courier=$this->itemGet($courier->courier_id);
+            if( $courier->courier_parttime_notify=='off' && $courier->status_type=='ready' && $courier->is_shift_open==0 ){
+                $this->itemUpdateStatus($courier->courier_id,'idle');
+            }
+            if( $courier->courier_parttime_notify!='off' && $courier->status_type=='idle' && $courier->is_shift_open==0 ){
+                $this->itemUpdateStatus($courier->courier_id,'ready');
+            }
+        }
         return $this->db->affectedRows()?'ok':'idle';
     }
     /**
@@ -224,7 +236,11 @@ class CourierModel extends Model{
         if( !is_object($courier) ){
             return false;
         }
-        $result=$this->itemUpdateStatus($courier_id,'idle');
+
+        $result='ok';
+        if( $courier->courier_parttime_notify=='off' ){
+            $result=$this->itemUpdateStatus($courier_id,'idle');
+        }        
         if( $result=='ok' ){
             $CourierShiftModel=model('CourierShiftModel');
             return $CourierShiftModel->itemClose($courier_id,$courier->owner_id);
@@ -373,7 +389,9 @@ class CourierModel extends Model{
         return $this->db->affectedRows()?'ok':'idle';
     }
 
-
+    /**
+     * @deprecated
+     */
 
     public function listJobGet( $courier_id ){
         //courier should be able to preview jobs
@@ -406,6 +424,9 @@ class CourierModel extends Model{
         }
         return $job_list;
     }
+    /**
+     * @deprecated
+     */
 
     public function itemJobGet( $order_id ){
         $isCourierReady=$this->isCourierReady();
@@ -424,6 +445,9 @@ class CourierModel extends Model{
         $job->start_finish_distance=$LocationModel->distanceGet($job->order_start_location_id??0,$job->order_finish_location_id??0);
         return $job;
     }
+    /**
+     * @deprecated
+     */
 
 
     /**
@@ -516,7 +540,15 @@ class CourierModel extends Model{
         /**
          * Rating
          */
-        $count_rating_since=date("Y-m-d H:i:s",time()-30*24*60*60);//last 30 days
+
+
+
+
+
+
+
+        
+        $count_rating_since=date("Y-m-d H:i:s",time()-300*24*60*60);//last 30 days
         $ReactionModel=model('ReactionModel');
         $ReactionModel->where("created_at>'$count_rating_since'");
         $ReactionModel->where('tag_id',$courier_id);
@@ -527,17 +559,34 @@ class CourierModel extends Model{
         return $ReactionModel->get()->getResult();
     }
 
+    public function itemRatingScoreGet( $courier_id ){
+        $count_rating_since=date("Y-m-d H:i:s",time()-300*24*60*60);//last 30 days
+        $ReactionModel=model('ReactionModel');
+        $ReactionModel->where("created_at>'$count_rating_since'");
+        $ReactionModel->where('tag_id',$courier_id);
+        $ReactionModel->where('tag_name','courier');
+        $ReactionModel->join('reaction_tag_list','reaction_id=member_id');
+        $ReactionModel->select("SUM(reaction_is_like)/SUM(reaction_is_like+reaction_is_dislike) rating");
+        $score=$ReactionModel->get()->getRow('rating');
+        if( !$score ){
+            return 0;
+        }
+        return round($score,2);
+    }
+
+
     public function itemNotpayedNotify( $user_ids ){
         $message=(object)[
-            'message_reciever_id'=>"$user_ids,41",
+            'message_reciever_id'=>"$user_ids",
             'message_transport'=>'push,telegram',
             'message_text'=>"💳 Есть неоплаченные заказы",
         ];
 
         $sms_job=[
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSendMulticast','arguments'=>[$message]]
                 ],
+            'task_priority'=>'low'
         ];
         jobCreate($sms_job);
     }

@@ -12,6 +12,8 @@ class DeliveryJobModel extends SecureModel{
         'job_name',
         'order_id',
         'courier_id',
+        'courier_name',
+        'courier_image_hash',
         'start_longitude',
         'start_latitude',
         'start_prep_time',
@@ -25,7 +27,8 @@ class DeliveryJobModel extends SecureModel{
         'finish_arrival_time',
         'finish_color',
         'finish_address',
-        'stage'
+        'stage',
+        'notify_at'
         ];
 
     protected $useSoftDeletes = false;
@@ -67,7 +70,7 @@ class DeliveryJobModel extends SecureModel{
      * canceled
      */
 
-    public function itemStageSet( int $order_id, string $stage, object $data=null ){
+    public function itemStageSet( int $order_id, string $stage, ?object $data=null ){
         $data??=(object)[];
         $data->order_id=$order_id;
         $stageHandlerName = 'on'.str_replace(' ', '', ucwords(str_replace('_', ' ', $stage)));
@@ -196,8 +199,179 @@ class DeliveryJobModel extends SecureModel{
         $CourierShiftModel->update(null,['actual_longitude'=>$point->longitude,'actual_latitude'=>$point->latitude]);
     }
     
+
+    public function shiftStartHourGet(){
+        return $this->shiftStartHour;
+    }
+
+    public function shiftEndHourGet(){
+        return $this->shiftEndHour;
+    }
+    
+    public function itemGet(int $job_id=null,int $order_id=null){
+        if($order_id){
+            $jobsAll=$this->where('order_id',$order_id)->find();
+            return $jobsAll[0]??null;
+        }
+        return $this->find($job_id);
+    }
+    
+    public function itemCreate(object $job){
+        $this->allowedFields[]='job_data';
+        try{
+            $colorMap=new \App\Libraries\Coords2Color();
+            if( $job->start_latitude && $job->start_longitude ){
+                $job->start_color=$colorMap->getColor('claster1',$job->start_latitude,$job->start_longitude);
+            }
+            if( $job->finish_latitude && $job->finish_longitude ){
+                $job->finish_color=$colorMap->getColor('claster1',$job->finish_latitude,$job->finish_longitude);
+            }
+            $job_id=$this->ignore()->insert($job,true);
+            return $job_id;
+        } catch(\Throwable $e){
+            $err=$e->getMessage();
+            pl(['DeliveryJob->itemCreate',$err]);
+            return $err;
+        }
+    }
+    public function itemDataCreate( int $job_id, object $data_create ){
+        foreach($data_create as $path=>$value){
+            $data_create->{$path}=addslashes($value);
+        }
+        $this->set("job_data",json_encode($data_create));
+        $this->allowedFields[]='job_data';
+        $this->update($job_id);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemUpdate(object $job){
+        if( sudo() ){
+            $this->fieldUpdateAllow('job_courier_type');
+        }
+        if( $job->job_id??null ){
+            $this->update($job->job_id,$job);
+        } else 
+        if( $job->order_id??null ){
+            $this->where('order_id',$job->order_id);
+            $this->update(null,$job);
+        } else {
+            return 'notfound';
+        }
+        return $this->db->affectedRows()>0?'ok':'idle';
+    }
+
+    public function itemDataUpdate( int $job_id, object $data_update ){
+        $path_value='';
+        foreach($data_update as $path=>$value){
+            $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
+        }
+        $this->set("job_data","JSON_SET(`job_data`{$path_value})",false);
+        $this->allowedFields[]='job_data';
+        $this->update($job_id);
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+
+    public function itemUpsert( object $job ){
+        $this->itemCreate($job);
+        if( $this->db->affectedRows()>0 ){
+            return 'ok'; 
+        }
+        $this->itemUpdate($job);
+        if( $this->db->affectedRows()>0 ){
+            return 'ok'; 
+        }
+        return 'idle';
+    }
+
+    public function itemDelete(int $job_id=null,int $order_id=null){
+        if($order_id){
+            $this->where('order_id',$order_id)->delete();
+        } else {
+            $this->delete($job_id);
+        }
+        return $this->db->affectedRows()?'ok':'idle';
+    }
+    
+    public function listGet( $user_has_opened_shift=false ){
+        if( $user_has_opened_shift==false ){// || sudo()
+            $this->select("
+            IFNULL(job_data->>'$.delivery_gain_base',0) delivery_gain_base,
+            IFNULL(job_data->>'$.delivery_rating_pool',0) delivery_rating_pool,
+            IFNULL(job_data->>'$.delivery_promised_tip',0) delivery_promised_tip
+            ");
+        }
+        // is_shipment deprecated
+        $this->select("
+        job_id,
+        job_name,
+        job_courier_type,
+        courier_id,
+        courier_name,
+        courier_image_hash,
+        IFNULL(job_data->>'$.order_script',null) order_script,
+        IFNULL(job_data->>'$.is_shipment',0) is_shipment,
+        IFNULL(job_data->>'$.payment_by_cash',0) payment_by_cash,
+        IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,
+        IFNULL(job_data->>'$.customer_heart_count',0) customer_heart_count,
+        order_id,
+        start_plan,
+        start_color,
+        start_address,
+        start_longitude,
+        start_latitude,
+        finish_arrival_time,
+        finish_color,
+        finish_address,
+        finish_longitude,
+        finish_latitude,
+        stage
+        ");
+        $this->orderBy('courier_id');
+        $this->orderBy('start_plan');
+        return $this->get()->getResult();
+    }
+    
+    public function listCreate(){
+        return false;
+    }
+    
+    public function listUpdate(){
+        return false;
+    }
+    
+    public function listDelete(){
+        return false;
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     /////////////////////////////////////////////////
-    //PLANNING SECTION
+    //PLANNING SECTION MOVED TO LIBRARY!
     /////////////////////////////////////////////////
 
     /**
@@ -384,135 +558,4 @@ class DeliveryJobModel extends SecureModel{
         ];
     }
 
-
-    public function shiftStartHourGet(){
-        return $this->shiftStartHour;
-    }
-
-    public function shiftEndHourGet(){
-        return $this->shiftEndHour;
-    }
-    
-    public function itemGet(int $job_id=null,int $order_id=null){
-        if($order_id){
-            $jobsAll=$this->where('order_id',$order_id)->find();
-            return $jobsAll[0]??null;
-        }
-        return $this->find($job_id);
-    }
-    
-    public function itemCreate(object $job){
-        $this->allowedFields[]='job_data';
-        try{
-            $colorMap=new \App\Libraries\Coords2Color();
-            if( $job->start_latitude && $job->start_longitude ){
-                $job->start_color=$colorMap->getColor('claster1',$job->start_latitude,$job->start_longitude);
-            }
-            if( $job->finish_latitude && $job->finish_longitude ){
-                $job->finish_color=$colorMap->getColor('claster1',$job->finish_latitude,$job->finish_longitude);
-            }
-            $job_id=$this->ignore()->insert($job,true);
-            return $job_id;
-        } catch(\Throwable $e){
-            $err=$e->getMessage();
-            pl(['DeliveryJob->itemCreate',$err]);
-            return $err;
-        }
-    }
-    public function itemDataCreate( int $job_id, object $data_create ){
-        foreach($data_create as $path=>$value){
-            $data_create->{$path}=addslashes($value);
-        }
-        $this->set("job_data",json_encode($data_create));
-        $this->allowedFields[]='job_data';
-        $this->update($job_id);
-        return $this->db->affectedRows()?'ok':'idle';
-    }
-
-    public function itemUpdate(object $job){
-        if( $job->job_id??null ){
-            $this->update($job->job_id,$job);
-        } else 
-        if( $job->order_id??null ){
-            $this->where('order_id',$job->order_id);
-            $this->update(null,$job);
-        } else {
-            return 'notfound';
-        }
-        return $this->db->affectedRows()>0?'ok':'idle';
-    }
-
-    public function itemDataUpdate( int $job_id, object $data_update ){
-        $path_value='';
-        foreach($data_update as $path=>$value){
-            $path_value.=','.$this->db->escape("$.$path").','.$this->db->escape($value);
-        }
-        $this->set("job_data","JSON_SET(`job_data`{$path_value})",false);
-        $this->allowedFields[]='job_data';
-        $this->update($job_id);
-        return $this->db->affectedRows()?'ok':'idle';
-    }
-
-    public function itemUpsert( object $job ){
-        $this->itemCreate($job);
-        if( $this->db->affectedRows()>0 ){
-            return 'ok'; 
-        }
-        $this->itemUpdate($job);
-        if( $this->db->affectedRows()>0 ){
-            return 'ok'; 
-        }
-        return 'idle';
-    }
-
-    public function itemDelete(int $job_id=null,int $order_id=null){
-        if($order_id){
-            $this->where('order_id',$order_id)->delete();
-        } else {
-            $this->delete($job_id);
-        }
-        return $this->db->affectedRows()?'ok':'idle';
-    }
-    
-    public function listGet(){
-        // is_shipment deprecated
-        $this->select("
-        job_id,
-        job_name,
-        courier_id,
-        IFNULL(job_data->>'$.order_script',null) order_script,
-        IFNULL(job_data->>'$.is_shipment',0) is_shipment,
-        IFNULL(job_data->>'$.payment_by_cash',0) payment_by_cash,
-        IFNULL(job_data->>'$.finish_plan_scheduled',0) finish_plan_scheduled,
-        IFNULL(job_data->>'$.customer_heart_count',0) customer_heart_count,
-        order_id,
-        start_plan,
-        start_color,
-        start_address,
-        start_longitude,
-        start_latitude,
-        finish_arrival_time,
-        finish_color,
-        finish_address,
-        finish_longitude,
-        finish_latitude,
-        stage
-        ");
-        $this->orderBy('courier_id');
-        $this->orderBy('start_plan');
-        return $this->get()->getResult();
-    }
-    
-    public function listCreate(){
-        return false;
-    }
-    
-    public function listUpdate(){
-        return false;
-    }
-    
-    public function listDelete(){
-        return false;
-    }
-    
 }

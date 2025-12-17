@@ -1,0 +1,1 @@
+🔥 <?=$job->job_name?> <?= round($job->job_data->distance*0.001,1) ?>-<?= round($job->job_data->distance*0.0015,1) ?>км 💵 Заработок до <?= round($job->courier_gain_total) ?>₽

@@ -1139,16 +1139,21 @@ class OrderStageDeliveryScript{
     public function onDeliveryFound( $order_id ){
         helper('phone_number');
         $order=$this->OrderModel->itemGet($order_id);
+        $CourierModel=model('CourierModel');
+        $courier=$CourierModel->itemGet($order->order_courier_id);
+
+        $courier_gain_mode=$courier->is_shift_open?'shift':'taxi';
+
         $job=(object)[
-            'courier_id'=>$order->order_courier_id
+            'courier_id'=>$order->order_courier_id,
+            'courier_name'=>$courier->courier_name??null,
+            'courier_image_hash'=>$courier->images[0]->image_hash??null,
         ];
         $deliveryJob=['task_programm'=>[
             ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $job]]
         ]];
         jobCreate($deliveryJob);
 
-        $CourierModel=model('CourierModel');
-        $courier=$CourierModel->itemGet($order->order_courier_id);
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
@@ -1162,6 +1167,8 @@ class OrderStageDeliveryScript{
         $info_for_customer->courier_image_hash=$courier->images[0]->image_hash??'';
 
         $update=(object)[
+            'delivery_gain_mode'=>$courier_gain_mode,
+            'delivery_rating_score'=>$courier->rating_score,
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_supplier'=>json_encode($info_for_supplier),
         ];

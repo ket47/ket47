@@ -14,17 +14,17 @@ trait DeliveryJobChainTrait{
         return $CourierShiftModel->limit(1)->get()->getRow();
     }
 
+    private $maxJobsPerShift=2;
     public function chainJobs(){
         $CourierShiftModel=model('CourierShiftModel');
         $CourierShiftModel->allowRead();//called from cronjob as guest so need to skip permission check
         $openShifts=$CourierShiftModel->orderBy('last_finish_plan')->listGet( (object)['shift_status'=>'open'] );
         if( !$openShifts ){//no open courier shifts
-            $this->unassignAll();
             return false;
         }
 
         $awaitedJobCount=$this->where('stage','awaited')->select("COUNT(*) awaited_count")->get()->getRow('awaited_count');
-        $awaitedPerShift=ceil($awaitedJobCount/count($openShifts));
+        $awaitedPerShift=max(floor($awaitedJobCount/count($openShifts)),$this->maxJobsPerShift);
 
         $this->transBegin();
         $this->whereIn('stage',['awaited'])->update(null,['courier_id'=>null]);
@@ -67,12 +67,14 @@ trait DeliveryJobChainTrait{
     }
 
     /**
-     * When last courier closes the shift
-     * unassign all delivery jobs and make them awaiting
+     * When courier closes the shift
+     * unassign all delivery jobs of that courier and make them awaiting
      */
-    private function unassignAll(){
-        $this->where('stage','assigned');
+    private function unassignJobs( $courier_id ){
+        $this->where('courier_id',$courier_id);
+        $this->whereIn('stage',['assigned','awaited']);
         $this->update(null,['stage'=>'awaited','courier_id'=>null]);
+        $this->chainJobs();
     }
 
     private function chainAssignedJobs( object $shift ){

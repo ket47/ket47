@@ -45,9 +45,6 @@ trait DeliveryJobNotificationTrait{
      * should be called from cronjob
      */
     public function itemNextRemind(){ 
-
-
-
         $this->offlineShiftSmsBackup();
 
 
@@ -66,14 +63,18 @@ trait DeliveryJobNotificationTrait{
             $awaitedNext=$this->itemNextGet($free->courier_id);
             $this->itemNextNotify($awaitedNext,$free->awaited_count);
         }
+        $this->itemTaxiNotify();
         return true;
     }
 
+    /**
+     * If mobile internet is not available, send sms
+     */
     public function offlineShiftSmsBackup(){
         $CourierShiftModel=model('CourierShiftModel');
         $filter=(object)[
             'shift_status'=>'open',
-            'updated_before'=>date('Y-m-d H:i:s',time()-10*60)//10 min
+            'updated_before'=>date('Y-m-d H:i:s',time()-5*60)//10 min
         ];
         $CourierShiftModel->allowRead();
         $shifts=$CourierShiftModel->listGet($filter);
@@ -117,7 +118,7 @@ trait DeliveryJobNotificationTrait{
 
 
         $transport="telegram";
-        $updated_before=date('Y-m-d H:i:s',time()-15*60);
+        $updated_before=date('Y-m-d H:i:s',time()-10*60);
         if($shift->updated_at<$updated_before){
             $transport.=",sms";
         }
@@ -177,22 +178,114 @@ trait DeliveryJobNotificationTrait{
         ];
 
         //tmp copy to admin
-        $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
-        $copy=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'telegram',
-            'message_text'=>"{$courier_name} уведомлен о {$awaitedNext->job_name} #{$awaitedNext->order_id}",
-            'telegram_options'=>[
-                'opts'=>[
-                    'disable_notification'=>1,
-                ]
-            ],
-        ];
+        // $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
+        // $copy=(object)[
+        //     'message_reciever_id'=>'-100',
+        //     'message_transport'=>'telegram',
+        //     'message_text'=>"{$courier_name} уведомлен о {$awaitedNext->job_name} #{$awaitedNext->order_id}",
+        //     'telegram_options'=>[
+        //         'opts'=>[
+        //             'disable_notification'=>1,
+        //         ]
+        //     ],
+        // ];
         jobCreate([
             'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message,$copy] ] ]//
-                ]
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ [$message] ] ]//,$copy
+                ],
+            'task_priority'=>'low'
         ]);
         return true;
+    }
+
+    private function itemTaxiNotify(){
+        $notification_lifetime=15*60;//15min
+        /**
+         * Notification time we will look at notify_at field
+         * on shift orderts it will be null
+         */
+        $this->where("notify_at<NOW() OR notify_at IS NULL");
+        $this->whereIn("stage",['awaited']);
+        $taxi_jobs=$this->get()->getResult();
+        if( !$taxi_jobs ){
+            return;
+        }
+
+        $CourierModel=model('CourierModel');
+        $CourierModel->where('is_disabled',0);
+        $CourierModel->where('deleted_at',null);
+        $CourierModel->whereIn('courier_parttime_notify',['silent','push','ringtone']);
+        $CourierModel->select('courier_id,courier_name,courier_parttime_notify,owner_id');
+        $taxi_couriers=$CourierModel->get()->getResult();
+
+        foreach($taxi_jobs as $job){
+            foreach($taxi_couriers as $courier){
+                $job->job_data=json_decode($job->job_data);
+                $job->courier_gain_total=round($job->job_data->delivery_gain_base+($job->job_data->delivery_rating_pool??0)+($job->job_data->delivery_promised_tip??0));
+                $message_tel=(object)[
+                    'message_transport'=>"telegram",
+                    'message_reciever_id'=>"$courier->owner_id",
+                    'telegram_options'=>[
+                        'autodelete_timeout'=>$notification_lifetime,
+                        'opts'=>[
+                            'disable_web_page_preview'=>1,
+                            'protect_content'=>1
+                        ]
+                    ],
+                    'template'=>'messages/events/on_taxi_job_available.php',
+                    'context'=>['courier'=>$courier,'job'=>$job]
+                ];
+                $message_push=(object)[
+                    'message_transport'=>"push",
+                    'message_reciever_id'=>"$courier->owner_id",
+                    'message_data'=>(object)[
+                        'title'=>"Задание на доставку",
+                        'link'=>"/order",
+                        'tag'=>'#courierJob',
+                    ],
+                    'template'=>'messages/events/on_taxi_job_available_push.php',
+                    'context'=>['courier'=>$courier,'job'=>$job]
+                ];
+                $message=[];
+                if( $courier->courier_parttime_notify=='silent' ){
+                    $message_tel->telegram_options['opts']['disable_notification']=1;
+                    $message_tel->telegram_options['buttons']=[
+                        ['',"onCourierTaxiNotif-off",'🚫 Не получать'],
+                        ['',"onCourierTaxiNotif-push",'🔊 Со звуком'],
+                        ['','','🔥 Открыть в приложении','https://tezkel.com/order']
+                    ];
+                    $message[]=$message_tel;
+                } else
+                if( $courier->courier_parttime_notify=='push' ){
+                    $message_tel->telegram_options['buttons']=[
+                        ['',"onCourierTaxiNotif-silent",'🔇 Без звука'],
+                        ['',"onCourierTaxiNotif-ringtone",'🔔 Рингтон'],
+                        ['','','🔥 Открыть в приложении','https://tezkel.com/order']
+                    ];
+                    $message[]=$message_tel;
+                    $message[]=$message_push;
+                } else
+                if( $courier->courier_parttime_notify=='ringtone' ){
+                    $message_push->message_data->sound='short.wav';
+                    $message_tel->telegram_options['buttons']=[
+                        ['',"onCourierTaxiNotif-push",'🔕 Рингтон'],
+                        ['','','🔥 Открыть в приложении','https://tezkel.com/order']
+                    ];
+                    $message[]=$message_tel;
+                    $message[]=$message_push;
+                } else {
+                    return;
+                }
+                jobCreate([
+                    'task_programm'=>[
+                            ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[ $message ] ]//
+                        ],
+                    'task_priority'=>'low'
+                ]);
+            }
+
+            $job_update=(object)['job_id'=>$job->job_id,'notify_at'=>date('Y-m-d H:i:s',time()+$notification_lifetime)];
+            $this->itemUpdate($job_update);
+        }
     }
 }

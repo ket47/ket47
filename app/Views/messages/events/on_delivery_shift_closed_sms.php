@@ -9,6 +9,23 @@
     $hour_cost_rent =180;
     $hour_cost_own  =190;
 
+    if( $courier->courier_id==156 ){
+        $hour_cost_own  =250;//bahman
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     $heavy_bonus_moped  =$statistics->heavy_bonus??0;
     $heavy_bonus_car    =$heavy_bonus_moped/2;
 
