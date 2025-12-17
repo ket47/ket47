@@ -903,8 +903,8 @@ class StoreModel extends Model{
          * Halal perk
          */
         $StoreGroupMemberModel=model('StoreGroupMemberModel');
-        if($store_id){        
-            $StoreGroupMemberModel->where('member_id',$store_id);        
+        if($store_id){
+            $StoreGroupMemberModel->where('member_id',$store_id);
         }
         $StoreGroupMemberModel->join('store_group_list','group_id');
         $StoreGroupMemberModel->where('group_type','halal');
