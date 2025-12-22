@@ -303,7 +303,8 @@ class Courier extends \App\Controllers\BaseController{
     //IMAGE HANDLING SECTION
     /////////////////////////////////////////////////////
     public function fileUpload(){
-        $image_holder_id=$this->request->getVar('image_holder_id');
+        $image_holder=$this->request->getPost('image_holder');
+        $image_holder_id=$this->request->getPost('image_holder_id');
         if ( !(int) $image_holder_id ) {
             return $this->fail('no_holder_id');
         }
@@ -318,7 +319,7 @@ class Courier extends \App\Controllers\BaseController{
                 continue;
             }
             if ($file->isValid() && ! $file->hasMoved()) {
-                $result=$this->fileSaveImage($image_holder_id,$file);                
+                $result=$this->fileSaveImage($image_holder_id,$file,$image_holder);                
                 if( $result!==true ){
                     return $this->fail($result);
                 }
@@ -341,9 +342,9 @@ class Courier extends \App\Controllers\BaseController{
         }
     }
 
-    private function fileSaveImage( $image_holder_id, $file ){
+    private function fileSaveImage( $image_holder_id, $file, $image_holder ){
         $image_data=[
-            'image_holder'=>'courier',
+            'image_holder'=>$image_holder,
             'image_holder_id'=>$image_holder_id
         ];
         $this->imagePurgeCurrent($image_holder_id);

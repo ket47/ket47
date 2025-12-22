@@ -70,7 +70,7 @@ trait DeliveryJobChainTrait{
      * When courier closes the shift
      * unassign all delivery jobs of that courier and make them awaiting
      */
-    private function unassignJobs( $courier_id ){
+    public function unassignJobs( $courier_id ){
         $this->where('courier_id',$courier_id);
         $this->whereIn('stage',['assigned','awaited']);
         $this->update(null,['stage'=>'awaited','courier_id'=>null]);
