@@ -1,1 +1,1 @@
-Курьер <?=$courier->courier_name?> назначен. Заказ #<?=$order->order_id?> из <?=$store->store_name??'-'?>
+<?=$delivery_gain_mode=='taxi'?'🚖':'🚦'?> Курьер <?=$courier->courier_name?> назначен. Заказ #<?=$order->order_id?> из <?=$store->store_name??'-'?>.

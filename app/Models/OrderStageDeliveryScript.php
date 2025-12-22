@@ -1136,16 +1136,15 @@ class OrderStageDeliveryScript{
         return 'ok';
     }
 
-    public function onDeliveryFound( $order_id ){
-        helper('phone_number');
+    public function onDeliveryFound( $order_id, $courierData ){
         $order=$this->OrderModel->itemGet($order_id);
         $CourierModel=model('CourierModel');
-        $courier=$CourierModel->itemGet($order->order_courier_id);
+        $courier=$CourierModel->itemGet($courierData->order_courier_id);
 
         $courier_gain_mode=$courier->is_shift_open?'shift':'taxi';
 
         $job=(object)[
-            'courier_id'=>$order->order_courier_id,
+            'courier_id'=>$courierData->order_courier_id,
             'courier_name'=>$courier->courier_name??null,
             'courier_image_hash'=>$courier->images[0]->image_hash??null,
         ];
@@ -1158,9 +1157,12 @@ class OrderStageDeliveryScript{
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
         $info_for_customer=(object)json_decode($order_data->info_for_customer??'[]');
 
+        helper('phone_number');
         $info_for_supplier->courier_name=$courier->courier_name;
         $info_for_supplier->courier_phone='+'.clearPhone($courier->user_phone);
         $info_for_supplier->courier_image_hash=$courier->images[0]->image_hash??'';
+        $info_for_supplier->customer_name=$order->customer->user_name;
+        $info_for_supplier->customer_phone='+'.clearPhone($order->customer->user_phone);
 
         $info_for_customer->courier_name=$courier->courier_name;
         $info_for_customer->courier_phone='+'.clearPhone($courier->user_phone);
@@ -1179,6 +1181,7 @@ class OrderStageDeliveryScript{
             'order'=>$order,
             'store'=>$order->store,
             'courier'=>$courier,
+            'delivery_gain_mode'=>$courier_gain_mode??'',
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',

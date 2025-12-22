@@ -253,7 +253,7 @@ class User extends \App\Controllers\BaseController{
     }
 
     private function signUpPromoCreate($new_user_id){
-        $inviter_user_id=$this->request->getPost('inviter_user_id');
+        $inviter_user_id=(int) $this->request->getPost('inviter_user_id');
         $PromoModel=model('PromoModel');
         $PromoModel->listCreate($new_user_id,$inviter_user_id??0);        
     }
@@ -549,7 +549,8 @@ class User extends \App\Controllers\BaseController{
     //VERIFICATION SECTION
     ///////////////////////////////////////////////
     public function phoneVerificationSend(){
-        $user_phone=$this->request->getVar('user_phone');
+        $user_phone=$this->request->getPost('user_phone');
+        $mud_id=$this->request->getPost('mud_id');
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $debounce_elapsed=session()->get("verificationDebounce$user_phone_cleared");
@@ -560,21 +561,22 @@ class User extends \App\Controllers\BaseController{
         $debounce_timeout=2*60-10;//2min -10 sec
         session()->set("verificationDebounce$user_phone_cleared",time()+$debounce_timeout);
 
+        $is_abuse=$this->abuseDetect( $user_phone_cleared, $mud_id );
+        if( $is_abuse ){
+            $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
+            foreach($fields as $field){
+                $info[$field]=$_SERVER[$field]??'--';
+            }
+            //tl($user_phone,$info);
+            return $this->respond('ok');
+        }
+
         $UserVerificationModel=model('UserVerificationModel');
         $verification=$UserVerificationModel->itemCreate($user_phone_cleared,'phone');
         if( !$verification || $verification=='verification_target_invalid' ){
             return $this->fail('verification_target_invalid');
         }
-
-        if( !isset($_SERVER["HTTP_X_SID"]) || !isset($_SERVER["HTTP_X_VER"]) ){
-            // $fields=['GEOIP_COUNTRY_NAME',"GEOIP_CITY","HTTP_X_REAL_IP","HTTP_USER_AGENT","HTTP_X_SID","HTTP_X_VER"];
-            // foreach($fields as $field){
-            //     $info[$field]=$_SERVER[$field]??'--';
-            // }
-            //pl($info);
-            return $this->respond('ok');
-        }
-        if( !$verification || $verification=='verification_abuse' ){
+        if( $verification=='verification_abuse' ){
             return $this->fail('verification_already_sent');
         }
 
@@ -597,6 +599,37 @@ class User extends \App\Controllers\BaseController{
             return $this->respond('ok');
         }
         return $this->fail('verification_send_failed');
+    }
+
+    private function abuseDetect( $user_phone_cleared, $mud_id ){
+        if( !isset($_SERVER["HTTP_X_SID"]) || !isset($_SERVER["HTTP_X_VER"]) ){
+            return true;
+        }
+        if( substr($user_phone_cleared,0,4)==7978 ){//tmp
+            return false;
+        }
+        if( $_SERVER["HTTP_X_VER"]!='web' && $_SERVER["HTTP_X_VER"]>0 ){//tmp
+            return false;
+        }
+        if( $mud_id==$this->stringToHash(session_id().'.') ){
+            return false;
+        }
+        return true;
+    }
+
+    private function stringToHash($string){
+        $hash = 0; 
+        $length = strlen($string); 
+        if ($length === 0) return $hash; 
+        for ($i = 0; $i < $length; $i++) { 
+            $char = ord($string[$i]); 
+            $hash = (($hash << 5) - $hash) + $char; 
+            $hash = $hash & 0xFFFFFFFF; 
+            if ($hash > 0x7FFFFFFF) { 
+                $hash -= 0x100000000; 
+            } 
+        } 
+        return $hash;
     }
 
     public function phoneVerificationSendFallback( $user_verification_id ){

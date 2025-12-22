@@ -10,6 +10,7 @@ trait OrderStageTrait{
         //if( !$this->StageScript ){
             $order_basic=$this->itemGet($order_id,'basic');
             if( !is_object($order_basic) ){
+                pl('itemStageScriptLoad forbidden');
                 die();//forbidden notfound etc
                 //return null;
             }

@@ -27,6 +27,12 @@ class SecureModel extends Model{
         $this->permitWhere('w');
         return $data;
     }
+    /**
+     * Skips permission check once
+     */
+    public function allowWrite(){
+        $this->permitWriteSkip=true;
+    }
 
     private $permitReadSkip=false;
     protected function permitRead(){
@@ -35,13 +41,6 @@ class SecureModel extends Model{
             return;
         }
         $this->permitWhere('r');
-    }
-
-    /**
-     * Skips permission check once
-     */
-    public function allowWrite(){
-        $this->permitWriteSkip=true;
     }
     /**
      * Skips permission check once

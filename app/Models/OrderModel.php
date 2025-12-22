@@ -56,18 +56,29 @@ class OrderModel extends SecureModel{
         $this->resetQuery();
     }
     
-    public $checkPermissionForItemGet=true;
     private $itemCache=[];
     public function itemGet( $order_id, $mode='all' ){
         if( $this->itemCache[$mode.$order_id]??0 ){
             return $this->itemCache[$mode.$order_id];
         }
-        $this->permitWhere('r');
         $this->select("{$this->table}.*,group_name stage_current_name,group_type stage_current");
-        $this->where('order_id',$order_id);
         $this->join('order_group_list','order_group_id=group_id','left');
         $this->itemUserRoleCalc();
+        
+        $this->where('order_id',$order_id);
+        $this->permitWhere('r');
         $order = $this->get()->getRow();
+
+
+        /**
+         * @todo migrate to securemodel compatible find function
+         */
+        //$order = $this->find($order_id);
+        //ql($this);
+
+
+
+
         if( !$order ){
             return 'notfound';
         }
