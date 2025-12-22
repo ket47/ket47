@@ -238,7 +238,7 @@ class PostModel extends SecureModel{
         foreach($posts as &$post){
             if(!empty($post->reaction_tags)){
                 $post->reacted_tags = $ReactionTagModel->select('GROUP_CONCAT(DISTINCT tag_option) as reacted_tags')->join('reaction_list', 'reaction_tag_list.member_id = reaction_list.reaction_id')
-                ->where('tag_name = "post" AND owner_id = '.session()->get('user_id'))->get()->getRow('reacted_tags');
+                ->where('tag_name = "post" AND tag_id = "'.$post->post_id.'" AND owner_id = '.session()->get('user_id'))->get()->getRow('reacted_tags');
             }
             $post->is_writable=$this->permit($post->post_id,'w');
         }
