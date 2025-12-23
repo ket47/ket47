@@ -120,12 +120,18 @@ class DeliveryJob extends \App\Controllers\BaseController{
         $CourierModel->itemUpdateStatus($courier_id,'busy');
         $CourierModel->itemJobStartNotify( $courier->owner_id, ['courier'=>$courier,'order_id'=>$order_id] );
 
+        $courierData=(object)[
+            'order_courier_id'=>$courier->courier_id,
+            'order_courier_admins'=>$courier->owner_id
+        ];
+        $OrderModel=model("OrderModel");
         $OrderModel->allowWrite();//allow modifying order once
-        $OrderModel->update($order_id,(object)['order_courier_id'=>$courier_id,'order_courier_admins'=>$courier->owner_id]);
+        $OrderModel->update($order_id,$courierData);
         $OrderModel->itemUpdateOwners($order_id);
         $OrderModel->itemCacheClear();
-        $result= $OrderModel->itemStageAdd( $order_id, 'delivery_found' );
+        //$OrderModel->allowRead();//allow modifying order once
 
+        $result= $OrderModel->itemStageAdd( $order_id, 'delivery_found', $courierData );
         if($result=='ok'){
             return $this->respond($result);
         }

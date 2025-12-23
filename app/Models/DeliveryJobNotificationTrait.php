@@ -221,7 +221,7 @@ trait DeliveryJobNotificationTrait{
         foreach($taxi_jobs as $job){
             foreach($taxi_couriers as $courier){
                 $job->job_data=json_decode($job->job_data);
-                $job->courier_gain_total=round($job->job_data->delivery_gain_base+($job->job_data->delivery_rating_pool??0)+($job->job_data->delivery_promised_tip??0));
+                $job->courier_gain_total=round(($job->job_data->delivery_gain_base??0)+($job->job_data->delivery_rating_pool??0)+($job->job_data->delivery_promised_tip??0));
                 $message_tel=(object)[
                     'message_transport'=>"telegram",
                     'message_reciever_id'=>"$courier->owner_id",

@@ -238,7 +238,7 @@ class PromoModel extends Model{
             for($i=0;$i<$promo_voucher_count;$i++){
                 $promo_activator_id=$this->itemCreate($user_id,$parent_value,$parent_name);
                 if($inviter_user_id>0){
-                    $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id,1);
+                    $this->itemCreate($inviter_user_id,$child_value,$child_name,$promo_activator_id,$is_summable=1);
                 }
             }
         $this->transCommit();
@@ -270,7 +270,7 @@ class PromoModel extends Model{
         }
         $cust_sms=(object)[
             'message_reciever_id'=>$user_id,
-            'message_transport'=>'message',
+            'message_transport'=>'push,email,telegram',
             'template'=>$template_file,
             'context'=>$context
         ];
