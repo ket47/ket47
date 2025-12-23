@@ -99,25 +99,18 @@ class Product extends \App\Controllers\BaseController{
         $offset=$this->request->getPost('offset');
         $limit=$this->request->getPost('limit');
 
-
         $group_id=intval($group_ids);//get first group id
         $storeCache=$this->listNearCache($location_id,$location_latitude,$location_longitude);
         if( !is_array($storeCache['store_list_ids']??null) || !$group_id ){
             return $this->failNotFound('notfound');
         }
 
-        
         $ProductModel=model('ProductModel');
-
-
-
         $ProductModel->where('group_id',$group_id);
         $ProductModel->whereIn('store_id',$storeCache['store_list_ids']);
         $ProductModel->where('(is_counted=0 OR is_counted=1 AND product_quantity>0)');
         $ProductModel->where('image_hash IS NOT NULL');
-
         $ProductModel->orderBy('COUNT(perk_value)','DESC');
-        
         $product_list=$ProductModel->listGet([
             'offset'=>$offset,
             'limit'=>$limit,
@@ -125,9 +118,6 @@ class Product extends \App\Controllers\BaseController{
             'is_hidden'=>0,
             'group_id'=>$group_id
         ]);
-
-
-        ql($ProductModel);
         return $this->respond($product_list);
     }
 

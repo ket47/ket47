@@ -123,7 +123,7 @@ trait DeliveryJobNotificationTrait{
             $transport.=",sms";
         }
         $messages[]=(object)[
-            'message_reciever_id'=>"41,$shift->owner_id",
+            'message_reciever_id'=>"$shift->owner_id",
             'message_transport'=>$transport,//
             'message_text'=>$route_text,
             'telegram_options'=>[

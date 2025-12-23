@@ -14,7 +14,7 @@ trait DeliveryJobChainTrait{
         return $CourierShiftModel->limit(1)->get()->getRow();
     }
 
-    private $maxJobsPerShift=2;
+    private $maxJobsPerShift=3;
     public function chainJobs(){
         $CourierShiftModel=model('CourierShiftModel');
         $CourierShiftModel->allowRead();//called from cronjob as guest so need to skip permission check
@@ -24,7 +24,7 @@ trait DeliveryJobChainTrait{
         }
 
         $awaitedJobCount=$this->where('stage','awaited')->select("COUNT(*) awaited_count")->get()->getRow('awaited_count');
-        $awaitedPerShift=max(floor($awaitedJobCount/count($openShifts)),$this->maxJobsPerShift);
+        $awaitedPerShift=floor($awaitedJobCount/count($openShifts));
 
         $this->transBegin();
         $this->whereIn('stage',['awaited'])->update(null,['courier_id'=>null]);
@@ -32,10 +32,14 @@ trait DeliveryJobChainTrait{
             $shift->courier_speed=$this->avgSpeed;// m/s temporary must be set at shift start
             $shift->last_finish_plan=time();
             $shift->assigned_in_chain=[];
+            $shift->total_job_count=0;
 
             $shift=$this->chainStartedJobs($shift);
             $shift=$this->chainAssignedJobs($shift);
-            $shift=$this->chainAwaitedJobs($shift,$awaitedPerShift);
+
+            $awaitedJobLimit=min($awaitedPerShift,$this->maxJobsPerShift-$shift->total_job_count);
+            
+            $shift=$this->chainAwaitedJobs($shift,$awaitedJobLimit);
             $CourierShiftModel->allowWrite();//called from cronjob as guest so need to skip permission check
             $CourierShiftModel->itemUpdate($shift);
         }
@@ -59,6 +63,7 @@ trait DeliveryJobChainTrait{
             $shift->last_finish_plan=time()+$job->finish_arrival_distance/$shift->courier_speed;
             $shift->last_longitude=$job->finish_longitude;
             $shift->last_latitude=$job->finish_latitude;
+            $shift->total_job_count++;
 
             $finish_arrival_time=$shift->last_finish_plan-$job->start_plan;
             $this->update($job->job_id,['finish_arrival_time'=>$finish_arrival_time]);
@@ -93,10 +98,11 @@ trait DeliveryJobChainTrait{
         $shift->last_finish_plan=$start_plan+$nextLink->finish_arrival_time;
         $shift->last_longitude=$nextLink->finish_longitude;
         $shift->last_latitude=$nextLink->finish_latitude;
+        $shift->total_job_count++;
         return $this->chainAssignedJobs( $shift );
     }
 
-    private function chainAwaitedJobs( object $shift, int $limit ){
+    private function chainAwaitedJobs( object $shift, int $limit ){//if limit negative or 0 then exit
         if( $limit--<1 ){
             return $shift;
         }
@@ -122,6 +128,7 @@ trait DeliveryJobChainTrait{
         $shift->last_finish_plan=$nextLink->start_plan+$nextLink->finish_arrival_time;
         $shift->last_longitude=$nextLink->finish_longitude;
         $shift->last_latitude=$nextLink->finish_latitude;
+        $shift->total_job_count++;
         return $this->chainAwaitedJobs( $shift, $limit );
     }
 
