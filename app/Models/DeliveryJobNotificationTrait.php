@@ -219,8 +219,8 @@ trait DeliveryJobNotificationTrait{
         $taxi_couriers=$CourierModel->get()->getResult();
 
         foreach($taxi_jobs as $job){
+            $job->job_data=json_decode($job->job_data);
             foreach($taxi_couriers as $courier){
-                $job->job_data=json_decode($job->job_data);
                 $job->courier_gain_total=round(($job->job_data->delivery_gain_base??0)+($job->job_data->delivery_rating_pool??0)+($job->job_data->delivery_promised_tip??0));
                 $message_tel=(object)[
                     'message_transport'=>"telegram",
@@ -285,6 +285,7 @@ trait DeliveryJobNotificationTrait{
             }
 
             $job_update=(object)['job_id'=>$job->job_id,'notify_at'=>date('Y-m-d H:i:s',time()+$notification_lifetime)];
+            $this->allowWrite();
             $this->itemUpdate($job_update);
         }
     }

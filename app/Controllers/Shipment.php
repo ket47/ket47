@@ -357,6 +357,11 @@ class Shipment extends \App\Controllers\BaseController{
         $order_data->delivery_fee=$deliveryOption->deliveryFee;
         $order_data->delivery_cost=$deliveryOption->deliveryCost;
         $order_data->delivery_heavy_bonus=$deliveryOption->deliveryHeavyBonus;
+
+        $order_data->delivery_gain_mode='unset';
+        $order_data->delivery_gain_base=$order->order_sum_total;
+        $order_data->delivery_rating_pool=30;
+
         $order->order_sum_delivery=$deliveryOption->deliverySum;
         $OrderModel->fieldUpdateAllow('order_sum_delivery');
 

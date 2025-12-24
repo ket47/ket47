@@ -15,20 +15,19 @@ class Reaction extends \App\Controllers\BaseController{
         $is_like=$this->request->getPost('is_like');
         $is_dislike=$this->request->getPost('is_dislike');
 
-        if( $is_like=='true' ){
-            $is_like=1;
-        }
-        if( $is_like=='false' ){
-            $is_like=0;
-        }
 
-        if( $is_dislike=='true' ){
+
+        //////////////////////////////////////
+        //TMP PATCH
+        //////////////////////////////////////
+        if( $is_like=='true' || $is_dislike=='false' ){
+            $is_like=1;
+            $is_dislike=0;
+        } else
+        if( $is_like=='false' || $is_dislike=='true' ){
+            $is_like=0;
             $is_dislike=1;
         }
-        if( $is_dislike=='false' ){
-            $is_dislike=0;
-        }
-
 
 
 
@@ -92,7 +91,8 @@ class Reaction extends \App\Controllers\BaseController{
         $notification_task=[
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$cust_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
     }
@@ -144,7 +144,8 @@ class Reaction extends \App\Controllers\BaseController{
         $notification_task=[
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms,$cust_sms]]]
-                ]
+                ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
     }
@@ -192,7 +193,8 @@ class Reaction extends \App\Controllers\BaseController{
             'task_name'=>"Comment event",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$reaction_sms,$cust_sms]]]
-                ]
+            ],
+            'task_priority'=>'low'
         ];
         jobCreate($notification_task);
     }

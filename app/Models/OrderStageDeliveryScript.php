@@ -45,7 +45,7 @@ class OrderStageDeliveryScript{
 
         'system_schedule'=>[
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
-            'customer_start'=>              [],//'В очередь','danger','clear'
+            'customer_start'=>              ['В очередь','medium','clear'],//
             ],
         'system_start'=>[
             'supplier_start'=>              ['Начать подготовку'],
