@@ -516,20 +516,19 @@ class CourierModel extends Model{
         $LocationModel=model('LocationModel');
 
         $OrderModel->permitWhere('r');
-        $OrderModel->join('courier_list','courier_id=order_courier_id','left');
-        //$OrderModel->join('user_list','courier_list.owner_id=user_id','left');
-        $OrderModel->join('location_list','courier_id=location_holder_id AND location_holder="courier" AND is_main=1','left');
+        $OrderModel->join('courier_list','courier_list.courier_id=order_courier_id','left');
+        $OrderModel->join('courier_shift_list',"courier_list.courier_id=courier_shift_list.courier_id AND shift_status='open'",'left');
         $OrderModel->join('order_group_list ogl','group_id=order_group_id');
-        $OrderModel->join('image_list il','image_holder="courier" AND image_holder_id=courier_id','left');
+        $OrderModel->join('image_list il','image_holder="courier" AND image_holder_id=courier_list.courier_id','left');
         $OrderModel->select("order_start_location_id,order_finish_location_id,group_type");
-        $OrderModel->select("courier_name,image_hash,location_id courier_location_id,location_latitude,location_longitude,TIMESTAMPDIFF(SECOND,location_list.updated_at,NOW()) location_age");
+        $OrderModel->select("courier_name,image_hash,actual_latitude location_latitude,actual_longitude location_longitude,TIMESTAMPDIFF(SECOND,courier_shift_list.updated_at,NOW()) location_age");
         $OrderModel->where('order_id',$order_id);
         //$OrderModel->where('group_type','delivery_start');
         $job=$OrderModel->get()->getRow();
         if( !$job ){
             return 'notfound';
         }
-        $job->courier_finish_distance=  $LocationModel->distanceGet($job->courier_location_id??0,$job->order_finish_location_id??0);
+        //$job->courier_finish_distance=  $LocationModel->distanceGet($job->courier_location_id??0,$job->order_finish_location_id??0);
         $job->start_location=           $LocationModel->itemGet($job->order_start_location_id);
         $job->finish_location=          $LocationModel->itemGet($job->order_finish_location_id);
         return $job;

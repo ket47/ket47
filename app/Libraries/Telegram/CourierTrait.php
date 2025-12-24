@@ -53,9 +53,6 @@ trait CourierTrait{
         $bound_latitude_min=44.894650;
         $bound_latitude_max=44.996708;
 
-
-
-
         $location_is_distorted=0;
         if( $location['longitude']<$bound_longitude_min || $location['longitude']>$bound_longitude_max || $location['latitude']<$bound_latitude_min || $location['latitude']>$bound_latitude_max ){
             //looking if ouside of square
@@ -97,18 +94,18 @@ trait CourierTrait{
             ];
             $CourierShiftModel->itemUpdate($update);
         }
-        $courier_location=[
-            'location_holder'   =>'courier',
-            'location_holder_id'=>$courier->courier_id,
-            'location_longitude'=>$location['longitude'],
-            'location_latitude' =>$location['latitude']
-        ];
-        $LocationModel=model('LocationModel');
-        $result= $LocationModel->itemAdd($courier_location);
-        if( $result!='ok' ){
-            $user=$this->userGet();
-            $this->sendText("{$user->user_name}, не удалось обновить ваше местоположение",'','courier_message');
-        }
+        // $courier_location=[
+        //     'location_holder'   =>'courier',
+        //     'location_holder_id'=>$courier->courier_id,
+        //     'location_longitude'=>$location['longitude'],
+        //     'location_latitude' =>$location['latitude']
+        // ];
+        // $LocationModel=model('LocationModel');
+        // $result= $LocationModel->itemAdd($courier_location);
+        // if( $result!='ok' ){
+        //     $user=$this->userGet();
+        //     $this->sendText("{$user->user_name}, не удалось обновить ваше местоположение",'','courier_message');
+        // }
         $incomingData=$this->Telegram->IncomingData();
         session()->set('lastLocationUpdateMessage',[
             'message_id'=>$incomingData['message_id'],
@@ -275,10 +272,12 @@ trait CourierTrait{
         if( !$this->isCourier() ){
             return false;
         }
-        return ($this->courierGet()->status_type??'')=='idle';
+        return in_array($this->courierGet()->status_type??null,['idle','taxi']);
     }
     private function courierSetReady(){
         $courier=$this->courierGet();
+        
+        pl($courier);
         if( !$this->isCourierBusy() && !$this->isCourierReady() ){
             $CourierModel=model("CourierModel");
             $CourierModel->itemShiftOpen($courier->courier_id);
