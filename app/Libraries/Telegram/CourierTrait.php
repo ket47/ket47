@@ -40,7 +40,7 @@ trait CourierTrait{
 
     public function onCourierUpdateLocation($location){
         $lastUpdateMsg=session()->get('lastLocationUpdateMessage');
-        if($lastUpdateMsg && ($lastUpdateMsg['updated_at']??0)>time()-30){
+        if($lastUpdateMsg && ($lastUpdateMsg['updated_at']??0)>time()-60){
             //to many requests
             return false;
         }
@@ -279,10 +279,8 @@ trait CourierTrait{
     }
     private function courierSetReady(){
         $courier=$this->courierGet();
-        if( $this->isCourierIdle() ){
-            $user=$this->userGet();
+        if( !$this->isCourierBusy() && !$this->isCourierReady() ){
             $CourierModel=model("CourierModel");
-            //$CourierModel->itemUpdateStatus($courier->courier_id,'ready');
             $CourierModel->itemShiftOpen($courier->courier_id);
             session()->remove('courier');
             return $this->sendMainMenu();

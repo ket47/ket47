@@ -125,39 +125,7 @@ class Task extends \App\Controllers\BaseController{
     private function taskCourierNotify($predis){
         $timerNotExpired=$predis->get('couriernotifytimer');
         if( $timerNotExpired ){
-            //
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-            
-            
-            
-            
-            
-            //return false;
+            return false;
         }
         $predis->setEx('couriernotifytimer',3*60,1);//3 min
         $DeliveryJobModel=model("DeliveryJobModel");

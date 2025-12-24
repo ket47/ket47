@@ -142,7 +142,7 @@ class CourierModel extends Model{
                 $this->itemUpdateStatus($courier->courier_id,'idle');
             }
             if( $courier->courier_parttime_notify!='off' && $courier->status_type=='idle' && $courier->is_shift_open==0 ){
-                $this->itemUpdateStatus($courier->courier_id,'ready');
+                $this->itemUpdateStatus($courier->courier_id,'taxi');
             }
         }
         return $this->db->affectedRows()?'ok':'idle';
@@ -237,10 +237,12 @@ class CourierModel extends Model{
             return false;
         }
 
-        $result='ok';
-        if( $courier->courier_parttime_notify=='off' ){
+        if( in_array($courier->courier_parttime_notify,['silent','push','ringtone']) ){
+            $result='ok';
+            $this->itemUpdateStatus($courier_id,'taxi');
+        } else {
             $result=$this->itemUpdateStatus($courier_id,'idle');
-        }        
+        }
         if( $result=='ok' ){
             $CourierShiftModel=model('CourierShiftModel');
             return $CourierShiftModel->itemClose($courier_id,$courier->owner_id);
