@@ -634,23 +634,23 @@ class CourierModel extends Model{
     }
 
     public function listIdleShiftClose(){
-        $locationUnknownTimeoutMin=15;
-        $shiftCloseMin=60;
-        $this->join('courier_group_member_list','member_id=courier_id');
-        $this->join('courier_group_list','group_id');
-        $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    
-        $this->select('courier_id');
-        $this->select("TIMESTAMPDIFF(MINUTE,location_list.updated_at, NOW()) loc_last_updated",false);
-        $this->whereIn('group_type',['ready']);
-        $this->having("loc_last_updated>={$locationUnknownTimeoutMin}");
-        $idleCouriers=$this->get()->getResult();
-        foreach($idleCouriers as $courier){
-            if( $courier->loc_last_updated>=$shiftCloseMin ){
-                $this->itemShiftClose($courier->courier_id);
-                continue;
-            }
-            $this->itemShiftStaleNotify($courier->courier_id,$courier->loc_last_updated);
-        }
+        // $locationUnknownTimeoutMin=15;
+        // $shiftCloseMin=60;
+        // $this->join('courier_group_member_list','member_id=courier_id');
+        // $this->join('courier_group_list','group_id');
+        // $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1");    
+        // $this->select('courier_id');
+        // $this->select("TIMESTAMPDIFF(MINUTE,location_list.updated_at, NOW()) loc_last_updated",false);
+        // $this->whereIn('group_type',['ready']);
+        // $this->having("loc_last_updated>={$locationUnknownTimeoutMin}");
+        // $idleCouriers=$this->get()->getResult();
+        // foreach($idleCouriers as $courier){
+        //     if( $courier->loc_last_updated>=$shiftCloseMin ){
+        //         $this->itemShiftClose($courier->courier_id);
+        //         continue;
+        //     }
+        //     $this->itemShiftStaleNotify($courier->courier_id,$courier->loc_last_updated);
+        // }
     }
 
     public function hasActiveCourier( object $aroundLocation=null ){

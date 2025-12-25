@@ -24,7 +24,7 @@ trait DeliveryJobChainTrait{
         }
 
         $awaitedJobCount=$this->where('stage','awaited')->select("COUNT(*) awaited_count")->get()->getRow('awaited_count');
-        $awaitedPerShift=floor($awaitedJobCount/count($openShifts));
+        $awaitedPerShift=ceil($awaitedJobCount/count($openShifts));
 
         $this->transBegin();
         $this->whereIn('stage',['awaited'])->update(null,['courier_id'=>null]);
