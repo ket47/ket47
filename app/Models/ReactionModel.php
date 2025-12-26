@@ -60,8 +60,11 @@ class ReactionModel extends Model{
             if($parsed_tag->tag_name=='store'){            
                 $expandedTagQuery.=$this->expandTagFromStore($parsed_tag->tag_id,$parsed_tag->tag_option);            
             }
-            if($parsed_tag->tag_name=='post'){            
-                $expandedTagQuery.=$this->expandTagFromPost($parsed_tag->tag_id,$parsed_tag->tag_option);            
+            if($parsed_tag->tag_name=='post'){
+                /**
+                 * already expanded at controller
+                 */
+                $expandedTagQuery=$tagQuery;            
             }
         }
         return $expandedTagQuery;
@@ -69,10 +72,6 @@ class ReactionModel extends Model{
     private function expandTagFromStore($store_id,$tag_option){
         $owner_id=session()->get('user_id');
         return " store:$store_id:user:{$tag_option} user:{$owner_id}:store:{$tag_option}";    
-    }
-    private function expandTagFromPost($post_id,$tag_option){
-        $owner_id=session()->get('user_id');
-        return " post:$post_id:user:{$tag_option} user:{$owner_id}:post:{$tag_option}";    
     }
     private function expandTagFromOrderCourier($order_id,$tag_option){
         $OrderModel=model('OrderModel');

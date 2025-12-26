@@ -11,7 +11,7 @@
 
 <?php if($order->info->customer_phone??null):?>
 👨 <b>Клиент: </b><?=$order->info->customer_name?> 
-<?php if( !($order->is_shipment??0) ): ?>
+<?php if( !($order->is_shipment??0) && ($order->info->customer_location_longitude??null) ): ?>
 <a href="https://yandex.ru/maps/?pt=<?=$order->info->customer_location_longitude?>,<?=$order->info->customer_location_latitude?>&z=19&l=map,trf`" target="_new"><?=$order->info->customer_location_address?></a> 
 <?=$order->info->customer_location_comment?> 
 <?php endif; ?>

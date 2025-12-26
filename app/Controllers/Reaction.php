@@ -14,23 +14,6 @@ class Reaction extends \App\Controllers\BaseController{
     public function itemSave(){
         $is_like=$this->request->getPost('is_like');
         $is_dislike=$this->request->getPost('is_dislike');
-
-
-
-        //////////////////////////////////////
-        //TMP PATCH
-        //////////////////////////////////////
-        if( $is_like=='true' || $is_dislike=='false' ){
-            $is_like=1;
-            $is_dislike=0;
-        } else
-        if( $is_like=='false' || $is_dislike=='true' ){
-            $is_like=0;
-            $is_dislike=1;
-        }
-
-
-
         $comment=$this->request->getPost('comment');//,FILTER_SANITIZE_SPECIAL_CHARS
         $tagQuery=$this->request->getPost('tagQuery');
 
@@ -46,6 +29,18 @@ class Reaction extends \App\Controllers\BaseController{
         }
         if($comment!==null){
             $reaction->reaction_comment=$comment;
+        }
+
+        if( str_contains($tagQuery,'post') ){
+            /**
+             * adding participant user_id to post challenges 
+             * expanding here to make each tag unique to user and post
+             */
+            $user_id=session()->get('user_id');
+            if( $user_id<1 ){
+                return $this->failUnauthorized('unauthorized');
+            }
+            $tagQuery.=":{$user_id}";
         }
 
         $ReactionModel=model('ReactionModel');

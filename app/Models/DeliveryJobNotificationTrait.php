@@ -202,20 +202,26 @@ trait DeliveryJobNotificationTrait{
         $notification_lifetime=15*60;//15min
         /**
          * Notification time we will look at notify_at field
-         * on shift orderts it will be null
+         * on shift orders it will be null
          */
         $this->where("notify_at<NOW() OR notify_at IS NULL");
-        $this->whereIn("stage",['awaited']);
+        $this->where("stage",'awaited');
+        $this->where("courier_id IS NULL");//free orders
+        $this->where("job_courier_type<>'shift'");//shift order override
         $taxi_jobs=$this->get()->getResult();
         if( !$taxi_jobs ){
             return;
         }
 
+
         $CourierModel=model('CourierModel');
-        $CourierModel->where('is_disabled',0);
-        $CourierModel->where('deleted_at',null);
-        $CourierModel->whereIn('courier_parttime_notify',['silent','push','ringtone']);
-        $CourierModel->select('courier_id,courier_name,courier_parttime_notify,owner_id');
+        $CourierModel->join('courier_group_member_list','member_id=courier_id','left');
+        $CourierModel->join('courier_group_list','group_id','left');
+        $CourierModel->where('courier_list.is_disabled',0);
+        $CourierModel->where('courier_list.deleted_at',null);
+        $CourierModel->where('group_type','taxi');
+
+        $CourierModel->select('courier_id,courier_name,courier_parttime_notify,courier_list.owner_id');
         $taxi_couriers=$CourierModel->get()->getResult();
 
         foreach($taxi_jobs as $job){

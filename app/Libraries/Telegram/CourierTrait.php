@@ -276,8 +276,6 @@ trait CourierTrait{
     }
     private function courierSetReady(){
         $courier=$this->courierGet();
-        
-        pl($courier);
         if( !$this->isCourierBusy() && !$this->isCourierReady() ){
             $CourierModel=model("CourierModel");
             $CourierModel->itemShiftOpen($courier->courier_id);

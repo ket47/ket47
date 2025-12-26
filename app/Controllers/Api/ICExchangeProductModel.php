@@ -16,7 +16,12 @@ class ICExchangeProductModel extends Model{
     }
 
     private $store_exceptions=[
-        '99'=>'351455e8-d625-11ea-aa68-e4aaeab6caae'
+        '99'=>[
+            'ИдСклада'=>'351455e8-d625-11ea-aa68-e4aaeab6caae'
+        ],
+        '68'=>[
+            'price_multiplier'=>1.33
+        ]
     ];
     private $unit_dict=[
         'Штука'=>'шт',
@@ -62,16 +67,18 @@ class ICExchangeProductModel extends Model{
             $product_quantity=isset($xml_product->Количество)?(float)$xml_product->Количество:0;
             if(isset($xml_product->Склад)){
                 foreach($xml_product->Склад as $store_xml){
-                    if(isset($this->store_exceptions[$holder_id]) && $store_xml['ИдСклада'] == $this->store_exceptions[$holder_id]){
+                    if(isset($this->store_exceptions[$holder_id]['ИдСклада']) && $store_xml['ИдСклада'] == $this->store_exceptions[$holder_id]['ИдСклада']){
                         $product_quantity = $store_xml['КоличествоНаСкладе'];
                     }
                 }
             }
             $product_price=isset($xml_product->Цены->Цена->ЦенаЗаЕдиницу)?(float)$xml_product->Цены->Цена->ЦенаЗаЕдиницу:0;
+            $product_price_multiplier=$this->store_exceptions[$holder_id]['price_multiplier']??1;
+
             $updated_product=(object)[
                 'product_id'=>$existing_product->product_id,
                 'product_quantity'=>$product_quantity,
-                'product_price'=>$product_price,
+                'product_price'=>round($product_price*$product_price_multiplier),
             ];
             $result=$this->ProductModel->itemUpdate($updated_product);
             return $result;

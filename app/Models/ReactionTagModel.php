@@ -16,5 +16,12 @@ class ReactionTagModel extends TagLayer{
         return $this->get()->getRow('customer_heart_count');
     }
 
+    public function postReactionsGet( int $user_id, int $post_id ){
+        $this->where('tag_name','post');
+        $this->where('tag_id',$post_id);
+        $this->where('tag_option',$user_id);
+        $this->select("GROUP_CONCAT(DISTINCT tag_type) reacted_tags");
+        return $this->get()->getRow('reacted_tags');
+    }
     
 }
