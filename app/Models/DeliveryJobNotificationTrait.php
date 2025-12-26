@@ -204,7 +204,7 @@ trait DeliveryJobNotificationTrait{
          * Notification time we will look at notify_at field
          * on shift orders it will be null
          */
-        $this->where("notify_at<NOW() OR notify_at IS NULL");
+        $this->where("(notify_at<NOW() OR notify_at IS NULL)");
         $this->where("stage",'awaited');
         $this->where("courier_id IS NULL");//free orders
         $this->where("job_courier_type<>'shift'");//shift order override

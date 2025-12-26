@@ -404,7 +404,11 @@ class Shipment extends \App\Controllers\BaseController{
                 'order_script'=>$order->order_script,
                 'distance'=>$checkoutData->routePlan->deliveryDistance,
                 'finish_plan_scheduled'=>$order_data->finish_plan_scheduled??0,
-                'customer_heart_count'=>$customer_heart_count
+                'customer_heart_count'=>$customer_heart_count,
+
+
+                'delivery_gain_base'=>$order_data->delivery_gain_base??0,
+                'delivery_rating_pool'=>$order_data->delivery_rating_pool??0,
             ]),
             'start_plan'=>$order_data->start_plan,
             'start_prep_time'=>null,
