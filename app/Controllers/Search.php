@@ -16,9 +16,15 @@ class Search extends \App\Controllers\BaseController{
             'location_id'=>$location_id,
             'limit'=>$limit??100
         ];
+        $mode='nearstores';
         $SearchModel=model('SearchModel');
-        $result=$SearchModel->storeMatchesGet( $filter );
+        $result=$SearchModel->storeMatchesGet( $filter, $mode );
+        if( $mode == 'nearstores' && !count($result) ){
+            $mode = 'farstores';
+            $result=$SearchModel->storeMatchesGet( $filter, $mode );
+        }
         $response=[
+            'mode'=>$mode,
             'product_matches'=>$result
         ];
         if( $query ){
@@ -39,11 +45,8 @@ class Search extends \App\Controllers\BaseController{
         ];
         $SearchModel=model('SearchModel');
         $result=$SearchModel->suggestionListGet( $filter );
-        $response=[
-            'suggestions'=>$result
-        ];
         //bench('matchTableCreate Response');
-        return $this->respond($response);
+        return $this->respond($result);
     }
 
     public function categoryListGet(){

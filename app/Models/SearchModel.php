@@ -16,12 +16,24 @@ class SearchModel extends SecureModel{
         return false;
     }
 
+    private function storeFind($store_list,$store_id){
+        foreach($store_list as $store){
+            if($store->store_id==$store_id){
+                return $store;
+            }
+        }
+    }
+
     /**
      * Function groups all search results by store
      */
-    public function storeMatchesGet( array $filter ){
+    public function storeMatchesGet( array $filter, $mode='nearstores' ){
         //helper('bench');
-        $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
+        if( $mode=='nearstores' ){
+            $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
+        } else {
+            $near_stores=$this->storeNearGet( null, null, null, $filter['query']??null );
+        }
         //bench('storeNearGet');
         if( empty($near_stores['store_list']) ){
             return 'store_notfound';
@@ -38,17 +50,30 @@ class SearchModel extends SecureModel{
         ->get()->getResult();
         //bench('store_rank_list');
 
-        function storeFind($store_list,$store_id):object{
-            foreach($store_list as $store){
-                if($store->store_id==$store_id){
-                    return $store;
-                }
-            }
-        }
         $grouped=[];
         $productmatch_list=[];
+        if( $filter['query']??null ){
+            $query=$filter['query'];
+            $cleaned_query=str_replace([',','.',';','!','?','/','\\'],'|',$query);
+            foreach($near_stores['store_list'] as $store){
+                if( in_array($store->store_id,$productmatch_list) || !$store || !$store->store_name ){
+                    continue;
+                }
+                if( !preg_match("/($cleaned_query)/iu", $store->store_name) ){
+                    continue;
+                }
+                $store=$this->storeFind($near_stores['store_list'],$store->store_id);
+                array_unshift($grouped,$store);
+            }
+        }
+        if( !$store_rank_list ){
+            return $grouped;
+        }
         foreach( $store_rank_list as $rank ){
-            $store=storeFind($near_stores['store_list'],$rank->store_id);
+            $store=$this->storeFind($near_stores['store_list'],$rank->store_id);
+            if( !$store ){
+                continue;
+            }
             $store->matches=$builder->table('tmp_search')->where('store_id',$store->store_id)->limit(12)->get()->getResult();
             foreach($store->matches as $product){
                 if($product->product_parent_id==$product->product_id){
@@ -66,20 +91,6 @@ class SearchModel extends SecureModel{
             $productmatch_list[]=$rank->store_id;
         }
 
-        if( $filter['query']??null ){
-            $query=$filter['query'];
-            $cleaned_query=str_replace([',','.',';','!','?'],'|',$query);
-            foreach($near_stores['store_list'] as $store){
-                if( in_array($store->store_id,$productmatch_list) ){
-                    continue;
-                }
-                if( !preg_match("|($cleaned_query)|iu", $store->store_name) ){
-                    continue;
-                }
-                $store=storeFind($near_stores['store_list'],$store->store_id);
-                array_unshift($grouped,$store);
-            }
-        }
         //bench('grouped');
         return $grouped;
     }
@@ -149,7 +160,7 @@ class SearchModel extends SecureModel{
     private function matchTableCreate( array $filter ){
         $productdescr_weight=0.5;
         $groupdescr_weight=0.2;
-        $perk_weight=0.2;
+        $perk_weight=0.4;
 
         if( $filter['store_id']??0 ){
             $this->where('store_id',$filter['store_id']);
@@ -200,7 +211,6 @@ class SearchModel extends SecureModel{
         $this->join('product_group_list pgl','pgl.group_id=pgml.group_id','left');
         $this->join('perk_list',"perk_holder='product' AND perk_holder_id=product_id AND expired_at>'$now'",'left');
         $this->join('image_list',"image_holder='product' AND image_holder_id=product_id AND image_list.is_main=1");
-        $this->whereIn('store_id',$filter['store_ids']);
         $this->where("(`product_parent_id` IS NULL OR `product_parent_id`=`product_id`)");
         $this->where('product_list.is_disabled',0);
         $this->where('product_list.is_hidden',0);
@@ -254,12 +264,11 @@ class SearchModel extends SecureModel{
             return 'invalid_query';
         }
         $near_stores=$this->storeNearGet( $filter['location_id']??null, $filter['location_latitude']??null, $filter['location_longitude']??null, $filter['query']??null );
-        
         return $this->suggestionListPrepare( $search_query, $near_stores['id_list'] );
     }
 
-    private function suggestionListPrepare( string $search_query, array $store_ids ){
-        $limit=5;
+    private function suggestionListPrepare( string $search_query, array $store_ids, string $mode='nearstores' ){
+        $limit=7;
         $like=$this->db->escapeLikeString($search_query);
         $or_like=$this->transliterate($like);
 
@@ -292,11 +301,30 @@ class SearchModel extends SecureModel{
         ->get()
         ->getResult();
 
+        if( !$suggestions && $mode=='nearstores'){
+            $StoreModel=model('StoreModel');
+            $StoreModel->whereNotIn('store_id',$store_ids);
+            $StoreModel->where('is_working',1);
+            $StoreModel->where('is_disabled',0);
+            $StoreModel->where('deleted_at IS NULL');
+            $StoreModel->select('store_id');
+            $far_stores=$StoreModel->get()->getResult();
+            $store_ids=[];
+            foreach($far_stores as $store){
+                $store_ids[]=$store->store_id;
+            }
+
+            return $this->suggestionListPrepare( $search_query, $store_ids, 'farstores' );
+        }
         if( $suggestions ){
             foreach($suggestions as $row){
                 $row->suggestion=mb_strtolower(trim(preg_replace('/[^\w\s]/u',' ',$row->suggestion)));
             }
         }
-        return $suggestions;
+
+        return [
+                'suggestions'=>$suggestions,
+                'mode'=>$mode
+            ];
     }
 }
