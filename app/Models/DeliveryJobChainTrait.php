@@ -14,7 +14,7 @@ trait DeliveryJobChainTrait{
         return $CourierShiftModel->limit(1)->get()->getRow();
     }
 
-    private $maxJobsPerShift=3;
+    private $maxJobsPerShift=1;
     public function chainJobs(){
         $CourierShiftModel=model('CourierShiftModel');
         $CourierShiftModel->allowRead();//called from cronjob as guest so need to skip permission check

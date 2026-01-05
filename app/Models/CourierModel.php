@@ -138,10 +138,10 @@ class CourierModel extends Model{
         $this->update($courier->courier_id,$courier);
         if($courier->courier_parttime_notify??null){
             $courier=$this->itemGet($courier->courier_id);
-            if( $courier->courier_parttime_notify=='off' && $courier->status_type=='ready' && $courier->is_shift_open==0 ){
+            if( $courier->courier_parttime_notify=='off' && $courier->is_shift_open==0 ){
                 $this->itemUpdateStatus($courier->courier_id,'idle');
             }
-            if( $courier->courier_parttime_notify!='off' && $courier->status_type=='idle' && $courier->is_shift_open==0 ){
+            if( $courier->courier_parttime_notify!='off' && $courier->is_shift_open==0 ){
                 $this->itemUpdateStatus($courier->courier_id,'taxi');
             }
         }
@@ -549,7 +549,7 @@ class CourierModel extends Model{
 
 
         
-        $count_rating_since=date("Y-m-d H:i:s",time()-300*24*60*60);//last 30 days
+        $count_rating_since=date("Y-m-d H:i:s",time()-90*24*60*60);//last 90 days
         $ReactionModel=model('ReactionModel');
         $ReactionModel->where("created_at>'$count_rating_since'");
         $ReactionModel->where('tag_id',$courier_id);
@@ -561,7 +561,7 @@ class CourierModel extends Model{
     }
 
     public function itemRatingScoreGet( $courier_id ){
-        $count_rating_since=date("Y-m-d H:i:s",time()-300*24*60*60);//last 30 days
+        $count_rating_since=date("Y-m-d H:i:s",time()-90*24*60*60);//last 90 days
         $ReactionModel=model('ReactionModel');
         $ReactionModel->where("created_at>'$count_rating_since'");
         $ReactionModel->where('tag_id',$courier_id);

@@ -62,7 +62,7 @@
     $total_car_own      =r50($hour_sum_own +$order_sum_all+$heavy_bonus_car);
 ?>
 🏁🏁🏁🏁🏁🏁🏁🏁🏁🏁
-<b><?=trim($courier->courier_name)?></b>, ваша смена закрыта. 
+<?=$courier->courier_id?> <b><?=trim($courier->courier_name)?></b>, ваша смена закрыта. 
 
 <pre>Начало  <?=$shift->created_at?> 
 Конец   <?=$shift->closed_at?> </pre>

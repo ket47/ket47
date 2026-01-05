@@ -280,7 +280,7 @@ trait DeliveryJobNotificationTrait{
                     $message[]=$message_tel;
                     $message[]=$message_push;
                 } else {
-                    return;
+                    continue;
                 }
                 jobCreate([
                     'task_programm'=>[
