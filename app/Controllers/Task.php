@@ -39,6 +39,13 @@ class Task extends \App\Controllers\BaseController{
     public function jobDo(){
         if( getenv('app.logworkers') ){
             ob_start();
+        } else{
+            header("X-Accel-Buffering: no");
+            header("Cache-Control: no-cache");
+            ini_set('zlib.output_compression', '0');
+            ini_set('output_buffering', 'Off');
+            ini_set('implicit_flush', '1');
+            flush();
         }
 
         $this->jobTimeoutsSet();

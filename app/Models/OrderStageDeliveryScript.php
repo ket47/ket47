@@ -21,6 +21,7 @@ class OrderStageDeliveryScript{
             ],
         'customer_start'=>[
             'customer_rejected'=>           ['Отменить заказ','danger','clear'],
+            'delivery_no_courier'=>         ['Курьер не найден','danger','clear'],
             'system_start'=>                ['Запустить','danger','clear'],
             'system_schedule'=>             ['Запланировать','danger','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','','clear'],
@@ -72,17 +73,16 @@ class OrderStageDeliveryScript{
         'supplier_corrected'=>[
             'supplier_start'=>              ['Сохранить изменения'],
             'supplier_action_add'=>         ['Добавить товар','medium','clear'],
-            'delivery_no_courier'=>         [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
         'supplier_finish'=>[
             'delivery_start'=>              ['Начать доставку'],
-            'delivery_no_courier'=>         [],
             'delivery_finish'=>             [],//if dispute is ongoing then fastforward 
             'supplier_action_take_photo'=>  ['Сфотографировать','light'],
             'supplier_corrected'=>          ['Корректировать','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
+
         'delivery_force_start'=>            [
             'supplier_finish'=>             ['Завершить подготовку'],
             'supplier_corrected'=>          ['Корректировать','medium','clear'],
@@ -103,7 +103,6 @@ class OrderStageDeliveryScript{
             ],
         'delivery_no_courier'=>[
             'system_reckon'=>               [],
-            'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
         ],
         'delivery_finish'=>[
             'customer_disputed'=>           [],
@@ -1133,6 +1132,28 @@ class OrderStageDeliveryScript{
     //DELIVERY HANDLERS
     //////////////////////////////////////////////////////////////////////////
     public function onDeliverySearch( $order_id ){
+        $order=$this->OrderModel->itemGet($order_id);
+        $StoreModel=model('StoreModel');
+        $storeTimetable=$StoreModel->itemTimetableGet($order->order_store_id,'basic');
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $DeliveryJobPlan->scheduleFillTimetable($storeTimetable);
+
+
+        $max_search_timeout=90*60;
+        $timetable=$DeliveryJobPlan->schedule->timetableGet();
+        $delivery_search_until=min(time()+$max_search_timeout,$timetable['d0']['end']??0);
+
+
+        tl("$order_id delivery_search_until ".date('Y-m-d H:i:s',$delivery_search_until));
+
+        $this->OrderModel->itemDataUpdate($order_id,(object)['delivery_search_until'=>$delivery_search_until]);
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'delivery_no_courier']]
+            ],
+            'task_priority'=>'low',
+            'task_next_start_time'=>$delivery_search_until
+        ]);
         return 'ok';
     }
 
@@ -1206,7 +1227,6 @@ class OrderStageDeliveryScript{
         }
         return 'ok';
     }
-    
     public function onDeliveryStart( $order_id ){
         // $order=$this->OrderModel->itemGet($order_id);
         // if( !$order->images ){
@@ -1288,8 +1308,6 @@ class OrderStageDeliveryScript{
         if($is_courier_found){
             return 'idle';
         }
-        $UserModel=model('UserModel');
-        $StoreModel=model('StoreModel');
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['order_is_canceled'=>1]);
         $deliveryJob=['task_programm'=>[
@@ -1297,51 +1315,32 @@ class OrderStageDeliveryScript{
         ]];
         jobCreate($deliveryJob);
 
-        $StoreModel->itemCacheClear();
+        // $UserModel=model('UserModel');
+        // $StoreModel=model('StoreModel');
+        //$StoreModel->itemCacheClear();
+        // $store=$StoreModel->itemGet($order->order_store_id,'basic');
+        // $customer=$UserModel->itemGet($order->owner_id,'basic');
+
         $order=$this->OrderModel->itemGet($order_id,'basic');
-        $store=$StoreModel->itemGet($order->order_store_id,'basic');
-        $customer=$UserModel->itemGet($order->owner_id,'basic');
         $context=[
             'order'=>$order,
-            'store'=>$store,
-            'customer'=>$customer
-        ];
-        $admin_email=(object)[
-            'message_reciever_id'=>'-100',
-            'message_transport'=>'email',
-            'message_subject'=>"#{$order->order_id} Курьер не найден",
-            'template'=>'messages/order/on_delivery_nocourier_ADMIN_email.php',
-            'context'=>$context
         ];
         $admin_sms=(object)[
             'message_reciever_id'=>'-100',
             'message_transport'=>'telegram',
-            'template'=>'messages/order/on_delivery_nocourier_ADMIN_sms.php',
+            'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
             'context'=>$context
         ];
         $cust_sms=(object)[
-            'message_transport'=>'push,telegram',
+            'message_transport'=>'message',
             'message_reciever_id'=>$order->owner_id,
             'template'=>'messages/order/on_delivery_no_courier_CUST_sms.php',
             'context'=>$context
         ];
-        $store_sms=(object)[
-            'message_transport'=>'push,telegram',
-            'message_reciever_id'=>$store->owner_id.','.$store->owner_ally_ids,
-            'template'=>'messages/order/on_customer_start_STORE_sms.php',
-            'context'=>$context
-        ];
-        $notification_task=[
-            'task_name'=>"delivery_notfound Notify #$order_id",
-            'task_programm'=>[
-                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_email,$admin_sms,$cust_sms,$store_sms]]]
-                ],
-            'task_priority'=>'low'
-        ];
-        jobCreate($notification_task);
         jobCreate([
             'task_programm'=>[
-                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']]
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_reckon']],
+                    ['library'=>'\App\Libraries\Messenger','method'=>'listSend','arguments'=>[[$admin_sms,$cust_sms]]]
             ],
             'task_next_start_time'=>time()+1
         ]);

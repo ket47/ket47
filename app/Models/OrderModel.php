@@ -143,6 +143,9 @@ class OrderModel extends SecureModel{
                 );
             }
         }
+        if( $this->order_data->delivery_search_until??null ){
+            $order->delivery_search_until=$this->order_data->delivery_search_until;
+        }
     }
 
     public function itemCreate( int $store_id=null, string $order_script='order_delivery' ){
