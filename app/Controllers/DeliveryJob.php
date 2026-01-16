@@ -171,18 +171,13 @@ class DeliveryJob extends \App\Controllers\BaseController{
                 break;
             }
         }
-        // /**
-        //  * Courier has to open shift to see routes
-        //  */
-        // if( $user_has_opened_shift==false && !sudo() ){
-        //     return $this->failForbidden('forbidden');
-        // }
-
-        $delivery_jobs=$DeliveryJobModel->listGet($user_has_opened_shift);
-        $routeList=[
-            'delivery_jobs'=>$delivery_jobs,
-            'open_shifts'=>$open_shifts
-        ];
+        /**
+         * Courier has to open shift to see routes
+         */
+        if( $user_has_opened_shift==true  || sudo() ){
+            $routeList['open_shifts']=$open_shifts;
+        }
+        $routeList['delivery_jobs']=$DeliveryJobModel->listGet($user_has_opened_shift);
         return $this->respond($routeList);
     }
 

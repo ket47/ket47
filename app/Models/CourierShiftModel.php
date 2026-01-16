@@ -46,8 +46,54 @@ class CourierShiftModel extends SecureModel{
         return $this->insert($shift,true);
     }
     
+    private function courierHasDebt($courier_id, $courier_owner_id){
+        $shift_debt_check_at=session()->get('shift_debt_check_at');
+        if( $shift_debt_check_at && $shift_debt_check_at>time() ){
+            return true;
+        }
+
+        $customer_finish_group_id=41;
+        $OrderModel=model("OrderModel");
+        $OrderModel->where('order_courier_id',$courier_id);
+        $OrderModel->where('order_group_id',$customer_finish_group_id);
+        $OrderModel->where("order_data->>'$.payment_by_cash'=1",null,false);
+        $OrderModel->allowRead();
+        $has_debt=$OrderModel->select('order_id')->get()->getRow('courier_user_ids');
+
+        if( $has_debt ){
+            session()->set('shift_debt_check_at',time()+5*60);
+        }
+
+        $CourierModel=model('CourierModel');
+        $courier=$CourierModel->itemGet($courier_id);
+        $message=(object)[
+            'message_reciever_id'=>"-100,$courier_owner_id",//
+            'message_transport'=>'telegram',
+            'message_subject'=>'shift open',
+            'context'=>[
+                'courier'=>$courier
+            ],
+            'template'=>'messages/events/on_delivery_shift_debt_sms',
+            'telegram_options'=>[
+                'opts'=>[
+                    'disable_notification'=>1
+                ]
+            ],
+        ];
+        $sms_job=[
+            'task_programm'=>[
+                    ['library'=>'\App\Libraries\Messenger','method'=>'itemSendMulticast','arguments'=>[$message]]
+                ],
+        ];
+        jobCreate($sms_job);
+        return $has_debt?1:0;
+    }
+
     public function itemOpen( $courier_id, $courier_owner_id ){
         $this->itemClose( $courier_id );
+        if( $this->courierHasDebt($courier_id, $courier_owner_id) ){
+            //
+        }
         $shift_id=$this->itemCreate( $courier_id, $courier_owner_id );
         if( !$shift_id || $shift_id=='forbidden' ){
             return $shift_id;
