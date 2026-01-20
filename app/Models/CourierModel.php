@@ -197,15 +197,19 @@ class CourierModel extends Model{
 
     public function itemShiftOpen( $courier_id ){
         $courier=$this->itemGet($courier_id,'basic');
+        $result='ok';
         if( !is_object($courier) ){
-            return false;
+            $result='notactive';
         }
-        $result=$this->itemUpdateStatus($courier_id,'ready');
         if( $result=='ok' ){
             $CourierShiftModel=model('CourierShiftModel');
-            return $CourierShiftModel->itemOpen($courier_id,$courier->owner_id);
-            // $courier=$this->itemGet($courier_id,'basic');
-            // $this->itemNotify($courier);
+            $result= $CourierShiftModel->itemOpen($courier_id,$courier->owner_id);
+            if( is_int($result) ){
+                $result='ok';
+            }
+        }
+        if( $result=='ok' ){
+            $result=$this->itemUpdateStatus($courier_id,'ready');
         }
 
         if( $result=='notactive' ){
@@ -223,7 +227,6 @@ class CourierModel extends Model{
             ]
         ];
         $sms_job=[
-            'task_name'=>"Courier Shift opened msg send",
             'task_programm'=>[
                     ['library'=>'\App\Libraries\Messenger','method'=>'itemSend','arguments'=>[$message]]
                 ],

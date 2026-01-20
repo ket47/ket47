@@ -60,9 +60,10 @@ class CourierShiftModel extends SecureModel{
         $OrderModel->allowRead();
         $has_debt=$OrderModel->select('order_id')->get()->getRow('order_id');
 
-        if( $has_debt ){
-            session()->set('shift_debt_check_at',time()+5*60);
+        if( !$has_debt ){
+            return 0;
         }
+        session()->set('shift_debt_check_at',time()+5*60);
 
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($courier_id);
@@ -92,7 +93,7 @@ class CourierShiftModel extends SecureModel{
     public function itemOpen( $courier_id, $courier_owner_id ){
         $this->itemClose( $courier_id );
         if( $this->courierHasDebt($courier_id, $courier_owner_id) ){
-            return false;
+            return 'hasdebt';
         }
         $shift_id=$this->itemCreate( $courier_id, $courier_owner_id );
         if( !$shift_id || $shift_id=='forbidden' ){

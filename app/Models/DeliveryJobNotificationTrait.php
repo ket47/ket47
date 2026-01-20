@@ -213,7 +213,6 @@ trait DeliveryJobNotificationTrait{
             return;
         }
 
-
         $CourierModel=model('CourierModel');
         $CourierModel->join('courier_group_member_list','member_id=courier_id','left');
         $CourierModel->join('courier_group_list','group_id','left');
@@ -223,6 +222,7 @@ trait DeliveryJobNotificationTrait{
 
         $CourierModel->select('courier_id,courier_name,courier_parttime_notify,courier_list.owner_id');
         $taxi_couriers=$CourierModel->get()->getResult();
+        tl($taxi_couriers);
 
         foreach($taxi_jobs as $job){
             $job->job_data=json_decode($job->job_data);
