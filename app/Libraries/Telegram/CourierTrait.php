@@ -41,7 +41,7 @@ trait CourierTrait{
     public function onCourierUpdateLocation($location){
         $lastUpdateMsg=session()->get('lastLocationUpdateMessage');
         if($lastUpdateMsg && ($lastUpdateMsg['updated_at']??0)>time()-60){
-            //to many requests
+            //too many requests
             return false;
         }
         if( $this->isCourierIdle() ){
@@ -233,17 +233,13 @@ trait CourierTrait{
         return false;
     }
 
+    private $courier;
     private function courierGet(){
-        /**
-         * If status has been changed outside of bot then cache data become outdated!!!
-         */
-        //$courier=session()->get('courier');
-        //if(!$courier){
+        if(!$this->courier){
             $CourierModel=model('CourierModel');
-            $courier=$CourierModel->itemGet(null,'basic');
-        //    session()->set('courier',$courier);
-        //}
-        return $courier;
+            $this->courier=$CourierModel->itemGet(null,'basic');
+        }
+        return $this->courier;
     }
     private function isCourier(){
         if( !$this->isUserSignedIn() ){
@@ -276,6 +272,10 @@ trait CourierTrait{
     }
     private function courierSetReady(){
         $courier=$this->courierGet();
+        if( $courier->is_disabled==1 || $courier->deleted_at ){
+            $this->sendText("Не удалось открыть смену: анкета курьера не активна. Обратитесь к администратору");
+            return false;
+        }
         if( !$this->isCourierBusy() && !$this->isCourierReady() ){
             $CourierModel=model("CourierModel");
             $CourierModel->itemShiftOpen($courier->courier_id);
