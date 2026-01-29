@@ -131,6 +131,40 @@ class Order extends \App\Controllers\BaseController {
         return $this->respondUpdated($result);
     }
 
+    public function itemDeliverySpeedup(){
+        $order_id = $this->request->getPost('order_id');
+        $promised_tip = (int) $this->request->getPost('promised_tip');
+        $OrderModel = model('OrderModel');
+
+        $data_update=(object)[
+            'delivery_promised_tip'=>$promised_tip
+        ];
+        $result=$OrderModel->itemDataUpdate($order_id, $data_update);
+        if ($result === 'ok') {
+            /**
+             * order update successfully. need to update delivery job
+             */
+            $DeliveryJobModel=model('DeliveryJobModel');
+            $job=$DeliveryJobModel->itemGet(null,$order_id);
+            if( $job->job_id??null ){
+                $DeliveryJobModel->itemDataUpdate( $job->job_id, $data_update );
+                $update=(object)[
+                    'job_id'=>$job->job_id,
+                    'notify_at'=>null
+                ];
+                $DeliveryJobModel->itemUpdate( $update );
+            }
+            return $this->respondUpdated($result);
+        }
+        if ($result === 'forbidden') {
+            return $this->failForbidden($result);
+        }
+        if ($result === 'notfound') {
+            return $this->failNotFound($result);
+        }
+        return $this->fail($result);
+    }
+
     public function itemStageCreate() {
         $order_id = $this->request->getPost('order_id');
         $new_stage = $this->request->getPost('new_stage');
@@ -440,7 +474,12 @@ class Order extends \App\Controllers\BaseController {
 
 
 
-
+                tl([
+                    'order_id'=>$order->order_id,
+                    'store'=>$order->store->store_name??'',
+                    'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
+                    'newCost'=>$routeReckon->customer_cost_total??0
+                ]);
 
 
 

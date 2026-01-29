@@ -536,6 +536,80 @@ class Statistics extends \App\Controllers\BaseController{
         return $this->respondCreated($tmp_file_name);
     }
 
+    public function statCourierBalanceReport(){
+        if( !sudo() ){
+            return false;
+        }
+        $sql_balance_table="
+            SELECT
+                user_phone,
+                courier_name,
+                courier_tax_num,
+                SUM(IF(acc_tags.tag_option='credit',-trans_amount,trans_amount)) sum_total
+            FROM
+                (SELECT
+                    trans_id,
+                    trans_amount,
+                    tag_id courier_id
+                FROM
+                    transaction_list tl
+                        JOIN
+                    transaction_tag_list courier_tags USING(trans_id) 
+                WHERE 
+                    courier_tags.tag_name='courier'
+                    AND tl.deleted_at IS NULL
+                    AND tl.is_disabled=0
+                GROUP BY trans_id) trans_list
+                    JOIN
+                transaction_tag_list acc_tags USING(trans_id)
+                    JOIN
+                courier_list USING(courier_id)
+                    JOIN
+                user_list ON user_id=courier_list.owner_id
+                
+            WHERE
+                acc_tags.tag_type='courier'
+            GROUP BY  courier_id
+            HAVING sum_total<>0
+            ORDER BY sum_total DESC";
+
+        $TransactionModel=model('TransactionModel');
+        $body=$TransactionModel->query($sql_balance_table)->getResult();
+        function style_total2($text,$is_num=false){
+            if( $is_num ){
+                $text=style_num($text);
+            }
+            return '<style bgcolor="#ddeeff"><b>'.$text.'</b></style>';
+        }
+        function style_num2($text){
+            return '<right>'.number_format($text,2,'.','').'</right>';
+        }
+        $app_title=getenv('app.title');
+        $header=[
+            ['<center><style font-size="24" height="50">Баланс Курьеров</style></center>',null,null,null,null],
+            [],
+            [
+                style_total2('Телефон'),
+                style_total2('Название'),
+                style_total2('ИНН'),
+                style_total2('Баланс'),
+            ],
+        ];
+
+        $footer=[
+            [],
+            [],
+            [null,null,'<style border="none none medium#000000 none">'.$app_title.'</style>']
+        ];
+        $data=array_merge($header,$body,$footer);
+        $tmp_file_name=md5(microtime().rand(0,1000));
+        \App\Libraries\xlsx\SimpleXLSXGen::fromArray($data)
+            ->setDefaultFontSize(12)
+            ->mergeCells('A1:D1')
+            ->saveAs($this->reports_path.'/'.$tmp_file_name);
+        return $this->respondCreated($tmp_file_name);
+    }
+
     private function folderClean($folderName){
         $timeout=2*24*60*60;//2 days
         if (file_exists($folderName)) {

@@ -176,6 +176,9 @@ class DeliveryJob extends \App\Controllers\BaseController{
          */
         if( $user_has_opened_shift==true  || sudo() ){
             $routeList['open_shifts']=$open_shifts;
+        } else {
+            $courier=model('CourierModel')->itemGet(null,'basic');
+            $DeliveryJobModel->where("courier_id IS NULL OR courier_id='{$courier->courier_id}'");
         }
         $routeList['delivery_jobs']=$DeliveryJobModel->listGet($user_has_opened_shift);
         return $this->respond($routeList);

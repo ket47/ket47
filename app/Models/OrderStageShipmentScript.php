@@ -65,6 +65,7 @@ class OrderStageShipmentScript{
         //     'customer_start'=>              []
         // ],
         'admin_supervise'=>[
+            'delivery_start'=>              ['Начать доставку'],
             'delivery_finish'=>             ['Посылка доставлена','success'],//must set is_canceled to 0
             'admin_sanction_customer'=>     ['Оштрафовать клиента','danger'],
             'admin_sanction_courier'=>      ['Возврат ден. клиенту','danger'],

@@ -146,6 +146,9 @@ class OrderModel extends SecureModel{
         if( $this->order_data->delivery_search_until??null ){
             $order->delivery_search_until=$this->order_data->delivery_search_until;
         }
+        if( $this->order_data->delivery_promised_tip??null ){
+            $order->delivery_promised_tip=$this->order_data->delivery_promised_tip;
+        }
     }
 
     public function itemCreate( int $store_id=null, string $order_script='order_delivery' ){

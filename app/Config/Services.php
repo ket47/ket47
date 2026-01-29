@@ -75,4 +75,13 @@ class Services extends BaseService
 	
 	    return new \App\Libraries\SmsCVoice();
 	}
+
+	public static function predis($getShared = true){
+		if ($getShared)
+	    {
+	        return static::getSharedInstance('predis');
+	    }
+		require_once '../app/ThirdParty/Credis/Client.php';
+	    return new \Credis_Client();
+	} 
 }
