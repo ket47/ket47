@@ -324,4 +324,28 @@ class ReactionModel extends Model{
         $result=$EntryModel->get()->getResult();
         return $result;
     }
+    public function itemGetSuggest(){
+        $owner_id=session()->get('user_id');
+        $EntryModel=model('EntryModel');
+        $EntryModel->join('order_group_member_list','order_entry_list.order_id=order_group_member_list.member_id');
+        $EntryModel->join('product_list','product_id');
+        $EntryModel->join('reaction_tag_list','tag_name="entry" AND tag_id=entry_id','left');
+        $EntryModel->join('reaction_list','reaction_id=reaction_tag_list.member_id','left');
+        
+        $EntryModel->select('product_list.product_id, order_entry_list.updated_at AS ordered_at, entry_id');
+
+        $EntryModel->where('order_entry_list.owner_id',$owner_id);
+        $EntryModel->where('reaction_tag_list.tag_id IS NULL');
+        $EntryModel->where('order_entry_list.entry_price > 150');
+         
+        $EntryModel->orderBy('order_entry_list.updated_at DESC')->limit(1);
+        $product=$EntryModel->get()->getRow();
+        if(!empty($product)){
+            $ProductModel=model('ProductModel');
+            $result = $ProductModel->itemGet($product->product_id);
+            $result->entry_id = $product->entry_id;
+            return $result;
+        }
+        return false;
+    }
 }

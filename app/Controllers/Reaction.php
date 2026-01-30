@@ -250,4 +250,10 @@ class Reaction extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
  
+    public function itemGetSuggest()
+    {   
+        $ReactionModel=model('ReactionModel');
+        $result=$ReactionModel->itemGetSuggest();
+        return $this->respond($result);
+    }
 }
