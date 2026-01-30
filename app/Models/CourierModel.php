@@ -11,20 +11,26 @@ class CourierModel extends Model{
     protected $allowedFields = [
         'courier_name',
         'courier_vehicle',
-        'courier_tax_num',
-        'current_order_id',
         'courier_comment',
         'courier_parttime_notify',
+        'courier_full_name',
+        'courier_tax_num',
+        'courier_bank_account',
+        'courier_bank_id',
+        'courier_bank_assignment',
         'deleted_at'
     ];
     protected $validationRules    = [
-        'courier_tax_num'   => 'exact_length[0,10,12]'
+        'courier_tax_num'   => 'exact_length[0,10,12]',
+        'courier_bank_account'   => 'exact_length[0,20]',
+        'courier_bank_id'   => 'exact_length[0,9]',
     ];
 
     protected $useSoftDeletes = true;
     protected $selectList="
             courier_id,
             courier_name,
+            courier_parttime_notify,
             user_id,
             user_name,
             user_phone,
@@ -35,7 +41,6 @@ class CourierModel extends Model{
             group_name,
             status_icon.image_hash group_image_hash,
             courier_photo.image_hash courier_photo_image_hash,
-            current_order_id,
             location_address";
    
     /////////////////////////////////////////////////////
@@ -48,14 +53,16 @@ class CourierModel extends Model{
             $this->where('courier_list.owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
-
-        $this->select("{$this->table}.*,group_name status_name,group_type status_type");
+        $this->select("courier_list.updated_at,courier_list.is_disabled,courier_list.deleted_at,courier_list.courier_id,courier_list.courier_name");
+        $this->select("group_name status_name,group_type status_type");
         $this->join('courier_group_member_list','courier_list.courier_id=member_id','left');
         $this->join('courier_group_list','group_id','left');
         if($mode=='basic'){
             return $this->get()->getRow();
         }
-        $this->select('courier_list.*,location_address,location_latitude,location_longitude,IF(shift_id,1,0) is_shift_open');
+        $this->select("courier_parttime_notify,courier_vehicle,courier_comment");//advanced info for dashboard
+        $this->select("courier_full_name,courier_tax_num,courier_bank_account,courier_bank_id,courier_bank_assignment");//legal info for dashboard
+        $this->select('location_address,location_latitude,location_longitude,IF(shift_id,1,0) is_shift_open');
         $this->select('user_id,user_name,user_phone');
         $this->join('user_list','user_id=courier_list.owner_id');
         $this->join('location_list','location_holder_id=courier_list.courier_id AND is_main=1','left');
@@ -605,6 +612,7 @@ class CourierModel extends Model{
     //LIST HANDLING SECTION
     /////////////////////////////////////////////////////
     public function listGet( $filter ){
+        $filter['name_query_allowed']=['courier_name','user_name','user_phone','courier_tax_num','courier_vehicle'];//allowed for searching in
         $this->filterMake( $filter,false );
         if( $filter['status']??0 ){
             $this->whereIn('group_type',explode('||',$filter['status']));
@@ -615,6 +623,7 @@ class CourierModel extends Model{
         $this->join('courier_group_member_list','member_id=courier_id','left');
         $this->join('courier_group_list','group_id','left');
         $this->join('image_list status_icon',"status_icon.image_holder='user_group_list' AND status_icon.image_holder_id=group_id AND status_icon.is_main=1",'left');
+        $this->orderBy("courier_parttime_notify='off' DESC");
         $this->orderBy("group_type='busy' DESC,group_type='ready' DESC,courier_group_member_list.created_at DESC");
         $this->join('image_list courier_photo',"courier_photo.image_holder='courier' AND courier_photo.image_holder_id=courier_id AND courier_photo.is_main=1",'left');
         $this->join('location_list',"location_holder='courier' AND location_holder_id=courier_id AND location_list.is_main=1",'left');
@@ -731,10 +740,16 @@ class CourierModel extends Model{
     /////////////////////////////////////////////////////
     public function imageCreate( $data ){
         $data['is_disabled']=1;
-        $data['owner_id']=session()->get('user_id');
+        $data['owner_id']=-100;//owner is admin
+        if($data['image_holder']=='courier'){
+            /**
+             * Only allowing write permission for avatar
+             */
+            $data['owner_id']=session()->get('user_id');
+        }
         if( $this->permit($data['image_holder_id'], 'w') ){
             $ImageModel=model('ImageModel');
-            return $ImageModel->itemCreate($data,1);
+            return $ImageModel->itemCreate($data,3);
         }
         return 0;
     }

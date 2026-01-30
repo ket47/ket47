@@ -197,9 +197,17 @@ class ProductModel extends Model{
                 'task_name'=>"Image download",
                 'task_programm'=>[
                         ['library'=>'\App\Libraries\Utils','method'=>'fileDownloadImage','arguments'=>[$source,$image_hash]]
-                    ]
+                ],
+                'task_priority'=>'low'
             ]);
         }
+    }
+
+    public function itemReloadImage($product_id,$source){
+        $ImageModel=model('ImageModel');
+        $ImageModel->permitWhere('w');
+        $ImageModel->listDelete('product',[$product_id]);
+        $this->itemCreateImage($product_id,$source);
     }
 
     private function itemCreateCategory($product_id,$product_category_name){

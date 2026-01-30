@@ -222,7 +222,7 @@ trait DeliveryJobNotificationTrait{
 
         $CourierModel->select('courier_id,courier_name,courier_parttime_notify,courier_list.owner_id');
         $taxi_couriers=$CourierModel->get()->getResult();
-        tl($taxi_couriers);
+        //tl($taxi_couriers);
 
         foreach($taxi_jobs as $job){
             $job->job_data=json_decode($job->job_data);

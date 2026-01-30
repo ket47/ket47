@@ -16,7 +16,7 @@ class OrderStageDeliveryScript{
         'customer_deleted'=>                [],
         'customer_confirmed'=>[
             'customer_action_checkout'=>    ['Перейти к оформлению'],
-            'customer_cart'=>               ['Изменить','light'],
+            'customer_cart'=>               ['Изменить','medium'],
             'customer_start'=>              [],
             ],
         'customer_start'=>[
@@ -64,7 +64,7 @@ class OrderStageDeliveryScript{
             ],
         'supplier_start'=>[
             'supplier_finish'=>             ['Завершить подготовку','success'],
-            'supplier_action_take_photo'=>  ['Сфотографировать','light'],
+            'supplier_action_take_photo'=>  ['Сфотографировать','medium'],
             'supplier_corrected'=>          ['Корректировать','medium','clear'],
             'supplier_rejected'=>           ['Отказаться от заказа!','danger','clear'],
             'delivery_force_start'=>        ['Заказ готов к доставке','medium','clear'],
@@ -78,7 +78,7 @@ class OrderStageDeliveryScript{
         'supplier_finish'=>[
             'delivery_start'=>              ['Начать доставку'],
             'delivery_finish'=>             [],//if dispute is ongoing then fastforward 
-            'supplier_action_take_photo'=>  ['Сфотографировать','light'],
+            'supplier_action_take_photo'=>  ['Сфотографировать','medium'],
             'supplier_corrected'=>          ['Корректировать','medium','clear'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
             ],
@@ -89,7 +89,7 @@ class OrderStageDeliveryScript{
             ],
         'delivery_start'=>[
             'delivery_finish'=>             ['Завершить доставку','success'],
-            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','medium'],
             'delivery_action_rejected'=>    ['Отказаться от доставки','danger','clear'],
             'delivery_rejected'=>           [],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear']
@@ -97,7 +97,7 @@ class OrderStageDeliveryScript{
         
         'delivery_rejected'=>[
             'supplier_reclaimed'=>          ['Принять возврат заказа'],
-            'delivery_action_take_photo'=>  ['Сфотографировать','light'],
+            'delivery_action_take_photo'=>  ['Сфотографировать','medium'],
             'admin_supervise'=>             ['Решить спор','danger'],
             'admin_action_courier_assign'=> ['Назначить курьера','medium','clear'],
             ],
@@ -107,7 +107,7 @@ class OrderStageDeliveryScript{
         'delivery_finish'=>[
             'customer_disputed'=>           [],
             'customer_finish'=>             ['Принять заказ','success'],
-            'customer_action_objection'=>   ['Открыть спор','light'],
+            'customer_action_objection'=>   ['Открыть спор','medium'],
             ],
         'delivery_deposit_compensate'=>[
             'system_reckon'=>               [],
@@ -1139,12 +1139,20 @@ class OrderStageDeliveryScript{
         $DeliveryJobPlan->scheduleFillTimetable($storeTimetable);
 
 
+        /**
+         * Courier search timeout
+         * until Store close margin or 1.5hours, but at least 10min
+         */
+        $min_search_timeout=10*60;
         $max_search_timeout=90*60;
         $timetable=$DeliveryJobPlan->schedule->timetableGet();
-        $delivery_search_until=min(time()+$max_search_timeout,$timetable['d0']['end']??0);
-
-
-        tl("$order_id delivery_search_until ".date('Y-m-d H:i:s',$delivery_search_until));
+        $delivery_search_until=max(
+            min(
+                time()+$max_search_timeout,
+                $timetable['d0']['end']??0
+            ),
+            time()+$min_search_timeout
+        );
 
         $this->OrderModel->itemDataUpdate($order_id,(object)['delivery_search_until'=>$delivery_search_until]);
         jobCreate([
@@ -1494,7 +1502,7 @@ class OrderStageDeliveryScript{
         $TransactionModel=model('TransactionModel');
         $TransactionModel->queryDelete("order:$order_id");
 
-        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', ['delay_sec'=>1]);
+        $result=$this->OrderModel->itemStageCreate($order_id, 'system_reckon', (object)['delay_sec'=>1]);
         return $result;
     }
     public function onAdminDelete($order_id){

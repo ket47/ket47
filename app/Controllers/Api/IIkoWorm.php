@@ -199,6 +199,23 @@ class IIkoWorm extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
+    public function refreshImportedImages(){
+        if( !sudo() ){
+            return $this->failForbidden();
+        }
+        $holder_id=$this->request->getVar('holder_id');
+
+        $ImporterModel=model('ImporterModel');
+        $ProductModel=model('ProductModel');
+
+        $ImporterModel->where('holder_id',$holder_id);
+        $ImporterModel->select('target_id AS product_id,C9 AS product_image_url');
+        $products=$ImporterModel->get()->getResult();
+        foreach($products as $product){
+            $ProductModel->itemReloadImage($product->product_id,$product->product_image_url);
+        }
+        return $this->respond('OK');
+    }
 
     private function auth( $token_hash ){
         $UserModel=model('UserModel');
