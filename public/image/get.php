@@ -1,5 +1,5 @@
 <?php
-
+session_destroy();
 function image_resize($path, $width, $height) {
     $src = imagecreatefromwebp($path);
     

@@ -67,51 +67,51 @@ class BaseController extends Controller
             }
             $this->guestUserInit();
         }
-        $this->detectChameleonMode();
-        $this->detectCrazyRaja();
+        // $this->detectChameleonMode();
+        // $this->detectCrazyRaja();
     }
 
-    private function detectCrazyRaja(){
-        if( session()->get('chameleonMode')!='on' ){
-            return;
-        }
-        if( session()->get('user_id')==-1 ){
-            http_response_code(401);
-        }
-    }
+    // private function detectCrazyRaja(){
+    //     if( session()->get('chameleonMode')!='on' ){
+    //         return;
+    //     }
+    //     if( session()->get('user_id')==-1 ){
+    //         http_response_code(401);
+    //     }
+    // }
 
-    private function detectChameleonMode(){
-        if( session()->get('chameleonMode')=='on' ){
-            header('x-chameleon: on');
-            return;
-        }
-        $blackListCountries=getenv('chameleon.countryCodeBlacklist');
-        if( $blackListCountries &&  session()->get('chameleonMode')==null ){
-            $ctx = stream_context_create(['http'=>['timeout' => 1]]);
-            try{
-                $json=file_get_contents("http://ip-api.com/json/{$_SERVER['REMOTE_ADDR']}?fields=countryCode,city,regionName", false, $ctx);
-                $resp=json_decode($json);
-                if( isset($resp->countryCode) && str_contains($blackListCountries,$resp->countryCode) ){
-                    session()->set('chameleonMode','on');
-                    header('x-chameleon: on');
-                    pl('LIMITED COUNTRY ACCESS',$resp);
-                    return;
-                } else {
-                    session()->set('chameleonMode','off');
-                }
-            } catch( \Exception $e){}
-        }
-        $blackListAppVersion=getenv('chameleon.appVersion');
-        if( isset($_SERVER['HTTP_X_VER']) && $_SERVER['HTTP_X_VER']==$blackListAppVersion ){
-            session()->set('chameleonMode','on');
-            header('x-chameleon: on');
-        }
-        $raja_user_id=986;
-        if( session()->get('user_id')==$raja_user_id ){
-            session()->set('chameleonMode','on');
-            header('x-chameleon: on');
-        }
-    }
+    // private function detectChameleonMode(){
+    //     if( session()->get('chameleonMode')=='on' ){
+    //         header('x-chameleon: on');
+    //         return;
+    //     }
+    //     $blackListCountries=getenv('chameleon.countryCodeBlacklist');
+    //     if( $blackListCountries &&  session()->get('chameleonMode')==null ){
+    //         $ctx = stream_context_create(['http'=>['timeout' => 1]]);
+    //         try{
+    //             $json=file_get_contents("http://ip-api.com/json/{$_SERVER['REMOTE_ADDR']}?fields=countryCode,city,regionName", false, $ctx);
+    //             $resp=json_decode($json);
+    //             if( isset($resp->countryCode) && str_contains($blackListCountries,$resp->countryCode) ){
+    //                 session()->set('chameleonMode','on');
+    //                 header('x-chameleon: on');
+    //                 pl('LIMITED COUNTRY ACCESS',$resp);
+    //                 return;
+    //             } else {
+    //                 session()->set('chameleonMode','off');
+    //             }
+    //         } catch( \Exception $e){}
+    //     }
+    //     $blackListAppVersion=getenv('chameleon.appVersion');
+    //     if( isset($_SERVER['HTTP_X_VER']) && $_SERVER['HTTP_X_VER']==$blackListAppVersion ){
+    //         session()->set('chameleonMode','on');
+    //         header('x-chameleon: on');
+    //     }
+    //     $raja_user_id=986;
+    //     if( session()->get('user_id')==$raja_user_id ){
+    //         session()->set('chameleonMode','on');
+    //         header('x-chameleon: on');
+    //     }
+    // }
 
     private function handleSession($request,$response){
         $session_id=$request->getHeaderLine('x-sid');
