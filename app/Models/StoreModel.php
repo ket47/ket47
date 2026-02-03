@@ -127,8 +127,19 @@ class StoreModel extends Model{
         if($distanceToUserInclude){
             $LocationModel->distanceToUserInclude();
         }
+        /**
+         * static delivery cost is deprecated
+         */
         $store->delivery_cost=$this->tariffRuleDeliveryCostGet( $store_id );
         $store->locations=$LocationModel->listGet($filter_loc);
+
+        $store->delivery_free_treshold=null;
+        if( isset($store->locations[0]->distance) ){
+            /**
+             * Get free delivery treshold if distance to user is defined and store has appropriate tariff
+             */
+            $store->delivery_free_treshold=$this->deliveryFreeTresholdGet($store_id,$store->locations[0]->distance);
+        }
         $filter=[
             'image_holder'=>'store',
             'image_holder_id'=>$store->store_id,
@@ -148,6 +159,26 @@ class StoreModel extends Model{
         $store->avatar=$ImageModel->listGet($filter);
         $this->itemCache[$mode.$store_id]=$store;
         return $store;
+    }
+    
+    private function deliveryFreeTresholdGet($store_id,$delivery_distance){
+        $this->join('tariff_member_list','store_id');
+        $this->join('tariff_list','tariff_id');
+        $this->where('store_id',$store_id);
+        $this->where('start_at<=NOW()');
+        $this->where('finish_at>=NOW()');
+        $this->where('tariff_list.is_disabled',0);
+        $this->where('order_allow',1);
+        $this->where('delivery_allow',1);
+        $this->select("order_fee");
+
+        $order_fee=$this->get()->getRow('order_fee');        
+        if( !$order_fee ){
+            return null;
+        }
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $routeReckon=$DeliveryJobPlan->routeReckonDeliveryGet( $delivery_distance, $order_fee );
+        return $routeReckon->delivery_free_treshold??null;
     }
 
     public function itemTimetableGet(int $store_id){
@@ -588,9 +619,9 @@ class StoreModel extends Model{
         /**
          * Opossum mode
          */
-        $CourierShiftModel=model('CourierShiftModel');
-        $deliveryIsReady=$CourierShiftModel->where('shift_status','open')->select('shift_id')->get()->getRow('shift_id');
-        if( !$deliveryIsReady ){
+        //$CourierShiftModel=model('CourierShiftModel');
+        //$deliveryIsReady=$CourierShiftModel->where('shift_status','open')->select('shift_id')->get()->getRow('shift_id');
+        //if( !$deliveryIsReady ){
             // $TariffMemberModel=model("TariffMemberModel");
             // $TariffMemberModel->join('tariff_list','tariff_id');
             // $TariffMemberModel->where('delivery_allow',0);
@@ -599,11 +630,11 @@ class StoreModel extends Model{
             // foreach( $stores as $store ){
             //     $opossum_stores[]=$store->store_id;
             // }
-            $LocationModel->select("is_working AND IFNULL(store_delivery_allow,0)=1 AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
-            $LocationModel->orderBy("store_delivery_allow=1",'DESC',0);
-        } else {
+            //$LocationModel->select("is_working AND IFNULL(store_delivery_allow,0)=1 AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
+            //$LocationModel->orderBy("store_delivery_allow=1",'DESC',0);
+        //} else {
             $LocationModel->select("is_working AND IS_STORE_OPEN(store_time_opens_{$weekday},store_time_closes_{$weekday},$dayhour) is_opened");
-        }
+        //}
         /**
          * @deprecated
          */

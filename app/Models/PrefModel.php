@@ -60,4 +60,15 @@ class PrefModel extends Model{
         }
         return $this->get()->getResult();
     }
+
+    // public function valuesGet( array $pref_names ){
+    //     $prefs=[];
+    //     $this->whereIn('pref_name',$pref_names);
+    //     $this->select('pref_value');
+    //     $pref_values=$this->get()->getResult();
+    //     foreach($pref_values as $val){
+    //         $prefs[$val->pref_name]=$val->pref_value;
+    //     }
+    //     return $prefs;
+    // }
 }

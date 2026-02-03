@@ -62,6 +62,8 @@ class DeliveryJobPlan{
     /**
      * Function caclutates cost of delivery, gain of courier, validates route
      */
+    private $reserved_profit_fee=10;//minimum profit from order
+    private $reserved_bonus_fee=3;//budget to award courier by rating
     public function routeReckonGet( int $start_location_id, int $finish_location_id, int $order_sum_product=0, int $store_comission_fee=0 ):object{
         $routeData=$this->routeValidate( $start_location_id, $finish_location_id );
         if( $routeData['error'] ){
@@ -69,45 +71,47 @@ class DeliveryJobPlan{
                 'error'=>$routeData['error'],
             ];
         }
-        $reserved_profit_fee=10;//minimum profit from order
-        $reserved_bonus_fee=3;//budget to award courier by rating
-
+        $routeReckonDelivery=$this->routeReckonDeliveryGet( $routeData['deliveryDistance'], $store_comission_fee );
+        $delivery_rating_pool=$order_sum_product*$this->reserved_bonus_fee/100;
+        $comission_budget_total=0;
+        if( $order_sum_product && $store_comission_fee ){
+            $comission_budget_total=$order_sum_product*($routeReckonDelivery->store_comission_pool)/100;
+        }
+        $customer_cost_total=round(max($routeReckonDelivery->delivery_gain_base-$comission_budget_total,0)/10)*10;
+        return (object)[
+            'error'=>null,
+            'customer_cost_total'=>$customer_cost_total,
+            'delivery_gain_base'=>$routeReckonDelivery->delivery_gain_base,
+            'delivery_rating_pool'=>$delivery_rating_pool,
+            'delivery_free_treshold'=>$routeReckonDelivery->delivery_free_treshold,
+        ];
+    }
+    /**
+     * Function caclutates cost of delivery, gain of courier, free delivery treshold
+     */
+    public function routeReckonDeliveryGet( float $delivery_distance, int $store_comission_fee ){
         $PrefModel=model('PrefModel');
         $delivery_cost=$PrefModel->itemGet('delivery_cost','pref_value');
         $delivery_fee_distance=$PrefModel->itemGet('delivery_fee_distance','pref_value');
 
-        $delivery_heavy_cost=0;
         $delivery_heavy_bonus=0;
         $delivery_heavy_level=$PrefModel->itemGet('delivery_heavy_level','pref_value');
         if($delivery_heavy_level>0){
-            $delivery_heavy_cost=$PrefModel->itemGet("delivery_heavy_cost_{$delivery_heavy_level}",'pref_value');
             $delivery_heavy_bonus=$PrefModel->itemGet("delivery_heavy_bonus_{$delivery_heavy_level}",'pref_value');
         }
-
-        $comission_budget_total=0;
-        if( $order_sum_product && $store_comission_fee ){
-            $comission_budget_total=$order_sum_product*($store_comission_fee-$reserved_profit_fee-$reserved_bonus_fee)/100;
-        }
-
-        $delivery_rating_pool=$order_sum_product*$reserved_bonus_fee/100;
-        $delivery_cost_distance=$routeData['deliveryDistance']*$delivery_fee_distance/1000;//meters to kilometers
+        $delivery_cost_distance=$delivery_distance*$delivery_fee_distance/1000;//meters to kilometers
         $delivery_gain_base=round( ($delivery_cost+$delivery_cost_distance+$delivery_heavy_bonus)/10)*10;
-        // $delivery_rating_bonus=0;
-        // if( isset($meta->order_sum_product) && isset($meta->courier_id) ){
-        //     $CourierModel=model('CourierModel');
-        //     $ratings=$CourierModel->itemRatingGet($meta->courier_id);
-        //     $avg_rating=( ($ratings[0]->rating??0)+($ratings[1]->rating??0) ) / 2;
-        //     $delivery_rating_bonus=$meta->order_sum_product*$reserved_bonus_fee/100*$avg_rating;
-        // }
-        //$courier_gain_total=$delivery_gain_base+$delivery_rating_bonus;
 
-        $customer_cost_total=round(max($delivery_cost+$delivery_cost_distance+$delivery_heavy_cost-$comission_budget_total,0)/10)*10;
+        $delivery_free_treshold=0;
+        if( $store_comission_fee ){
+            $store_comission_pool=$store_comission_fee-$this->reserved_profit_fee-$this->reserved_bonus_fee;//part of comission that goes to courier payment
+            $delivery_free_treshold=round($delivery_gain_base/($store_comission_pool/100)/50)*50;//round to 50
+        }
         return (object)[
-            //'error'=>null,
-            //'deliveryDistance'=>$routeData['deliveryDistance'],
-            'customer_cost_total'=>$customer_cost_total,
+            'store_comission_pool'=>$store_comission_pool,
+            'delivery_cost_distance'=>$delivery_cost_distance,
             'delivery_gain_base'=>$delivery_gain_base,
-            'delivery_rating_pool'=>$delivery_rating_pool,
+            'delivery_free_treshold'=>$delivery_free_treshold,
         ];
     }
 

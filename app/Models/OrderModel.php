@@ -364,6 +364,7 @@ class OrderModel extends SecureModel{
     }
 
     public function listGet( $filter ){
+        $filter['name_query_allowed']=['store_name','order_id','user_name'];//allowed for searching in
         $this->filterMake($filter,false);
         $this->permitWhere('r');
         if($filter['order_store_id']??0){

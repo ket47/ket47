@@ -53,14 +53,14 @@ class CourierModel extends Model{
             $this->where('courier_list.owner_id',session()->get('user_id'));
         }
         $this->permitWhere('r');
-        $this->select("courier_list.updated_at,courier_list.is_disabled,courier_list.deleted_at,courier_list.courier_id,courier_list.courier_name");
+        $this->select("courier_parttime_notify,courier_list.updated_at,courier_list.is_disabled,courier_list.deleted_at,courier_list.courier_id,courier_list.courier_name,courier_list.owner_id");
         $this->select("group_name status_name,group_type status_type");
         $this->join('courier_group_member_list','courier_list.courier_id=member_id','left');
         $this->join('courier_group_list','group_id','left');
         if($mode=='basic'){
             return $this->get()->getRow();
         }
-        $this->select("courier_parttime_notify,courier_vehicle,courier_comment");//advanced info for dashboard
+        $this->select("courier_vehicle,courier_comment");//advanced info for dashboard
         $this->select("courier_full_name,courier_tax_num,courier_bank_account,courier_bank_id,courier_bank_assignment");//legal info for dashboard
         $this->select('location_address,location_latitude,location_longitude,IF(shift_id,1,0) is_shift_open');
         $this->select('user_id,user_name,user_phone');
@@ -239,6 +239,7 @@ class CourierModel extends Model{
                 ],
         ];
         jobCreate($sms_job);
+        return $result;
     }
 
     public function itemShiftClose( $courier_id ){

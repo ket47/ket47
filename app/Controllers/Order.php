@@ -24,7 +24,7 @@ class Order extends \App\Controllers\BaseController {
             return $this->failNotFound($result);
         }
 
-        $result->time_plan=$this->itemTimePlanGet($order_id);
+        //$result->time_plan=$this->itemTimePlanGet($order_id);
         return $this->respond($result);
     }
 
@@ -478,11 +478,9 @@ class Order extends \App\Controllers\BaseController {
                     'order_id'=>$order->order_id,
                     'store'=>$order->store->store_name??'',
                     'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
-                    'newCost'=>$routeReckon->customer_cost_total??0
+                    'newCost'=>$routeReckon->customer_cost_total??0,
+                    'deliveryFreeTreshold'=>$routeReckon->delivery_free_treshold??0,
                 ]);
-
-
-
                 /**
                  * Disabled for now
                  */
