@@ -220,13 +220,24 @@ trait DeliveryJobNotificationTrait{
         $CourierModel->where('courier_list.deleted_at',null);
         $CourierModel->where('group_type','taxi');
 
-        $CourierModel->select('courier_id,courier_name,courier_parttime_notify,courier_list.owner_id');
+        $CourierModel->select('courier_id,courier_name,courier_parttime_notify,courier_vehicle,courier_list.owner_id');
         $taxi_couriers=$CourierModel->get()->getResult();
+        $vehicle_radius=[
+            'auto_private'=>15000,
+            'moped_private'=>8000,
+            'moped_rent'=>8000,
+            'electro_bike'=>2000,
+        ];
         //tl($taxi_couriers);
 
         foreach($taxi_jobs as $job){
             $job->job_data=json_decode($job->job_data);
+            tl('TAXI COURIER COUNT '.count($taxi_couriers));
             foreach($taxi_couriers as $courier){
+                $courier_reach=$vehicle_radius[$courier->courier_vehicle??'auto_private'];
+                if( $courier_reach<$job->job_data->distance ){
+                    continue;
+                }
                 $job->courier_gain_total=round(($job->job_data->delivery_gain_base??0)+($job->job_data->delivery_rating_pool??0)+($job->job_data->delivery_promised_tip??0));
                 $message_tel=(object)[
                     'message_transport'=>"telegram",

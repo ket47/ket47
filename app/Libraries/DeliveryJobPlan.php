@@ -73,11 +73,9 @@ class DeliveryJobPlan{
         }
         $routeReckonDelivery=$this->routeReckonDeliveryGet( $routeData['deliveryDistance'], $store_comission_fee );
         $delivery_rating_pool=$order_sum_product*$this->reserved_bonus_fee/100;
-        $comission_budget_total=0;
-        if( $order_sum_product && $store_comission_fee ){
-            $comission_budget_total=$order_sum_product*($routeReckonDelivery->store_comission_pool)/100;
-        }
-        $customer_cost_total=round(max($routeReckonDelivery->delivery_gain_base-$comission_budget_total,0)/10)*10;
+
+        $customer_cost_total=$this->routeReckonCustomerCostGet($order_sum_product,$routeReckonDelivery->delivery_gain_base,$routeReckonDelivery->store_comission_pool);
+
         return (object)[
             'error'=>null,
             'customer_cost_total'=>$customer_cost_total,
@@ -85,6 +83,14 @@ class DeliveryJobPlan{
             'delivery_rating_pool'=>$delivery_rating_pool,
             'delivery_free_treshold'=>$routeReckonDelivery->delivery_free_treshold,
         ];
+    }
+    public function routeReckonCustomerCostGet($order_sum_product,$delivery_gain_base,$store_comission_pool){
+        $comission_budget_total=0;
+        if( $order_sum_product && $store_comission_pool ){
+            $comission_budget_total=$order_sum_product*($store_comission_pool)/100;
+        }
+        $customer_cost_total=round(max($delivery_gain_base-$comission_budget_total,0)/10)*10;
+        return $customer_cost_total;
     }
     /**
      * Function caclutates cost of delivery, gain of courier, free delivery treshold
@@ -105,7 +111,7 @@ class DeliveryJobPlan{
         $delivery_free_treshold=0;
         if( $store_comission_fee ){
             $store_comission_pool=$store_comission_fee-$this->reserved_profit_fee-$this->reserved_bonus_fee;//part of comission that goes to courier payment
-            $delivery_free_treshold=round($delivery_gain_base/($store_comission_pool/100)/50)*50;//round to 50
+            $delivery_free_treshold=max(0,round($delivery_gain_base/($store_comission_pool/100)/50)*50);//round to 50 and not allow negative value
         }
         return (object)[
             'store_comission_pool'=>$store_comission_pool,

@@ -151,6 +151,37 @@ class Store extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
 
+    public function itemDeliveryCalculationGet(){
+        if( session()->get('user_id')<1 ){
+            return $this->failNotFound('delivery_distance_undefined');
+        }
+        $store_id=(int) $this->request->getPost('store_id');
+        $order_sum_product=(int) $this->request->getPost('order_sum_product');
+
+        $StoreModel=model('StoreModel');
+        $store=$StoreModel->itemGet($store_id,'all',1);
+        $delivery_distance=$store->locations[0]->distance??null;
+        
+        if(!$delivery_distance){
+            return $this->failNotFound('delivery_distance_undefined');
+        }
+
+        $TariffMemberModel=model('TariffMemberModel');
+        $TariffMemberModel->where('delivery_allow',1);
+        $TariffMemberModel->where('order_fee>0');
+        $delivery_tariffs=$TariffMemberModel->listGet(null,$store_id,'only_valid');
+        $order_fee=$delivery_tariffs[0]->order_fee??null;
+
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $routeReckonDelivery=$DeliveryJobPlan->routeReckonDeliveryGet( $delivery_distance, $order_fee );
+        $customer_cost_total=$DeliveryJobPlan->routeReckonCustomerCostGet($order_sum_product,$routeReckonDelivery->delivery_gain_base,$routeReckonDelivery->store_comission_pool);
+
+        return $this->respond([
+            'customer_cost_total'=>$customer_cost_total,
+            'delivery_free_treshold'=>$routeReckonDelivery->delivery_free_treshold??null
+        ]);
+    }
+
     public function itemDeliveryMethodsGet(){
         $store_id=(int) $this->request->getPost('store_id');
         $StoreModel=model('StoreModel');

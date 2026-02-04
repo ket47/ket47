@@ -109,8 +109,10 @@ class OrderModel extends SecureModel{
             $StoreModel->select('store_id,store_name,store_phone,store_minimal_order,store_tax_num,image_hash');
             $StoreModel->join('image_list','image_holder="store_avatar" AND image_holder_id=store_id','left');
             $order->store=      $StoreModel->where('store_id',$order->order_store_id)->get()->getRow();
+            if( $order->stage_current=='customer_cart' && $order->order_script=='order_delivery' ){
+                $order->store->delivery_free_treshold=$this->itemDeliveryFreeTresholdGet();
+            }
         }
-
         $order->customer=   $UserModel->where('user_id',$order->owner_id)->get()->getRow();//permission issue for other parties
         $order->is_writable=$this->permit($order_id,'w');
         if( sudo() ){
@@ -122,6 +124,27 @@ class OrderModel extends SecureModel{
         $this->itemInfoInclude($order);
         $this->itemCache[$mode.$order_id]=$order;
         return $order;
+    }
+
+    /**
+     * Calculates order sum needed for free delivery
+     */
+    private function itemDeliveryFreeTresholdGet(){
+        if( !isset($this->order_data->checkoutDataCache->Store_deliveryOptions[0]) ){
+            return null;
+        }
+        $order_fee=0;
+        $delivery_distance=0;
+        foreach($this->order_data->checkoutDataCache->Store_deliveryOptions as $option){
+            if( empty($option->routePlan->deliveryDistance) || empty($option->reckonParameters->order_fee) ){
+                continue;
+            }
+            $order_fee=$option->reckonParameters->order_fee;
+            $delivery_distance=$option->routePlan->deliveryDistance;
+        }
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $routeReckon=$DeliveryJobPlan->routeReckonDeliveryGet( $delivery_distance, $order_fee );
+        return $routeReckon->delivery_free_treshold??null;
     }
 
     private function itemInfoInclude(&$order){

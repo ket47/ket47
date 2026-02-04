@@ -1,5 +1,6 @@
 🛍️ <?=$store->store_name?> Заказ №<?=$order->order_id?>. 
 
+Сумма <?= $order->order_sum_total ?>, доставка <?= $order->order_sum_delivery ?>
 Покупатель <b><?=$customer->user_name??'-'?></b> +<?=$customer->user_phone??'-'?> 
 <i><?=$customer->location_main->location_address??'-'?></i>
 <?php if($order_data->finish_plan_scheduled??0):?>

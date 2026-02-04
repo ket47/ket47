@@ -485,8 +485,8 @@ class Order extends \App\Controllers\BaseController {
                  * Disabled for now
                  */
                 //should we apply new  cost to customer at first stage?
-                //$data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
-                //$data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
+                $data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
+                $data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
             }
             if( $data->Store_deliveryOptions[$i]['reckonParameters']->cash_back>0 ){
                 $order_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
