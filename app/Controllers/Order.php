@@ -633,9 +633,6 @@ class Order extends \App\Controllers\BaseController {
         //DELIVERY OPTIONS CHECK
         if( ($checkoutSettings->deliveryByCourier??0) && ($deliveryOption->deliveryByCourier??0) ){
             $order_update->order_script='order_delivery';
-
-
-            pl($deliveryOption);
             $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
             $OrderModel->fieldUpdateAllow('order_script');

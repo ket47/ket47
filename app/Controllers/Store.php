@@ -161,17 +161,20 @@ class Store extends \App\Controllers\BaseController{
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($store_id,'all',1);
         $delivery_distance=$store->locations[0]->distance??null;
-        
         if(!$delivery_distance){
             return $this->failNotFound('delivery_distance_undefined');
         }
-
+        
         $TariffMemberModel=model('TariffMemberModel');
+        $TariffMemberModel->join('tariff_list','tariff_id');
         $TariffMemberModel->where('delivery_allow',1);
         $TariffMemberModel->where('order_fee>0');
-        $delivery_tariffs=$TariffMemberModel->listGet(null,$store_id,'only_valid');
-        $order_fee=$delivery_tariffs[0]->order_fee??null;
-        if(!$delivery_distance){
+        $TariffMemberModel->where('store_id',$store_id);
+        $TariffMemberModel->where('start_at<=NOW()');
+        $TariffMemberModel->where('finish_at>=NOW()');
+        $TariffMemberModel->where('is_disabled',0);
+        $order_fee=$TariffMemberModel->select('order_fee')->get()->getRow('order_fee');
+        if(!$order_fee){
             return $this->failNotFound('delivery_absent_forstore');
         }
 
