@@ -265,15 +265,15 @@ class Order extends \App\Controllers\BaseController {
         }
 
         $tariff_order_mode='delivery_by_courier_first';
-        $lookForCourierAroundLocation=(object)[
-            'location_holder'=>'store',
-            'location_holder_id'=>$store_id
-        ];
-        $CourierModel=model('CourierModel');
-        $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
-        if(!$deliveryIsReady){
-            $tariff_order_mode='delivery_by_courier_last';
-        }
+        //$lookForCourierAroundLocation=(object)[
+        //     'location_holder'=>'store',
+        //     'location_holder_id'=>$store_id
+        // ];
+        //$CourierModel=model('CourierModel');
+        // $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
+        // if(!$deliveryIsReady){
+        //     $tariff_order_mode='delivery_by_courier_last';
+        // }
         $store=$StoreModel->itemGet($store_id,'basic');
         $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id,$tariff_order_mode);
 
@@ -296,9 +296,9 @@ class Order extends \App\Controllers\BaseController {
                     $default_error_code='too_far';
                     continue;
                 }
-                if( !$deliveryIsReady ){
-                    $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
-                }
+                // if( !$deliveryIsReady ){
+                //     $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
+                // }
                 $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
                 $order_sum_delivery=(int)$tariff->delivery_cost+$deliveryHeavyModifier->cost;
                 $tariff->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
@@ -311,7 +311,7 @@ class Order extends \App\Controllers\BaseController {
                     'deliveryHeavyCost'=>(int)$deliveryHeavyModifier->cost,
                     'deliveryByCourier'=>1,
                     'deliveryByStore'=>0,
-                    'deliveryIsReady'=>$deliveryIsReady,
+                    'deliveryIsReady'=>1,
                     'storeIsReady'=>$store_readyness->is_open,
                     'pickupByCustomer'=>0,
                     'paymentByCard'=>0,
@@ -633,6 +633,9 @@ class Order extends \App\Controllers\BaseController {
         //DELIVERY OPTIONS CHECK
         if( ($checkoutSettings->deliveryByCourier??0) && ($deliveryOption->deliveryByCourier??0) ){
             $order_update->order_script='order_delivery';
+
+
+            pl($deliveryOption);
             $order_update->order_sum_delivery=$deliveryOption->deliverySum;
             $OrderModel->fieldUpdateAllow('order_sum_delivery');
             $OrderModel->fieldUpdateAllow('order_script');

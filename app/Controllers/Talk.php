@@ -152,23 +152,21 @@ class Talk extends \App\Controllers\BaseController{
 
     
     
-    public function noticeListGet(){
+    public function eventSource(){
+        $target_user_id=$this->request->getPost('target_user_id');
+        $last_event_id=$this->request->getPost('last_event_id');
+
         session_write_close();
         set_time_limit(120);
-
-        header("X-Accel-Buffering: no");
-        header("Content-Type: text/event-stream");
-        header("Cache-Control: no-cache");
-        header('Connection: keep-alive');
 
         ini_set('zlib.output_compression', '0');
         ini_set('implicit_flush', '1');
         ini_set('output_buffering', 'Off');
 
-
-
-        $target_user_id=$this->request->getPost('target_user_id');
-        $last_event_id=$this->request->getPost('last_event_id');
+        header("X-Accel-Buffering: no");
+        header("Content-Type: text/event-stream");
+        header("Cache-Control: no-cache");
+        header('Connection: keep-alive');
 
         while (ob_get_level() > 0) {
             ob_end_flush();
@@ -302,6 +300,17 @@ class Talk extends \App\Controllers\BaseController{
         $NoticeDataModel=model('NoticeDataModel');
         $chatList=$NoticeDataModel->chatListGet($notice_holder_id,$last_notice_id);
         return $this->respond($chatList);
+    }
+
+    public function chatItemCreate(){
+        $notice_holder_id=$this->request->getPost('notice_holder_id');
+        $notice_text=$this->request->getPost('notice_text');
+
+
+
+
+
+
     }
 
     

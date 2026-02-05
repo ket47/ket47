@@ -28,7 +28,6 @@
                     <?php endif; ?>
                     <?= $courier->group_name ?>
                 </div>
-                <div><?=$courier->current_order_id?></div>
                 <div><i class="fa fa-pencil" data-id="<?=$courier->courier_id?>" data-action="edit"></i></div>
                 <div style="grid-column: 1 / span 7;" class="item_card" id="itemCard<?=$courier->courier_id?>"></div>
             </div>

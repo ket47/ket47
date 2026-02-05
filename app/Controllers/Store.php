@@ -171,6 +171,9 @@ class Store extends \App\Controllers\BaseController{
         $TariffMemberModel->where('order_fee>0');
         $delivery_tariffs=$TariffMemberModel->listGet(null,$store_id,'only_valid');
         $order_fee=$delivery_tariffs[0]->order_fee??null;
+        if(!$delivery_distance){
+            return $this->failNotFound('delivery_absent_forstore');
+        }
 
         $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
         $routeReckonDelivery=$DeliveryJobPlan->routeReckonDeliveryGet( $delivery_distance, $order_fee );
