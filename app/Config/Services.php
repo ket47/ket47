@@ -44,7 +44,7 @@ class Services extends BaseService
 		if( $type=='AcquirerUnitellerSBP' ){
 			return new \App\Libraries\AcquirerUnitellerSBP();
 		}
-		return new \App\Libraries\AcquirerRncb();
+		return new \App\Libraries\AcquirerUnitellerSBP();
 	}
 
 	public static function cashier($getShared = true){

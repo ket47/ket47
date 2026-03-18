@@ -106,8 +106,8 @@ class OrderStageDeliveryScript{
         ],
         'delivery_finish'=>[
             'customer_disputed'=>           [],
+            'customer_action_objection'=>   ['Открыть спор'],
             'customer_finish'=>             ['Принять заказ','success'],
-            'customer_action_objection'=>   ['Открыть спор','medium'],
             ],
         'delivery_deposit_compensate'=>[
             'system_reckon'=>               [],
@@ -1425,7 +1425,7 @@ class OrderStageDeliveryScript{
         $order_all=$this->OrderModel->itemGet($order_id,'all');
         $result=$Acquirer->pay($order_all,$paying_user_id);
         if( $result!='ok' ){
-            return "deposit_{$result}";
+            return "deposit_error_nocof";
         }
         jobCreate([
             'task_programm'=>[

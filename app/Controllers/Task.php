@@ -6,12 +6,11 @@ class Task extends \App\Controllers\BaseController{
     private $workerLifeTime=2*60;//2min
     private $workerLifeSpread=60;//1min
     private $workerId=0;
-    private $timedJobInterval=1*60*30;//30 min
 
     private function jobTimeoutsSet(){
         $db = \Config\Database::connect();
-        $db->query("set session wait_timeout=3600");
-        set_time_limit(3600);
+        $db->query("set session wait_timeout=600");
+        set_time_limit(600);
         session_write_close();
     }
 
@@ -37,51 +36,36 @@ class Task extends \App\Controllers\BaseController{
     }
 
     public function jobDo(){
-        if( getenv('app.logworkers') ){
-            ob_start();
-        } else{
-            header("X-Accel-Buffering: no");
-            header("Cache-Control: no-cache");
-            ini_set('zlib.output_compression', '0');
-            ini_set('output_buffering', 'Off');
-            ini_set('implicit_flush', '1');
-            flush();
-        }
+        $this->workerId = rand(100, 999);
+        echo "\nWorker #$this->workerId Starting.".date('H:i:s');
 
         $this->jobTimeoutsSet();
         $time_limit = $this->workerLifeTime;
         $time_limit += rand(0, $this->workerLifeSpread);
         $start_time = time();
-        $this->workerId = rand(100, 999);
         
-        echo "\nWorker #$this->workerId Starting.".date('H:i:s');
         $predis = new \Credis_Client();
         $this->timedJobDo($predis);
-
         while(time() < $start_time + $time_limit){
             $this->jobDelayedMove( $predis );
             $job_chunk = $predis->blPop('queue.priority.normal',4);
             $job=$job_chunk[1]??null;
-            if(!$job){
+            if(!$job){// look for low priority job only if ther is no normal priority job
                 $job = $predis->lPop('queue.priority.low');
             }
             if(!$job){
-                echo ".";
+                echo ".";// skippling cycle
                 continue;
             }
             $task= json_decode($job);
             if( !$task ){
-                echo "\nInvalid job syntax: ".json_last_error_msg();
+                pl("Invalid job syntax: ".json_last_error_msg(),$job);
             }
-            //echo "\nJob {($task->task_name??'-')} Started at ".date('H:i:s')." result=";
+            echo "+";// executing cycle
             $this->itemExecute( $task );
-            //echo "\nDone!";
             $time_limit+=2;//adding 2 seconds if there is a job
         }
         echo "\nWorker #$this->workerId Finished! Goodbye!\n\n\n";
-        if( getenv('app.logworkers') ){
-            log_message('error',ob_get_flush());
-        }
     }
 
     public function jobNightlyDo(){

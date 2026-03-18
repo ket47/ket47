@@ -198,7 +198,7 @@ class Talk extends \App\Controllers\BaseController{
 
     private function noticeListUpdateGet2($target_user_id,$last_event_id):array{
 
-        $this->fakeMessageCreate();
+        //$this->fakeMessageCreate();
 
 
 
@@ -210,7 +210,7 @@ class Talk extends \App\Controllers\BaseController{
 
         return [
             (object)[
-                'notice_type'=>'chat',
+                'notice_type'=>'chat_message',
                 'text'=>date("Y-m-d H:i:s")
             ],
         ];

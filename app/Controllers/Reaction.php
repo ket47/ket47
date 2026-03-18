@@ -250,10 +250,18 @@ class Reaction extends \App\Controllers\BaseController{
         return $this->respond($result);
     }
  
-    public function itemGetSuggest()
-    {   
+    public function itemGetSuggest(){
+        $suggestion_day=date('Y-m-d');
+        $last_suggestion_day=session()->get('itemGetSuggest_lastDay');
+        if(isset($last_suggestion_day) && $last_suggestion_day==$suggestion_day){
+            return $this->fail('already_suggested_today');
+        }
+        session()->set('itemGetSuggest_lastDay',$suggestion_day);
         $ReactionModel=model('ReactionModel');
         $result=$ReactionModel->itemGetSuggest();
+        if( !$result ){
+            return $this->failNotFound('nothing_to_suggest');
+        }
         return $this->respond($result);
     }
 }

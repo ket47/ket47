@@ -137,10 +137,6 @@ class Cardacquirer extends \App\Controllers\BaseController{
             return $this->fail($result);
         }
 
-        if( session()->get('user_id')==9468 ){//exception for derya
-            $payment_type='use_card';
-        }
-
         $orderDataUpdate=(object)[];
         if( $payment_type=='use_card' ){// || isset($orderData->payment_card_acquirer) && $orderData->payment_card_acquirer=='AcquirerUniteller'
             $Acquirer=\Config\Services::acquirer(true,'AcquirerUniteller');
@@ -164,6 +160,19 @@ class Cardacquirer extends \App\Controllers\BaseController{
          */
         if( ($orderData->await_payment_until??0)>time() && ($orderData->payment_card_acq_url??null) ){
             return $orderData->payment_card_acq_url;
+        }
+        /**
+         * If paying user is not customer. For example courier paying for user (cash orders)
+         */
+        $paying_user_id=session()->get('user_id');
+        if( $order_all->customer->user_id != $paying_user_id ){
+            $user_data=session()->get('user_data');
+            $order_all->customer=(object)[
+                'user_id'=>$user_data->user_id,
+                'user_name'=>$user_data->user_name,
+                'user_phone'=>$user_data->user_phone,
+                'user_email'=>$user_data->user_email,
+            ];
         }
         $paymentLink=$Acquirer->linkGet($order_all,$enable_auto_cof);
         $orderDataUpdate->await_payment_timeout=time()+10*60;//10min

@@ -8,24 +8,6 @@
     $order_cost     =70;
     $hour_cost_rent =180;
     $hour_cost_own  =190;
-
-    if( $courier->courier_id==156 ){
-        $hour_cost_own  =250;//bahman
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     $heavy_bonus_moped  =$statistics->heavy_bonus??0;
     $heavy_bonus_car    =$heavy_bonus_moped/2;
 
@@ -68,6 +50,8 @@
 Конец   <?=$shift->closed_at?> </pre>
 <pre>⏱️ Время     <?=sprintf('%02d:%02d:%02d', floor(($total_duration??0)/3600),round(($total_duration??0)/60)%60, round(($total_duration??0))%60);?> 
 📃 Заказы    <?=$order_count_all?>шт 
+
+📃 Заказ <?=$order_cost?>₽ 
 ❤️ Униформа  +<?=$look_bonus?>₽ 
 🚀 Быстрота  +<?=$speed_bonus?>₽ 
 </pre>
