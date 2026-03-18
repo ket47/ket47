@@ -474,13 +474,13 @@ class Order extends \App\Controllers\BaseController {
 
 
 
-                tl([
-                    'order_id'=>$order->order_id,
-                    'store'=>$order->store->store_name??'',
-                    'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
-                    'newCost'=>$routeReckon->customer_cost_total??0,
-                    'deliveryFreeTreshold'=>$routeReckon->delivery_free_treshold??0,
-                ]);
+                // tl([
+                //     'order_id'=>$order->order_id,
+                //     'store'=>$order->store->store_name??'',
+                //     'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
+                //     'newCost'=>$routeReckon->customer_cost_total??0,
+                //     'deliveryFreeTreshold'=>$routeReckon->delivery_free_treshold??0,
+                // ]);
                 $data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
                 $data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
                 //$data->Store_deliveryOptions[$i]['reckonParameters']->delivery_cost=$routeReckon->customer_cost_total;
