@@ -64,7 +64,7 @@ class DeliveryJobPlan{
      */
     private $reserved_profit_fee=10;//minimum profit from order
     private $reserved_bonus_fee=3;//budget to award courier by rating
-    private $delivery_cost_max=350;
+    private $delivery_cost_max=290;
     public function routeReckonGet( int $start_location_id, int $finish_location_id, int $order_sum_product=0, int $store_comission_fee=0 ):object{
         $routeData=$this->routeValidate( $start_location_id, $finish_location_id );
         if( $routeData['error'] ){
