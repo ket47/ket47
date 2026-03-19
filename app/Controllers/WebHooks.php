@@ -23,6 +23,41 @@ class Webhooks extends \App\Controllers\BaseController{
             $Tbot->dispatch($Telegram);
         }
     }
+    public function VKWebhook() {
+        try {
+            $raw = $this->request->getBody();
+            $data = json_decode($raw, true);
+            
+            if (!$data) {
+                return $this->respond('Error: Empty or invalid JSON', 400);
+            }
+
+            if (isset($data['type']) && $data['type'] === 'confirmation') {
+                return $this->respond(getenv('vk.confirmationCode'));
+            }
+    
+            if (!class_exists('\App\Libraries\VK\VKBot')) {
+                return $this->respond('Error: Class \App\Libraries\VK\VKBot not found', 500);
+            }
+    
+            $VKBot = new \App\Libraries\VK\VKBot();
+            
+            $VKBot->dispatch($data);
+    
+            return $this->respond('success');
+    
+        } catch (\Throwable $e) {
+            return $this->respond('PHP Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 500);
+        }
+    }
+
+
+    public function VKPoll(){
+        $VKBot=new \App\Libraries\VK\VKBot();
+        echo $VKBot->getUpdates();
+    }
+
+
     public function telegramPing(){
         if(PHP_SAPI !== 'cli'){
             return false;
@@ -40,6 +75,65 @@ class Webhooks extends \App\Controllers\BaseController{
             if($result){
                 \CodeIgniter\CLI\CLI::write("W HELPER:".$result);
             }
+        }
+    }
+    // Обновите VKPing (теперь он тянет данные с вашего прокси)
+    public function VKPing() {
+        if (PHP_SAPI !== 'cli') return false;
+    
+        $remoteUrl = 'https://api.tezkel.com/vk/vk_handler.php';
+        $localUrl = 'http://tezkel.local/WebHooks/VKWebhook';
+    
+        \CodeIgniter\CLI\CLI::write("Пинг VK запущен... Ожидание событий.", 'cyan');
+    
+        while (1) {
+            $events = @file_get_contents($remoteUrl);
+            
+            if (!empty($events)) {
+                $rows = explode(PHP_EOL, trim($events));
+                
+                foreach ($rows as $row) {
+                    if (empty(trim($row))) continue;
+                    
+                    try {
+                        $client = \Config\Services::curlrequest();
+                        
+                        // ВАЖНО: ставим 'http_errors' => false, чтобы прочитать тело ошибки 500
+                        $response = $client->post($localUrl, [
+                            'body'        => $row,
+                            'headers'     => ['Content-Type' => 'application/json'],
+                            'timeout'     => 10,
+                            'http_errors' => false 
+                        ]);
+    
+                        $body = $response->getBody();
+                        $status = $response->getStatusCode();
+    
+                        if ($status === 200 && $body === 'success') {
+                            \CodeIgniter\CLI\CLI::write("✅ [" . date('H:i:s') . "] Событие обработано", 'green');
+                        } else {
+                            \CodeIgniter\CLI\CLI::error("❌ ОШИБКА СЕРВЕРА (Код: $status)");
+                            
+                            // Пытаемся распарсить JSON с деталями ошибки из Webhooks.php
+                            $errorData = json_decode($body, true);
+                            
+                            if (json_last_error() === JSON_ERROR_NONE && isset($errorData['error'])) {
+                                \CodeIgniter\CLI\CLI::write("Сообщение: " . $errorData['error'], 'yellow');
+                                \CodeIgniter\CLI\CLI::write("Файл: " . $errorData['file'] . " (Линия: " . $errorData['line'] . ")", 'light_gray');
+                                // Если хочешь видеть весь путь ошибки:
+                                // \CodeIgniter\CLI\CLI::write($errorData['trace'], 'dark_gray');
+                            } else {
+                                \CodeIgniter\CLI\CLI::write("Сырой ответ сервера: " . $body, 'red');
+                            }
+                            \CodeIgniter\CLI\CLI::write("-----------------------------------");
+                        }
+                    } catch (\Exception $e) {
+                        \CodeIgniter\CLI\CLI::error("Ошибка Curl: " . $e->getMessage());
+                    }
+                }
+            }
+            
+            usleep(500000); 
         }
     }
     

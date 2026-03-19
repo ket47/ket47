@@ -226,7 +226,7 @@ class CourierModel extends Model{
         }
         $message=(object)[
             'message_reciever_id'=>$courier->owner_id,
-            'message_transport'=>'telegram',
+            'message_transport'=>'telegram,vk',
             'message_text'=>$message_text,
             'message_data'=>[
                 'title'=>'Смена не открыта',
