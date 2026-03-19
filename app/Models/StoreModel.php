@@ -133,6 +133,10 @@ class StoreModel extends Model{
         $store->delivery_cost=$this->tariffRuleDeliveryCostGet( $store_id );
         $store->locations=$LocationModel->listGet($filter_loc);
 
+
+        /**
+         * @todo rewrite deliveryFreeTresholdGet
+         */
         $store->delivery_free_treshold=null;
         if( isset($store->locations[0]->distance) ){
             /**

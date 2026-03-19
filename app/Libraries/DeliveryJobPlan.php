@@ -3,7 +3,7 @@ namespace App\Libraries;
 class DeliveryJobPlan{
 
     private $shiftStartHour=9;
-    private $shiftEndHour=23;
+    private $shiftEndHour=24;
     private $deliveryRangeDays=4;
     private $deliveryDurationDelta=900;//+-15 min
     private $avgSpeed=3.05;//11 km/h
@@ -64,6 +64,7 @@ class DeliveryJobPlan{
      */
     private $reserved_profit_fee=10;//minimum profit from order
     private $reserved_bonus_fee=3;//budget to award courier by rating
+    private $delivery_cost_max=290;
     public function routeReckonGet( int $start_location_id, int $finish_location_id, int $order_sum_product=0, int $store_comission_fee=0 ):object{
         $routeData=$this->routeValidate( $start_location_id, $finish_location_id );
         if( $routeData['error'] ){
@@ -73,11 +74,9 @@ class DeliveryJobPlan{
         }
         $routeReckonDelivery=$this->routeReckonDeliveryGet( $routeData['deliveryDistance'], $store_comission_fee );
         $delivery_rating_pool=$order_sum_product*$this->reserved_bonus_fee/100;
-        $comission_budget_total=0;
-        if( $order_sum_product && $store_comission_fee ){
-            $comission_budget_total=$order_sum_product*($routeReckonDelivery->store_comission_pool)/100;
-        }
-        $customer_cost_total=round(max($routeReckonDelivery->delivery_gain_base-$comission_budget_total,0)/10)*10;
+
+        $customer_cost_total=$this->routeReckonCustomerCostGet($order_sum_product,$routeReckonDelivery->delivery_gain_base,$routeReckonDelivery->store_comission_pool);
+
         return (object)[
             'error'=>null,
             'customer_cost_total'=>$customer_cost_total,
@@ -85,6 +84,14 @@ class DeliveryJobPlan{
             'delivery_rating_pool'=>$delivery_rating_pool,
             'delivery_free_treshold'=>$routeReckonDelivery->delivery_free_treshold,
         ];
+    }
+    public function routeReckonCustomerCostGet($order_sum_product,$delivery_gain_base,$store_comission_pool){
+        $comission_budget_total=0;
+        if( $order_sum_product && $store_comission_pool ){
+            $comission_budget_total=$order_sum_product*($store_comission_pool)/100;
+        }
+        $customer_cost_total=round(max($delivery_gain_base-$comission_budget_total,0)/10)*10;
+        return min($customer_cost_total,$this->delivery_cost_max);
     }
     /**
      * Function caclutates cost of delivery, gain of courier, free delivery treshold
@@ -103,9 +110,10 @@ class DeliveryJobPlan{
         $delivery_gain_base=round( ($delivery_cost+$delivery_cost_distance+$delivery_heavy_bonus)/10)*10;
 
         $delivery_free_treshold=0;
+        $store_comission_pool=0;
         if( $store_comission_fee ){
             $store_comission_pool=$store_comission_fee-$this->reserved_profit_fee-$this->reserved_bonus_fee;//part of comission that goes to courier payment
-            $delivery_free_treshold=round($delivery_gain_base/($store_comission_pool/100)/50)*50;//round to 50
+            $delivery_free_treshold=max(0,round($delivery_gain_base/($store_comission_pool/100)/50)*50);//round to 50 and not allow negative value
         }
         return (object)[
             'store_comission_pool'=>$store_comission_pool,

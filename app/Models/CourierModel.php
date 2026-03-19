@@ -106,8 +106,10 @@ class CourierModel extends Model{
         }
         $user=$UserModel->itemGet($user_id);
         $this->allowedFields[]='owner_id';
+        $this->allowedFields[]='owner_ally_ids';
         $courier=[
             'owner_id'=>$user_id,
+            'owner_ally_ids'=>$user_id,
             'courier_name'=>$user->user_name,
         ];
         

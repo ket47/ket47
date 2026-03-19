@@ -56,7 +56,7 @@ class Store extends \App\Controllers\BaseController{
         $cachehash=md5("$location_id,$location_latitude,$location_longitude");
         $storenearcache=session()->get('storenearcache')??[];
         if( isset($storenearcache[$cachehash]['expired_at']) && $storenearcache[$cachehash]['expired_at']>time() ){
-            //return $storenearcache[$cachehash];
+            return $storenearcache[$cachehash];
         }
         $cache_live_time=10*60;//minutes
         $till_end_of_hour=(60-date('i'))*60-1;//till the hh:59:59 when store can close
@@ -67,9 +67,9 @@ class Store extends \App\Controllers\BaseController{
         /**
          * Applying chameleon mode
          */
-        if( session()->get('chameleonMode')=='on' ){
-            $whitelistedStores=explode(',',getenv('chameleon.whiteStores'));
-        }
+        // if( session()->get('chameleonMode')=='on' ){
+        //     $whitelistedStores=explode(',',getenv('chameleon.whiteStores'));
+        // }
         $store_list=$StoreModel->listNearGet(['location_id'=>$location_id,'location_latitude'=>$location_latitude,'location_longitude'=>$location_longitude,'whitelistedStores'=>$whitelistedStores]); 
         /**
          * @todo rewrite notfound handling
@@ -81,7 +81,14 @@ class Store extends \App\Controllers\BaseController{
         $store_groups_htable=[];
         $product_groups_htable=[];
 
+
+
+
+
+
+
         $now=time();
+        $priority_high_perks=["cashback","challenge"];
         foreach($store_list as $store){
             $store->cache_groups=json_decode($store->cache_groups??'');
             if( !$store->cache_groups || $store->cache_groups->expired_at<$now ){
@@ -94,6 +101,16 @@ class Store extends \App\Controllers\BaseController{
                 $product_groups_htable[$group_id]=1;
             }
             $store_list_ids[]=$store->store_id;
+
+            //all stores are in ALL group
+            $store->cache_groups->store_groups[]="-1";
+            //set distance to 0 for high priority stores
+            foreach($store->perks as $perk){
+                if( in_array($perk->perk_type,$priority_high_perks) ){
+                    $store->distance=0;
+                    continue;
+                }
+            }
         }
         $ProductGroupModel=model('ProductGroupModel');
         $ProductGroupModel->join('image_list','group_id=image_holder_id');
@@ -107,6 +124,13 @@ class Store extends \App\Controllers\BaseController{
         $StoreGroupModel->whereIn('group_id',array_keys($store_groups_htable));
         $store_groups=$StoreGroupModel->select('group_id,group_type,group_name,image_hash')->get()->getResult();
 
+        //defining the ALL group
+        $store_groups[]=[
+            'group_id'=>"-1",
+            'group_type'=>'all',
+            'group_name'=>'Все',
+            'image_hash'=>'f491f26a69cadc7990245ab921963bf4'
+        ];
         $list=[
             'store_list'=>$store_list,
             'store_list_ids'=>$store_list_ids,
@@ -149,6 +173,43 @@ class Store extends \App\Controllers\BaseController{
         $ReactionModel=model('ReactionModel');
         $result->reactionSummary=$ReactionModel->summaryGet("store:$store_id");
         return $this->respond($result);
+    }
+
+    public function itemDeliveryCalculationGet(){
+        if( session()->get('user_id')<1 ){
+            return $this->failNotFound('delivery_distance_undefined');
+        }
+        $store_id=(int) $this->request->getPost('store_id');
+        $order_sum_product=(int) $this->request->getPost('order_sum_product');
+
+        $StoreModel=model('StoreModel');
+        $store=$StoreModel->itemGet($store_id,'all',1);
+        $delivery_distance=$store->locations[0]->distance??null;
+        if(!$delivery_distance){
+            return $this->failNotFound('delivery_distance_undefined');
+        }
+        
+        $TariffMemberModel=model('TariffMemberModel');
+        $TariffMemberModel->join('tariff_list','tariff_id');
+        $TariffMemberModel->where('delivery_allow',1);
+        $TariffMemberModel->where('order_fee>0');
+        $TariffMemberModel->where('store_id',$store_id);
+        $TariffMemberModel->where('start_at<=NOW()');
+        $TariffMemberModel->where('finish_at>=NOW()');
+        $TariffMemberModel->where('is_disabled',0);
+        $order_fee=$TariffMemberModel->select('order_fee')->get()->getRow('order_fee');
+        if(!$order_fee){
+            return $this->failNotFound('delivery_absent_forstore');
+        }
+
+        $DeliveryJobPlan=new \App\Libraries\DeliveryJobPlan();
+        $routeReckonDelivery=$DeliveryJobPlan->routeReckonDeliveryGet( $delivery_distance, $order_fee );
+        $customer_cost_total=$DeliveryJobPlan->routeReckonCustomerCostGet($order_sum_product,$routeReckonDelivery->delivery_gain_base,$routeReckonDelivery->store_comission_pool);
+
+        return $this->respond([
+            'customer_cost_total'=>$customer_cost_total,
+            'delivery_free_treshold'=>$routeReckonDelivery->delivery_free_treshold??null
+        ]);
     }
 
     public function itemDeliveryMethodsGet(){

@@ -187,19 +187,22 @@ class OrderStageShipmentScript{
     //SYSTEM HANDLERS ONLY UNDER ADMIN LEVEL USER
     ////////////////////////////////////////////////
     public function onSystemReckon( $order_id, $data ){
-        if( $data['delay_sec']??0 ){
-            sleep($data['delay_sec']);//DO AFTER DELAY
-        }
-        $result=$this->OrderModel->itemStageCreate($order_id, 'system_finish');
-        if( $result!='ok' ){
-            $retry_delay_min=7;
-            jobCreate([
-                'task_programm'=>[
-                        ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
-                ],
-                'task_next_start_time'=>time()+$retry_delay_min*60
-            ]);
-        }
+        // if( $data['delay_sec']??0 ){
+        //     sleep($data['delay_sec']);//DO AFTER DELAY
+        // }
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+            ],
+            'task_next_start_time'=>time()+1
+        ]);
+        $retry_delay_min=7;
+        jobCreate([
+            'task_programm'=>[
+                    ['method'=>'orderStageCreate','arguments'=>[$order_id,'system_finish', $data]]
+            ],
+            'task_next_start_time'=>time()+$retry_delay_min*60
+        ]);
         return 'ok';
     }
     public function onSystemFinish( $order_id ){
@@ -719,6 +722,8 @@ class OrderStageShipmentScript{
         $CourierModel=model('CourierModel');
         $courier=$CourierModel->itemGet($order->order_courier_id);
 
+        $courier_gain_mode=$courier->is_shift_open?'shift':'taxi';
+
         helper('phone_number');
         $order_data=$this->OrderModel->itemDataGet($order_id);
         $info_for_supplier=(object)json_decode($order_data->info_for_supplier??'[]');
@@ -733,6 +738,8 @@ class OrderStageShipmentScript{
         $info_for_customer->courier_image_hash=$courier->images[0]->image_hash??'';
 
         $update=(object)[
+            'delivery_gain_mode'=>$courier_gain_mode,
+            'delivery_rating_score'=>$courier->rating_score,
             'info_for_customer'=>json_encode($info_for_customer),
             'info_for_supplier'=>json_encode($info_for_supplier),
             'start_plan_mode'=>'inited'

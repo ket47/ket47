@@ -63,7 +63,7 @@ class TariffMemberModel extends Model{
         return $this->affectedRows()?'ok':'idle';
     }
     
-    public function listGet( int $tariff_id=null, int $store_id=null ){
+    public function listGet( ?int $tariff_id=null, ?int $store_id=null, ?string $mode=null ){
         if( !sudo() || !$tariff_id&&!$store_id ){
             return;
         }
@@ -74,6 +74,11 @@ class TariffMemberModel extends Model{
             $this->where('store_id',$store_id);
         }
         $this->join('tariff_list','tariff_id');
+        if( str_contains($mode,'only_valid') ){
+            $this->where('start_at<=NOW()');
+            $this->where('finish_at>=NOW()');
+            $this->where('is_disabled',0);
+        }
         return $this->get()->getResult();
     }
 }

@@ -265,15 +265,15 @@ class Order extends \App\Controllers\BaseController {
         }
 
         $tariff_order_mode='delivery_by_courier_first';
-        $lookForCourierAroundLocation=(object)[
-            'location_holder'=>'store',
-            'location_holder_id'=>$store_id
-        ];
-        $CourierModel=model('CourierModel');
-        $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
-        if(!$deliveryIsReady){
-            $tariff_order_mode='delivery_by_courier_last';
-        }
+        //$lookForCourierAroundLocation=(object)[
+        //     'location_holder'=>'store',
+        //     'location_holder_id'=>$store_id
+        // ];
+        //$CourierModel=model('CourierModel');
+        // $deliveryIsReady=$CourierModel->deliveryIsReady($lookForCourierAroundLocation);
+        // if(!$deliveryIsReady){
+        //     $tariff_order_mode='delivery_by_courier_last';
+        // }
         $store=$StoreModel->itemGet($store_id,'basic');
         $storeTariffRuleList=$StoreModel->tariffRuleListGet($store_id,$tariff_order_mode);
 
@@ -296,9 +296,9 @@ class Order extends \App\Controllers\BaseController {
                     $default_error_code='too_far';
                     continue;
                 }
-                if( !$deliveryIsReady ){
-                    $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
-                }
+                // if( !$deliveryIsReady ){
+                //     $CourierModel->deliveryNotReadyNotify($lookForCourierAroundLocation);//notify of absent courier only if needed
+                // }
                 $deliveryHeavyModifier=$this->itemDeliveryHeavyGet();
                 $order_sum_delivery=(int)$tariff->delivery_cost+$deliveryHeavyModifier->cost;
                 $tariff->delivery_heavy_bonus=$deliveryHeavyModifier->bonus;
@@ -311,7 +311,7 @@ class Order extends \App\Controllers\BaseController {
                     'deliveryHeavyCost'=>(int)$deliveryHeavyModifier->cost,
                     'deliveryByCourier'=>1,
                     'deliveryByStore'=>0,
-                    'deliveryIsReady'=>$deliveryIsReady,
+                    'deliveryIsReady'=>1,
                     'storeIsReady'=>$store_readyness->is_open,
                     'pickupByCustomer'=>0,
                     'paymentByCard'=>0,
@@ -474,19 +474,16 @@ class Order extends \App\Controllers\BaseController {
 
 
 
-                tl([
-                    'order_id'=>$order->order_id,
-                    'store'=>$order->store->store_name??'',
-                    'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
-                    'newCost'=>$routeReckon->customer_cost_total??0,
-                    'deliveryFreeTreshold'=>$routeReckon->delivery_free_treshold??0,
-                ]);
-                /**
-                 * Disabled for now
-                 */
-                //should we apply new  cost to customer at first stage?
-                //$data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
-                //$data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
+                // tl([
+                //     'order_id'=>$order->order_id,
+                //     'store'=>$order->store->store_name??'',
+                //     'currentCost'=>$data->Store_deliveryOptions[$i]['order_sum_delivery']??0,
+                //     'newCost'=>$routeReckon->customer_cost_total??0,
+                //     'deliveryFreeTreshold'=>$routeReckon->delivery_free_treshold??0,
+                // ]);
+                $data->Store_deliveryOptions[$i]['order_sum_delivery']=$routeReckon->customer_cost_total;
+                $data->Store_deliveryOptions[$i]['deliverySum']=$routeReckon->customer_cost_total;
+                //$data->Store_deliveryOptions[$i]['reckonParameters']->delivery_cost=$routeReckon->customer_cost_total;
             }
             if( $data->Store_deliveryOptions[$i]['reckonParameters']->cash_back>0 ){
                 $order_bonus=$PromoModel->bonusOrderCalculate( $order->order_id );
