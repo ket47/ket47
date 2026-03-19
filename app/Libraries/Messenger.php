@@ -51,6 +51,9 @@ class Messenger{
         if( str_contains($message->message_transport,'telegram') ){
             $ok*=$this->itemSendTelegram($message);
         }
+        if( str_contains($message->message_transport,'vk') ){
+            $ok*=$this->itemSendVK($message);
+        }
         if( str_contains($message->message_transport,'push') ){
             $ok*=$this->itemSendPush($message);
         }
@@ -277,7 +280,6 @@ class Messenger{
 
         // $this->itemAppendWrite( $message->telegram_options->append_order_id??null, $message->message_text, $result['result']['message_id']??null );
 
-
         if( ($message->telegram_options->autodelete_timeout??null) && ($result['result']['message_id']??null) ){
             $this->itemTelegramAutodelete( $message->reciever->user_data->telegramChatId, $result['result']['message_id'], $message->telegram_options->autodelete_timeout );
         }
@@ -307,6 +309,18 @@ class Messenger{
         $telegramToken=getenv('telegram.token');
         $Telegram=new \App\Libraries\Telegram\Telegram($telegramToken);
         $Telegram->deleteMessage(['chat_id'=>$chat_id,'message_id'=>$message_id]);
+    }
+
+    private function itemSendVK( $message ){
+        if(getenv('test.vkMock')==1){
+            return true;
+        }
+        if( !isset($message->reciever->user_data->vkClientId) ){
+            return false;
+        }
+        $VKBot = new \App\Libraries\VK\VKBot();
+
+        return $VKBot->sendNotification($message->reciever->user_data->vkClientId, $message);
     }
 
     private function itemAppendRead( int $order_id=null, string $append_text=null ){

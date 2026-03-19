@@ -160,7 +160,7 @@ trait DeliveryJobNotificationTrait{
         }
         $message=(object)[
             'message_reciever_id'=>$awaitedNext->owner_id,
-            'message_transport'=>'push,telegram',//
+            'message_transport'=>'push,telegram,vk',//
             'message_data'=>[
                 'type'=>'flash',
                 'title'=>'Следующее задание',
@@ -177,6 +177,7 @@ trait DeliveryJobNotificationTrait{
             ]
         ];
 
+        log_message('error', 'itemNextNotify: '.json_encode($message));
         //tmp copy to admin
         // $courier_name=model('CourierModel')->where('owner_id',$awaitedNext->owner_id)->select('courier_name')->get()->getRow('courier_name');
         // $copy=(object)[
@@ -263,6 +264,20 @@ trait DeliveryJobNotificationTrait{
                     'template'=>'messages/events/on_taxi_job_available_push.php',
                     'context'=>['courier'=>$courier,'job'=>$job]
                 ];
+                $message_vk=(object)[
+                    'message_transport'=>"vk",
+                    'message_reciever_id'=>"$courier->owner_id",
+                    'telegram_options'=>[
+                        'autodelete_timeout'=>$notification_lifetime,
+                        'opts'=>[
+                            'disable_web_page_preview'=>1,
+                            'protect_content'=>1
+                        ],
+                        'buttons'=>[['',"onCourierJobTake-{$job->order_id}",'🚀 Взять']]
+                    ],
+                    'template'=>'messages/events/on_taxi_job_available.php',
+                    'context'=>['courier'=>$courier,'job'=>$job]
+                ];
                 $message=[];
                 if( $courier->courier_parttime_notify=='silent' ){
                     $message_tel->telegram_options['opts']['disable_notification']=1;
@@ -272,6 +287,7 @@ trait DeliveryJobNotificationTrait{
                         ['','','🔥 Открыть в приложении','https://tezkel.com/order']
                     ];
                     $message[]=$message_tel;
+                    $message[]=$message_vk;
                 } else
                 if( $courier->courier_parttime_notify=='push' ){
                     $message_tel->telegram_options['buttons']=[
@@ -280,6 +296,7 @@ trait DeliveryJobNotificationTrait{
                         ['','','🔥 Открыть в приложении','https://tezkel.com/order']
                     ];
                     $message[]=$message_tel;
+                    $message[]=$message_vk;
                     $message[]=$message_push;
                 } else
                 if( $courier->courier_parttime_notify=='ringtone' ){
@@ -289,6 +306,7 @@ trait DeliveryJobNotificationTrait{
                         ['','','🔥 Открыть в приложении','https://tezkel.com/order']
                     ];
                     $message[]=$message_tel;
+                    $message[]=$message_vk;
                     $message[]=$message_push;
                 } else {
                     continue;
