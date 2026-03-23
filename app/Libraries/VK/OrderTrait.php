@@ -49,8 +49,10 @@ trait OrderTrait{
         }
         foreach($orders as $item){
             $buttons = [];
-            $this->buildOrderItem($item);
-            $this->api->messagesSend($this->client_id);
+            if($item->stage_current != 'customer_cart'){
+                $this->buildOrderItem($item);
+                $this->api->messagesSend($this->client_id);
+            }
         }
         return true;
     }

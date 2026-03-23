@@ -88,17 +88,16 @@ class VKApi{
       $json = curl_exec($curl);
       $error = curl_error($curl);
       if ($error) {
-        echo "Failed {$method} request";
+        return false;
       }
     
       curl_close($curl);
     
       $response = json_decode($json, true);
       if (!$response || !isset($response['response'])) {
-        echo "Invalid response for {$method} request";
+        return false;
       }
       if (isset($response['error'])) {
-        echo "\nVK API ERROR [{$method}]: " . $response['error']['error_msg'] . "\n";
         return false;
     }
     
