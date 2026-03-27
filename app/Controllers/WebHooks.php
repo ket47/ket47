@@ -27,7 +27,6 @@ class Webhooks extends \App\Controllers\BaseController{
         try {
             $raw = $this->request->getBody();
             $data = json_decode($raw, true);
-            
             if (!$data) {
                 return $this->respond('Error: Empty or invalid JSON', 400);
             }
@@ -39,12 +38,17 @@ class Webhooks extends \App\Controllers\BaseController{
             if (!class_exists('\App\Libraries\VK\VKBot')) {
                 return $this->respond('Error: Class \App\Libraries\VK\VKBot not found', 500);
             }
-    
+            
+            if(!$data['event_id']){
+                return $this->respond('Error: Empty event_id', 400);
+            }
+            
             $VKBot = new \App\Libraries\VK\VKBot();
             
             $VKBot->dispatch($data);
     
-            return $this->respond('success');
+            echo "ok";
+            exit;
     
         } catch (\Throwable $e) {
             return $this->respond('PHP Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 500);

@@ -235,7 +235,7 @@ trait DeliveryJobNotificationTrait{
             $job->job_data=json_decode($job->job_data);
             tl('TAXI COURIER COUNT '.count($taxi_couriers));
             foreach($taxi_couriers as $courier){
-                $courier_reach=$vehicle_radius[$courier->courier_vehicle??'auto_private'];
+                $courier_reach=$vehicle_radius[$courier->courier_vehicle??'auto_private']??$vehicle_radius['auto_private'];
                 if( $courier_reach<$job->job_data->distance ){
                     continue;
                 }
