@@ -48,6 +48,7 @@ trait OrderTrait{
             return $this->api->setText("Нет активных заказов.");
         }
         foreach($orders as $item){
+            $item = $OrderModel->itemGet($item->order_id);
             $buttons = [];
             if($item->stage_current != 'customer_cart'){
                 $this->buildOrderItem($item);
