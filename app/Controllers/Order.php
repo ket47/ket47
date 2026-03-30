@@ -755,6 +755,7 @@ class Order extends \App\Controllers\BaseController {
                 $PromoModel=model('PromoModel');
                 $PromoModel->itemUnlink( $order->order_id );
                 $order_data->bonus_mode='gain';
+                $order_update->order_sum_promo=0;
             }
         }
 
