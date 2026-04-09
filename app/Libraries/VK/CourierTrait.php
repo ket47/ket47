@@ -14,7 +14,7 @@ trait CourierTrait{
         foreach($this->courierButtons as $button){
             $buttons[] = $this->createButton($button[1], $button[0]);
         }
-        if($this->isCourierIdle()){
+        if(!$this->isShiftOpened()){
             $buttons[] = [
                 "action" => [
                     "type" => "location",
@@ -143,22 +143,10 @@ trait CourierTrait{
         }
         $OrderModel=model("OrderModel");
         $DeliveryJobModel=model("DeliveryJobModel");
-        $CourierShiftModel=model("CourierShiftModel");
 
         $courier=$this->courierGet();
-        $CourierShiftModel->allowRead();
-        $CourierShiftModel->join('courier_list','courier_id','left');
-        $CourierShiftModel->join('image_list','courier_list.courier_id=image_holder_id AND image_holder="courier"','left');
-        $CourierShiftModel->select("courier_name,image_hash,IF({$this->user_id}=courier_shift_list.owner_id,1,0) users_shift");
-        $open_shifts=$CourierShiftModel->listGet((object)['shift_status'=>'open']);
-        
-        $isShiftOpened=false;
-        foreach($open_shifts as $shift){
-            if( $shift->users_shift==1 ){
-                $isShiftOpened=true;
-                break;
-            }
-        }
+        $isShiftOpened = $this->isShiftOpened();
+
         $jobs = $DeliveryJobModel->listGet($isShiftOpened);
         
         if( !count($jobs) ){
@@ -184,7 +172,7 @@ trait CourierTrait{
                 "one_time" => false,
                 "inline" => true,
                 "buttons" => [
-                    [ $this->createButton("Взять задание", "onCourierJobTake-{$job->order_id}") ]
+                    [ $this->createButton("🚀 Взять задание", "onCourierJobTake-{$job->order_id}") ]
                 ]
             ];
             $this->api->setKeyboard($keyboard);
@@ -197,6 +185,24 @@ trait CourierTrait{
             $this->api->setText("Доступных заданий нет!");
         }
         return true;
+    }
+
+    private function isShiftOpened(){
+        $CourierShiftModel=model("CourierShiftModel");
+        $CourierShiftModel->allowRead();
+        $CourierShiftModel->join('courier_list','courier_id','left');
+        $CourierShiftModel->join('image_list','courier_list.courier_id=image_holder_id AND image_holder="courier"','left');
+        $CourierShiftModel->select("courier_name,image_hash,IF({$this->user_id}=courier_shift_list.owner_id,1,0) users_shift");
+        $open_shifts=$CourierShiftModel->listGet((object)['shift_status'=>'open']);
+        
+        $isShiftOpened=false;
+        foreach($open_shifts as $shift){
+            if( $shift->users_shift==1 ){
+                $isShiftOpened=true;
+                break;
+            }
+        }
+        return $isShiftOpened;
     }
 
     public function onCourierTaxiNotif($notification_level){
@@ -241,8 +247,35 @@ trait CourierTrait{
         }
         return $this->api->setText("Статус свободных заказов обновлён!");
     }
-
+    
     public function onCourierJobTake($order_id){
+        $OrderModel=model("OrderModel");
+        $DeliveryJobModel=model("DeliveryJobModel");
+
+        $job = $DeliveryJobModel->itemGet(null, $order_id);
+        
+        $OrderModel->select("JSON_UNQUOTE(JSON_EXTRACT(order_data, '$.info_for_courier')) info");
+        $OrderModel->where('order_id', $job->order_id);
+        
+        $job->job_data = json_decode($job->job_data);
+        $job->info = json_decode($OrderModel->get()->getRow('info')??'');
+        $job->info->tariff_info = strip_tags($job->info->tariff_info);
+        $text=View('messages/vk/jobItemConfirmation',['job' => $job]);
+
+        $keyboard = [
+            "one_time" => false,
+            "inline" => true,
+            "buttons" => [
+                [ $this->createButton("✅ Да, взять задание", "onCourierJobConfirm-{$job->order_id}") ]
+            ]
+        ];
+        $this->api->setKeyboard($keyboard);
+        $this->api->setText($text);
+        $this->api->messagesSend($this->client_id);
+        return false;
+    }
+
+    public function onCourierJobConfirm($order_id){
         if( !courdo() ){
             $this->api->setText("Не удалось начать задание!");
             $this->api->messagesSend($this->client_id);
@@ -278,6 +311,8 @@ trait CourierTrait{
         $this->api->messagesSend($this->client_id);
         return false;
     }
+
+    
 
     private $courier;
     private function courierGet(){

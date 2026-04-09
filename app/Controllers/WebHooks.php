@@ -30,23 +30,18 @@ class Webhooks extends \App\Controllers\BaseController{
             if (!$data) {
                 return $this->respond('Error: Empty or invalid JSON', 400);
             }
-
             if (isset($data['type']) && $data['type'] === 'confirmation') {
                 return $this->respond(getenv('vk.confirmationCode'));
             }
-    
             if (!class_exists('\App\Libraries\VK\VKBot')) {
                 return $this->respond('Error: Class \App\Libraries\VK\VKBot not found', 500);
             }
-            
             if(!$data['event_id']){
                 return $this->respond('Error: Empty event_id', 400);
             }
             
             $VKBot = new \App\Libraries\VK\VKBot();
-            
             $VKBot->dispatch($data);
-    
             echo "ok";
             exit;
     
@@ -54,7 +49,6 @@ class Webhooks extends \App\Controllers\BaseController{
             return $this->respond('PHP Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 500);
         }
     }
-
 
     public function VKPoll(){
         $VKBot=new \App\Libraries\VK\VKBot();
@@ -113,7 +107,7 @@ class Webhooks extends \App\Controllers\BaseController{
                         $body = $response->getBody();
                         $status = $response->getStatusCode();
     
-                        if ($status === 200 && $body === 'success') {
+                        if ($status === 200 && $body === 'ok') {
                             \CodeIgniter\CLI\CLI::write("✅ [" . date('H:i:s') . "] Событие обработано", 'green');
                         } else {
                             \CodeIgniter\CLI\CLI::error("❌ ОШИБКА СЕРВЕРА (Код: $status)");
