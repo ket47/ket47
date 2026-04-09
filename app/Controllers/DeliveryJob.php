@@ -66,14 +66,6 @@ class DeliveryJob extends \App\Controllers\BaseController{
         $OrderGroupMemberModel=model('OrderGroupMemberModel');
 
         $courier=$CourierModel->itemGet(null,'basic');//getting courier by user_id from session
-        /**
-         * courier experimentally can take all pre assigned jobs
-         */
-        //$CourierGroupMemberModel=model('CourierGroupMemberModel');
-        // $isCourierReady=$CourierGroupMemberModel->isMemberOf($courier->courier_id,'ready');
-        // if( !$isCourierReady ){
-        //     return $this->fail('notready');
-        // }
         if( $courier->is_disabled==1 || $courier->deleted_at ){
             return $this->fail('courier_is_disabled');
         }
@@ -81,7 +73,6 @@ class DeliveryJob extends \App\Controllers\BaseController{
         if( !$isSearching4Courier ){
             return $this->fail('notsearching');
         }
-        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
 
         $courierData=(object)[
             'order_courier_id'=>$courier->courier_id,
@@ -95,6 +86,7 @@ class DeliveryJob extends \App\Controllers\BaseController{
         //$OrderModel->allowRead();//allow modifying order once
 
         $result= $OrderModel->itemStageAdd( $order_id, 'delivery_found', $courierData );
+        $OrderGroupMemberModel->leaveGroupByType($order_id,'delivery_search');
         if($result=='ok'){
             return $this->respond($result);
         }

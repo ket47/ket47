@@ -1,4 +1,7 @@
 <?php
+/**
+ * Not used!
+ */
 namespace App\Models;
 
 class OrderStageDefaultScript{

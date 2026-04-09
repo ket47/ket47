@@ -181,7 +181,7 @@ class CourierModel extends Model{
 
 
     /**
-     * Function changes group courier belongs to AND notifies about awating orders
+     * Function changes group courier belongs to
      */
     public function itemUpdateStatus($courier_id,$group_type){
         if(!$courier_id){

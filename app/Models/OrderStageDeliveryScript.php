@@ -1176,6 +1176,7 @@ class OrderStageDeliveryScript{
             'courier_id'=>$courierData->order_courier_id,
             'courier_name'=>$courier->courier_name??null,
             'courier_image_hash'=>$courier->images[0]->image_hash??null,
+            'courier_busy_notset'=>1
         ];
         $deliveryJob=['task_programm'=>[
             ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'assigned', $job]]
@@ -1377,15 +1378,20 @@ class OrderStageDeliveryScript{
     
     public function onDeliveryFinish( $order_id ){
         $order_basic=$this->OrderModel->itemGet($order_id,'basic');
+        $order_data=$this->OrderModel->itemDataGet($order_id);
+        $delivery_gain_mode=$order_data->delivery_gain_mode??'unset';
         if($order_basic->order_courier_id){//if stage changed by admin skip this
+            $courier_free_status='ready';//set ready for couriers on shift
+            if($delivery_gain_mode=='taxi'){
+                $courier_free_status='taxi';//set taxi for couriers on taxi
+            }
             $CourierModel=model('CourierModel');
-            $CourierModel->itemUpdateStatus($order_basic->order_courier_id,'ready');
+            $CourierModel->itemUpdateStatus($order_basic->order_courier_id,$courier_free_status);
         }
 
         ///////////////////////////////////////////////////
         //DELIVERY HEAVY BONUS CHECK (if bonus is bigger than on checkout then update)
         ///////////////////////////////////////////////////
-        $order_data=$this->OrderModel->itemDataGet($order_id);
         $delivery_heavy=$this->itemDeliveryHeavyGet();
         if($order_data->delivery_heavy_bonus<$delivery_heavy->bonus){
             $order_data_update=(object)[
