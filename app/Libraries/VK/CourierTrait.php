@@ -259,7 +259,9 @@ trait CourierTrait{
         
         $job->job_data = json_decode($job->job_data);
         $job->info = json_decode($OrderModel->get()->getRow('info')??'');
-        $job->info->tariff_info = strip_tags($job->info->tariff_info);
+        if(!empty($job->info->tariff_info)){
+            $job->info->tariff_info = strip_tags($job->info->tariff_info);
+        }
         $text=View('messages/vk/jobItemConfirmation',['job' => $job]);
 
         $keyboard = [

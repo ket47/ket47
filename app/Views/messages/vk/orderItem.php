@@ -30,7 +30,7 @@
 
 <?php endif;?>
 
-<?php if($order->info->tariff_info): ?>
+<?php if(!empty($order->info->tariff_info)): ?>
 -------------------------------------------------------------------
 <?=strip_tags($order->info->tariff_info)?>
 -------------------------------------------------------------------
