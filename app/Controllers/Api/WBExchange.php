@@ -291,7 +291,7 @@ class WBExchange extends \App\Controllers\BaseController {
         ];
 
         $ImporterModel = model('ImporterModel');
-        $ImporterModel->itemCreateAsDisabled = true;
+        $ImporterModel->itemCreateAsDisabled = false;
         $ImporterModel->itemImageCreateAsDisabled=false;
         $ImporterModel->listCreate($productList, 'store', $holder_id, 'product', 0);
         $result = $ImporterModel->listImport('store', $holder_id, 'product', $colconfig);
