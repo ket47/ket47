@@ -605,9 +605,9 @@ class User extends \App\Controllers\BaseController{
         if( !isset($_SERVER["HTTP_X_SID"]) || !isset($_SERVER["HTTP_X_VER"]) ){
             return true;
         }
-        if( substr($user_phone_cleared,0,4)==7978 ){//tmp
-            return false;
-        }
+        // if( substr($user_phone_cleared,0,4)==7978 ){//tmp
+        //     return false;
+        // }
         if( $_SERVER["HTTP_X_VER"]!='web' && $_SERVER["HTTP_X_VER"]>0 ){//tmp
             return false;
         }

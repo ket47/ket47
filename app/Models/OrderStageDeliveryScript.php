@@ -1379,15 +1379,19 @@ class OrderStageDeliveryScript{
     public function onDeliveryFinish( $order_id ){
         $order_basic=$this->OrderModel->itemGet($order_id,'basic');
         $order_data=$this->OrderModel->itemDataGet($order_id);
+        
+        ///////////////////////////////////////////////////
+        //Courier free status calculate
+        ///////////////////////////////////////////////////
         $delivery_gain_mode=$order_data->delivery_gain_mode??'unset';
-        if($order_basic->order_courier_id){//if stage changed by admin skip this
-            $courier_free_status='ready';//set ready for couriers on shift
-            if($delivery_gain_mode=='taxi'){
-                $courier_free_status='taxi';//set taxi for couriers on taxi
-            }
-            $CourierModel=model('CourierModel');
-            $CourierModel->itemUpdateStatus($order_basic->order_courier_id,$courier_free_status);
+        $delivery_setting=(object)['courier_free_status'=>'ready'];//set ready for couriers on shift
+        if($order_basic->order_courier_id && $delivery_gain_mode=='taxi'){//if stage changed by admin skip this
+            $delivery_setting->courier_free_status='taxi';//set taxi for couriers on taxi
         }
+        $deliveryJob=['task_programm'=>[
+            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'finished',$delivery_setting]]
+        ]];
+        jobCreate($deliveryJob);
 
         ///////////////////////////////////////////////////
         //DELIVERY HEAVY BONUS CHECK (if bonus is bigger than on checkout then update)
@@ -1399,10 +1403,6 @@ class OrderStageDeliveryScript{
             ];
             $this->OrderModel->itemDataUpdate($order_id,$order_data_update);
         }
-        $deliveryJob=['task_programm'=>[
-            ['model'=>'DeliveryJobModel','method'=>'itemStageSet','arguments'=>[$order_id, 'finished']]
-        ]];
-        jobCreate($deliveryJob);
         ///////////////////////////////////////////////////
         //CREATING STAGE RESET JOB
         ///////////////////////////////////////////////////

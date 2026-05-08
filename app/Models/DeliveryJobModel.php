@@ -159,8 +159,9 @@ class DeliveryJobModel extends SecureModel{
         
         $this->chainJobs();
         if( isset($job->courier_id) && $this->itemNextCheck($job->courier_id) ){//directly change courier group
+            $courier_free_status=$data->courier_free_status??'ready';//default is ready but can be other status like taxi
             $CourierGroupMemberModel=model('CourierGroupMemberModel');
-            $CourierGroupMemberModel->joinGroupByType($job->courier_id,'ready',true);
+            $CourierGroupMemberModel->joinGroupByType($job->courier_id,$courier_free_status,true);
         }
         return 'finished';
     }
