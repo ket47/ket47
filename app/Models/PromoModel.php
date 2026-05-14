@@ -297,7 +297,7 @@ class PromoModel extends Model{
         $this->permitWhere('r');
         $this->where('owner_id',$user_id);
         $this->where('is_summable',1);
-        $this->where('expired_at>NOW()');
+        //$this->where('expired_at>NOW()');
         $this->select('SUM(promo_value) bonus_total');
         return $this->get()->getRow('bonus_total');
     }

@@ -1016,10 +1016,10 @@ class OrderStageDeliveryScript{
 
         helper('phone_number');
         $store_phone_cleared= clearPhone($store->store_phone);
-        if( $store_phone_cleared ){
+        if( $store_phone_cleared && $data->attempts_left>1 ){//on last attempt call admins
             $store_voice->message_reciever_phone=$store_phone_cleared;
         } else {
-            $store_voice->message_reciever_id=$store->owner_id;//.','.$store->owner_ally_ids,
+            $store_voice->message_reciever_id=$store->owner_ally_ids;
         }
         $copy=(object)[
             'message_reciever_id'=>'-100',
@@ -1379,7 +1379,7 @@ class OrderStageDeliveryScript{
     public function onDeliveryFinish( $order_id ){
         $order_basic=$this->OrderModel->itemGet($order_id,'basic');
         $order_data=$this->OrderModel->itemDataGet($order_id);
-        
+
         ///////////////////////////////////////////////////
         //Courier free status calculate
         ///////////////////////////////////////////////////
