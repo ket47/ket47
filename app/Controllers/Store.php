@@ -172,6 +172,12 @@ class Store extends \App\Controllers\BaseController{
         madd('store','get','ok',$store_id,$result->store_name);
         $ReactionModel=model('ReactionModel');
         $result->reactionSummary=$ReactionModel->summaryGet("store:$store_id");
+
+        $grouptree_include=$this->request->getPost('grouptree_include');
+        if( $grouptree_include ){
+            $ProductModel=model('ProductModel');
+            $result->group_tree=$ProductModel->groupTreeGet(['store_id'=>$store_id]);
+        }
         return $this->respond($result);
     }
 

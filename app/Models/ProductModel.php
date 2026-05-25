@@ -362,7 +362,7 @@ class ProductModel extends Model{
     /////////////////////////////////////////////////////
     public function listGet( $filter=null ){
         if( $filter['group_id']??0 ){
-            $this->where('group_id',$filter['group_id']);
+            $this->whereIn('group_id',explode(',',$filter['group_id']));//groups can be passed as list
         }
         if( $filter['store_id']??0 ){
             $this->where('store_id',$filter['store_id']);
