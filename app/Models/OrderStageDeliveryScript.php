@@ -1009,7 +1009,7 @@ class OrderStageDeliveryScript{
         $StoreModel=model('StoreModel');
         $store=$StoreModel->itemGet($order->order_store_id,'basic');
         $store_voice=(object)[
-            'message_transport'=>'voice',
+            'message_transport'=>'push,telegram,voice',
             'template'=>'messages/order/on_supplier_passive_STORE_voice.php',
             'context'=>[],
         ];
@@ -1020,6 +1020,7 @@ class OrderStageDeliveryScript{
             $store_voice->message_reciever_phone=$store_phone_cleared;
         } else {
             $store_voice->message_reciever_id=$store->owner_ally_ids;
+            $store_voice->message_transport.=',sms';
         }
         $copy=(object)[
             'message_reciever_id'=>'-100',
