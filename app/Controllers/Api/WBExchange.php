@@ -39,7 +39,7 @@ class WBExchange extends \App\Controllers\BaseController {
         $cards = $this->apiProductsGet($cursor);
         if (empty($cards['cards'])) {
             $this->saveCursor($store_id, null);
-            return $this->respond(['message' => 'No products found or API error']);
+            return $this->respond(['message' => 'No more products to fetch']);
         }
 
         $warehouses = $this->getWarehouses();
@@ -50,7 +50,18 @@ class WBExchange extends \App\Controllers\BaseController {
 
         $this->import($productList);
 
-        return $this->saveCursor($store_id, $cards['next_cursor']);
+        $this->saveCursor($store_id, $cards['next_cursor']);
+        $wbJob = ['task_programm'=>[
+            [
+                'controller' => 'WBExchange',
+                'method' => 'dig',
+                'arguments' => [
+                    'apikey' => 'fced65ffba949efcc51cda63347db43b1906482a55a86668d2e1df8ac9abc424',
+                    'token' => 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjYwMzAydjEiLCJ0eXAiOiJKV1QifQ.eyJhY2MiOjEsImVudCI6MSwiZXhwIjoxNzkxOTIxMTIwLCJpZCI6IjAxOWQ4YWY5LWQwM2QtN2E2Yy1iMjljLTI2MGJjODc4NGMwZiIsImlpZCI6NTQzMTc5OTYsIm9pZCI6MjMwODAwLCJzIjoxMDczNzQxODg2LCJzaWQiOiJkYjgxYmU1MC1lNGI5LTQ5MzgtODNiYS1kZWJmOTA4MGQ0YjgiLCJ0IjpmYWxzZSwidWlkIjo1NDMxNzk5Nn0.95dW_KCNRM4K3YnbVr6HRkBK6KZBuLE89lPrHKBXZ8hRLivt9l06rsWHoQEKalK_doLdvTRFL1BzuEe6nG8Azg'
+                ]
+            ]
+        ]];
+        jobCreate($wbJob);
     }
 
     public function warehouseStatsGet() {
