@@ -176,7 +176,10 @@ class ProductModel extends Model{
             return 'invalid';
         }
         if($product->product_image_url??null){
-            $this->itemCreateImage($product_id,$product->product_image_url);
+            $imgs=explode(',',$product->product_image_url);
+            foreach($imgs as $img){
+                $this->itemCreateImage($product_id,$img);
+            }
         }
         if($product->product_category_name??null){
             $this->itemCreateCategory($product_id,$product->product_category_name);
