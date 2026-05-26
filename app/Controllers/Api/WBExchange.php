@@ -251,9 +251,14 @@ class WBExchange extends \App\Controllers\BaseController {
             $chrtId = $card->sizes[0]->chrtID ?? null;
             $quantity = ($chrtId && isset($stocksMap[$chrtId])) ? $stocksMap[$chrtId] : 0;
             
-            $imageUrl = null;
+            $images = [];
             if (!empty($card->photos)) {
-                $imageUrl = $card->photos[0]->big;
+                foreach($card->photos as $photo){
+                    $images[] = $photo->big;
+                }
+            }
+            if($quantity < 1){
+                continue;
             }
 
             $filtered[] = [
@@ -265,7 +270,7 @@ class WBExchange extends \App\Controllers\BaseController {
                 $card->description ?? '',       // C6: descr
                 'шт',                           // C7: unit
             $this->categoryMap[$card->subjectName] ?? '', // C8: category
-                $imageUrl,                      // C9: image_url
+                implode(',', $images),                      // C9: image_url
                 1,                              // C10: is_counted
                 $quantity,                      // C11: quantity
             ];
