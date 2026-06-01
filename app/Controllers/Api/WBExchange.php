@@ -35,33 +35,58 @@ class WBExchange extends \App\Controllers\BaseController {
         
         $cursor = $this->getSavedCursor($store_id);
 
+        $cardsData = $this->apiProductsGet($cursor);
+        
+        $fileName = "wb_cards_{$store_id}.json";
 
-        $cards = $this->apiProductsGet($cursor);
-        if (empty($cards['cards'])) {
-            $this->saveCursor($store_id, null);
-            return $this->respond(['message' => 'No more products to fetch']);
+        if (!empty($cardsData['cards'])) {
+            $existingCards = $this->readFile($fileName);
+
+            $allCards = array_merge($existingCards, $cardsData['cards']);
+            
+            $this->writeFile($fileName, $allCards);
+
+            $this->saveCursor($store_id, $cardsData['next_cursor']);
+
+            $wbJob = [
+                'task_programm' => [
+                    [
+                        'controller' => 'Api\WBExchange',
+                        'method' => 'dig',
+                        'arguments' => [
+                            'apikey' => $token_hash,
+                            'token'  => $wbToken
+                        ]
+                    ]
+                ],
+                'task_next_start_time'=>strtotime('+1 hour')
+            ];
+            jobCreate($wbJob);
+
+            return $this->respond(['message' => 'Batch saved. Job for next batch created.']);
+        } 
+        
+        $finalCards = $this->readFile($fileName);
+        
+        $filePath = WRITEPATH . 'uploads/' . $fileName;
+        if (file_exists($filePath)) {
+            @unlink($filePath);
         }
 
-        $warehouses = $this->getWarehouses();
-        $prices = $this->apiPricesGet();
-        $stocks = $this->apiStocksGet($warehouses, $cards['cards']);
+        if (!empty($finalCards)) {
+            $warehouses = $this->getWarehouses();
+            $prices = $this->apiPricesGet();
+            $stocks = $this->apiStocksGet($warehouses, $finalCards);
 
-        $productList = $this->filter($cards['cards'], $prices, $stocks);
+            $productList = $this->filter($finalCards, $prices, $stocks);
 
-        $this->import($productList);
+            if (!empty($productList)) {
+                $this->import($productList);
+            }
+        }
 
-        $this->saveCursor($store_id, $cards['next_cursor']);
-        $wbJob = ['task_programm'=>[
-            [
-                'controller' => 'WBExchange',
-                'method' => 'dig',
-                'arguments' => [
-                    'apikey' => 'fced65ffba949efcc51cda63347db43b1906482a55a86668d2e1df8ac9abc424',
-                    'token' => 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjYwMzAydjEiLCJ0eXAiOiJKV1QifQ.eyJhY2MiOjEsImVudCI6MSwiZXhwIjoxNzkxOTIxMTIwLCJpZCI6IjAxOWQ4YWY5LWQwM2QtN2E2Yy1iMjljLTI2MGJjODc4NGMwZiIsImlpZCI6NTQzMTc5OTYsIm9pZCI6MjMwODAwLCJzIjoxMDczNzQxODg2LCJzaWQiOiJkYjgxYmU1MC1lNGI5LTQ5MzgtODNiYS1kZWJmOTA4MGQ0YjgiLCJ0IjpmYWxzZSwidWlkIjo1NDMxNzk5Nn0.95dW_KCNRM4K3YnbVr6HRkBK6KZBuLE89lPrHKBXZ8hRLivt9l06rsWHoQEKalK_doLdvTRFL1BzuEe6nG8Azg'
-                ]
-            ]
-        ]];
-        jobCreate($wbJob);
+        $this->saveCursor($store_id, null);
+        return $this->respond(['message' => 'All products fetched, filtered and imported successfully']);
     }
 
     public function warehouseStatsGet() {
@@ -73,7 +98,6 @@ class WBExchange extends \App\Controllers\BaseController {
             ]
 
         ];
-
         $response = $this->apiExecute($url, $request, 'GET');
         if (empty($response) || !is_array($response)) {
             return $this->respond([
@@ -381,5 +405,32 @@ class WBExchange extends \App\Controllers\BaseController {
                 WHERE store_id = ?";
                 
         return $StoreModel->query($sql, [$cursorJson, $store_id]);
+    }
+
+    private function writeFile(string $fileName, array $data): bool {
+        $dirPath = WRITEPATH . 'uploads/';
+        if (!is_dir($dirPath)) {
+            mkdir($dirPath, 0777, true);
+        }
+        
+        $filePath = $dirPath . $fileName;
+        $jsonStr = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        
+        return file_put_contents($filePath, $jsonStr) !== false;
+    }
+
+    private function readFile(string $fileName): array {
+        $filePath = WRITEPATH . 'uploads/' . $fileName;
+        
+        if (!file_exists($filePath)) {
+            return [];
+        }
+        
+        $fileContent = file_get_contents($filePath);
+        if (empty($fileContent)) {
+            return [];
+        }
+        
+        return json_decode($fileContent, false) ?? [];
     }
 }
