@@ -17,6 +17,7 @@ class WBExchange extends \App\Controllers\BaseController {
 
         $token_hash = $this->request->getVar('apikey');
         $wbToken = $this->request->getVar('token'); 
+        $price_multiplier = $this->request->getVar('price_multiplier'); 
         
         $result = $this->auth($token_hash);
         if ($result !== 'ok') {
@@ -30,6 +31,9 @@ class WBExchange extends \App\Controllers\BaseController {
 
         if (!$wbToken) {
             return $this->fail('wb_token_required');
+        }
+        if (!$price_multiplier) {
+            return $this->fail('price_multiplier_missing');
         }
         $this->externalToken = $wbToken;
         
@@ -75,7 +79,7 @@ class WBExchange extends \App\Controllers\BaseController {
 
         if (!empty($finalCards)) {
             $warehouses = $this->getWarehouses();
-            $prices = $this->apiPricesGet();
+            $prices = $this->apiPricesGet($price_multiplier);
             $stocks = $this->apiStocksGet($warehouses, $finalCards);
 
             $productList = $this->filter($finalCards, $prices, $stocks);
@@ -157,7 +161,7 @@ class WBExchange extends \App\Controllers\BaseController {
         ];
     }
 
-    private function apiPricesGet() {
+    private function apiPricesGet( float $price_multiplier=1 ) {
         $priceMap = [];
         $limit = 1000;
         $offset = 0;
@@ -177,7 +181,7 @@ class WBExchange extends \App\Controllers\BaseController {
             foreach ($response->data->listGoods as $item) {
                 $priceMap[$item->nmID] = [
                     'price' => $item->sizes[0]->price ?? 0,
-                    'promo' => $item->sizes[0]->discountedPrice ?? 0
+                    'promo' => ($item->sizes[0]->discountedPrice ?? 0)*$price_multiplier,
                 ];
             }
     
@@ -279,10 +283,13 @@ class WBExchange extends \App\Controllers\BaseController {
     ];
     private function filter(array $cards, array $priceMap = [], array $stocksMap = []) {
         $filtered = [];
+        $promo_start=date('Y-m-d H:i:s');
+        $promo_finish=date('Y-m-d H:i:s',time()+7*24*60*60);
 
         foreach ($cards as $card) {
             $nmID = $card->nmID;
             $price = $priceMap[$nmID]['price'] ?? 0;
+            $promo = $priceMap[$nmID]['promo'] ?? 0;
             $chrtId = $card->sizes[0]->chrtID ?? null;
             $quantity = ($chrtId && isset($stocksMap[$chrtId])) ? $stocksMap[$chrtId] : 0;
             
@@ -304,10 +311,13 @@ class WBExchange extends \App\Controllers\BaseController {
                 $card->title ?? $card->vendorCode, // C5: name
                 $card->description ?? '',       // C6: descr
                 'шт',                           // C7: unit
-            $this->categoryMap[$card->subjectName] ?? '', // C8: category
-                implode(',', $images),                      // C9: image_url
+                $this->categoryMap[$card->subjectName] ?? '', // C8: category
+                implode(',', $images),          // C9: image_url
                 1,                              // C10: is_counted
                 $quantity,                      // C11: quantity
+                $promo,                         // C12: promo,
+                $promo_start,                   // C13: promo_start
+                $promo_finish,                  // C13: promo_finish
             ];
         }
         return $filtered;
@@ -328,6 +338,9 @@ class WBExchange extends \App\Controllers\BaseController {
             'product_image_url'          => 'C9',
             'is_counted'                 => 'C10',
             'product_quantity'           => 'C11',
+            'product_promo_price'        => 'C12',
+            'product_promo_start'        => 'C13',
+            'product_promo_finish'       => 'C14',
         ];
 
         $ImporterModel = model('ImporterModel');
