@@ -210,7 +210,10 @@ class ProductModel extends Model{
         $ImageModel=model('ImageModel');
         $ImageModel->permitWhere('w');
         $ImageModel->listDelete('product',[$product_id]);
-        $this->itemCreateImage($product_id,$source);
+        $imgs=explode(',',$source);
+        foreach($imgs as $img){
+            $this->itemCreateImage($product_id,$img);
+        }
     }
 
     private function itemCreateCategory($product_id,$product_category_name){

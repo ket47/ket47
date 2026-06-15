@@ -215,6 +215,10 @@ class User extends \App\Controllers\BaseController{
         $user_pass_confirm=$this->request->getPost('user_pass_confirm');
         $user_ota_code=$this->request->getPost('user_ota_code');
 
+        if(!$user_phone || !$user_name){
+            return $this->fail('user_pnone_missing');
+        }
+
         helper('phone_number');
         $user_phone_cleared= clearPhone($user_phone);
         $UserModel=model('UserModel');

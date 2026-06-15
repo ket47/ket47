@@ -12,27 +12,33 @@ class WBExchange extends \App\Controllers\BaseController {
     private $max_exec_time = 600;
     private $batch_limit = 1000;
 
-    public function dig() {
+    public function dig( $token_hash=null, $wbToken=null, $price_multiplier=null ) {
         set_time_limit($this->max_exec_time);
 
-        $token_hash = $this->request->getVar('apikey');
-        $wbToken = $this->request->getVar('token'); 
-        $price_multiplier = $this->request->getVar('price_multiplier'); 
+        if( !$token_hash ){//if called from redis job
+            $token_hash = $this->request->getVar('apikey');
+            $wbToken = $this->request->getVar('token'); 
+            $price_multiplier = $this->request->getVar('price_multiplier'); 
+        }
         
         $result = $this->auth($token_hash);
         if ($result !== 'ok') {
+            pl('WBExchange auth fail');
             return $this->failForbidden($result);
         }
         
         $store_id = $this->getStoreIdByToken($token_hash);
         if (!$store_id) {
+            pl('WBExchange Invalid store API Key');
             return $this->failUnauthorized('Invalid internal API Key');
         }
 
         if (!$wbToken) {
+            pl('WBExchange wb_token_required');
             return $this->fail('wb_token_required');
         }
         if (!$price_multiplier) {
+            pl('WBExchange price_multiplier_missing');
             return $this->fail('price_multiplier_missing');
         }
         $this->externalToken = $wbToken;
@@ -55,12 +61,9 @@ class WBExchange extends \App\Controllers\BaseController {
             $wbJob = [
                 'task_programm' => [
                     [
-                        'controller' => 'Api\WBExchange',
+                        'controller' => '\App\Controllers\Api\WBExchange',
                         'method' => 'dig',
-                        'arguments' => [
-                            'apikey' => $token_hash,
-                            'token'  => $wbToken
-                        ]
+                        'arguments' => [$token_hash,$wbToken,$price_multiplier]
                     ]
                 ],
                 'task_next_start_time'=>strtotime('+1 hour')
@@ -93,25 +96,25 @@ class WBExchange extends \App\Controllers\BaseController {
         return $this->respond(['message' => 'All products fetched, filtered and imported successfully']);
     }
 
-    public function warehouseStatsGet() {
-        $url = 'https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/offices';
-        $request = [
-            "currentPeriod" => [
-                "start" => "2024-02-10",
-                "end" => "2024-02-10"
-            ]
+    // public function warehouseStatsGet() {
+    //     $url = 'https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/offices';
+    //     $request = [
+    //         "currentPeriod" => [
+    //             "start" => "2024-02-10",
+    //             "end" => "2024-02-10"
+    //         ]
 
-        ];
-        $response = $this->apiExecute($url, $request, 'GET');
-        if (empty($response) || !is_array($response)) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'Не удалось получить список складов. Проверьте токен (нужны права "Маркетплейс").',
-                'raw' => $response
-            ]);
-        }
-        return $response;
-    }
+    //     ];
+    //     $response = $this->apiExecute($url, $request, 'GET');
+    //     if (empty($response) || !is_array($response)) {
+    //         return $this->respond([
+    //             'status' => 'error',
+    //             'message' => 'Не удалось получить список складов. Проверьте токен (нужны права "Маркетплейс").',
+    //             'raw' => $response
+    //         ]);
+    //     }
+    //     return $response;
+    // }
     
     private function apiProductsGet($startCursor) {
         $cards = [];
@@ -177,14 +180,22 @@ class WBExchange extends \App\Controllers\BaseController {
             if (empty($response->data->listGoods)) {
                 break;
             }
-    
             foreach ($response->data->listGoods as $item) {
-                $priceMap[$item->nmID] = [
-                    'price' => $item->sizes[0]->price ?? 0,
-                    'promo' => ($item->sizes[0]->discountedPrice ?? 0)*$price_multiplier,
-                ];
+                $base_price=$item->sizes[0]->price ?? 0;
+                $discounted_price=($item->sizes[0]->discountedPrice ?? 0)*$price_multiplier;
+                $is_promo_price=rand(1,10)<2;//10% chance
+                if($is_promo_price){
+                    $priceMap[$item->nmID] = [
+                        'price' => $base_price,
+                        'promo' => $discounted_price,
+                    ];
+                } else {
+                    $priceMap[$item->nmID] = [
+                        'price' => ($item->sizes[0]->discountedPrice ?? 0)*$price_multiplier,
+                        'promo' => null,
+                    ];
+                }
             }
-    
             if (count($response->data->listGoods) < $limit) {
                 break;
             }
@@ -248,38 +259,61 @@ class WBExchange extends \App\Controllers\BaseController {
     }
 
     private $categoryMap=[ 
-        'Светильники'           => 'Потолочные',
-        'Лампочки'              => 'Средние',
-        'Датчики для умного дома и систем безопасности' => 'Аксессуары',
-        'Дверные звонки'        => 'Накладные',
-        'Патроны для ламп'      => 'Потолочные',
-        'Светильники уличные'   => 'Уличные',
-        'Фонари велосипедные'   => 'Уличные',
-        'Розетки'               => 'Встраиваемые',
-        'Удлинители'            => 'Удлинители',
-        'Вилки силовые'         => 'Аксессуары',
-        'Клеммники'             => 'Изоляция',
-        'Наборы крепежа'        => 'Изоляция',
-        'Торшеры напольные'     => 'Настольные',
-        'Светодиодные ленты'    => 'Настольные',
-        'Брелоки'               => 'Аксессуары',
+        'Светильники'           =>'Потолочные',
+        'Лампочки'              =>'Светодиодные лампы',
+        'Настольные лампы'      =>'Настольные',
+        'Прожекторы'            =>'Уличные',
+        'Фонарики бытовые'      =>'Фонарики бытовые',
+        'Удлинители'            =>'Удлинители',
+        'Лампы для бытовой техники'
+                                =>'Специальные',
+        'Датчики для умного дома и систем безопасности' 
+                                =>'Контроллеры',
+        'Обогреватели'          =>'Обогреватели',
+        'Тепловентиляторы'      =>'Обогреватели',
+        'Умные лампочки'        =>'Специальные',
+        'Споты и трек-системы'  =>'Споты и трек-системы',
+        'Шинопроводы'           =>'Споты и трек-системы',
+        'Брелоки'               =>'Брелоки',
+        'Светильники уличные'   =>'Уличные',
+        'Стяжка'                =>'Стяжки',
+        'Вилки силовые'         =>'Разъемы',
+        'Патроны для ламп'      =>'Разъемы',
+        'Выключатели'           =>'Встраиваемые',
+        'Комплектующие для светильников' 
+                                =>'Споты и трек-системы',
+        'Розетки'               =>'Встраиваемые',
+        'Люстры'                =>'Люстры',
+        'Клеммники'             =>'Разъемы',
+        'Аварийное освещение'   =>'Специальные светильники',
+        'Рамки для розеток и выключателей' 
+                                =>'Рамки',
+        'Диммеры'               =>'Диммеры',
+        'Сетевые фильтры'       =>'Удлинители',
+        'Разветвители электрические'
+                                =>'Удлинители',
+        'Фонари велосипедные'   => 'Фонарики бытовые',
+        'Дверные звонки'        => 'Звонки',
+        'Наборы крепежа'        => 'Стяжки',
+        'Торшеры напольные'     => 'Напольные',
+        'Светодиодные ленты'    => 'Лента светодиодная',
         'Светильники переносные'=> 'Уличные',
-        'Диммеры'               => 'Встраиваемые',
-        'Фитолампы для растений и аксессуары' => 'Настольные',
-        'Ночники'               => 'Настольные',
-        'Шинопроводы'           => 'Изоляция',
-        'Выключатели механические' => 'Встраиваемые',
-        'Рамки для розеток и выключателей' => 'Встраиваемые',
-        'Коннекторы шинопроводов' => 'Аксессуары',
-        'Комплектующие для светильников' => 'Настольные',
-        'Фильтры воздушные' => '',
-        'Фильтры салонные' => '',
-        'Фильтры масляные' => '',
-        'Фильтры топливные' => '',
-        'Коробки распределительные' => '',
-        'Фильтры автомобильные' => '',
-        'Колодки автомобильные' => '',
-        'Тормозные диски автомобильные' => ''
+        'Фитолампы для растений и аксессуары' 
+                                => 'Специальные светильники',
+        'Ночники'               => 'Фонарики бытовые',
+        'Шинопроводы'           => 'Споты и трек-системы',
+        'Выключатели механические' 
+                                => 'Встраиваемые',
+        'Коннекторы шинопроводов' 
+                                => 'Споты и трек-системы',
+        'Коробки распределительные' => 'Распределительные коробки',
+        'Фильтры воздушные' => 'Фильтры для авто',
+        'Фильтры салонные' => 'Фильтры для авто',
+        'Фильтры масляные' => 'Фильтры для авто',
+        'Фильтры топливные' => 'Фильтры для авто',
+        'Фильтры автомобильные' => 'Фильтры для авто',
+        'Колодки автомобильные' => 'Колодки для авто',
+        'Тормозные диски автомобильные' => 'Колодки для авто'
     ];
     private function filter(array $cards, array $priceMap = [], array $stocksMap = []) {
         $filtered = [];
@@ -311,7 +345,7 @@ class WBExchange extends \App\Controllers\BaseController {
                 $card->title ?? $card->vendorCode, // C5: name
                 $card->description ?? '',       // C6: descr
                 'шт',                           // C7: unit
-                $this->categoryMap[$card->subjectName] ?? '', // C8: category
+                $this->categoryMap[$card->subjectName] ?? null, // C8: category
                 implode(',', $images),          // C9: image_url
                 1,                              // C10: is_counted
                 $quantity,                      // C11: quantity
@@ -350,6 +384,22 @@ class WBExchange extends \App\Controllers\BaseController {
         $result = $ImporterModel->listImport('store', $holder_id, 'product', $colconfig);
 
         return $this->respond($result);
+    }
+
+    public function reloadMissingImages(){
+        $token_data = session()->get('token_data');
+        $holder_id = $token_data->token_holder_id ?? 0;
+
+        $ProductModel=model('ProductModel');
+        $ProductModel->select("product_id,C9 source_list");
+        $ProductModel->join('image_list', 'image_holder_id = product_id','left');
+        $ProductModel->join('imported_list', 'target_id=product_id','left');
+        $ProductModel->where('store_id',$holder_id);
+        $ProductModel->where('image_id IS NULL');
+        $missing_images=$ProductModel->get()->getResult();
+        foreach($missing_images as $image){
+            $ProductModel->itemReloadImage($image->product_id,$image->source_list);
+        }
     }
 
     private function apiExecute(string $url, array $request = null, string $method = 'POST') {

@@ -255,8 +255,10 @@ class Courier extends \App\Controllers\BaseController{
     }
     
     public function itemStatisticsGet(){
-        $courier_id=$this->request->getPost('courier_id');
-
+        $courier_id=(int) $this->request->getPost('courier_id');
+        if( !$courier_id ){
+            return $this->failNotfound('notfound');
+        }
         $CourierModel=model('CourierModel');
         $statistics['rating']=$CourierModel->itemRatingGet($courier_id);
 

@@ -60,10 +60,10 @@ trait FilterTrait{
             $this->limit((int)$filter['limit']);
         }
         if( $filter['order'] ){
-            $this->orderBy($filter['order'],'ASC');
+            $this->orderBy(str_replace(str_split(";()'\" %"),'',$filter['order']),'ASC');
         }
         if( $filter['reverse'] ){
-            $this->orderBy($filter['reverse'],'DESC');
+            $this->orderBy(str_replace(str_split(";()'\" %"),'',$filter['reverse']),'DESC');
         }
     }
     
