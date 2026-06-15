@@ -231,6 +231,10 @@ class PostModel extends SecureModel{
             post_list.finished_at
         ');
         $this->join('image_list',"image_holder='post' AND image_holder_id=post_id AND is_main=1",'left');
+        //BlackList
+        if(!stodo() && !sudo()){
+            $this->whereNotIn('post_id', [323]);
+        }
         $this->groupBy('image_id');
         $this->groupBy('post_id')->orderBy('started_at DESC');
         $posts = $this->findAll($filter['limit']??30,$filter['offset']??0);
